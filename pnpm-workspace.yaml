@@ -1,0 +1,26 @@
+onlyBuiltDependencies:
+  - esbuild
+  - lightningcss
+  - workerd # wrangler/miniflare native binary, required for local dev server
+  - sharp # wrangler/miniflare native binary, required for local dev server
+  # @clerk/shared's postinstall only prints a telemetry notice - no native
+  # compile, so it stays blocked (default-deny).
+
+minimumReleaseAge: 1440 # 1 day - blocks the worm/account-takeover window (lowered from the usual
+# 3-day default because a fresh scaffold's "latest"-pinned deps, e.g. radix-ui@1.6.2, were only
+# 2 days old and had no older semver-compatible version - a 3-day floor blocked every pnpm script)
+minimumReleaseAgeExclude:
+  - "@appelent/*" # our own registry, always trusted
+
+# pnpm re-checks the lockfile against minimumReleaseAge on every `pnpm run`/`pnpm exec`
+# (default "install", which re-resolves and hard-fails on any already-locked package that's
+# newer than the cutoff relative to *today*). On a fast-moving stack that's most `pnpm run`
+# invocations, since packages naturally age past a lower cutoff over time. "warn" keeps the
+# policy enforced at `pnpm install`/`add` time (the actual worm-defense point) without
+# blocking day-to-day script runs.
+verifyDepsBeforeRun: warn
+allowBuilds:
+  '@clerk/shared': false
+  esbuild: true
+  sharp: true
+  workerd: true
