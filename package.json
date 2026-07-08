@@ -6,15 +6,23 @@
     "#/*": "./src/*"
   },
   "scripts": {
-    "dev": "vite dev --port 3000",
+    "dev": "vite dev --port 3000 --host",
+    "dev:all": "pnpm exec convex dev --once && pnpm dev",
+    "dev:watch": "concurrently -n convex,vite -c blue,green \"pnpm exec convex dev\" \"pnpm dev\"",
     "generate-routes": "tsr generate",
     "build": "vite build",
+    "build:development": "vite build --mode development",
     "preview": "vite preview",
+    "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "format": "biome format",
     "lint": "biome lint",
+    "lint:fix": "biome check --write",
     "check": "biome check",
-    "deploy": "npm run build && wrangler deploy"
+    "cf-typegen": "wrangler types",
+    "deploy": "pnpm run deploy:prod",
+    "deploy:dev": "pnpm exec convex dev --once && pnpm run build:development && wrangler deploy --env dev",
+    "deploy:prod": "pnpm exec convex deploy && pnpm run build && wrangler deploy"
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.61.3",
@@ -55,6 +63,7 @@
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
     "@vitejs/plugin-react": "^6.0.1",
+    "concurrently": "^10.0.3",
     "jsdom": "^28.1.0",
     "typescript": "^6.0.2",
     "vite": "^8.0.0",
