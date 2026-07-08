@@ -2,11 +2,19 @@ Welcome to your new TanStack Start app!
 
 # Getting Started
 
+This project uses **pnpm** (never npm/yarn). It also depends on the private
+`@appelent/auth` package from GitHub Packages, so before installing, make sure
+`~/.npmrc` (user-level, not this repo's committed `.npmrc`) has:
+
+```
+//npm.pkg.github.com/:_authToken=<a PAT with read:packages>
+```
+
 To run this application:
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 # Building For Production
@@ -14,7 +22,7 @@ npm run dev
 To build this application for production:
 
 ```bash
-npm run build
+pnpm build
 ```
 
 ## Testing
@@ -22,7 +30,7 @@ npm run build
 This project uses [Vitest](https://vitest.dev/) for testing. You can run the tests with:
 
 ```bash
-npm run test
+pnpm test
 ```
 
 ## Styling
@@ -36,7 +44,7 @@ If you prefer not to use Tailwind CSS:
 1. Remove the demo pages in `src/routes/demo/`
 2. Replace the Tailwind import in `src/styles.css` with your own styles
 3. Remove `tailwindcss()` from the plugins array in `vite.config.ts`
-4. Uninstall the packages: `npm install @tailwindcss/vite tailwindcss -D`
+4. Uninstall the packages: `pnpm remove @tailwindcss/vite tailwindcss`
 
 ## Linting & Formatting
 
@@ -44,19 +52,19 @@ This project uses [Biome](https://biomejs.dev/) for linting and formatting. The 
 
 
 ```bash
-npm run lint
-npm run format
-npm run check
+pnpm run lint
+pnpm run format
+pnpm run check
 ```
 
 
 ## Deploy to Cloudflare Workers
 
-This project uses the Cloudflare Vite plugin (configured in `vite.config.ts`) and `wrangler.jsonc`:
+This project uses the Cloudflare Vite plugin (configured in `vite.config.ts`) and `wrangler.jsonc`
+(deploy target `golf-app`, with a `golf-app-dev` environment for `--env dev`):
 
-1. Install Wrangler: `npm install -g wrangler`
-2. Authenticate: `wrangler login`
-3. Deploy: `npx wrangler deploy`
+1. Authenticate: `pnpm exec wrangler login`
+2. Deploy: `pnpm run deploy:prod` (or `pnpm run deploy:dev` for the dev environment)
 
 For production env vars, run `wrangler secret put MY_VAR` for each secret listed in `.env.example`. Public (non-secret) vars go in `wrangler.jsonc` under `vars`.
 
@@ -71,7 +79,7 @@ KV, D1, R2, and Durable Object bindings are configured in `wrangler.jsonc` — s
    ```bash
    VITE_CLERK_PUBLISHABLE_KEY=pk_test_...
    ```
-4. Visit the demo route at `/demo/clerk` once `npm run dev` is running
+4. Visit the demo route at `/demo/clerk` once `pnpm dev` is running
 
 ### What's wired up
 
@@ -111,8 +119,12 @@ For server-side checks (route loaders, server functions), see the Clerk docs on 
 
 ## Setting up Convex
 
-- Set the `VITE_CONVEX_URL` and `CONVEX_DEPLOYMENT` environment variables in your `.env.local`. (Or run `npx -y convex init` to set them automatically.)
-- Run `npx -y convex dev` to start the Convex server.
+- Set the `VITE_CONVEX_URL` and `CONVEX_DEPLOYMENT` environment variables in your `.env.local`. (Or run `pnpm exec convex init` to set them automatically.)
+- Run `pnpm exec convex dev` to start the Convex server (or `pnpm run dev:watch` to run it alongside Vite).
+- Clerk auth is bridged into Convex via `convex/auth.config.ts`, which reads
+  `CLERK_JWT_ISSUER_DOMAIN` — a **Convex deployment** env var, not a `.env.local` one.
+  Set it with `pnpm exec convex env set CLERK_JWT_ISSUER_DOMAIN <clerk-frontend-api-url>`
+  (find the value in Clerk Dashboard → JWT Templates → the `convex` template).
 
 
 ## Shadcn
