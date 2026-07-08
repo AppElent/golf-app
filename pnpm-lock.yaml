@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@appelent/auth':
+        specifier: ^0.1.0
+        version: 0.1.0(@clerk/clerk-react@5.61.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
       '@clerk/clerk-react':
         specifier: ^5.61.3
         version: 5.61.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
@@ -140,6 +143,13 @@ packages:
 
   '@acemir/cssom@0.9.31':
     resolution: {integrity: sha512-ZnR3GSaH+/vJ0YlHau21FjfLYjMpYVIzTD8M8vIEQvIGxeOXyXdzCI140rrCY862p/C/BbzWsjc1dgnM9mkoTA==}
+
+  '@appelent/auth@0.1.0':
+    resolution: {integrity: sha512-lS514JJMk6j6v52++ub02d/a0khkI2w/qAWwdMY+Ep75+RzQ1ila8bdOF0ywndjNdN9rTjjvBmNt02N+K7dWUQ==, tarball: https://npm.pkg.github.com/download/@appelent/auth/0.1.0/652ecb72fe234ca5430a85de3262c4be54c69b6c}
+    peerDependencies:
+      '@clerk/clerk-react': ^5.61.0
+      react: ^19.0.0
+      react-dom: ^19.0.0
 
   '@asamuzakjp/css-color@5.1.11':
     resolution: {integrity: sha512-KVw6qIiCTUQhByfTd78h2yD1/00waTmm9uy/R7Ck/ctUyAPj+AEDLkQIdJW0T8+qGgj3j5bpNKK7Q3G+LedJWg==}
@@ -3033,6 +3043,11 @@ packages:
     peerDependencies:
       react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
 
+  lucide-react@1.23.0:
+    resolution: {integrity: sha512-38BpJcD0JhFosxHApP/BYsBetLpQFRoTRzEzstM/XCc3jsAG7wqaY1lgVwxiUe3xqYE+lNxo2PkCmYwXWrwwIw==}
+    peerDependencies:
+      react: ^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0
+
   lz-string@1.5.0:
     resolution: {integrity: sha512-h5bgJWpxJNswbU7qCrV0tIKQCaS3blPDrqKWx+QxzuzL1zGUzij9XCWLrSLsJPu5t+eWA/ycetzYAO5IOMcWAQ==}
     hasBin: true
@@ -3754,6 +3769,15 @@ packages:
 snapshots:
 
   '@acemir/cssom@0.9.31': {}
+
+  '@appelent/auth@0.1.0(@clerk/clerk-react@5.61.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7))(react-dom@19.2.7(react@19.2.7))(react@19.2.7)':
+    dependencies:
+      '@clerk/clerk-react': 5.61.3(react-dom@19.2.7(react@19.2.7))(react@19.2.7)
+      clsx: 2.1.1
+      lucide-react: 1.23.0(react@19.2.7)
+      react: 19.2.7
+      react-dom: 19.2.7(react@19.2.7)
+      tailwind-merge: 3.6.0
 
   '@asamuzakjp/css-color@5.1.11':
     dependencies:
@@ -6454,6 +6478,10 @@ snapshots:
       yallist: 3.1.1
 
   lucide-react@0.577.0(react@19.2.7):
+    dependencies:
+      react: 19.2.7
+
+  lucide-react@1.23.0(react@19.2.7):
     dependencies:
       react: 19.2.7
 
