@@ -7,6 +7,7 @@ import {
 	Scripts,
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import BottomNav from "../components/BottomNav";
 import ClerkProvider from "../integrations/clerk/provider";
 import ConvexProvider from "../integrations/convex/provider";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
@@ -19,23 +20,14 @@ interface MyRouterContext {
 export const Route = createRootRouteWithContext<MyRouterContext>()({
 	head: () => ({
 		meta: [
-			{
-				charSet: "utf-8",
-			},
+			{ charSet: "utf-8" },
 			{
 				name: "viewport",
-				content: "width=device-width, initial-scale=1",
+				content: "width=device-width, initial-scale=1, viewport-fit=cover",
 			},
-			{
-				title: "TanStack Start Starter",
-			},
+			{ title: "Fairway · Golf Companion" },
 		],
-		links: [
-			{
-				rel: "stylesheet",
-				href: appCss,
-			},
-		],
+		links: [{ rel: "stylesheet", href: appCss }],
 	}),
 	shellComponent: RootDocument,
 });
@@ -48,14 +40,15 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
 				<HeadContent />
 			</head>
-			<body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
+			<body className="bg-[#233028] font-sans antialiased">
 				<ClerkProvider>
 					<ConvexProvider>
-						{children}
+						<div className="relative mx-auto min-h-dvh w-full max-w-[430px] bg-cream shadow-2xl">
+							{children}
+						</div>
+						<BottomNav />
 						<TanStackDevtools
-							config={{
-								position: "bottom-right",
-							}}
+							config={{ position: "bottom-right" }}
 							plugins={[
 								{
 									name: "Tanstack Router",
