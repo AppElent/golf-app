@@ -1,10 +1,41 @@
-@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700&family=Manrope:wght@400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 @plugin '@tailwindcss/typography';
 
 @import 'tw-animate-css';
 
 @custom-variant dark (&:is(.dark *));
+
+/* ── Fairway design tokens (spec §3) ─────────────────────────── */
+@theme {
+	/* surfaces & lines */
+	--color-cream: #f3efe4;
+	--color-cream-line: #efe9da;
+	--color-card-line: #e9e2d2;
+	/* greens */
+	--color-pine: #0f3d2a;
+	--color-pine-light: #144d34;
+	--color-fern: #1c6b45;
+	--color-live: #2e9e63;
+	--color-mint: #7fe0a6;
+	--color-mint-soft: #9fc7ae;
+	/* accents & ink */
+	--color-flag: #e0532f;
+	--color-ink: #16241c;
+	--color-moss: #5e6e64;
+	--color-stone: #8a968d;
+	--color-sand: #eadfb8;
+	--color-water: #8fbfd0;
+	/* map layers (used by the Play plan) */
+	--color-map-rough: #8fa86b;
+	--color-map-semi: #a9c07e;
+	--color-map-fairway: #c6da9c;
+	--color-map-green: #6fc188;
+	--color-map-green-edge: #4fa76c;
+	/* type */
+	--font-sans: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
+	--font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+}
 
 :root {
   --sea-ink: #173a40;
