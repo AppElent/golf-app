@@ -17,7 +17,7 @@ const tabs = [
 
 export default function BottomNav() {
 	return (
-		<nav className="fixed inset-x-0 bottom-0 z-30 mx-auto flex h-[86px] w-full max-w-[430px] items-start border-t border-card-line bg-white/90 px-2 pt-3 backdrop-blur-md">
+		<nav className="fixed inset-x-0 bottom-0 z-30 mx-auto flex min-h-[86px] w-full max-w-[430px] items-start border-t border-card-line bg-white/90 px-2 pt-3 pb-[env(safe-area-inset-bottom)] backdrop-blur-md">
 			{tabs.map(({ to, label, icon: Icon }) => (
 				<Link
 					key={to}
