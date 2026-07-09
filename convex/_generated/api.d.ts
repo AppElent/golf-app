@@ -8,7 +8,7 @@
  * @module
  */
 
-import type * as todos from "../todos.js";
+import type * as courses from "../courses.js";
 
 import type {
   ApiFromModules,
@@ -17,7 +17,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  todos: typeof todos;
+  courses: typeof courses;
 }>;
 
 /**
