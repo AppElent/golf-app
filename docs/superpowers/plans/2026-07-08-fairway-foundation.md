@@ -650,7 +650,8 @@ export function strokesReceived(
 	const plus = Math.abs(playingHandicap);
 	const base = Math.floor(plus / 18);
 	const extra = strokeIndex > 18 - (plus % 18) ? 1 : 0;
-	return -(base + extra);
+	const total = base + extra;
+	return total === 0 ? 0 : -total; // avoid returning -0 (fails toBe(0))
 }
 
 /** null strokes = hole not played / picked up → 0 points. */
