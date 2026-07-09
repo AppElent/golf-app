@@ -1,5 +1,12 @@
 import { v } from "convex/values";
-import { mutation, query } from "./_generated/server";
+import { normalizeCourse } from "../src/domain/osm";
+import { internal } from "./_generated/api";
+import {
+	action,
+	internalMutation,
+	mutation,
+	query,
+} from "./_generated/server";
 
 /** All courses, name-sorted, for the picker/list. */
 export const list = query({
@@ -96,5 +103,111 @@ export const upsertHole = mutation({
 	},
 	handler: async (ctx, { holeId, par, strokeIndex }) => {
 		await ctx.db.patch(holeId, { par, strokeIndex });
+	},
+});
+
+const latLng = v.object({ lat: v.number(), lng: v.number() });
+const polygon = v.array(latLng);
+
+/**
+ * Replace a course's holes + geometry from a normalized import. Wipes existing
+ * holes/geometry first so re-imports are idempotent. Internal — only the import
+ * action calls it.
+ */
+export const storeImport = internalMutation({
+	args: {
+		courseId: v.id("courses"),
+		holes: v.array(
+			v.object({
+				number: v.number(),
+				ref: v.string(),
+				par: v.union(v.number(), v.null()),
+				strokeIndex: v.union(v.number(), v.null()),
+				lengthMeters: v.number(),
+			}),
+		),
+		geometry: v.array(
+			v.object({
+				ref: v.string(),
+				holeNumber: v.number(),
+				holeLine: polygon,
+				fairways: v.array(polygon),
+				greens: v.array(polygon),
+				bunkers: v.array(polygon),
+				tees: v.array(polygon),
+				water: v.array(polygon),
+			}),
+		),
+	},
+	handler: async (ctx, { courseId, holes, geometry }) => {
+		const oldHoles = await ctx.db
+			.query("holes")
+			.withIndex("by_course", (q) => q.eq("courseId", courseId))
+			.collect();
+		const oldGeometry = await ctx.db
+			.query("holeGeometry")
+			.withIndex("by_course", (q) => q.eq("courseId", courseId))
+			.collect();
+		await Promise.all(
+			[...oldHoles, ...oldGeometry].map((doc) => ctx.db.delete(doc._id)),
+		);
+
+		await Promise.all(
+			holes.map((h) =>
+				ctx.db.insert("holes", {
+					courseId,
+					number: h.number,
+					ref: h.ref,
+					par: h.par ?? undefined,
+					strokeIndex: h.strokeIndex ?? undefined,
+					lengthMeters: h.lengthMeters,
+				}),
+			),
+		);
+		await Promise.all(
+			geometry.map((g) => ctx.db.insert("holeGeometry", { courseId, ...g })),
+		);
+
+		const complete = holes.every(
+			(h) => h.par !== null && h.strokeIndex !== null,
+		);
+		await ctx.db.patch(courseId, {
+			importStatus: complete ? "imported" : "partial",
+		});
+	},
+});
+
+/** Fetch a course's geometry from Overpass and store it. Re-runnable. */
+export const importFromOsm = action({
+	args: { courseId: v.id("courses"), osmRelationId: v.number() },
+	handler: async (ctx, { courseId, osmRelationId }) => {
+		const q = `[out:json][timeout:90];rel(${osmRelationId});map_to_area->.a;(way(area.a)[golf];);out geom tags;`;
+		const res = await fetch("https://overpass-api.de/api/interpreter", {
+			method: "POST",
+			headers: {
+				"Content-Type": "application/x-www-form-urlencoded",
+				"User-Agent": "golf-app/0.1",
+			},
+			body: `data=${encodeURIComponent(q)}`,
+		});
+		if (!res.ok) {
+			throw new Error(`Overpass request failed: HTTP ${res.status}`);
+		}
+		const data = (await res.json()) as { elements: unknown[] };
+		const normalized = normalizeCourse(
+			data.elements as Parameters<typeof normalizeCourse>[0],
+		);
+		await ctx.runMutation(internal.courses.storeImport, {
+			courseId,
+			holes: normalized.holes.map((h) => ({
+				number: h.number,
+				ref: h.ref,
+				par: h.par,
+				strokeIndex: h.strokeIndex,
+				lengthMeters: h.lengthMeters,
+			})),
+			geometry: normalized.geometry,
+		});
+		return { holes: normalized.holes.length };
 	},
 });
