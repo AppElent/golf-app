@@ -9,6 +9,7 @@
  */
 
 import type * as courses from "../courses.js";
+import type * as seed from "../seed.js";
 
 import type {
   ApiFromModules,
@@ -18,6 +19,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   courses: typeof courses;
+  seed: typeof seed;
 }>;
 
 /**
