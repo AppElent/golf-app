@@ -41,6 +41,9 @@ export default defineSchema({
 
 	holeGeometry: defineTable({
 		courseId: v.id("courses"),
+		// Unique per physical hole (distinguishes loops that reuse a number,
+		// e.g. Welderen's "1" and "(1)"). holeNumber is kept for display/sort.
+		ref: v.string(),
 		holeNumber: v.number(),
 		holeLine: v.optional(polygon),
 		fairways: v.array(polygon),
