@@ -34,7 +34,7 @@ function HomeScreen() {
 			</section>
 
 			<Link
-				to="/play"
+				to="/rounds/new"
 				className="mt-4 flex items-center justify-between rounded-[22px] bg-flag px-6 py-4 shadow-[0_14px_30px_-16px_rgba(224,83,47,0.9)]"
 			>
 				<span>
@@ -42,7 +42,7 @@ function HomeScreen() {
 						Start a round
 					</span>
 					<span className="block text-[13px] text-white/80">
-						Course setup coming soon
+						Pick a course and tee off
 					</span>
 				</span>
 				<span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/18 text-white">
