@@ -73,8 +73,8 @@ export default defineSchema({
 		userId: v.string(),
 		courseId: v.id("courses"),
 		teeId: v.id("tees"),
-		loop: v.optional(v.string()),
-		holeNumbers: v.array(v.number()),
+		loopLabel: v.optional(v.string()),
+		holeRefs: v.array(v.string()),
 		startedAt: v.number(),
 		format: v.union(v.literal("stroke"), v.literal("stableford")),
 		status: v.union(v.literal("active"), v.literal("finished")),
@@ -85,7 +85,7 @@ export default defineSchema({
 				playingHandicap: v.optional(v.number()),
 			}),
 		),
-		currentHole: v.optional(v.number()),
+		currentHoleIndex: v.optional(v.number()),
 		totals: v.optional(
 			v.array(
 				v.object({
@@ -99,7 +99,8 @@ export default defineSchema({
 
 	holeScores: defineTable({
 		roundId: v.id("rounds"),
-		holeNumber: v.number(),
+		// 0-based position in the round's holeRefs (display number = index + 1).
+		holeIndex: v.number(),
 		playerIndex: v.number(),
 		strokes: v.optional(v.number()),
 		putts: v.optional(v.number()),
@@ -109,5 +110,5 @@ export default defineSchema({
 		nr: v.optional(v.boolean()),
 	})
 		.index("by_round", ["roundId"])
-		.index("by_round_hole_player", ["roundId", "holeNumber", "playerIndex"]),
+		.index("by_round_hole_player", ["roundId", "holeIndex", "playerIndex"]),
 });
