@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
 	formatVsPar,
+	scoreMark,
+	splitTotals,
 	stablefordPoints,
 	strokesReceived,
 	totalStrokes,
@@ -72,5 +74,29 @@ describe("totals", () => {
 		expect(formatVsPar(0)).toBe("E");
 		expect(formatVsPar(3)).toBe("+3");
 		expect(formatVsPar(-2)).toBe("-2");
+	});
+});
+
+describe("scoreMark", () => {
+	it("classifies against par", () => {
+		expect(scoreMark(4, 2)).toBe("eagle");
+		expect(scoreMark(4, 3)).toBe("birdie");
+		expect(scoreMark(4, 4)).toBe("par");
+		expect(scoreMark(4, 5)).toBe("bogey");
+		expect(scoreMark(4, 6)).toBe("double");
+		expect(scoreMark(4, 9)).toBe("double");
+	});
+	it("returns null when strokes are missing", () => {
+		expect(scoreMark(4, null)).toBeNull();
+	});
+});
+
+describe("splitTotals", () => {
+	it("sums 18 holes into Out/In nines", () => {
+		const strokes = [4, 5, 3, 4, 4, 5, 4, 3, 5, 4, 4, 6, 3, 5, 4, 4, 5, 4];
+		expect(splitTotals(strokes, 9)).toEqual([37, 39]);
+	});
+	it("treats null (unplayed) as 0 and handles 9-hole rounds", () => {
+		expect(splitTotals([4, null, 5], 9)).toEqual([9]);
 	});
 });

@@ -54,3 +54,31 @@ export function formatVsPar(diff: number): string {
 	if (diff === 0) return "E";
 	return diff > 0 ? `+${diff}` : `${diff}`;
 }
+
+export type ScoreMark = "eagle" | "birdie" | "par" | "bogey" | "double";
+
+/** Classic scorecard notation class for a hole result (spec §3). */
+export function scoreMark(
+	par: number,
+	strokes: number | null,
+): ScoreMark | null {
+	if (strokes === null) return null;
+	const diff = strokes - par;
+	if (diff <= -2) return "eagle";
+	if (diff === -1) return "birdie";
+	if (diff === 0) return "par";
+	if (diff === 1) return "bogey";
+	return "double";
+}
+
+/** Chunk stroke totals (Out/In nines). Nulls count 0; trailing partial chunk kept. */
+export function splitTotals(
+	strokes: ReadonlyArray<number | null>,
+	size: number,
+): number[] {
+	const totals: number[] = [];
+	for (let i = 0; i < strokes.length; i += size) {
+		totals.push(totalStrokes(strokes.slice(i, i + size)));
+	}
+	return totals;
+}
