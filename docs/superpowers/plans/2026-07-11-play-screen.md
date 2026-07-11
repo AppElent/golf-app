@@ -1439,14 +1439,14 @@ Run: `git log --oneline` over the plan range + `git status`; confirm no `.env*`,
 1. **Spec §6 style layers:** rough gradient · semi-rough (via rough radial) · fairway mow stripes (~10°) + edge · tree canopies (optional, 3 tones, shadow) · water gradient + edge (+ripples: add in polish) · bunkers sand+edge · green fringe ring + radial + flag with shadow — all present in `GroundLayer` ✓ (ripple arcs flagged for the polish pass).
 2. **Spec §6 info layer:** distance arcs every 50 m · ladder BACK/CENTER/FRONT (center highlighted) + hazard carries · shot line you→aim→green with split badges (dark below / white above) · club chip · tap-to-measure · you-are-here + accuracy halo — all in `InfoOverlay`/`HoleMap` ✓.
 3. **Spec §6 variants:** Rings (100/150/200) + Big numbers (112 px) ✓.
-4. **Spec §5/§8 GPS:** watchPosition · tee fallback · poor-accuracy halo never hides the number · auto-advance — **auto-advance corridor detection is NOT built in this plan** (position-enters-corridor suggestion). Decide: include a minimal dismissible auto-advance, or defer to the field-test plan. If deferring, note it here and in §Known deferrals.
+4. **Spec §5/§8 GPS:** watchPosition · tee fallback · poor-accuracy halo never hides the number ✓. **Auto-advance corridor detection is NOT built in this plan** — deferred to the Welderen field-test plan (Plan 6/8): tuning a "you've entered the next hole's corridor" threshold needs real GPS noise to validate against, and this plan's QA only had mocked positions to test with. Building it now risks a wrong threshold that has to be re-tuned anyway once real field data is available.
 5. **Layer-agnostic:** `GroundLayer` + `InfoOverlay` both take a `Projector`; a satellite tile can slide under `GroundLayer` in v2 ✓.
 6. **Type consistency:** `HoleShapes`/`Projector`/`Point`/`MapVariant` identical across projection, GroundLayer, InfoOverlay, HoleMap, play route ✓.
 7. **No placeholders / no secrets** ✓.
 
 ## Known deferrals (carried forward)
 
-- **Auto-advance to the next hole** (position-enters-corridor, dismissible) — build a minimal version here or defer to the Welderen field-test plan (Plan 6/8). Decide during execution; do not silently drop.
+- **Auto-advance to the next hole** (position-enters-corridor, dismissible) — decided during execution: deferred to the Welderen field-test plan (Plan 6/8), see self-review item 4 above.
 - **Water ripple arcs & richer tree clustering** — first-pass GroundLayer is clean but not fully comp-polished; refine in the code-quality review and the field-test polish list.
 - **Tree canopies** need a `natural=wood`/`tree` Overpass import pass (Plan 2 deferral); `GroundLayer` renders them for free once `geometry.trees` is populated.
 - **m/yd toggle** — meters hardcoded; the `formatDistance` seam + Profile toggle land in Plan 6.
