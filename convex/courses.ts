@@ -106,6 +106,21 @@ export const upsertHole = mutation({
 	},
 });
 
+/** Delete a course and all its tees, holes, and geometry. */
+export const remove = mutation({
+	args: { courseId: v.id("courses") },
+	handler: async (ctx, { courseId }) => {
+		for (const table of ["tees", "holes", "holeGeometry"] as const) {
+			const docs = await ctx.db
+				.query(table)
+				.withIndex("by_course", (q) => q.eq("courseId", courseId))
+				.collect();
+			await Promise.all(docs.map((doc) => ctx.db.delete(doc._id)));
+		}
+		await ctx.db.delete(courseId);
+	},
+});
+
 const latLng = v.object({ lat: v.number(), lng: v.number() });
 const polygon = v.array(latLng);
 
