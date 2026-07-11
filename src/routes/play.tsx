@@ -93,11 +93,13 @@ function PlayInner({
 	const greenCenter = shapes?.greens[0] ? centroid(shapes.greens[0]) : null;
 
 	const [aim, setAim] = useState<LatLng | null>(null);
-	// Reset aim to green center when the hole changes.
-	// biome-ignore lint/correctness/useExhaustiveDependencies: reset aim only on hole change
+	// Reset aim to green center when the hole changes, or once geometry finishes
+	// loading and a green center first becomes available (courses.get resolves
+	// after this component mounts, so ref alone doesn't cover that transition).
+	// biome-ignore lint/correctness/useExhaustiveDependencies: only re-run on hole change or green center arriving
 	useEffect(() => {
-		setAim(greenCenter);
-	}, [ref]);
+		if (greenCenter) setAim(greenCenter);
+	}, [ref, greenCenter?.lat, greenCenter?.lng]);
 
 	const distances =
 		position && shapes && shapes.greens[0]
