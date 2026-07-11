@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as clubs from "../clubs.js";
 import type * as courses from "../courses.js";
 import type * as lib from "../lib.js";
 import type * as rounds from "../rounds.js";
@@ -20,6 +21,7 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  clubs: typeof clubs;
   courses: typeof courses;
   lib: typeof lib;
   rounds: typeof rounds;
