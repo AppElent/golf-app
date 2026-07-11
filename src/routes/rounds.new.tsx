@@ -1,7 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { Minus, Plus, TriangleAlert } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { playingHandicap } from "../domain/handicap";
@@ -16,10 +16,49 @@ interface GuestDraft {
 }
 
 function RoundSetup() {
-	const navigate = useNavigate();
 	const courses = useQuery(api.courses.list);
 	const [courseId, setCourseId] = useState<Id<"courses"> | null>(null);
-	const detail = useQuery(api.courses.get, courseId ? { courseId } : "skip");
+
+	return (
+		<main className="px-5 pt-16 pb-[110px]">
+			<h1 className="font-display text-2xl font-bold tracking-tight text-ink">
+				New round
+			</h1>
+
+			{/* Course */}
+			<Section title="Course">
+				<div className="flex flex-col gap-2">
+					{(courses ?? []).map((c) => (
+						<button
+							type="button"
+							key={c._id}
+							onClick={() => setCourseId(c._id)}
+							className={`rounded-xl border px-4 py-3 text-left font-display text-[15px] font-semibold ${
+								courseId === c._id
+									? "border-live bg-live/10 text-ink"
+									: "border-card-line bg-white/60 text-ink"
+							}`}
+						>
+							{c.name}
+							{c.city ? (
+								<span className="block text-[12px] font-normal text-moss">
+									{c.city}
+								</span>
+							) : null}
+						</button>
+					))}
+				</div>
+			</Section>
+
+			{/* Config remounts per course (fresh loop/player state, active query) */}
+			{courseId ? <CourseConfig key={courseId} courseId={courseId} /> : null}
+		</main>
+	);
+}
+
+function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
+	const navigate = useNavigate();
+	const detail = useQuery(api.courses.get, { courseId });
 	const start = useMutation(api.rounds.start);
 
 	const [loopIdxs, setLoopIdxs] = useState<number[]>([]); // 1 or 2 picks, dup ok
@@ -28,20 +67,21 @@ function RoundSetup() {
 	const [format, setFormat] = useState<"stroke" | "stableford">("stableford");
 	const [error, setError] = useState<string | null>(null);
 
-	const loops = useMemo(
-		() =>
-			detail
-				? detectLoops(
-						detail.holes.flatMap((h) =>
-							h.ref !== undefined ? [{ ref: h.ref, number: h.number }] : [],
-						),
-					)
-				: [],
-		[detail],
+	if (detail === undefined) {
+		return <p className="mt-6 text-[13px] text-stone">Loading course…</p>;
+	}
+	if (detail === null) {
+		return <p className="mt-6 text-[13px] text-flag">Course not found.</p>;
+	}
+
+	const loops = detectLoops(
+		detail.holes.flatMap((h) =>
+			h.ref !== undefined ? [{ ref: h.ref, number: h.number }] : [],
+		),
 	);
 
 	const holeRefs = loopIdxs.flatMap((i) => loops[i]?.refs ?? []);
-	const byRef = new Map((detail?.holes ?? []).map((h) => [h.ref, h]));
+	const byRef = new Map(detail.holes.map((h) => [h.ref, h]));
 	const incomplete = holeRefs.filter((ref) => {
 		const h = byRef.get(ref);
 		return !h || h.par === undefined || h.strokeIndex === undefined;
@@ -50,7 +90,7 @@ function RoundSetup() {
 		(sum, ref) => sum + (byRef.get(ref)?.par ?? 0),
 		0,
 	);
-	const tee = detail?.tees[0];
+	const tee = detail.tees[0];
 
 	const phFor = (hi: string): number | undefined => {
 		const n = Number.parseFloat(hi);
@@ -58,11 +98,10 @@ function RoundSetup() {
 		return playingHandicap(n, tee.slopeRating, tee.courseRating, parTotal);
 	};
 
-	const canStart =
-		courseId && tee && holeRefs.length > 0 && incomplete.length === 0;
+	const canStart = tee && holeRefs.length > 0 && incomplete.length === 0;
 
 	async function onStart() {
-		if (!courseId || !tee) return;
+		if (!tee) return;
 		setError(null);
 		try {
 			await start({
@@ -93,41 +132,9 @@ function RoundSetup() {
 	}
 
 	return (
-		<main className="px-5 pt-16 pb-[110px]">
-			<h1 className="font-display text-2xl font-bold tracking-tight text-ink">
-				New round
-			</h1>
-
-			{/* Course */}
-			<Section title="Course">
-				<div className="flex flex-col gap-2">
-					{(courses ?? []).map((c) => (
-						<button
-							type="button"
-							key={c._id}
-							onClick={() => {
-								setCourseId(c._id);
-								setLoopIdxs([]);
-							}}
-							className={`rounded-xl border px-4 py-3 text-left font-display text-[15px] font-semibold ${
-								courseId === c._id
-									? "border-live bg-live/10 text-ink"
-									: "border-card-line bg-white/60 text-ink"
-							}`}
-						>
-							{c.name}
-							{c.city ? (
-								<span className="block text-[12px] font-normal text-moss">
-									{c.city}
-								</span>
-							) : null}
-						</button>
-					))}
-				</div>
-			</Section>
-
+		<>
 			{/* Loops */}
-			{courseId && loops.length > 0 ? (
+			{loops.length > 0 ? (
 				<Section
 					title="Holes"
 					hint="Pick one loop for 9, two for 18 (same loop twice is fine)."
@@ -165,7 +172,7 @@ function RoundSetup() {
 							{holeRefs.length} holes · par {parTotal}
 						</p>
 					) : null}
-					{incomplete.length > 0 && courseId ? (
+					{incomplete.length > 0 ? (
 						<p className="mt-2 flex items-start gap-1.5 text-[12px] text-flag">
 							<TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
 							<span>
@@ -279,7 +286,7 @@ function RoundSetup() {
 			>
 				Start round
 			</button>
-		</main>
+		</>
 	);
 }
 
