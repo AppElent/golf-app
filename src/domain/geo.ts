@@ -42,15 +42,30 @@ export function polygonCentroid(points: ReadonlyArray<LatLng>): LatLng {
 	return { lat, lng };
 }
 
+/**
+ * Green front / center / back as distances from `position`, measured along the
+ * player→green-center axis (spec §6: polygon extremes along the axis). Front is
+ * the nearest edge along that line, back the farthest; center is the centroid.
+ */
 export function distancesToGreen(
 	position: LatLng,
 	green: ReadonlyArray<LatLng>,
 ): { front: number; center: number; back: number } {
-	const vertexDistances = green.map((p) => haversineMeters(position, p));
+	const center = polygonCentroid(green);
+	const centerLocal = projectToLocal(position, center);
+	const axisLen = Math.hypot(centerLocal.x, centerLocal.y) || 1;
+	// Unit vector position→center in local meters.
+	const ux = centerLocal.x / axisLen;
+	const uy = centerLocal.y / axisLen;
+	// Signed distance of each vertex along the axis from `position`.
+	const along = green.map((p) => {
+		const l = projectToLocal(position, p);
+		return l.x * ux + l.y * uy;
+	});
 	return {
-		front: Math.min(...vertexDistances),
-		center: haversineMeters(position, polygonCentroid(green)),
-		back: Math.max(...vertexDistances),
+		front: Math.min(...along),
+		center: haversineMeters(position, center),
+		back: Math.max(...along),
 	};
 }
 

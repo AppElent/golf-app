@@ -65,6 +65,22 @@ describe("distancesToGreen", () => {
 		expect(d.center).toBeCloseTo(111.2, 0);
 		expect(d.back).toBeCloseTo(122.3, 0);
 	});
+
+	it("projects onto the player→center axis (a wide side vertex is not 'front')", () => {
+		// Player south of a green centered ~111 m north; green is wide east–west.
+		// A side vertex is closer as a raw vertex, but front/back are along the axis.
+		const playerSouth = { lat: 0, lng: 0 };
+		const wideGreen = [
+			{ lat: 0.00095, lng: -0.0003 }, // near-left
+			{ lat: 0.00105, lng: 0.0003 }, // far-right
+			{ lat: 0.001, lng: 0 }, // center-ish
+		];
+		const d = distancesToGreen(playerSouth, wideGreen);
+		expect(d.center).toBeCloseTo(111.2, 0);
+		expect(d.front).toBeLessThan(d.center);
+		expect(d.back).toBeGreaterThan(d.center);
+		expect(d.back - d.front).toBeLessThan(30);
+	});
 });
 
 describe("carryDistances", () => {
