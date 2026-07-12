@@ -13,6 +13,7 @@ import type * as courses from "../courses.js";
 import type * as lib from "../lib.js";
 import type * as rounds from "../rounds.js";
 import type * as seed from "../seed.js";
+import type * as settings from "../settings.js";
 
 import type {
   ApiFromModules,
@@ -26,6 +27,7 @@ declare const fullApi: ApiFromModules<{
   lib: typeof lib;
   rounds: typeof rounds;
   seed: typeof seed;
+  settings: typeof settings;
 }>;
 
 /**
