@@ -119,6 +119,44 @@ interface CourseHoles {
 	pars: number[];
 }
 
+const DEFAULT_PAR = 4;
+
+/**
+ * Fill any hole missing par/stroke-index so the dummy round doesn't depend on
+ * live OSM tag completeness — that's a real editor-completion concern for
+ * actual imports (spec §8), but this seed exists to always produce a
+ * demo-able round regardless of what the live Overpass data looks like on
+ * any given preview redeploy.
+ */
+async function ensureCompleteHoles(
+	ctx: ActionCtx,
+	holes: ReadonlyArray<{
+		_id: Id<"holes">;
+		par?: number;
+		strokeIndex?: number;
+	}>,
+): Promise<void> {
+	const usedStrokeIndexes = new Set(
+		holes
+			.map((h) => h.strokeIndex)
+			.filter((si): si is number => si !== undefined),
+	);
+	let candidate = 1;
+	const nextFreeStrokeIndex = (): number => {
+		while (usedStrokeIndexes.has(candidate)) candidate++;
+		usedStrokeIndexes.add(candidate);
+		return candidate;
+	};
+	for (const h of holes) {
+		if (h.par !== undefined && h.strokeIndex !== undefined) continue;
+		await ctx.runMutation(api.courses.upsertHole, {
+			holeId: h._id,
+			par: h.par ?? DEFAULT_PAR,
+			strokeIndex: h.strokeIndex ?? nextFreeStrokeIndex(),
+		});
+	}
+}
+
 async function loadCourseHoles(
 	ctx: ActionCtx,
 	courseName: string,
@@ -136,11 +174,12 @@ async function loadCourseHoles(
 	if (holeRefs.some((r) => r === undefined) || holeRefs.length === 0) {
 		throw new Error(`Course "${courseName}" is missing hole refs.`);
 	}
+	await ensureCompleteHoles(ctx, detail.holes);
 	return {
 		courseId: course._id,
 		teeId: detail.tees[0]._id,
 		holeRefs: holeRefs as string[],
-		pars: detail.holes.map((h) => h.par ?? 4),
+		pars: detail.holes.map((h) => h.par ?? DEFAULT_PAR),
 	};
 }
 
@@ -225,7 +264,9 @@ export const seedDummyData = action({
 			handicapIndex: DUMMY_HANDICAP_INDEX,
 			units: "m",
 		});
+		const existingClubs = await ctx.runQuery(api.clubs.list, {});
 		for (const club of DUMMY_CLUBS) {
+			if (existingClubs.some((c) => c.name === club.name)) continue;
 			await ctx.runMutation(api.clubs.create, club);
 		}
 
