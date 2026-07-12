@@ -25,9 +25,14 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 				name: "viewport",
 				content: "width=device-width, initial-scale=1, viewport-fit=cover",
 			},
+			{ name: "theme-color", content: "#0F3D2A" },
 			{ title: "Fairway · Golf Companion" },
 		],
-		links: [{ rel: "stylesheet", href: appCss }],
+		links: [
+			{ rel: "stylesheet", href: appCss },
+			{ rel: "manifest", href: "/manifest.json" },
+			{ rel: "apple-touch-icon", href: "/logo192.png" },
+		],
 	}),
 	shellComponent: RootDocument,
 });
