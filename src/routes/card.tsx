@@ -3,6 +3,7 @@ import { useMutation, useQuery } from "convex/react";
 import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
 import { api } from "../../convex/_generated/api";
+import { SyncPill } from "../components/SyncPill";
 import {
 	formatVsPar,
 	type ScoreMark,
@@ -12,13 +13,17 @@ import {
 	totalStrokes,
 	vsPar,
 } from "../domain/scoring";
+import { useOnlineStatus } from "../hooks/useOnlineStatus";
+import { keyFor } from "../offline/scoreQueue";
+import { useScoreSync } from "../offline/useScoreSync";
 
 export const Route = createFileRoute("/card")({ component: CardScreen });
 
 function CardScreen() {
 	const data = useQuery(api.rounds.active);
 	const navigate = useNavigate();
-	const setScore = useMutation(api.rounds.setScore);
+	const { submit, pending, pendingCount, syncing } = useScoreSync();
+	const online = useOnlineStatus();
 	const finish = useMutation(api.rounds.finish);
 	const abandon = useMutation(api.rounds.abandon);
 	const [selected, setSelected] = useState(0);
@@ -60,8 +65,14 @@ function CardScreen() {
 		return { player: p, index, key: `${p.name}#${n}` };
 	});
 
-	const scoreOf = (holeIndex: number, pIdx: number) =>
-		scores.find((s) => s.holeIndex === holeIndex && s.playerIndex === pIdx);
+	const scoreOf = (holeIndex: number, pIdx: number) => {
+		const server = scores.find(
+			(s) => s.holeIndex === holeIndex && s.playerIndex === pIdx,
+		);
+		const overlay = pending.get(keyFor(round._id, holeIndex, pIdx));
+		if (!server && !overlay) return undefined;
+		return { ...(server ?? {}), ...(overlay ?? {}) };
+	};
 
 	const strokesFor = (pIdx: number): (number | null)[] =>
 		holes.map((_, i) => {
@@ -86,12 +97,19 @@ function CardScreen() {
 	const selHole = holes[selected];
 	const selScore = scoreOf(selected, playerIndex);
 
-	const patch = (fields: Record<string, number | boolean | undefined>) =>
-		setScore({
+	const patch = (fields: {
+		strokes?: number;
+		putts?: number;
+		fir?: boolean;
+		gir?: boolean;
+		penalties?: number;
+		nr?: boolean;
+	}) =>
+		submit({
 			roundId: round._id,
 			holeIndex: selected,
 			playerIndex,
-			...fields,
+			fields,
 		});
 
 	async function onFinish() {
@@ -106,7 +124,14 @@ function CardScreen() {
 				<h1 className="font-display text-2xl font-bold tracking-tight text-ink">
 					{course.name}
 				</h1>
-				<span className="text-[12px] text-moss">{round.loopLabel}</span>
+				<div className="flex flex-col items-end gap-1">
+					<span className="text-[12px] text-moss">{round.loopLabel}</span>
+					<SyncPill
+						online={online}
+						pendingCount={pendingCount}
+						syncing={syncing}
+					/>
+				</div>
 			</header>
 
 			{/* Player switcher (owner + guests) */}
