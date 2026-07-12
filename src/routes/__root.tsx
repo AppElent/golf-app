@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import BottomNav from "../components/BottomNav";
+import { ServiceWorker } from "../components/ServiceWorker";
 import ClerkProvider from "../integrations/clerk/provider";
 import ConvexProvider from "../integrations/convex/provider";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
@@ -52,6 +53,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 							{children}
 						</div>
 						<BottomNav />
+						<ServiceWorker />
 						<TanStackDevtools
 							config={{ position: "bottom-right" }}
 							plugins={[
