@@ -84,3 +84,19 @@ export function wouldBeIndex(
 	const avg = best.reduce((total, d) => total + d, 0) / count;
 	return Math.round((avg + adjustment) * 10) / 10;
 }
+
+/**
+ * Running would-be index after each round, oldest first. Emits one entry per
+ * round once at least three differentials are available (before that WHS has no
+ * index). Nulls are filtered — every entry is a real number for the sparkline.
+ */
+export function wouldBeIndexHistory(
+	differentials: ReadonlyArray<number>,
+): number[] {
+	const history: number[] = [];
+	for (let i = 3; i <= differentials.length; i++) {
+		const index = wouldBeIndex(differentials.slice(0, i));
+		if (index !== null) history.push(index);
+	}
+	return history;
+}

@@ -5,6 +5,7 @@ import {
 	playingHandicap,
 	scoreDifferential,
 	wouldBeIndex,
+	wouldBeIndexHistory,
 } from "./handicap";
 
 describe("courseHandicap / playingHandicap", () => {
@@ -64,5 +65,21 @@ describe("wouldBeIndex", () => {
 		const old = [0, 0, 0, 0, 0];
 		const recent = Array.from({ length: 20 }, (_, i) => i + 1);
 		expect(wouldBeIndex([...old, ...recent])).toBeCloseTo(4.5, 5);
+	});
+});
+
+describe("wouldBeIndexHistory", () => {
+	it("is empty until three differentials exist", () => {
+		expect(wouldBeIndexHistory([])).toEqual([]);
+		expect(wouldBeIndexHistory([10, 12])).toEqual([]);
+	});
+
+	it("emits the running index from the third round on", () => {
+		const history = wouldBeIndexHistory([20, 18, 22, 16]);
+		// One point per round once >= 3 differentials are available.
+		expect(history).toHaveLength(2);
+		// Each entry matches wouldBeIndex over that prefix.
+		expect(history[0]).toBe(wouldBeIndex([20, 18, 22]));
+		expect(history[1]).toBe(wouldBeIndex([20, 18, 22, 16]));
 	});
 });
