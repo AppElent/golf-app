@@ -39,14 +39,16 @@ jobs:
       - run: pnpm install --frozen-lockfile
 
       # Convex provisions/refreshes preview backend pr-<N>, exposes its URL as
-      # $CONVEX_URL inside --cmd, then runs the build (bridging CONVEX_URL ->
-      # VITE_CONVEX_URL since the app reads the Vite-prefixed var at build time).
-      - name: Convex preview deploy + build
+      # $CONVEX_URL inside --cmd, runs the build (bridging CONVEX_URL ->
+      # VITE_CONVEX_URL since the app reads the Vite-prefixed var at build
+      # time), then seeds the fresh backend so the preview isn't empty.
+      - name: Convex preview deploy + build + seed
         run: |
           pnpm exec convex deploy \
             --preview-create pr-${{ github.event.pull_request.number }} \
             --cmd-url-env-var-name CONVEX_URL \
-            --cmd 'VITE_CONVEX_URL=$CONVEX_URL VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY pnpm build'
+            --cmd 'VITE_CONVEX_URL=$CONVEX_URL VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY pnpm build' \
+            --preview-run seedPreview:seedPreview
 
       - name: Deploy Worker (per-PR)
         id: deploy
