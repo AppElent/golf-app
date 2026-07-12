@@ -4,7 +4,7 @@ import {
 	playingHandicap,
 	scoreDifferential,
 } from "../src/domain/handicap";
-import { stablefordPoints, totalStrokes } from "../src/domain/scoring";
+import { stablefordPoints, totalStrokes, vsPar } from "../src/domain/scoring";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
@@ -295,5 +295,109 @@ export const finish = mutation({
 			scoreDifferential: differential,
 		});
 		return { totals, scoreDifferential: differential };
+	},
+});
+
+/**
+ * Finished rounds, newest first, with a computed owner (playerIndex 0) summary.
+ * `limit` defaults to 20 (spec §5 window). Distances/scoring recomputed from
+ * holeScores so rounds finished before this query still get full stats.
+ */
+export const history = query({
+	args: { limit: v.optional(v.number()) },
+	handler: async (ctx, { limit }) => {
+		const userId = await getUserId(ctx);
+		const rounds = await ctx.db
+			.query("rounds")
+			.withIndex("by_user", (q) => q.eq("userId", userId))
+			.filter((q) => q.eq(q.field("status"), "finished"))
+			.collect();
+		rounds.sort((a, b) => b.startedAt - a.startedAt);
+		const recent = rounds.slice(0, limit ?? 20);
+
+		const courseNames = new Map<string, string>();
+
+		const summaries = await Promise.all(
+			recent.map(async (round) => {
+				let courseName = courseNames.get(round.courseId);
+				if (courseName === undefined) {
+					const course = await ctx.db.get(round.courseId);
+					courseName = course?.name ?? "Unknown course";
+					courseNames.set(round.courseId, courseName);
+				}
+
+				const courseHoles = await ctx.db
+					.query("holes")
+					.withIndex("by_course", (q) => q.eq("courseId", round.courseId))
+					.collect();
+				const byRef = new Map(courseHoles.map((h) => [h.ref, h]));
+				const holes = round.holeRefs.map((ref) => {
+					const hole = byRef.get(ref);
+					return {
+						par: hole?.par ?? 0,
+						strokeIndex: hole?.strokeIndex ?? 0,
+						isPar3: (hole?.par ?? 0) === 3,
+					};
+				});
+
+				const scores = await ctx.db
+					.query("holeScores")
+					.withIndex("by_round", (q) => q.eq("roundId", round._id))
+					.collect();
+				const ownerScore = (holeIndex: number) =>
+					scores.find(
+						(s) => s.holeIndex === holeIndex && s.playerIndex === 0,
+					);
+
+				const strokes = holes.map((_, i) => {
+					const s = ownerScore(i);
+					return s?.nr ? null : (s?.strokes ?? null);
+				});
+
+				let putts = 0;
+				let holesWithPutts = 0;
+				let firMade = 0;
+				let firEligible = 0;
+				let girMade = 0;
+				let girHoles = 0;
+				holes.forEach((hole, i) => {
+					const s = ownerScore(i);
+					if (s?.putts !== undefined) {
+						putts += s.putts;
+						holesWithPutts += 1;
+					}
+					if (!hole.isPar3 && s?.fir !== undefined) {
+						firEligible += 1;
+						if (s.fir) firMade += 1;
+					}
+					if (s?.gir !== undefined) {
+						girHoles += 1;
+						if (s.gir) girMade += 1;
+					}
+				});
+
+				return {
+					_id: round._id,
+					startedAt: round.startedAt,
+					courseName,
+					loopLabel: round.loopLabel ?? null,
+					format: round.format,
+					holeCount: round.holeRefs.length,
+					differential: round.scoreDifferential ?? null,
+					owner: {
+						strokes: totalStrokes(strokes),
+						vsPar: vsPar(holes, strokes),
+						putts: holesWithPutts > 0 ? putts : null,
+						holesWithPutts,
+						firMade,
+						firEligible,
+						girMade,
+						girHoles,
+					},
+				};
+			}),
+		);
+
+		return summaries;
 	},
 });
