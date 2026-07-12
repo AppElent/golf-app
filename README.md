@@ -138,16 +138,18 @@ pnpm dlx shadcn@latest add button
 
 ## T3Env
 
-- You can use T3Env to add type safety to your environment variables.
-- Add Environment variables to the `src/env.mjs` file.
-- Use the environment variables in your code.
+Environment variables are validated in `src/env.ts` with `@t3-oss/env-core`.
+The required client variables are:
+
+- `VITE_CLERK_PUBLISHABLE_KEY`
+- `VITE_CONVEX_URL`
 
 ### Usage
 
 ```ts
 import { env } from "#/env";
 
-console.log(env.VITE_APP_TITLE);
+console.log(env.VITE_CONVEX_URL);
 ```
 
 

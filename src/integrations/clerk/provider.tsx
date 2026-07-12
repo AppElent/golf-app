@@ -1,9 +1,5 @@
 import { ClerkProvider } from "@clerk/clerk-react";
-
-const PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY;
-if (!PUBLISHABLE_KEY) {
-	throw new Error("Add your Clerk Publishable Key to the .env.local file");
-}
+import { env } from "#/env";
 
 export default function AppClerkProvider({
 	children,
@@ -11,7 +7,10 @@ export default function AppClerkProvider({
 	children: React.ReactNode;
 }) {
 	return (
-		<ClerkProvider publishableKey={PUBLISHABLE_KEY} afterSignOutUrl="/">
+		<ClerkProvider
+			publishableKey={env.VITE_CLERK_PUBLISHABLE_KEY}
+			afterSignOutUrl="/"
+		>
 			{children}
 		</ClerkProvider>
 	);
