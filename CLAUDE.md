@@ -50,8 +50,14 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   `src/integrations/clerk/header-user.tsx` is still the hand-rolled Clerk
   `SignedIn`/`SignedOut`/`UserButton` version; swap it for the package's `HeaderUser`
   once those routes exist.
-- **Convex functions**: `convex/todos.ts` (schema in `convex/schema.ts` also has an
-  unused `products` table left from scaffolding). No `convex/seed.ts` yet.
+- **Convex functions**: `convex/seed.ts` has two idempotent actions —
+  `seedData` (imports the two home courses from OSM) and `seedDummyData`
+  (adds a handicap/clubs/3 finished rounds/1 active round so an empty
+  backend isn't blank; requires `seedData` to have run first, skips
+  entirely if any round already exists). `convex/seedPreview.ts` composes
+  both into one `seedPreview` action for `--preview-run` (Convex only
+  accepts a single function name there) — wired into
+  `.github/workflows/preview.yml`.
 - **Env vars**: `.env.local` (gitignored) holds `VITE_CLERK_PUBLISHABLE_KEY`,
   `CONVEX_DEPLOYMENT`, `VITE_CONVEX_URL` — see `.env.example` for the full list
   (values never committed). `CLERK_JWT_ISSUER_DOMAIN` lives on the Convex deployment,
@@ -61,12 +67,15 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   add a top-level `vars` + `env.dev.vars` block if per-environment runtime vars are
   ever needed.
 - **PR previews**: `.github/workflows/preview.yml` spins up a per-PR Convex preview
-  deployment + a per-PR `golf-app-pr-<N>` Worker on open/sync/reopen, and tears the
-  Worker down on close. It's dormant until this repo has a GitHub remote and the
-  required secrets are set (`CONVEX_DEPLOY_KEY` — must be a Convex **Preview**-kind
-  deploy key — `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`,
-  `PREVIEW_CLERK_PUBLISHABLE_KEY`, optionally `NODE_AUTH_TOKEN`). `.github/workflows/ci.yml`
-  runs check/typecheck/test/build on every push to `main` and every PR.
+  deployment + a per-PR `golf-app-pr-<N>` Worker on open/sync/reopen, seeds the fresh
+  backend (`--preview-run seedPreview:seedPreview` — see `convex/seedPreview.ts`), and
+  tears the Worker down on close. Requires `CONVEX_DEPLOY_KEY` (a Convex **Preview**-kind
+  deploy key), `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`,
+  `PREVIEW_CLERK_PUBLISHABLE_KEY`, optionally `NODE_AUTH_TOKEN` — and the
+  `CLERK_JWT_ISSUER_DOMAIN` **preview**-type default (`convex env default set
+  CLERK_JWT_ISSUER_DOMAIN <value> --type preview`), since each preview deployment is a
+  fresh backend that doesn't inherit dev/prod env vars. `.github/workflows/ci.yml` runs
+  check/typecheck/test/build on every push to `main` and every PR.
 - **Supply-chain hardening**: `pnpm-workspace.yaml` sets `onlyBuiltDependencies`
   (esbuild/lightningcss/workerd/sharp only — `@clerk/shared`'s postinstall is denied,
   it only prints a telemetry notice) and `minimumReleaseAge: 1440` (1 day, tuned down
