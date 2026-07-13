@@ -1,3 +1,4 @@
+import { detectLoops } from "../src/domain/loops";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action, type ActionCtx } from "./_generated/server";
@@ -170,16 +171,29 @@ async function loadCourseHoles(
 	if (!detail || detail.tees.length === 0) {
 		throw new Error(`Course "${courseName}" has no tee — run seed:seedData first.`);
 	}
-	const holeRefs = detail.holes.map((h) => h.ref);
-	if (holeRefs.some((r) => r === undefined) || holeRefs.length === 0) {
-		throw new Error(`Course "${courseName}" is missing hole refs.`);
+
+	// A course can carry multiple 9-hole loops (spec §8) — take exactly one
+	// clean 18-hole combination (front + back) rather than every hole the
+	// course has, which would mix loops into a non-loop, duplicate-numbered
+	// "round". detectLoops is the same logic the real round-setup flow uses.
+	const withRefs = detail.holes.flatMap((h) =>
+		h.ref !== undefined ? [{ ref: h.ref, number: h.number }] : [],
+	);
+	const loops = detectLoops(withRefs);
+	if (loops.length < 2) {
+		throw new Error(
+			`Course "${courseName}" doesn't have a front+back 18-hole combination.`,
+		);
 	}
+	const holeRefs = [...loops[0].refs, ...loops[1].refs];
+
 	await ensureCompleteHoles(ctx, detail.holes);
+	const parByRef = new Map(detail.holes.map((h) => [h.ref, h.par ?? DEFAULT_PAR]));
 	return {
 		courseId: course._id,
 		teeId: detail.tees[0]._id,
-		holeRefs: holeRefs as string[],
-		pars: detail.holes.map((h) => h.par ?? DEFAULT_PAR),
+		holeRefs,
+		pars: holeRefs.map((ref) => parByRef.get(ref) ?? DEFAULT_PAR),
 	};
 }
 
