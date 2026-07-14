@@ -55,17 +55,24 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
 - **Env vars**: `.env.local` (gitignored) holds `VITE_CLERK_PUBLISHABLE_KEY`,
   `CONVEX_DEPLOYMENT`, `VITE_CONVEX_URL` — see `.env.example` for the full list
   (values never committed). `CLERK_JWT_ISSUER_DOMAIN` lives on the Convex deployment,
-  not in a local env file.
+  not in a local env file — set on dev (`pnpm exec convex env set`) and as the
+  `preview` deployment-type default (`pnpm exec convex env default set ... --type
+  preview`), both already configured. **Not yet set on the prod deployment** — the
+  first real `pnpm deploy:prod` will need `CLERK_JWT_ISSUER_DOMAIN` set via
+  `pnpm exec convex env set CLERK_JWT_ISSUER_DOMAIN <value> --prod` first, or Convex
+  functions can't read the signed-in identity in production.
 - **Deploy target**: Cloudflare Workers, name `golf-app` (`golf-app-dev` for
   `wrangler deploy --env dev`). `wrangler.jsonc`'s `env.dev` block exists for this;
   add a top-level `vars` + `env.dev.vars` block if per-environment runtime vars are
   ever needed.
 - **PR previews**: `.github/workflows/preview.yml` spins up a per-PR Convex preview
   deployment + a per-PR `golf-app-pr-<N>` Worker on open/sync/reopen, and tears the
-  Worker down on close. It's dormant until this repo has a GitHub remote and the
-  required secrets are set (`CONVEX_DEPLOY_KEY` — must be a Convex **Preview**-kind
-  deploy key — `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`,
-  `PREVIEW_CLERK_PUBLISHABLE_KEY`, optionally `NODE_AUTH_TOKEN`). `.github/workflows/ci.yml`
+  Worker down on close. The repo has a GitHub remote (`AppElent/golf-app`) and all
+  required secrets are set (`CONVEX_DEPLOY_KEY`, `CLOUDFLARE_API_TOKEN`,
+  `CLOUDFLARE_ACCOUNT_ID`, `PREVIEW_CLERK_PUBLISHABLE_KEY`, `NODE_AUTH_TOKEN`). It has
+  no `--preview-run` seed step yet — there's no `convex/seed.ts` in this app, so PR
+  previews currently deploy a genuinely empty Convex backend; wire seeding once seed
+  data exists (see the baseline skill's preview-seeding subsection). `.github/workflows/ci.yml`
   runs check/typecheck/test/build on every push to `main` and every PR.
 - **Supply-chain hardening**: `pnpm-workspace.yaml` sets `onlyBuiltDependencies`
   (esbuild/lightningcss/workerd/sharp only — `@clerk/shared`'s postinstall is denied,
@@ -76,17 +83,20 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
 
 ## Claude Code workflow layer
 
-`.claude/skills/review-app` and `.claude/skills/review-session`, and
-`.claude/commands/upgrade-deps.md`/`review-session.md`, are project-local copies of the
-global `~/.claude/skills/custom-review-app` / `custom-review-session` /
-`~/.claude/commands/custom-upgrade-deps.md` / `custom-review-session.md` templates
-(renamed to avoid the duplicate-skill collision with the global versions). **The global
-copies are the source of truth** — if you fix something in the project-local copy that
-isn't project-specific (a process fix, not this app's route→module map), port that fix
-back to the global file so future bootstrapped projects inherit it too.
-`.claude/skills/verify/SKILL.md` is the one exception: it's project-specific by design
-(its route→module map, currently a TODO stub since most routes are still scaffold demo
-routes) and has no global counterpart.
+`.claude/skills/review-app`, `.claude/skills/review-session`, and
+`.claude/skills/upgrade-deps` are project-local copies of the `appelent` plugin's
+bundled `skills/review-app`/`skills/review-session`/`skills/upgrade-deps` — **the
+plugin's copies are the source of truth** for those three. `.claude/commands/review-session.md`
+is a project-local copy of the global `~/.claude/commands/custom-review-session.md`
+template — the global copy remains the source of truth for that one.
+`.claude/commands/upgrade-deps.md` predates the skill-based refactor and is a
+self-contained command (not a thin launcher); `.claude/commands/babysit.md` has no
+external source, it's authored per-repo. If you fix something in a project-local copy
+that isn't project-specific (a process fix, not this app's route→module map), port
+that fix back to whichever source copy it traces to. `.claude/skills/verify/SKILL.md`
+is the one exception: it's project-specific by design (its route→module map, currently
+a TODO stub since most routes are still scaffold demo routes) and has no source-of-truth
+counterpart at all.
 
 ## Known pre-existing issues (not yet fixed, scaffold-original)
 
