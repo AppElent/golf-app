@@ -1,0 +1,7 @@
+{
+  "features": {
+    "baseline": { "version": 1 },
+    "auth": { "version": 1 },
+    "mcp": { "version": 1 }
+  }
+}

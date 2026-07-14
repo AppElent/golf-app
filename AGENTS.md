@@ -10,19 +10,11 @@ Never weaken or skip tests to make an upgrade pass; stop and report instead.
 <!-- appelent-managed:start -->
 ## Appelent Managed Project
 
-Read `CLAUDE.md` first.
+This is an Appelent-managed app. Opted-in features and their options are
+recorded in `appelent.json`. Feature definitions live in the `appelent`
+plugin (locally installed) or https://github.com/AppElent/appelent-packages
+(`skills/<feature>/FEATURE.md`).
 
-Primary local source:
-- `C:\Users\ericj\.claude\appelent`
-- `C:\Users\ericj\.claude\skills`
-
-Web/browser fallback committed in this repo:
-- `.claude\appelent`
-- `.claude\skills`
-
-When adding generic functionality, prefer existing `@appelent/*` packages, bootstrap conventions, or capability skills before creating a new local-only pattern.
-
-For how to use a shared `@appelent/*` package, read that package's own README — it is the source of truth (Claude skills are not visible here).
-
-If global and repo-local instructions differ, prefer the global source locally. In web/browser environments, use the repo-local mirror and flag the drift.
+Before adding functionality that could apply to multiple apps, check the
+feature catalog first. To add or update a feature, use `/appelent`.
 <!-- appelent-managed:end -->
