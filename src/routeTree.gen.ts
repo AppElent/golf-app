@@ -9,25 +9,33 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as McpRouteImport } from './routes/mcp'
-import { Route as AboutRouteImport } from './routes/about'
+import { Route as ProgressRouteImport } from './routes/progress'
+import { Route as ProfileRouteImport } from './routes/profile'
+import { Route as PlayRouteImport } from './routes/play'
+import { Route as CardRouteImport } from './routes/card'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as DemoTanstackQueryRouteImport } from './routes/demo/tanstack-query'
-import { Route as DemoMcpTodosRouteImport } from './routes/demo/mcp-todos'
-import { Route as DemoConvexRouteImport } from './routes/demo/convex'
-import { Route as DemoClerkRouteImport } from './routes/demo/clerk'
-import { Route as DemoFormSimpleRouteImport } from './routes/demo/form.simple'
-import { Route as DemoFormAddressRouteImport } from './routes/demo/form.address'
-import { Route as DemoApiMcpTodosRouteImport } from './routes/demo/api.mcp-todos'
+import { Route as CoursesIndexRouteImport } from './routes/courses.index'
+import { Route as RoundsNewRouteImport } from './routes/rounds.new'
+import { Route as CoursesCourseIdEditRouteImport } from './routes/courses.$courseId.edit'
 
-const McpRoute = McpRouteImport.update({
-  id: '/mcp',
-  path: '/mcp',
+const ProgressRoute = ProgressRouteImport.update({
+  id: '/progress',
+  path: '/progress',
   getParentRoute: () => rootRouteImport,
 } as any)
-const AboutRoute = AboutRouteImport.update({
-  id: '/about',
-  path: '/about',
+const ProfileRoute = ProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlayRoute = PlayRouteImport.update({
+  id: '/play',
+  path: '/play',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CardRoute = CardRouteImport.update({
+  id: '/card',
+  path: '/card',
   getParentRoute: () => rootRouteImport,
 } as any)
 const IndexRoute = IndexRouteImport.update({
@@ -35,145 +43,125 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DemoTanstackQueryRoute = DemoTanstackQueryRouteImport.update({
-  id: '/demo/tanstack-query',
-  path: '/demo/tanstack-query',
+const CoursesIndexRoute = CoursesIndexRouteImport.update({
+  id: '/courses/',
+  path: '/courses/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DemoMcpTodosRoute = DemoMcpTodosRouteImport.update({
-  id: '/demo/mcp-todos',
-  path: '/demo/mcp-todos',
+const RoundsNewRoute = RoundsNewRouteImport.update({
+  id: '/rounds/new',
+  path: '/rounds/new',
   getParentRoute: () => rootRouteImport,
 } as any)
-const DemoConvexRoute = DemoConvexRouteImport.update({
-  id: '/demo/convex',
-  path: '/demo/convex',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoClerkRoute = DemoClerkRouteImport.update({
-  id: '/demo/clerk',
-  path: '/demo/clerk',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoFormSimpleRoute = DemoFormSimpleRouteImport.update({
-  id: '/demo/form/simple',
-  path: '/demo/form/simple',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoFormAddressRoute = DemoFormAddressRouteImport.update({
-  id: '/demo/form/address',
-  path: '/demo/form/address',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DemoApiMcpTodosRoute = DemoApiMcpTodosRouteImport.update({
-  id: '/demo/api/mcp-todos',
-  path: '/demo/api/mcp-todos',
+const CoursesCourseIdEditRoute = CoursesCourseIdEditRouteImport.update({
+  id: '/courses/$courseId/edit',
+  path: '/courses/$courseId/edit',
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/mcp': typeof McpRoute
-  '/demo/clerk': typeof DemoClerkRoute
-  '/demo/convex': typeof DemoConvexRoute
-  '/demo/mcp-todos': typeof DemoMcpTodosRoute
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
-  '/demo/api/mcp-todos': typeof DemoApiMcpTodosRoute
-  '/demo/form/address': typeof DemoFormAddressRoute
-  '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/card': typeof CardRoute
+  '/play': typeof PlayRoute
+  '/profile': typeof ProfileRoute
+  '/progress': typeof ProgressRoute
+  '/rounds/new': typeof RoundsNewRoute
+  '/courses/': typeof CoursesIndexRoute
+  '/courses/$courseId/edit': typeof CoursesCourseIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/mcp': typeof McpRoute
-  '/demo/clerk': typeof DemoClerkRoute
-  '/demo/convex': typeof DemoConvexRoute
-  '/demo/mcp-todos': typeof DemoMcpTodosRoute
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
-  '/demo/api/mcp-todos': typeof DemoApiMcpTodosRoute
-  '/demo/form/address': typeof DemoFormAddressRoute
-  '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/card': typeof CardRoute
+  '/play': typeof PlayRoute
+  '/profile': typeof ProfileRoute
+  '/progress': typeof ProgressRoute
+  '/rounds/new': typeof RoundsNewRoute
+  '/courses': typeof CoursesIndexRoute
+  '/courses/$courseId/edit': typeof CoursesCourseIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/about': typeof AboutRoute
-  '/mcp': typeof McpRoute
-  '/demo/clerk': typeof DemoClerkRoute
-  '/demo/convex': typeof DemoConvexRoute
-  '/demo/mcp-todos': typeof DemoMcpTodosRoute
-  '/demo/tanstack-query': typeof DemoTanstackQueryRoute
-  '/demo/api/mcp-todos': typeof DemoApiMcpTodosRoute
-  '/demo/form/address': typeof DemoFormAddressRoute
-  '/demo/form/simple': typeof DemoFormSimpleRoute
+  '/card': typeof CardRoute
+  '/play': typeof PlayRoute
+  '/profile': typeof ProfileRoute
+  '/progress': typeof ProgressRoute
+  '/rounds/new': typeof RoundsNewRoute
+  '/courses/': typeof CoursesIndexRoute
+  '/courses/$courseId/edit': typeof CoursesCourseIdEditRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/about'
-    | '/mcp'
-    | '/demo/clerk'
-    | '/demo/convex'
-    | '/demo/mcp-todos'
-    | '/demo/tanstack-query'
-    | '/demo/api/mcp-todos'
-    | '/demo/form/address'
-    | '/demo/form/simple'
+    | '/card'
+    | '/play'
+    | '/profile'
+    | '/progress'
+    | '/rounds/new'
+    | '/courses/'
+    | '/courses/$courseId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/about'
-    | '/mcp'
-    | '/demo/clerk'
-    | '/demo/convex'
-    | '/demo/mcp-todos'
-    | '/demo/tanstack-query'
-    | '/demo/api/mcp-todos'
-    | '/demo/form/address'
-    | '/demo/form/simple'
+    | '/card'
+    | '/play'
+    | '/profile'
+    | '/progress'
+    | '/rounds/new'
+    | '/courses'
+    | '/courses/$courseId/edit'
   id:
     | '__root__'
     | '/'
-    | '/about'
-    | '/mcp'
-    | '/demo/clerk'
-    | '/demo/convex'
-    | '/demo/mcp-todos'
-    | '/demo/tanstack-query'
-    | '/demo/api/mcp-todos'
-    | '/demo/form/address'
-    | '/demo/form/simple'
+    | '/card'
+    | '/play'
+    | '/profile'
+    | '/progress'
+    | '/rounds/new'
+    | '/courses/'
+    | '/courses/$courseId/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  AboutRoute: typeof AboutRoute
-  McpRoute: typeof McpRoute
-  DemoClerkRoute: typeof DemoClerkRoute
-  DemoConvexRoute: typeof DemoConvexRoute
-  DemoMcpTodosRoute: typeof DemoMcpTodosRoute
-  DemoTanstackQueryRoute: typeof DemoTanstackQueryRoute
-  DemoApiMcpTodosRoute: typeof DemoApiMcpTodosRoute
-  DemoFormAddressRoute: typeof DemoFormAddressRoute
-  DemoFormSimpleRoute: typeof DemoFormSimpleRoute
+  CardRoute: typeof CardRoute
+  PlayRoute: typeof PlayRoute
+  ProfileRoute: typeof ProfileRoute
+  ProgressRoute: typeof ProgressRoute
+  RoundsNewRoute: typeof RoundsNewRoute
+  CoursesIndexRoute: typeof CoursesIndexRoute
+  CoursesCourseIdEditRoute: typeof CoursesCourseIdEditRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/mcp': {
-      id: '/mcp'
-      path: '/mcp'
-      fullPath: '/mcp'
-      preLoaderRoute: typeof McpRouteImport
+    '/progress': {
+      id: '/progress'
+      path: '/progress'
+      fullPath: '/progress'
+      preLoaderRoute: typeof ProgressRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/about': {
-      id: '/about'
-      path: '/about'
-      fullPath: '/about'
-      preLoaderRoute: typeof AboutRouteImport
+    '/profile': {
+      id: '/profile'
+      path: '/profile'
+      fullPath: '/profile'
+      preLoaderRoute: typeof ProfileRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/play': {
+      id: '/play'
+      path: '/play'
+      fullPath: '/play'
+      preLoaderRoute: typeof PlayRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/card': {
+      id: '/card'
+      path: '/card'
+      fullPath: '/card'
+      preLoaderRoute: typeof CardRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/': {
@@ -183,53 +171,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demo/tanstack-query': {
-      id: '/demo/tanstack-query'
-      path: '/demo/tanstack-query'
-      fullPath: '/demo/tanstack-query'
-      preLoaderRoute: typeof DemoTanstackQueryRouteImport
+    '/courses/': {
+      id: '/courses/'
+      path: '/courses'
+      fullPath: '/courses/'
+      preLoaderRoute: typeof CoursesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demo/mcp-todos': {
-      id: '/demo/mcp-todos'
-      path: '/demo/mcp-todos'
-      fullPath: '/demo/mcp-todos'
-      preLoaderRoute: typeof DemoMcpTodosRouteImport
+    '/rounds/new': {
+      id: '/rounds/new'
+      path: '/rounds/new'
+      fullPath: '/rounds/new'
+      preLoaderRoute: typeof RoundsNewRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/demo/convex': {
-      id: '/demo/convex'
-      path: '/demo/convex'
-      fullPath: '/demo/convex'
-      preLoaderRoute: typeof DemoConvexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/clerk': {
-      id: '/demo/clerk'
-      path: '/demo/clerk'
-      fullPath: '/demo/clerk'
-      preLoaderRoute: typeof DemoClerkRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/form/simple': {
-      id: '/demo/form/simple'
-      path: '/demo/form/simple'
-      fullPath: '/demo/form/simple'
-      preLoaderRoute: typeof DemoFormSimpleRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/form/address': {
-      id: '/demo/form/address'
-      path: '/demo/form/address'
-      fullPath: '/demo/form/address'
-      preLoaderRoute: typeof DemoFormAddressRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/demo/api/mcp-todos': {
-      id: '/demo/api/mcp-todos'
-      path: '/demo/api/mcp-todos'
-      fullPath: '/demo/api/mcp-todos'
-      preLoaderRoute: typeof DemoApiMcpTodosRouteImport
+    '/courses/$courseId/edit': {
+      id: '/courses/$courseId/edit'
+      path: '/courses/$courseId/edit'
+      fullPath: '/courses/$courseId/edit'
+      preLoaderRoute: typeof CoursesCourseIdEditRouteImport
       parentRoute: typeof rootRouteImport
     }
   }
@@ -237,15 +197,13 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  AboutRoute: AboutRoute,
-  McpRoute: McpRoute,
-  DemoClerkRoute: DemoClerkRoute,
-  DemoConvexRoute: DemoConvexRoute,
-  DemoMcpTodosRoute: DemoMcpTodosRoute,
-  DemoTanstackQueryRoute: DemoTanstackQueryRoute,
-  DemoApiMcpTodosRoute: DemoApiMcpTodosRoute,
-  DemoFormAddressRoute: DemoFormAddressRoute,
-  DemoFormSimpleRoute: DemoFormSimpleRoute,
+  CardRoute: CardRoute,
+  PlayRoute: PlayRoute,
+  ProfileRoute: ProfileRoute,
+  ProgressRoute: ProgressRoute,
+  RoundsNewRoute: RoundsNewRoute,
+  CoursesIndexRoute: CoursesIndexRoute,
+  CoursesCourseIdEditRoute: CoursesCourseIdEditRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

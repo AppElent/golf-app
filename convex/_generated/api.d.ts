@@ -8,7 +8,13 @@
  * @module
  */
 
-import type * as todos from "../todos.js";
+import type * as clubs from "../clubs.js";
+import type * as courses from "../courses.js";
+import type * as lib from "../lib.js";
+import type * as rounds from "../rounds.js";
+import type * as seed from "../seed.js";
+import type * as seedPreview from "../seedPreview.js";
+import type * as settings from "../settings.js";
 
 import type {
   ApiFromModules,
@@ -17,7 +23,13 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
-  todos: typeof todos;
+  clubs: typeof clubs;
+  courses: typeof courses;
+  lib: typeof lib;
+  rounds: typeof rounds;
+  seed: typeof seed;
+  seedPreview: typeof seedPreview;
+  settings: typeof settings;
 }>;
 
 /**

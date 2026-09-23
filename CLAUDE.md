@@ -39,8 +39,8 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   `pnpm exec convex env set CLERK_JWT_ISSUER_DOMAIN <value>`, and via
   `convex env default set ... --type preview` for PR previews). The client side is
   wired in `src/integrations/convex/provider.tsx`, which uses `ConvexProviderWithClerk`
-  + Clerk's `useAuth` (not the plain `ConvexProvider`) so Convex functions can see the
-  signed-in user via `ctx.auth.getUserIdentity()`.
+  - Clerk's `useAuth` (not the plain `ConvexProvider`) so Convex functions can see the
+    signed-in user via `ctx.auth.getUserIdentity()`.
 - **`@appelent/auth`** (private package, `@appelent:registry` mapped in `.npmrc` to
   GitHub Packages — see `.npmrc`/CI workflows for the auth-token wiring) supplies the
   theme utilities (`getInitialMode`, `applyThemeMode`, `ThemeMode`, `THEME_INIT_SCRIPT`)
@@ -50,14 +50,20 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   `src/integrations/clerk/header-user.tsx` is still the hand-rolled Clerk
   `SignedIn`/`SignedOut`/`UserButton` version; swap it for the package's `HeaderUser`
   once those routes exist.
-- **Convex functions**: `convex/todos.ts` (schema in `convex/schema.ts` also has an
-  unused `products` table left from scaffolding). No `convex/seed.ts` yet.
+- **Convex functions**: `convex/seed.ts` has two idempotent actions —
+  `seedData` (imports the two home courses from OSM) and `seedDummyData`
+  (adds a handicap/clubs/3 finished rounds/1 active round so an empty
+  backend isn't blank; requires `seedData` to have run first, skips
+  entirely if any round already exists). `convex/seedPreview.ts` composes
+  both into one `seedPreview` action for `--preview-run` (Convex only
+  accepts a single function name there) — wired into
+  `.github/workflows/preview.yml`.
 - **Env vars**: `.env.local` (gitignored) holds `VITE_CLERK_PUBLISHABLE_KEY`,
   `CONVEX_DEPLOYMENT`, `VITE_CONVEX_URL` — see `.env.example` for the full list
   (values never committed). `CLERK_JWT_ISSUER_DOMAIN` lives on the Convex deployment,
   not in a local env file — set on dev (`pnpm exec convex env set`) and as the
   `preview` deployment-type default (`pnpm exec convex env default set ... --type
-  preview`), both already configured. **Not yet set on the prod deployment** — the
+preview`), both already configured. **Not yet set on the prod deployment** — the
   first real `pnpm deploy:prod` will need `CLERK_JWT_ISSUER_DOMAIN` set via
   `pnpm exec convex env set CLERK_JWT_ISSUER_DOMAIN <value> --prod` first, or Convex
   functions can't read the signed-in identity in production.
@@ -74,6 +80,15 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   previews currently deploy a genuinely empty Convex backend; wire seeding once seed
   data exists (see the baseline skill's preview-seeding subsection). `.github/workflows/ci.yml`
   runs check/typecheck/test/build on every push to `main` and every PR.
+  deployment + a per-PR `golf-app-pr-<N>` Worker on open/sync/reopen, seeds the fresh
+  backend (`--preview-run seedPreview:seedPreview` — see `convex/seedPreview.ts`), and
+  tears the Worker down on close. Requires `CONVEX_DEPLOY_KEY` (a Convex **Preview**-kind
+  deploy key), `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`,
+  `PREVIEW_CLERK_PUBLISHABLE_KEY`, optionally `NODE_AUTH_TOKEN` — and the
+  `CLERK_JWT_ISSUER_DOMAIN` **preview**-type default (`convex env default set
+CLERK_JWT_ISSUER_DOMAIN <value> --type preview`), since each preview deployment is a
+  fresh backend that doesn't inherit dev/prod env vars. `.github/workflows/ci.yml` runs
+  check/typecheck/test/build on every push to `main` and every PR.
 - **Supply-chain hardening**: `pnpm-workspace.yaml` sets `onlyBuiltDependencies`
   (esbuild/lightningcss/workerd/sharp only — `@clerk/shared`'s postinstall is denied,
   it only prints a telemetry notice) and `minimumReleaseAge: 1440` (1 day, tuned down
@@ -110,6 +125,7 @@ counterpart at all.
   specific change.
 
 <!-- appelent-managed:start -->
+
 ## Appelent Managed Project
 
 This is an Appelent-managed app. Opted-in features and their options are
@@ -119,4 +135,5 @@ plugin (locally installed) or https://github.com/AppElent/appelent-packages
 
 Before adding functionality that could apply to multiple apps, check the
 feature catalog first. To add or update a feature, use `/appelent`.
+
 <!-- appelent-managed:end -->

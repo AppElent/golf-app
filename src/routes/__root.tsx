@@ -1,82 +1,73 @@
+import { THEME_INIT_SCRIPT } from "@appelent/auth";
+import { TanStackDevtools } from "@tanstack/react-devtools";
+import type { QueryClient } from "@tanstack/react-query";
 import {
-  HeadContent,
-  Scripts,
-  createRootRouteWithContext,
-} from '@tanstack/react-router'
-import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools'
-import { TanStackDevtools } from '@tanstack/react-devtools'
-import Footer from '../components/Footer'
-import Header from '../components/Header'
-
-import ClerkProvider from '../integrations/clerk/provider'
-
-import ConvexProvider from '../integrations/convex/provider'
-
-import TanStackQueryDevtools from '../integrations/tanstack-query/devtools'
-
-import appCss from '../styles.css?url'
-
-import { THEME_INIT_SCRIPT } from '@appelent/auth'
-
-import type { QueryClient } from '@tanstack/react-query'
+	createRootRouteWithContext,
+	HeadContent,
+	Scripts,
+} from "@tanstack/react-router";
+import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
+import BottomNav from "../components/BottomNav";
+import { ServiceWorker } from "../components/ServiceWorker";
+import ClerkProvider from "../integrations/clerk/provider";
+import ConvexProvider from "../integrations/convex/provider";
+import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
+import appCss from "../styles.css?url";
 
 interface MyRouterContext {
-  queryClient: QueryClient
+	queryClient: QueryClient;
 }
 
 export const Route = createRootRouteWithContext<MyRouterContext>()({
-  head: () => ({
-    meta: [
-      {
-        charSet: 'utf-8',
-      },
-      {
-        name: 'viewport',
-        content: 'width=device-width, initial-scale=1',
-      },
-      {
-        title: 'TanStack Start Starter',
-      },
-    ],
-    links: [
-      {
-        rel: 'stylesheet',
-        href: appCss,
-      },
-    ],
-  }),
-  shellComponent: RootDocument,
-})
+	head: () => ({
+		meta: [
+			{ charSet: "utf-8" },
+			{
+				name: "viewport",
+				content: "width=device-width, initial-scale=1, viewport-fit=cover",
+			},
+			{ name: "theme-color", content: "#0F3D2A" },
+			{ title: "Fairway · Golf Companion" },
+		],
+		links: [
+			{ rel: "stylesheet", href: appCss },
+			{ rel: "manifest", href: "/manifest.json" },
+			{ rel: "apple-touch-icon", href: "/logo192.png" },
+		],
+	}),
+	shellComponent: RootDocument,
+});
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
-        <HeadContent />
-      </head>
-      <body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
-        <ClerkProvider>
-          <ConvexProvider>
-            <Header />
-            {children}
-            <Footer />
-            <TanStackDevtools
-              config={{
-                position: 'bottom-right',
-              }}
-              plugins={[
-                {
-                  name: 'Tanstack Router',
-                  render: <TanStackRouterDevtoolsPanel />,
-                },
-                TanStackQueryDevtools,
-              ]}
-            />
-          </ConvexProvider>
-        </ClerkProvider>
-        <Scripts />
-      </body>
-    </html>
-  )
+	return (
+		<html lang="en" suppressHydrationWarning>
+			<head>
+				{/* biome-ignore lint/security/noDangerouslySetInnerHtml: pre-paint theme init script from @appelent/auth */}
+				<script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+				<HeadContent />
+			</head>
+			<body className="bg-[#233028] font-sans antialiased">
+				<ClerkProvider>
+					<ConvexProvider>
+						<div className="relative mx-auto min-h-dvh w-full max-w-[430px] bg-cream shadow-2xl">
+							{children}
+						</div>
+						<BottomNav />
+						<ServiceWorker />
+						<TanStackDevtools
+							config={{ position: "bottom-right" }}
+							plugins={[
+								{
+									name: "Tanstack Router",
+									render: <TanStackRouterDevtoolsPanel />,
+								},
+								TanStackQueryDevtools,
+							]}
+						/>
+					</ConvexProvider>
+				</ClerkProvider>
+				<Scripts />
+			</body>
+		</html>
+	);
 }
