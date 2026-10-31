@@ -5,6 +5,7 @@
  */
 import { signInEn, signUpEn, verifyEmailEn } from "./auth";
 import { commonEn, tabsEn } from "./common";
+import { clubsEn, profileEn, roundsEn, statsEn } from "./history";
 import { playEn } from "./play";
 import { scorecardEn, scoreEn } from "./score";
 import { coursesEn, homeEn, setupEn } from "./start";
@@ -21,6 +22,10 @@ export const en = {
 	play: playEn,
 	score: scoreEn,
 	scorecard: scorecardEn,
+	rounds: roundsEn,
+	stats: statsEn,
+	profile: profileEn,
+	clubs: clubsEn,
 };
 
 export type Messages = typeof en;

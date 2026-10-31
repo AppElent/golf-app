@@ -1,12 +1,13 @@
 import { Stack } from "expo-router";
-import { ScrollView } from "react-native";
-import { AppText } from "../../../../src/ui/text";
+import { StatsScreen } from "../../../../src/features/stats/overview/stats-screen";
+import { useI18n } from "../../../../src/i18n";
 
-export default function Placeholder() {
+export default function StatsRoute() {
+	const { t } = useI18n();
 	return (
-		<ScrollView contentInsetAdjustmentBehavior="automatic">
-			<Stack.Screen options={{ title: "stats" }} />
-			<AppText>stats</AppText>
-		</ScrollView>
+		<>
+			<Stack.Screen options={{ title: t.stats.title }} />
+			<StatsScreen />
+		</>
 	);
 }

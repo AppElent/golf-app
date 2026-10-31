@@ -64,7 +64,8 @@ export default function AppLayout() {
 								<Stack.Screen
 									name="score"
 									options={{
-										headerShown: false,
+										// iOS titles the sheet natively (see score-sheet-screen).
+										headerShown: Platform.OS === "ios",
 										presentation: "formSheet",
 										sheetAllowedDetents: [0.62, 1],
 										sheetGrabberVisible: true,

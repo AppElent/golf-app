@@ -1,12 +1,13 @@
 import { Stack } from "expo-router";
-import { ScrollView } from "react-native";
-import { AppText } from "../../../../src/ui/text";
+import { ProfileScreen } from "../../../../src/features/profile/settings/profile-screen";
+import { useI18n } from "../../../../src/i18n";
 
-export default function Placeholder() {
+export default function ProfileRoute() {
+	const { t } = useI18n();
 	return (
-		<ScrollView contentInsetAdjustmentBehavior="automatic">
-			<Stack.Screen options={{ title: "profile" }} />
-			<AppText>profile</AppText>
-		</ScrollView>
+		<>
+			<Stack.Screen options={{ title: t.profile.title }} />
+			<ProfileScreen />
+		</>
 	);
 }

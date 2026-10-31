@@ -1,5 +1,5 @@
-import { ScrollView } from "react-native";
+import { RoundDetailScreen } from "../../../../src/features/rounds/history/round-detail-screen";
 
 export default function RoundDetailRoute() {
-	return <ScrollView contentInsetAdjustmentBehavior="automatic" />;
+	return <RoundDetailScreen />;
 }

@@ -455,3 +455,51 @@ export const remove = mutation({
 		await deleteRoundData(ctx, roundId);
 	},
 });
+
+/**
+ * The owner's per-hole results (par + strokes, NR as null) over the latest
+ * finished rounds — input for par-type averages and the scoring distribution.
+ */
+export const holeResults = query({
+	args: { limit: v.optional(v.number()) },
+	handler: async (ctx, { limit }) => {
+		const userId = await getUserId(ctx);
+		const rounds = await ctx.db
+			.query("rounds")
+			.withIndex("by_user", (q) => q.eq("userId", userId))
+			.filter((q) => q.eq(q.field("status"), "finished"))
+			.collect();
+		rounds.sort((a, b) => b.startedAt - a.startedAt);
+		const parsByCourse = new Map<string, Map<string, number>>();
+		const results: Array<{ par: number; strokes: number | null }> = [];
+		for (const round of rounds.slice(0, limit ?? 20)) {
+			let pars = parsByCourse.get(round.courseId);
+			if (pars === undefined) {
+				const holes = await ctx.db
+					.query("holes")
+					.withIndex("by_course", (q) => q.eq("courseId", round.courseId))
+					.collect();
+				const map = new Map<string, number>();
+				for (const h of holes) if (h.ref && h.par) map.set(h.ref, h.par);
+				parsByCourse.set(round.courseId, map);
+				pars = map;
+			}
+			const coursePars = pars;
+			const scores = await ctx.db
+				.query("holeScores")
+				.withIndex("by_round", (q) => q.eq("roundId", round._id))
+				.collect();
+			round.holeRefs.forEach((ref, holeIndex) => {
+				const s = scores.find(
+					(x) => x.holeIndex === holeIndex && x.playerIndex === 0,
+				);
+				if (!s) return;
+				results.push({
+					par: coursePars.get(ref) ?? 0,
+					strokes: s.nr ? null : (s.strokes ?? null),
+				});
+			});
+		}
+		return results;
+	},
+});

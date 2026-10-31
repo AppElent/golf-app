@@ -144,9 +144,7 @@ function ScoreSheet({
 				// iOS: the sheet's own native header (an in-content header sits
 				// under the sheet's root scroll view).
 				<>
-					<Stack.Screen
-						options={{ headerShown: true, title, gestureEnabled: !saving }}
-					/>
+					<Stack.Screen options={{ title, gestureEnabled: !saving }} />
 					<Stack.Toolbar placement="left">
 						<Stack.Toolbar.Button onPress={() => router.back()}>
 							{t.common.cancel}
