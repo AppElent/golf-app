@@ -51,7 +51,7 @@ pnpm check && pnpm typecheck && pnpm test             # repo-wide
 | `GOOGLE_MAPS_ANDROID_API_KEY` | EAS env (build time) | Without it Android draws the vector schematic instead of satellite |
 | `EXPO_TOKEN` | GitHub secret | Needed by the local-build workflow |
 
-EAS environment variables per profile are not set yet (see the open issues).
+EAS environment variables per profile are not set yet (#5).
 
 ## Builds
 
@@ -69,5 +69,5 @@ EAS environment variables per profile are not set yet (see the open issues).
 - "GPS while locked" (Profile) is opt-in, needs Always location, and runs
   background updates only while the Play screen is mounted. On iOS the "Change to
   Always" prompt answers late; `background-location.ts` re-reads for 15 s.
-- Monitoring: Sentry is not wired (no project/DSN yet). "Report a problem" shows an
+- Monitoring: Sentry is not wired (#3). "Report a problem" shows an
   explanation instead of opening a report.
