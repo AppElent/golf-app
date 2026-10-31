@@ -22,6 +22,8 @@ import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { publishableKey } from "../src/auth/config";
 import { AppConvexProvider } from "../src/convex/provider";
+// Defines the background location task at module scope (see the module).
+import "../src/features/location/background/background-location";
 import { LocaleProvider } from "../src/i18n";
 import { AppearanceProvider, useAppearance, useTokens } from "../src/theme";
 

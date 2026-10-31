@@ -28,10 +28,13 @@ export function HoleSatellite(props: HoleCanvasProps) {
 		hazardLabel,
 		greenView,
 		insets,
+		shots,
 	} = props;
 	const map = useRef<MapView>(null);
 	const [height, setHeight] = useState(0);
 	const from = located ? player : tee;
+	// Shot to shot, then on to the ball when there is a fix.
+	const trail = located ? [...shots, player] : shots;
 
 	const camera = holeCamera({
 		from,
@@ -90,6 +93,27 @@ export function HoleSatellite(props: HoleCanvasProps) {
 						})
 					}
 				>
+					{trail.length > 1 ? (
+						<Polyline
+							coordinates={trail.map(toCoord)}
+							strokeColor={course.shotLine}
+							strokeWidth={2}
+							lineDashPattern={[6, 6]}
+						/>
+					) : null}
+					{shots.map((shot, i) => (
+						<Marker
+							key={`shot-${shot.lat},${shot.lng}`}
+							coordinate={toCoord(shot)}
+							anchor={{ x: 0.5, y: 0.5 }}
+							tracksViewChanges={false}
+							tappable={false}
+						>
+							<View style={styles.shot}>
+								<Text style={styles.shotText}>{i + 1}</Text>
+							</View>
+						</Marker>
+					))}
 					<Polyline
 						coordinates={[from, target, green].map(toCoord)}
 						strokeColor={course.targetLine}
@@ -108,6 +132,8 @@ export function HoleSatellite(props: HoleCanvasProps) {
 							coordinate={toCoord(player)}
 							anchor={{ x: 0.5, y: 0.5 }}
 							tracksViewChanges={false}
+							// Above the shot markers it usually stands on.
+							zIndex={3}
 						>
 							<View style={styles.playerHalo}>
 								<View style={styles.player} />
@@ -230,6 +256,21 @@ const styles = StyleSheet.create({
 		height: 6,
 		borderRadius: 3,
 		backgroundColor: course.target,
+	},
+	shot: {
+		width: 18,
+		height: 18,
+		borderRadius: 9,
+		backgroundColor: course.labelFill,
+		borderWidth: 1.5,
+		borderColor: course.shotLine,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	shotText: {
+		...typeRamp.micro,
+		color: course.distanceText,
+		fontWeight: "800",
 	},
 	label: {
 		paddingHorizontal: 8,

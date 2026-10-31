@@ -41,9 +41,12 @@ export function HoleSchematic(props: HoleCanvasProps) {
 		hazardLabel,
 		greenView,
 		insets,
+		shots,
 	} = props;
 	const [size, setSize] = useState({ width: 0, height: 0 });
 	const from = located ? player : tee;
+	// Shot to shot, then on to the ball when there is a fix.
+	const trail = located ? [...shots, player] : shots;
 	const innerHeight = size.height - insets.top - insets.bottom;
 	const innerWidth = size.width - insets.left - insets.right;
 
@@ -135,6 +138,44 @@ export function HoleSchematic(props: HoleCanvasProps) {
 									fill={course.greenFill}
 								/>
 							))}
+							{trail.slice(1).map((p, i) => {
+								const a = at(trail[i]);
+								const b = at(p);
+								return (
+									<Line
+										key={`trail-${trail[i].lat},${trail[i].lng}`}
+										x1={a.x}
+										y1={a.y}
+										x2={b.x}
+										y2={b.y}
+										stroke={course.shotLine}
+										strokeWidth={2}
+										strokeDasharray="6 6"
+									/>
+								);
+							})}
+							{shots.map((shot, i) => {
+								const s = at(shot);
+								return (
+									<G key={`shot-${shot.lat},${shot.lng}`} x={s.x} y={s.y}>
+										<Circle
+											r={9}
+											fill={course.labelFill}
+											stroke={course.shotLine}
+											strokeWidth={1.5}
+										/>
+										<SvgText
+											y={typeRamp.micro.fontSize * 0.36}
+											textAnchor="middle"
+											fontSize={typeRamp.micro.fontSize}
+											fontWeight="800"
+											fill={course.distanceText}
+										>
+											{i + 1}
+										</SvgText>
+									</G>
+								);
+							})}
 							<Line
 								x1={f.x}
 								y1={f.y}

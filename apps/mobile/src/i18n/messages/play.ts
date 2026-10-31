@@ -23,6 +23,16 @@ export const playEn = {
 	noMapHint: "This hole's geometry is missing in OpenStreetMap.",
 	holeError: "Could not change hole. Check your connection.",
 	loading: "Loading round…",
+	markShot: "Mark shot",
+	markNeedsGps: "Marking a shot needs a GPS fix on this hole.",
+	markError: "Shot not saved. Check your connection.",
+	whichClub: "Club for this shot",
+	skipClub: "Skip",
+	nextTee: "On the tee of hole {n}",
+	goToHole: "Go to hole {n}",
+	notNow: "Not now",
+	trackingTitle: "Fairway round in progress",
+	trackingBody: "Keeping your distances ready.",
 };
 
 export const playNl: typeof playEn = {
@@ -49,4 +59,14 @@ export const playNl: typeof playEn = {
 	noMapHint: "De geometrie van deze hole ontbreekt in OpenStreetMap.",
 	holeError: "Hole wisselen mislukt. Controleer je verbinding.",
 	loading: "Ronde laden…",
+	markShot: "Slag markeren",
+	markNeedsGps: "Voor een slag markeren is GPS op deze hole nodig.",
+	markError: "Slag niet opgeslagen. Controleer je verbinding.",
+	whichClub: "Club voor deze slag",
+	skipClub: "Overslaan",
+	nextTee: "Op de tee van hole {n}",
+	goToHole: "Naar hole {n}",
+	notNow: "Niet nu",
+	trackingTitle: "Fairway-ronde bezig",
+	trackingBody: "Houdt je afstanden paraat.",
 };

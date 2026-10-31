@@ -37,3 +37,19 @@ export function legLabel(
 	const n = distanceNumber(meters, units);
 	return club ? `${n} · ${club.name}` : n;
 }
+
+/** Slack beyond the hole's own length (a wayward drive, the walk to the tee). */
+const ON_HOLE_SLACK_M = 120;
+
+/**
+ * Whether a GPS fix belongs to this hole: no further from the green than the
+ * hole is long, plus slack. Elsewhere on the course (or at home) distances
+ * come from the tee instead of drawing a line across other holes.
+ */
+export function isOnHole(
+	position: LatLng,
+	anchors: { tee: LatLng; green: LatLng },
+): boolean {
+	const length = haversineMeters(anchors.tee, anchors.green);
+	return haversineMeters(position, anchors.green) <= length + ON_HOLE_SLACK_M;
+}

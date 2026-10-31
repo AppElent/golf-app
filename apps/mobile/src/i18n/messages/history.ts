@@ -123,6 +123,11 @@ export const profileEn = {
 	appearanceLight: "Light",
 	appearanceDark: "Dark",
 	language: "Language",
+	locationLocked: "GPS while locked",
+	locationLockedHint:
+		"Keeps your position up to date during a round when the phone is locked, so distances are ready the moment you look. Needs location access set to Always.",
+	locationLockedDenied:
+		"Allow location access 'Always' for Fairway in Settings to use this.",
 	report: "Report a problem",
 	reportUnavailable:
 		"Problem reports aren't available in this build yet. Please tell us at the club or by email.",
@@ -160,6 +165,11 @@ export const profileNl: typeof profileEn = {
 	appearanceLight: "Licht",
 	appearanceDark: "Donker",
 	language: "Taal",
+	locationLocked: "GPS bij vergrendeld scherm",
+	locationLockedHint:
+		"Houdt je positie bij tijdens een ronde als je telefoon vergrendeld is, zodat afstanden meteen klaarstaan. Vereist locatietoegang 'Altijd'.",
+	locationLockedDenied:
+		"Sta locatietoegang 'Altijd' toe voor Fairway in Instellingen om dit te gebruiken.",
 	report: "Probleem melden",
 	reportUnavailable:
 		"Problemen melden kan nog niet in deze versie. Laat het ons weten via de club of per e-mail.",

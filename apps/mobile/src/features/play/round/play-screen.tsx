@@ -1,14 +1,19 @@
 /**
  * The on-course screen (Golfshot layout): the hole fills the screen, the
  * controls float over it in glass. Top: close · hole switcher · scorecard.
- * Right: Back / CENTER / Front. Bottom: hole/green view · Score · (shot).
+ * Right: Back / CENTER / Front. Bottom: hole/green view · Score · mark shot.
  *
  * Distances come from GPS, or from the tee until there is a fix. The current
  * hole lives on the server (`rounds.setCurrentHole`) so the web and a second
  * phone agree; the screen moves at once and reports a failed write.
+ *
+ * Marking a shot saves the ball's position (server ack = saved) and then asks
+ * for the club, which is what learns club distances. Standing on the next
+ * tee offers the next hole; it never moves on by itself.
  */
 import { DEFAULT_BAG } from "@fairway/core/club-suggest";
 import { haversineMeters, type LatLng } from "@fairway/core/geo";
+import { shouldAdvance } from "@fairway/core/hole-advance";
 import {
 	greenNumbers,
 	type HazardInPlay,
@@ -20,9 +25,9 @@ import { useKeepAwake } from "expo-keep-awake";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { api, type Doc } from "../../../convex/api";
+import { api, type Doc, type Id } from "../../../convex/api";
 import { useQuery } from "../../../convex/query-cache";
 import { haptics } from "../../../feedback/haptics";
 import { fmt, useI18n } from "../../../i18n";
@@ -30,11 +35,17 @@ import { course, spacing, type as typeRamp } from "../../../theme";
 import { EmptyState } from "../../../ui/empty-state";
 import { AppText } from "../../../ui/text";
 import { useToast } from "../../../ui/toast";
+import { useBackgroundLocationWhilePlaying } from "../../location/background/background-location";
 import { useWatchPosition } from "../../location/position/use-watch-position";
 import { HoleCanvas, hasSatellite } from "../hole/hole-canvas";
 import { HudButton } from "../hud/hud-button";
 import { HudGlass } from "../hud/hud-glass";
-import { defaultTarget, distanceNumber, legLabel } from "./play-model";
+import {
+	defaultTarget,
+	distanceNumber,
+	isOnHole,
+	legLabel,
+} from "./play-model";
 
 type Active = NonNullable<
 	ReturnType<typeof useQuery<typeof api.rounds.active>>
@@ -100,9 +111,16 @@ function PlayHole({
 	const toast = useToast();
 	const insets = useSafeAreaInsets();
 	const setCurrentHole = useMutation(api.rounds.setCurrentHole);
+	const markShot = useMutation(api.shots.mark);
+	const setShotClub = useMutation(api.shots.setClub);
 	const gps = useWatchPosition();
+	useBackgroundLocationWhilePlaying({
+		title: t.play.trackingTitle,
+		body: t.play.trackingBody,
+	});
 
 	const { round, holes } = active;
+	const allShots = useQuery(api.shots.forRound, { roundId: round._id });
 	const [holeIndex, setHoleIndex] = useState(round.currentHoleIndex ?? 0);
 	// Follow the server when another device moves the round on.
 	useEffect(() => {
@@ -124,19 +142,42 @@ function PlayHole({
 				: null,
 		[geometry],
 	);
+	const nextRef = round.holeRefs[holeIndex + 1];
+	const nextGeometry =
+		nextRef === undefined
+			? null
+			: (detail?.geometry.find((g) => g.ref === nextRef) ?? null);
+	const nextAnchors = useMemo(
+		() =>
+			nextGeometry
+				? holeAnchors({
+						...nextGeometry,
+						holeLine: nextGeometry.holeLine ?? [],
+					})
+				: null,
+		[nextGeometry],
+	);
+	const holeShots = useMemo(
+		() =>
+			(allShots ?? [])
+				.filter((shot) => shot.holeIndex === holeIndex)
+				.map((shot) => shot.position),
+		[allShots, holeIndex],
+	);
 
 	// GPS counts only on (or near) this hole; at home it would draw a line
 	// across the country.
 	const located =
-		!!gps.position &&
-		!!anchors &&
-		haversineMeters(gps.position, anchors.green) < 700;
+		!!gps.position && !!anchors && isOnHole(gps.position, anchors);
 	const player: LatLng | null = anchors
 		? located && gps.position
 			? gps.position
 			: anchors.tee
 		: null;
 
+	// Shot just marked, waiting for its club (null: no strip).
+	const [pendingShot, setPendingShot] = useState<Id<"shots"> | null>(null);
+	const [marking, setMarking] = useState(false);
 	const [target, setTarget] = useState<LatLng | null>(null);
 	// biome-ignore lint/correctness/useExhaustiveDependencies: reset per hole only
 	useEffect(() => {
@@ -144,7 +185,51 @@ function PlayHole({
 			anchors && player ? defaultTarget(player, anchors.green, bag) : null,
 		);
 		setGreenView(false);
+		setPendingShot(null);
 	}, [ref, anchors?.green.lat, anchors?.green.lng]);
+
+	async function onMarkShot() {
+		if (!located || !gps.position) {
+			toast.error(t.play.markNeedsGps);
+			return;
+		}
+		setMarking(true);
+		try {
+			const shotId = await markShot({
+				roundId: round._id,
+				holeIndex,
+				position: gps.position,
+			});
+			haptics.entryLogged();
+			setPendingShot(shotId);
+			// The next shot starts here: aim it from the ball, not the old spot.
+			if (anchors) setTarget(defaultTarget(gps.position, anchors.green, bag));
+		} catch {
+			toast.error(t.play.markError);
+		} finally {
+			setMarking(false);
+		}
+	}
+	function pickClub(club: string | undefined) {
+		const shotId = pendingShot;
+		setPendingShot(null);
+		if (!shotId || club === undefined) return;
+		haptics.selectionChanged();
+		setShotClub({ shotId, club }).catch(() => toast.error(t.play.markError));
+	}
+
+	// "On the next tee": offered once per hole until dismissed.
+	const [dismissedOffer, setDismissedOffer] = useState<number | null>(null);
+	const offerNext =
+		!!gps.position &&
+		!!anchors &&
+		dismissedOffer !== holeIndex &&
+		shouldAdvance(
+			gps.position,
+			anchors,
+			nextAnchors ?? undefined,
+			gps.accuracyMeters ?? 0,
+		);
 
 	function goTo(next: number) {
 		if (next < 0 || next >= round.holeRefs.length) return;
@@ -200,6 +285,7 @@ function PlayHole({
 					hazards={hazards}
 					hazardLabel={hazardLabel}
 					greenView={greenView}
+					shots={holeShots}
 					insets={{
 						top: hudTop + 64,
 						bottom: hudBottom + 72,
@@ -325,6 +411,98 @@ function PlayHole({
 				</View>
 			) : null}
 
+			{pendingShot ? (
+				<View
+					style={[styles.tray, { bottom: hudBottom + 64 }]}
+					pointerEvents="box-none"
+				>
+					<HudGlass capsule={false} style={styles.trayCard}>
+						<AppText
+							variant="caption"
+							style={[styles.onHudMuted, styles.trayTitle]}
+						>
+							{t.play.whichClub}
+						</AppText>
+						<ScrollView
+							horizontal
+							showsHorizontalScrollIndicator={false}
+							contentContainerStyle={styles.clubRow}
+						>
+							{bag.map((club) => (
+								<Pressable
+									key={club.name}
+									accessibilityRole="button"
+									onPress={() => pickClub(club.name)}
+									style={({ pressed }) => [
+										styles.clubChip,
+										pressed && styles.pressed,
+									]}
+								>
+									<AppText variant="control" style={styles.onHud}>
+										{club.name}
+									</AppText>
+								</Pressable>
+							))}
+							<Pressable
+								accessibilityRole="button"
+								onPress={() => pickClub(undefined)}
+								style={({ pressed }) => [
+									styles.clubChip,
+									styles.skipChip,
+									pressed && styles.pressed,
+								]}
+							>
+								<AppText variant="control" style={styles.onHudMuted}>
+									{t.play.skipClub}
+								</AppText>
+							</Pressable>
+						</ScrollView>
+					</HudGlass>
+				</View>
+			) : offerNext ? (
+				<View
+					style={[styles.tray, { bottom: hudBottom + 64 }]}
+					pointerEvents="box-none"
+				>
+					<HudGlass capsule={false} style={styles.offer}>
+						<AppText
+							variant="control"
+							style={[styles.onHud, styles.offerText]}
+							accessibilityRole="alert"
+						>
+							{fmt(t.play.nextTee, { n: holeIndex + 2 })}
+						</AppText>
+						<Pressable
+							accessibilityRole="button"
+							onPress={() => setDismissedOffer(holeIndex)}
+							hitSlop={6}
+							style={({ pressed }) => [
+								styles.offerButton,
+								pressed && styles.pressed,
+							]}
+						>
+							<AppText variant="control" style={styles.onHudMuted}>
+								{t.play.notNow}
+							</AppText>
+						</Pressable>
+						<Pressable
+							accessibilityRole="button"
+							onPress={() => goTo(holeIndex + 1)}
+							hitSlop={6}
+							style={({ pressed }) => [
+								styles.offerButton,
+								styles.offerGo,
+								pressed && styles.pressed,
+							]}
+						>
+							<AppText variant="control" style={styles.offerGoText}>
+								{fmt(t.play.goToHole, { n: holeIndex + 2 })}
+							</AppText>
+						</Pressable>
+					</HudGlass>
+				</View>
+			) : null}
+
 			{/* Bottom bar */}
 			<View
 				style={[styles.bottomBar, { bottom: hudBottom }]}
@@ -359,7 +537,12 @@ function PlayHole({
 						{fmt(t.play.scoreHole, { n: holeIndex + 1 })}
 					</AppText>
 				</Pressable>
-				<View style={styles.bottomSpacer} />
+				<HudButton
+					symbol={{ ios: "mappin.and.ellipse", android: "add_location" }}
+					label={t.play.markShot}
+					onPress={() => void onMarkShot()}
+					disabled={!anchors || marking}
+				/>
 			</View>
 		</View>
 	);
@@ -466,5 +649,37 @@ const styles = StyleSheet.create({
 		justifyContent: "center",
 	},
 	scoreLabel: { color: course.onTarget, fontWeight: "800" },
-	bottomSpacer: { width: 48 },
+	pressed: { opacity: 0.7 },
+	tray: { position: "absolute", left: spacing.md, right: spacing.md },
+	trayCard: { paddingVertical: spacing.sm, gap: spacing.xs },
+	trayTitle: { paddingHorizontal: spacing.md },
+	clubRow: { gap: spacing.xs, paddingHorizontal: spacing.md },
+	clubChip: {
+		minHeight: 44,
+		minWidth: 52,
+		paddingHorizontal: spacing.md,
+		borderRadius: 22,
+		borderWidth: 1,
+		borderColor: course.ring,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	skipChip: { borderStyle: "dashed" },
+	offer: {
+		flexDirection: "row",
+		alignItems: "center",
+		gap: spacing.xs,
+		padding: spacing.xs,
+		paddingLeft: spacing.md,
+	},
+	offerText: { flex: 1 },
+	offerButton: {
+		minHeight: 44,
+		paddingHorizontal: spacing.md,
+		borderRadius: 22,
+		alignItems: "center",
+		justifyContent: "center",
+	},
+	offerGo: { backgroundColor: course.target },
+	offerGoText: { color: course.onTarget, fontWeight: "800" },
 });

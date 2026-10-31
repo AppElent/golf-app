@@ -1,14 +1,14 @@
 /**
  * Profile: golf settings that live on the account (handicap, distances, home
  * course, the bag), phone settings that live on the phone (appearance,
- * language), and the account itself (report a problem, sign out, delete).
+ * language, GPS while locked), and the account itself (report a problem, sign out, delete).
  */
 import { useAuth, useUser } from "@clerk/expo";
 import { useMutation } from "convex/react";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet, View } from "react-native";
+import { Alert, ScrollView, StyleSheet, Switch, View } from "react-native";
 import { api } from "../../../convex/api";
 import { useQuery } from "../../../convex/query-cache";
 import { fmt, type Locale, localizeDecimal, useI18n } from "../../../i18n";
@@ -27,6 +27,10 @@ import { FormSegmentedRow } from "../../../ui/form";
 import { InsetList, InsetRow } from "../../../ui/inset-list";
 import { AppText } from "../../../ui/text";
 import { useToast } from "../../../ui/toast";
+import {
+	backgroundLocationPreferred,
+	setBackgroundLocationPreferred,
+} from "../../location/background/background-location";
 import { handicapText } from "./profile-model";
 
 /** Language names are written in their own language. */
@@ -50,6 +54,16 @@ export function ProfileScreen() {
 	const updateSettings = useMutation(api.settings.update);
 	const deleteMyData = useMutation(api.account.deleteMyData);
 	const [deleting, setDeleting] = useState(false);
+	const [lockedGps, setLockedGps] = useState(backgroundLocationPreferred);
+
+	async function onLockedGps(on: boolean) {
+		setLockedGps(on);
+		const result = await setBackgroundLocationPreferred(on);
+		setLockedGps(result.on);
+		if (result.needsSettings) {
+			Alert.alert(t.profile.locationLocked, t.profile.locationLockedDenied);
+		}
+	}
 
 	const homeCourse =
 		settings?.homeCourseId && courses
@@ -155,6 +169,21 @@ export function ProfileScreen() {
 					/>
 				</View>
 			</View>
+
+			<InsetList compact footer={t.profile.locationLockedHint}>
+				<InsetRow
+					id="locked-gps"
+					leading={{ symbol: "location" }}
+					title={t.profile.locationLocked}
+					trailing={
+						<Switch
+							value={lockedGps}
+							onValueChange={(on) => void onLockedGps(on)}
+							accessibilityLabel={t.profile.locationLocked}
+						/>
+					}
+				/>
+			</InsetList>
 
 			<InsetList
 				compact

@@ -1,5 +1,10 @@
 import { haversineMeters } from "@fairway/core/geo";
-import { defaultTarget, distanceNumber, legLabel } from "./play-model";
+import {
+	defaultTarget,
+	distanceNumber,
+	isOnHole,
+	legLabel,
+} from "./play-model";
 
 const tee = { lat: 52, lng: 5.9 };
 const green = { lat: 52.004, lng: 5.9 }; // ~445 m
@@ -22,5 +27,16 @@ describe("play model", () => {
 		expect(distanceNumber(150, "yd")).toBe("164");
 		expect(legLabel(148, "m", bag, true)).toBe("148 · 7i");
 		expect(legLabel(148, "m", bag, false)).toBe("148");
+	});
+});
+
+describe("isOnHole", () => {
+	const anchors = { tee: { lat: 52, lng: 5 }, green: { lat: 52.0036, lng: 5 } }; // ~400 m
+	it("counts a fix on or beside the hole", () => {
+		expect(isOnHole({ lat: 52.001, lng: 5.001 }, anchors)).toBe(true);
+		expect(isOnHole({ lat: 51.9995, lng: 5 }, anchors)).toBe(true);
+	});
+	it("ignores a fix two holes away", () => {
+		expect(isOnHole({ lat: 51.996, lng: 5 }, anchors)).toBe(false);
 	});
 });
