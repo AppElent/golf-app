@@ -3,8 +3,8 @@ import {
 	adjustedGrossScore,
 	playingHandicap,
 	scoreDifferential,
-} from "../src/domain/handicap";
-import { stablefordPoints, totalStrokes, vsPar } from "../src/domain/scoring";
+} from "@fairway/core/handicap";
+import { stablefordPoints, totalStrokes, vsPar } from "@fairway/core/scoring";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";

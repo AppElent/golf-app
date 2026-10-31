@@ -1,4 +1,4 @@
-import type { LatLng } from "../../domain/geo";
+import type { LatLng } from "@fairway/core/geo";
 import type { HoleShapes, Projector } from "./projection";
 
 const TREE_TONES = ["#3f7a4e", "#4f9160", "#68a878"];

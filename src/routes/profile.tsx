@@ -1,10 +1,10 @@
+import { formatDistance, type Units } from "@fairway/core/format";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import { formatDistance, type Units } from "../domain/format";
 
 export const Route = createFileRoute("/profile")({ component: ProfileScreen });
 

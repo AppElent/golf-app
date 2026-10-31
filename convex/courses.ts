@@ -1,5 +1,5 @@
 import { v } from "convex/values";
-import { normalizeCourse } from "../src/domain/osm";
+import { normalizeCourse } from "@fairway/core/osm";
 import { internal } from "./_generated/api";
 import {
 	action,

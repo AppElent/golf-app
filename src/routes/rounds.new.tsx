@@ -1,11 +1,11 @@
+import { playingHandicap } from "@fairway/core/handicap";
+import { detectLoops } from "@fairway/core/loops";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { Minus, Plus, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import { playingHandicap } from "../domain/handicap";
-import { detectLoops } from "../domain/loops";
 
 export const Route = createFileRoute("/rounds/new")({ component: RoundSetup });
 

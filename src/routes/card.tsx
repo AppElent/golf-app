@@ -1,9 +1,3 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
-import { Minus, Plus } from "lucide-react";
-import { useState } from "react";
-import { api } from "../../convex/_generated/api";
-import { SyncPill } from "../components/SyncPill";
 import {
 	formatVsPar,
 	type ScoreMark,
@@ -12,7 +6,13 @@ import {
 	stablefordPoints,
 	totalStrokes,
 	vsPar,
-} from "../domain/scoring";
+} from "@fairway/core/scoring";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useMutation, useQuery } from "convex/react";
+import { Minus, Plus } from "lucide-react";
+import { useState } from "react";
+import { api } from "../../convex/_generated/api";
+import { SyncPill } from "../components/SyncPill";
 import { useOnlineStatus } from "../hooks/useOnlineStatus";
 import { keyFor } from "../offline/scoreQueue";
 import { useScoreSync } from "../offline/useScoreSync";

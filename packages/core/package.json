@@ -1,0 +1,21 @@
+{
+	"name": "@fairway/core",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"description": "Framework-free golf domain logic shared by the web app, Convex, and apps/mobile. Ships raw TypeScript (Vite, Convex esbuild and Metro all resolve it); keep it dependency-free.",
+	"exports": {
+		"./club-suggest": "./src/club-suggest.ts",
+		"./format": "./src/format.ts",
+		"./geo": "./src/geo.ts",
+		"./handicap": "./src/handicap.ts",
+		"./loops": "./src/loops.ts",
+		"./osm": "./src/osm.ts",
+		"./scoring": "./src/scoring.ts",
+		"./stats": "./src/stats.ts"
+	},
+	"dependencies": {},
+	"scripts": {
+		"typecheck": "tsc --noEmit"
+	}
+}

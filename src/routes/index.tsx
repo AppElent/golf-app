@@ -1,10 +1,10 @@
+import { formatDistance } from "@fairway/core/format";
+import { wouldBeIndexHistory } from "@fairway/core/handicap";
+import { formatVsPar } from "@fairway/core/scoring";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Sparkline } from "../components/Sparkline";
-import { formatDistance } from "../domain/format";
-import { wouldBeIndexHistory } from "../domain/handicap";
-import { formatVsPar } from "../domain/scoring";
 
 export const Route = createFileRoute("/")({ component: HomeScreen });
 

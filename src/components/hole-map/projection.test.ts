@@ -1,5 +1,5 @@
+import type { LatLng } from "@fairway/core/geo";
 import { describe, expect, it } from "vitest";
-import type { LatLng } from "../../domain/geo";
 import { buildProjector } from "./projection";
 
 const tee: LatLng = { lat: 52.0, lng: 5.8 };

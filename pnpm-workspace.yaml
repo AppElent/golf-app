@@ -1,3 +1,13 @@
+# Web app (TanStack Start) + convex/ stay at the repo root; apps/mobile (Expo) and
+# packages/core (shared, dependency-free domain logic) are workspace members.
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# Expo fingerprints hash .pnpm paths; keep the same length on every machine (macOS,
+# Windows, EAS Linux) so identical installs produce identical runtime fingerprints.
+virtualStoreDirMaxLength: 60
+
 onlyBuiltDependencies:
   - esbuild
   - lightningcss

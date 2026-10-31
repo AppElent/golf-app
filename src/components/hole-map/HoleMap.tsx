@@ -1,9 +1,9 @@
-import { useRef, useState } from "react";
 import {
 	distancesToGreen,
 	haversineMeters,
 	type LatLng,
-} from "../../domain/geo";
+} from "@fairway/core/geo";
+import { useRef, useState } from "react";
 import { HoleMapDefs } from "./defs";
 import { GroundLayer } from "./GroundLayer";
 import { type HazardChip, InfoOverlay } from "./InfoOverlay";

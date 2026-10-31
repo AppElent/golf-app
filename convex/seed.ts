@@ -1,4 +1,4 @@
-import { detectLoops } from "../src/domain/loops";
+import { detectLoops } from "@fairway/core/loops";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { action, type ActionCtx } from "./_generated/server";

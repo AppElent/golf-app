@@ -1,4 +1,4 @@
-import { type LatLng, projectToLocal } from "../../domain/geo";
+import { type LatLng, projectToLocal } from "@fairway/core/geo";
 
 export interface Point {
 	x: number;

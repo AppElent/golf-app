@@ -1,3 +1,5 @@
+import { DEFAULT_BAG, suggestClub } from "@fairway/core/club-suggest";
+import { distancesToGreen, type LatLng } from "@fairway/core/geo";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -5,8 +7,6 @@ import { useEffect, useState } from "react";
 import { api } from "../../convex/_generated/api";
 import { HoleMap, type MapVariant } from "../components/hole-map/HoleMap";
 import type { HoleShapes } from "../components/hole-map/projection";
-import { DEFAULT_BAG, suggestClub } from "../domain/club-suggest";
-import { distancesToGreen, type LatLng } from "../domain/geo";
 import { useGeolocation } from "../hooks/useGeolocation";
 
 export const Route = createFileRoute("/play")({ component: PlayScreen });

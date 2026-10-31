@@ -1,5 +1,5 @@
+import type { LatLng } from "@fairway/core/geo";
 import { useEffect, useState } from "react";
-import type { LatLng } from "../domain/geo";
 
 export interface GeoState {
 	position: LatLng | null;
