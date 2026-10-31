@@ -32,3 +32,11 @@ allowBuilds:
   esbuild: true
   sharp: true
   workerd: true
+  # Expo Device Hub's Android streaming binary (mobile dev tooling).
+  node-datachannel: true
+  # Install scripts not needed: jest/expo transitives ship working dist.
+  '@parcel/watcher': false
+  browser-tabs-lock: false
+  core-js: false
+  dtrace-provider: false
+  unrs-resolver: false

@@ -1,0 +1,4 @@
+{
+	"NSLocationWhenInUseUsageDescription": "Fairway uses your location on the course to measure distances to the green, hazards and your target.",
+	"NSLocationAlwaysAndWhenInUseUsageDescription": "With 'Always', Fairway keeps your distances and hole ready while the phone is locked during a round. Only during an active round."
+}
