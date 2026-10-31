@@ -29,8 +29,10 @@ export const scorecardEn = {
 	finish: "Finish round",
 	finishTitle: "Finish this round?",
 	finishMessage: "Totals and your handicap differential are stored.",
-	finishMissing:
-		"{count} holes have no score for you. They count as not played.",
+	finishMissing: {
+		one: "{count} hole has no score for you. It counts as not played.",
+		other: "{count} holes have no score for you. They count as not played.",
+	},
 	finishError: "Could not finish the round. Check your connection.",
 	abandon: "Abandon round",
 	abandonTitle: "Abandon this round?",
@@ -71,8 +73,11 @@ export const scorecardNl: typeof scorecardEn = {
 	finish: "Ronde afronden",
 	finishTitle: "Deze ronde afronden?",
 	finishMessage: "Totalen en je handicapdifferential worden opgeslagen.",
-	finishMissing:
-		"{count} holes hebben geen score van jou. Die tellen als niet gespeeld.",
+	finishMissing: {
+		one: "{count} hole heeft geen score van jou. Die telt als niet gespeeld.",
+		other:
+			"{count} holes hebben geen score van jou. Die tellen als niet gespeeld.",
+	},
 	finishError: "Ronde afronden mislukt. Controleer je verbinding.",
 	abandon: "Ronde stoppen",
 	abandonTitle: "Deze ronde stoppen?",

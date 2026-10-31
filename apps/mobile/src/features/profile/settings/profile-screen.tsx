@@ -11,7 +11,13 @@ import { useState } from "react";
 import { Alert, ScrollView, StyleSheet, Switch, View } from "react-native";
 import { api } from "../../../convex/api";
 import { useQuery } from "../../../convex/query-cache";
-import { fmt, type Locale, localizeDecimal, useI18n } from "../../../i18n";
+import {
+	fmt,
+	type Locale,
+	localizeDecimal,
+	plural,
+	useI18n,
+} from "../../../i18n";
 import { openProblemReport } from "../../../monitoring/report-problem";
 import {
 	type AppearancePreference,
@@ -128,7 +134,9 @@ export function ProfileScreen() {
 					leading={{ symbol: "bag" }}
 					title={t.profile.clubs}
 					value={
-						clubs ? fmt(t.profile.clubsCount, { n: clubs.length }) : undefined
+						clubs
+							? plural(locale, clubs.length, t.profile.clubsCount)
+							: undefined
 					}
 					chevron
 					onPress={() => router.push("/profile/clubs")}

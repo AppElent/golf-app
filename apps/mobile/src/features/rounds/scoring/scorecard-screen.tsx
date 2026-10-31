@@ -10,7 +10,7 @@ import { Button, Platform, StyleSheet, View } from "react-native";
 import { api } from "../../../convex/api";
 import { useQuery } from "../../../convex/query-cache";
 import { haptics } from "../../../feedback/haptics";
-import { fmt, useI18n } from "../../../i18n";
+import { fmt, plural, useI18n } from "../../../i18n";
 import {
 	radius,
 	spacing,
@@ -28,7 +28,7 @@ import { cardRows, unscoredHoles } from "./score-model";
 import { ScorecardGrid } from "./scorecard-grid";
 
 export function ScorecardScreen() {
-	const { t } = useI18n();
+	const { t, locale } = useI18n();
 	const router = useRouter();
 	const colors = useTokens();
 	const styles = useThemedStyles(createStyles);
@@ -97,7 +97,7 @@ export function ScorecardScreen() {
 			title: t.scorecard.finishTitle,
 			message:
 				missing > 0
-					? fmt(t.scorecard.finishMissing, { count: missing })
+					? plural(locale, missing, t.scorecard.finishMissing)
 					: t.scorecard.finishMessage,
 			confirmLabel: t.scorecard.finish,
 		});

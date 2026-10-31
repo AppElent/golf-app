@@ -72,7 +72,7 @@ export const statsEn = {
 	doubles: "Double or worse",
 	clubs: "Club distances",
 	clubsHint: "Learned from shots you mark on the course.",
-	clubShots: "{n} shots",
+	clubShots: { one: "{count} shot", other: "{count} shots" },
 	trend: "Would-be index after each round",
 };
 
@@ -100,7 +100,7 @@ export const statsNl: typeof statsEn = {
 	doubles: "Dubbel of slechter",
 	clubs: "Clubafstanden",
 	clubsHint: "Geleerd van slagen die je op de baan markeert.",
-	clubShots: "{n} slagen",
+	clubShots: { one: "{count} slag", other: "{count} slagen" },
 	trend: "Indicatieve handicap na elke ronde",
 };
 
@@ -116,7 +116,7 @@ export const profileEn = {
 	homeCourse: "Home course",
 	homeCourseNone: "None",
 	clubs: "My bag",
-	clubsCount: "{n} clubs",
+	clubsCount: { one: "{count} club", other: "{count} clubs" },
 	app: "App",
 	appearance: "Appearance",
 	appearanceSystem: "Auto",
@@ -158,7 +158,7 @@ export const profileNl: typeof profileEn = {
 	homeCourse: "Thuisbaan",
 	homeCourseNone: "Geen",
 	clubs: "Mijn tas",
-	clubsCount: "{n} clubs",
+	clubsCount: { one: "{count} club", other: "{count} clubs" },
 	app: "App",
 	appearance: "Weergave",
 	appearanceSystem: "Auto",

@@ -11,7 +11,7 @@ import { ScrollView, StyleSheet, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 import { api } from "../../../convex/api";
 import { useQuery } from "../../../convex/query-cache";
-import { fmt, localizeDecimal, useI18n } from "../../../i18n";
+import { fmt, localizeDecimal, plural, useI18n } from "../../../i18n";
 import {
 	course,
 	metrics,
@@ -202,7 +202,7 @@ export function StatsScreen() {
 											club.carryMeters === null
 												? null
 												: formatDistance(club.carryMeters, units),
-											fmt(t.stats.clubShots, { n: club.learned.shots }),
+											plural(locale, club.learned.shots, t.stats.clubShots),
 										]
 											.filter(Boolean)
 											.join(" · ")
