@@ -6,6 +6,7 @@
 import { signInEn, signUpEn, verifyEmailEn } from "./auth";
 import { commonEn, tabsEn } from "./common";
 import { playEn } from "./play";
+import { scorecardEn, scoreEn } from "./score";
 import { coursesEn, homeEn, setupEn } from "./start";
 
 export const en = {
@@ -18,6 +19,8 @@ export const en = {
 	courses: coursesEn,
 	setup: setupEn,
 	play: playEn,
+	score: scoreEn,
+	scorecard: scorecardEn,
 };
 
 export type Messages = typeof en;

@@ -92,10 +92,14 @@ export function GhostButton({
 	icon,
 	size = "md",
 	loading = false,
+	tone = "neutral",
 	style,
 	disabled,
 	...rest
-}: Props) {
+}: Props & {
+	/** "danger" for a destructive action that still needs a confirm step. */
+	tone?: "neutral" | "danger";
+}) {
 	const colors = useTokens();
 	const styles = useThemedStyles(createStyles);
 	return (
@@ -125,7 +129,12 @@ export function GhostButton({
 			<AppText
 				variant={size === "lg" ? "heading" : "body"}
 				style={{
-					color: disabled && !loading ? colors.textMuted : colors.text,
+					color:
+						disabled && !loading
+							? colors.textMuted
+							: tone === "danger"
+								? colors.danger
+								: colors.text,
 					flexShrink: 1,
 					textAlign: "center",
 				}}

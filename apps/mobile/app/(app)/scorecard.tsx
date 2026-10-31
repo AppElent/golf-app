@@ -1,5 +1,5 @@
-import { View } from "react-native";
+import { ScorecardScreen } from "../../src/features/rounds/scoring/scorecard-screen";
 
-export default function Placeholder() {
-	return <View />;
+export default function ScorecardRoute() {
+	return <ScorecardScreen />;
 }
