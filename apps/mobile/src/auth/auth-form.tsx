@@ -13,6 +13,7 @@
 import type { ReactNode, Ref } from "react";
 import {
 	Pressable,
+	ScrollView,
 	StyleSheet,
 	TextInput,
 	type TextInputInstance,
@@ -45,7 +46,15 @@ export function AuthScreen({
 	const styles = useThemedStyles(createStyles);
 	return (
 		<Screen>
-			<View style={styles.root}>
+			{/* Scrolls so the links under the form stay reachable above the
+			    keyboard; dragging the form down dismisses it. */}
+			<ScrollView
+				contentContainerStyle={styles.root}
+				keyboardShouldPersistTaps="handled"
+				keyboardDismissMode="interactive"
+				automaticallyAdjustKeyboardInsets
+				showsVerticalScrollIndicator={false}
+			>
 				<View style={styles.brand}>
 					<View style={styles.mark} />
 					<AppText variant="display" accessibilityRole="header">
@@ -55,7 +64,7 @@ export function AuthScreen({
 				</View>
 				{children}
 				{footer ? <View style={styles.footer}>{footer}</View> : null}
-			</View>
+			</ScrollView>
 		</Screen>
 	);
 }
@@ -161,7 +170,7 @@ export function AuthLink({
 const createStyles = (colors: Tokens) =>
 	StyleSheet.create({
 		root: {
-			flex: 1,
+			flexGrow: 1,
 			justifyContent: "center",
 			paddingHorizontal: spacing.lg,
 			gap: spacing.sm,

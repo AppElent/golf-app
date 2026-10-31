@@ -6,7 +6,7 @@
  */
 import { interpolate, type LatLng } from "@fairway/core/geo";
 import { useEffect, useRef, useState } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import MapView, { Marker, Polyline } from "react-native-maps";
 import { course, type as typeRamp } from "../../../theme";
 import { holeCamera } from "./hole-camera";
@@ -36,8 +36,10 @@ export function HoleSatellite(props: HoleCanvasProps) {
 	const camera = holeCamera({
 		from,
 		green,
-		viewportHeight: height - insets.top - insets.bottom,
+		height,
+		insets,
 		greenView,
+		paddingFramesCamera: Platform.OS === "android",
 	});
 	// Re-frame on hole change / view toggle, not on every GPS tick.
 	const frameKey = `${green.lat},${green.lng},${greenView},${height > 0}`;
@@ -112,16 +114,21 @@ export function HoleSatellite(props: HoleCanvasProps) {
 							</View>
 						</Marker>
 					) : null}
-					<Label at={interpolate(from, target, 0.5)} text={toTargetLabel} />
+					<Label
+						key={`to-${toTargetLabel}`}
+						at={interpolate(from, target, 0.5)}
+						text={toTargetLabel}
+					/>
 					{targetToGreenLabel ? (
 						<Label
+							key={`rest-${targetToGreenLabel}`}
 							at={interpolate(target, green, 0.5)}
 							text={targetToGreenLabel}
 						/>
 					) : null}
 					{hazards.map((h) => (
 						<Label
-							key={`${h.at.lat},${h.at.lng}`}
+							key={`${h.at.lat},${h.at.lng},${hazardLabel(h)}`}
 							at={h.at}
 							text={hazardLabel(h)}
 							small
@@ -150,7 +157,9 @@ export function HoleSatellite(props: HoleCanvasProps) {
 }
 
 /** A distance label floating over the imagery. Remounts when its text changes
- *  so the marker bitmap is redrawn (tracksViewChanges stays off for speed). */
+ *  (the `key` at each call site), tracks view changes until its auto-sized
+ *  pill has laid out — snapshotted earlier it draws at zero size — then stops
+ *  for speed. */
 function Label({
 	at,
 	text,
@@ -160,17 +169,20 @@ function Label({
 	text: string;
 	small?: boolean;
 }) {
+	const [tracking, setTracking] = useState(true);
 	return (
 		<Marker
-			key={text}
 			coordinate={toCoord(at)}
 			anchor={{ x: 0.5, y: 0.5 }}
-			tracksViewChanges={false}
+			tracksViewChanges={tracking}
 			tappable={false}
 			// Distance labels sit above hazard labels when they collide.
 			zIndex={small ? 1 : 2}
 		>
-			<View style={[styles.label, small && styles.labelSmall]}>
+			<View
+				style={[styles.label, small && styles.labelSmall]}
+				onLayout={() => requestAnimationFrame(() => setTracking(false))}
+			>
 				<Text style={[styles.labelText, small && styles.labelTextSmall]}>
 					{text}
 				</Text>

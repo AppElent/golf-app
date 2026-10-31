@@ -45,9 +45,10 @@ export function HoleSchematic(props: HoleCanvasProps) {
 	const [size, setSize] = useState({ width: 0, height: 0 });
 	const from = located ? player : tee;
 	const innerHeight = size.height - insets.top - insets.bottom;
+	const innerWidth = size.width - insets.left - insets.right;
 
 	const projector = useMemo(() => {
-		if (size.width === 0 || innerHeight <= 0) return null;
+		if (innerWidth <= 0 || innerHeight <= 0) return null;
 		const nearGreen = (ring: Ring) =>
 			ring.some((p) => haversineMeters(p, green) < 25);
 		const features: Ring[] = greenView
@@ -57,16 +58,18 @@ export function HoleSchematic(props: HoleCanvasProps) {
 			tee: from,
 			green,
 			features: features.length > 0 ? features : [[green]],
-			width: size.width,
+			width: innerWidth,
 			height: innerHeight,
 			padding: greenView ? 48 : 28,
 			includeTee: !greenView,
 		});
-	}, [size.width, innerHeight, geometry, green, from, greenView]);
+	}, [innerWidth, innerHeight, geometry, green, from, greenView]);
 
 	const moveTarget = (x: number, y: number) => {
 		if (projector)
-			onTargetChange(projector.unproject({ x, y: y - insets.top }));
+			onTargetChange(
+				projector.unproject({ x: x - insets.left, y: y - insets.top }),
+			);
 	};
 	const gesture = Gesture.Exclusive(
 		Gesture.Pan()
@@ -108,7 +111,7 @@ export function HoleSchematic(props: HoleCanvasProps) {
 				{projector ? (
 					<Svg width={size.width} height={size.height}>
 						<Rect width={size.width} height={size.height} fill={course.rough} />
-						<G y={insets.top}>
+						<G x={insets.left} y={insets.top}>
 							{geometry.fairways.map((r) => (
 								<Path
 									key={`f${ringKey(r)}`}

@@ -204,7 +204,8 @@ function PlayHole({
 						top: hudTop + 64,
 						bottom: hudBottom + 72,
 						left: 0,
-						right: 0,
+						// Clear of the front/centre/back stack on the right.
+						right: 96,
 					}}
 				/>
 			) : (

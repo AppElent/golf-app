@@ -67,43 +67,46 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 	// by the buttons. State would re-create it and strand the caller.
 	const resolveRef = useRef<((answer: boolean) => void) | null>(null);
 
-	const confirm = useCallback<ConfirmFn>((next) => {
-		// The one place a destructive warning is played. Putting it here rather
-		// than at each delete button is what keeps the vocabulary restrained:
-		// every destructive confirmation warns exactly once, and no ordinary
-		// confirmation can acquire a buzz by being copied from a destructive one.
-		if (resolveRef.current) return Promise.resolve(false);
-		if (next.destructive) haptics.destructiveWarning();
-		return new Promise<boolean>((resolve) => {
-			resolveRef.current = resolve;
-			if (Platform.OS === "ios") {
-				const finish = (answer: boolean) => {
-					if (resolveRef.current !== resolve) return;
-					resolveRef.current = null;
-					resolve(answer);
-				};
-				Alert.alert(
-					next.title,
-					next.message,
-					[
-						{
-							text: next.cancelLabel ?? "Keep",
-							style: "cancel",
-							onPress: () => finish(false),
-						},
-						{
-							text: next.confirmLabel,
-							style: next.destructive ? "destructive" : "default",
-							onPress: () => finish(true),
-						},
-					],
-					{ cancelable: true, onDismiss: () => finish(false) },
-				);
-			} else {
-				setOptions(next);
-			}
-		});
-	}, []);
+	const confirm = useCallback<ConfirmFn>(
+		(next) => {
+			// The one place a destructive warning is played. Putting it here rather
+			// than at each delete button is what keeps the vocabulary restrained:
+			// every destructive confirmation warns exactly once, and no ordinary
+			// confirmation can acquire a buzz by being copied from a destructive one.
+			if (resolveRef.current) return Promise.resolve(false);
+			if (next.destructive) haptics.destructiveWarning();
+			return new Promise<boolean>((resolve) => {
+				resolveRef.current = resolve;
+				if (Platform.OS === "ios") {
+					const finish = (answer: boolean) => {
+						if (resolveRef.current !== resolve) return;
+						resolveRef.current = null;
+						resolve(answer);
+					};
+					Alert.alert(
+						next.title,
+						next.message,
+						[
+							{
+								text: next.cancelLabel ?? t.common.keep,
+								style: "cancel",
+								onPress: () => finish(false),
+							},
+							{
+								text: next.confirmLabel,
+								style: next.destructive ? "destructive" : "default",
+								onPress: () => finish(true),
+							},
+						],
+						{ cancelable: true, onDismiss: () => finish(false) },
+					);
+				} else {
+					setOptions(next);
+				}
+			});
+		},
+		[t.common.keep],
+	);
 
 	useEffect(
 		() => () => {
