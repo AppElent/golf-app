@@ -18,3 +18,8 @@ plugin (locally installed) or https://github.com/AppElent/appelent-packages
 Before adding functionality that could apply to multiple apps, check the
 feature catalog first. To add or update a feature, use `/appelent`.
 <!-- appelent-managed:end -->
+
+<!-- appelent-guidelines:start -->
+Before implementing or reviewing code, read CODING_STANDARDS.md.
+For UI work, also read DESIGN_SYSTEM.md. Follow their task-specific links.
+<!-- appelent-guidelines:end -->
