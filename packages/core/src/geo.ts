@@ -79,3 +79,48 @@ export function carryDistances(
 		carry: Math.max(...vertexDistances),
 	};
 }
+
+/** Initial great-circle bearing from `a` to `b`, degrees clockwise from north
+ *  (0–360). Used to rotate the hole view so the tee→green line points up. */
+export function bearingDegrees(a: LatLng, b: LatLng): number {
+	const φ1 = toRad(a.lat);
+	const φ2 = toRad(b.lat);
+	const Δλ = toRad(b.lng - a.lng);
+	const y = Math.sin(Δλ) * Math.cos(φ2);
+	const x =
+		Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+	return ((Math.atan2(y, x) * 180) / Math.PI + 360) % 360;
+}
+
+/** Point at fraction `t` (0–1) along the straight line a→b. Exact enough at
+ *  hole scale; used to place distance labels midway along a line. */
+export function interpolate(a: LatLng, b: LatLng, t: number): LatLng {
+	return { lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t };
+}
+
+/** Items sorted nearest-first from `position`; items without a location last
+ *  (in their original order). Pure: does not mutate the input. */
+export function sortByDistance<T extends { location?: LatLng | null }>(
+	items: ReadonlyArray<T>,
+	position: LatLng,
+): Array<T & { distanceMeters: number | null }> {
+	return items
+		.map((item, index) => ({
+			item: {
+				...item,
+				distanceMeters: item.location
+					? haversineMeters(position, item.location)
+					: null,
+			},
+			index,
+		}))
+		.sort((a, b) => {
+			const da = a.item.distanceMeters;
+			const db = b.item.distanceMeters;
+			if (da === null && db === null) return a.index - b.index;
+			if (da === null) return 1;
+			if (db === null) return -1;
+			return da - db;
+		})
+		.map(({ item }) => item);
+}

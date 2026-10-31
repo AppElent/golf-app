@@ -111,4 +111,18 @@ export default defineSchema({
 	})
 		.index("by_round", ["roundId"])
 		.index("by_round_hole_player", ["roundId", "holeIndex", "playerIndex"]),
+
+	// Marked ball positions (owner only). Consecutive shots on one hole give
+	// the distance hit with the earlier shot's club.
+	shots: defineTable({
+		userId: v.string(),
+		roundId: v.id("rounds"),
+		// 0-based position in the round's holeRefs.
+		holeIndex: v.number(),
+		position: latLng,
+		club: v.optional(v.string()),
+		markedAt: v.number(),
+	})
+		.index("by_round", ["roundId"])
+		.index("by_user", ["userId"]),
 });

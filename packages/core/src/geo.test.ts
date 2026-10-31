@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+	bearingDegrees,
 	carryDistances,
 	distancesToGreen,
 	haversineMeters,
 	polygonCentroid,
 	projectToLocal,
+	sortByDistance,
 } from "./geo";
 
 describe("haversineMeters", () => {
@@ -93,5 +95,30 @@ describe("carryDistances", () => {
 		const d = carryDistances(player, water);
 		expect(d.reach).toBeCloseTo(55.6, 0);
 		expect(d.carry).toBeCloseTo(77.8, 0);
+	});
+});
+
+describe("bearingDegrees", () => {
+	it("is 0 due north, 90 due east, 180 south", () => {
+		const o = { lat: 52, lng: 5.9 };
+		expect(bearingDegrees(o, { lat: 52.01, lng: 5.9 })).toBeCloseTo(0, 3);
+		expect(bearingDegrees(o, { lat: 52, lng: 5.91 })).toBeCloseTo(90, 1);
+		expect(bearingDegrees(o, { lat: 51.99, lng: 5.9 })).toBeCloseTo(180, 3);
+	});
+});
+
+describe("sortByDistance", () => {
+	it("sorts nearest first and puts unlocated items last", () => {
+		const here = { lat: 52, lng: 5.9 };
+		const sorted = sortByDistance(
+			[
+				{ name: "far", location: { lat: 52.1, lng: 5.9 } },
+				{ name: "none" },
+				{ name: "near", location: { lat: 52.01, lng: 5.9 } },
+			],
+			here,
+		);
+		expect(sorted.map((c) => c.name)).toEqual(["near", "far", "none"]);
+		expect(sorted[2].distanceMeters).toBeNull();
 	});
 });

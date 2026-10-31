@@ -156,6 +156,25 @@ async function requireActiveRound(ctx: MutationCtx, roundId: Id<"rounds">) {
 	return round;
 }
 
+/** Delete a round with its scores and shots. */
+export async function deleteRoundData(
+	ctx: MutationCtx,
+	roundId: Id<"rounds">,
+) {
+	const [scores, shots] = await Promise.all([
+		ctx.db
+			.query("holeScores")
+			.withIndex("by_round", (q) => q.eq("roundId", roundId))
+			.collect(),
+		ctx.db
+			.query("shots")
+			.withIndex("by_round", (q) => q.eq("roundId", roundId))
+			.collect(),
+	]);
+	await Promise.all([...scores, ...shots].map((d) => ctx.db.delete(d._id)));
+	await ctx.db.delete(roundId);
+}
+
 /** Upsert one player's result on one hole. Last write wins (single scorer). */
 export const setScore = mutation({
 	args: {
@@ -215,12 +234,7 @@ export const abandon = mutation({
 	args: { roundId: v.id("rounds") },
 	handler: async (ctx, { roundId }) => {
 		await requireActiveRound(ctx, roundId);
-		const scores = await ctx.db
-			.query("holeScores")
-			.withIndex("by_round", (q) => q.eq("roundId", roundId))
-			.collect();
-		await Promise.all(scores.map((s) => ctx.db.delete(s._id)));
-		await ctx.db.delete(roundId);
+		await deleteRoundData(ctx, roundId);
 	},
 });
 
@@ -399,5 +413,50 @@ export const history = query({
 		);
 
 		return summaries;
+	},
+});
+
+/** One of the user's rounds (any status) with course, tee, holes and scores. */
+export const detail = query({
+	args: { roundId: v.id("rounds") },
+	handler: async (ctx, { roundId }) => {
+		const userId = await getUserId(ctx);
+		const round = await ctx.db.get(roundId);
+		if (!round || round.userId !== userId) return null;
+		const [course, tee, courseHoles, scores] = await Promise.all([
+			ctx.db.get(round.courseId),
+			ctx.db.get(round.teeId),
+			ctx.db
+				.query("holes")
+				.withIndex("by_course", (q) => q.eq("courseId", round.courseId))
+				.collect(),
+			ctx.db
+				.query("holeScores")
+				.withIndex("by_round", (q) => q.eq("roundId", round._id))
+				.collect(),
+		]);
+		if (!course || !tee) return null;
+		const byRef = new Map(courseHoles.map((h) => [h.ref, h]));
+		const holes = round.holeRefs.map((ref) => {
+			const hole = byRef.get(ref);
+			return {
+				ref,
+				par: hole?.par ?? 0,
+				strokeIndex: hole?.strokeIndex ?? 0,
+				lengthMeters: hole?.lengthMeters,
+			};
+		});
+		return { round, course, tee, holes, scores };
+	},
+});
+
+/** Delete one of the user's finished rounds. */
+export const remove = mutation({
+	args: { roundId: v.id("rounds") },
+	handler: async (ctx, { roundId }) => {
+		const userId = await getUserId(ctx);
+		const round = await ctx.db.get(roundId);
+		if (!round || round.userId !== userId) throw new Error("Round not found.");
+		await deleteRoundData(ctx, roundId);
 	},
 });

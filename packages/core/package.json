@@ -9,9 +9,12 @@
 		"./format": "./src/format.ts",
 		"./geo": "./src/geo.ts",
 		"./handicap": "./src/handicap.ts",
+		"./hole-advance": "./src/hole-advance.ts",
 		"./loops": "./src/loops.ts",
 		"./osm": "./src/osm.ts",
+		"./par-stats": "./src/par-stats.ts",
 		"./scoring": "./src/scoring.ts",
+		"./shots": "./src/shots.ts",
 		"./stats": "./src/stats.ts"
 	},
 	"dependencies": {},
