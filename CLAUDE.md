@@ -9,6 +9,11 @@ Convex (backend, `convex/`) + Clerk (auth, `@clerk/clerk-react`) + Cloudflare Wo
 (deploy target, `wrangler.jsonc` + `@cloudflare/vite-plugin`) + Tailwind v4 + Biome
 (lint/format) + Vitest (tests). **Package manager: pnpm, always** — never npm or yarn.
 
+pnpm workspace: the web app at the root, the **Fairway mobile app** in `apps/mobile`
+(Expo SDK 58, Expo Router, `@clerk/expo`, Convex — read `apps/mobile/AGENTS.md`
+before touching it), and shared domain logic in `packages/core` (`@fairway/core`).
+`convex/` serves both apps.
+
 ## Commands
 
 ```bash
@@ -18,7 +23,8 @@ pnpm dev:watch        # Convex dev (watching) + Vite together — use this when 
 pnpm generate-routes  # tsr generate (route tree codegen)
 pnpm build            # production build
 pnpm typecheck        # tsc --noEmit
-pnpm test             # vitest run (passWithNoTests: true — no tests exist yet)
+pnpm test             # vitest run (web, convex, packages/core)
+pnpm test:mobile      # jest in apps/mobile
 pnpm check            # biome check (lint + format check)
 pnpm lint:fix         # biome check --write
 pnpm cf-typegen       # regenerate worker-configuration.d.ts (rerun after editing wrangler.jsonc)

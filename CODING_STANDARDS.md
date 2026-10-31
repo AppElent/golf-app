@@ -43,3 +43,25 @@ Read only what the task needs; never preload every standard.
 
 Project decisions below select implementations and explain deviations from shared defaults.
 <!-- appelent-standards:end -->
+
+## Project decisions
+
+### Mobile (`apps/mobile`)
+
+- **Workspace:** domain logic shared by web and mobile lives in `@fairway/core`
+  (`packages/core`, raw TypeScript subpath exports such as `@fairway/core/geo`).
+  Convex functions in `convex/` serve both apps.
+- **Online first, disposable cache:** Convex is the only source of truth and a
+  write is saved when the server acknowledges it. On-device storage is limited to
+  phone preferences (`src/prefs/local-preference.ts`) and the query cache, and
+  deleting either never loses data. No offline write queue in v1.
+- **Data access:** query hooks come from `src/convex/query-cache`, mutations from
+  `convex/react`, `Id`/`Doc` types from `src/convex/api`.
+- **Exception — tests:** Jest (`jest-expo`) inside `apps/mobile` only; the rest of
+  the repo stays on Vitest. Scope: `apps/mobile/src/**/*.test.ts(x)`. Reason: the
+  React Native transform and native-module mocks are only maintained for Jest.
+- **Exception — Sentry:** not wired yet. Scope: mobile. Replacement:
+  `src/monitoring/report-problem.ts` returns `false` and the UI explains it.
+  Reason: no Sentry project or DSN exists for Fairway yet (tracked as an issue).
+
+Project facts (identity, env, builds): [mobile runbook](docs/runbooks/mobile.md).

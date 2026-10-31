@@ -1,41 +1,45 @@
-This is an Expo/React Native mobile application. Prioritize mobile-first patterns, performance, and cross-platform compatibility.
+# Fairway mobile (Expo)
 
-## Expo has changed — do not trust your training data
+Read the repo's `CODING_STANDARDS.md` and `DESIGN_SYSTEM.md` first; their project
+decisions cover this app. Project facts (identity, env, builds):
+[`docs/runbooks/mobile.md`](../../docs/runbooks/mobile.md).
 
-Expo ships breaking changes every SDK release. APIs you remember are likely renamed, moved, or removed. Before writing any code that touches an Expo, EAS, or React Native API:
+## Expo changes every SDK — check the docs
 
-1. Read the major version of the `expo` package in `package.json`.
-2. Fetch the matching versioned docs: `https://docs.expo.dev/versions/v<major>.0.0/`
-3. For anything else, fetch https://docs.expo.dev/llms.txt — an index of all Expo docs with corrections to common LLM misconceptions. Follow its links to the specific page you need; never answer from memory.
+Read the `expo` major in `package.json` and use the matching versioned docs
+(`https://docs.expo.dev/versions/v<major>.0.0/`), or https://docs.expo.dev/llms.txt.
+Do not rely on remembered APIs.
+
+## Layout
+
+- `app/` — Expo Router routes only (`(auth)`, `(app)` with NativeTabs, modal
+  sheets). Routes import a screen from `src/features`.
+- `src/features/<feature>/<subject>/` — screens, models (`*-model.ts`, pure and
+  unit-tested) and hooks. Feature folders: courses, home, location, play,
+  profile, rounds, stats.
+- `src/ui/` — domain-free controls; never imports features.
+- `src/theme`, `src/i18n`, `src/convex`, `src/prefs`, `src/auth`, `src/feedback`
+  (haptics), `src/monitoring`.
+- `pnpm check:mobile-structure` (part of `pnpm check`) enforces the layout.
 
 ## Commands
 
-Use `bunx` instead of `npx` if the project uses bun (`bun.lock` present).
+Use pnpm, never npm/npx/yarn:
 
 ```bash
-npx expo install <package>  # ALWAYS use instead of npm/yarn/pnpm/bun add — resolves SDK-compatible versions
-npx expo start              # start the dev server
-npx expo lint               # lint
-npx tsc --noEmit            # typecheck
-npx expo-doctor             # diagnose dependency and config issues
-npx expo install --fix      # fix incompatible package versions
+pnpm --filter @fairway/mobile exec expo install <pkg>   # SDK-compatible versions
+pnpm --filter @fairway/mobile exec expo start --dev-client
+pnpm --filter @fairway/mobile exec expo run:ios         # rebuild the dev client
+pnpm test:mobile                                        # Jest
 ```
 
-Run lint and typecheck before declaring any task done.
-
-## Navigation & Routing
-
-- Use **Expo Router** for all navigation. Routes live in `src/app/` — every file there is a screen, `_layout.tsx` files define navigators. Keep non-route code (components, hooks, utils) outside `src/app/`.
-- Import `Link`, `router`, and `useLocalSearchParams` from `expo-router`.
-- Docs: https://docs.expo.dev/router/introduction.md
-
-## Building with EAS
-
-Use EAS to build, sign, and submit the app in the cloud (`eas build`, `eas submit`) and to ship over-the-air updates (`eas update`) — no local Xcode or Android Studio required. Run EAS CLI as `bunx eas-cli <command>` in Bun projects, or `npx eas-cli@latest <command>` otherwise; substitute that for bare `eas` in docs examples.
-Docs: https://docs.expo.dev/eas/index.md
+Run `pnpm check`, `pnpm typecheck`, `pnpm test` and `pnpm test:mobile` before
+declaring work done, and drive the changed flow on a simulator.
 
 ## Rules
 
-- If `ios/` and `android/` directories do not exist, they are generated (Continuous Native Generation). Never create or edit them by hand — configure native behavior in `app.json` and config plugins.
-- Expo Go only includes its bundled native modules. After adding a library with native code, the app needs a development build: `npx expo run:ios|android` locally, or `eas build --profile development`.
-- Prefer recommended Expo modules over third-party libraries, and check your available skills before adding dependencies. Docs: https://docs.expo.dev/versions/latest/index.md
+- `ios/` and `android/` are generated and gitignored; configure native behaviour
+  in `app.json` / `app.config.ts` and config plugins.
+- A new native module needs a rebuilt dev client.
+- EAS cloud builds and store submissions are release steps for the owner, not
+  part of routine work.

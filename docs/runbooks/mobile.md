@@ -1,0 +1,73 @@
+---
+type: runbook
+description: Read when running, building, or releasing the Fairway mobile app (apps/mobile).
+version: 1.0.0
+---
+
+# Mobile app (Fairway)
+
+Project facts for `apps/mobile`. Shared steps live in
+[mobile baseline](../standards/mobile-baseline.md); this file only binds them.
+
+## Identity
+
+| Variant (`APP_VARIANT`) | Name | Bundle ID / package | Scheme |
+| --- | --- | --- | --- |
+| unset or `development` | Fairway Dev | `com.appelent.fairway.dev` | `fairway-dev` |
+| `preview` | Fairway Preview | `com.appelent.fairway.preview` | `fairway-preview` |
+| `production` | Fairway | `com.appelent.fairway` | `fairway` |
+
+- EAS project: `@appelent/fairway`, ID `e42512f9-8d86-4f78-8dd5-85383f239df7`
+  (`app.json` → `extra.eas.projectId`).
+- Convex: the same deployment as the web app (project "golf"; dev
+  `dev:amiable-cuttlefish-923`). The phone needs the cloud URL, never localhost.
+- Clerk: the web app's Clerk application; native sign-in uses `@clerk/expo`.
+
+## Local development
+
+```bash
+cp apps/mobile/.env.example apps/mobile/.env.local   # fill in, never commit
+pnpm --filter @fairway/mobile exec expo run:ios       # first time / after native changes
+pnpm --filter @fairway/mobile exec expo start --dev-client
+pnpm test:mobile                                      # Jest (mobile only)
+pnpm check && pnpm typecheck && pnpm test             # repo-wide
+```
+
+- Native folders (`ios/`, `android/`) are generated and gitignored. Rebuild the dev
+  client after adding a native module or changing `app.json` plugins.
+- Install Expo packages with `pnpm --filter @fairway/mobile exec expo install <pkg>`.
+- Test login: a Clerk `+clerk_test` address with code `424242` (dev instance only).
+- Simulator GPS for on-course testing: set a location on a hole of the seeded
+  course (De Oosterhoutse, around `51.6168,4.8700`) with the simulator's location
+  setting. Play counts GPS only within the hole's length + 120 m of the green.
+
+## Environment
+
+| Variable | Where | Notes |
+| --- | --- | --- |
+| `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` | `.env.local`, EAS env per profile | Public |
+| `EXPO_PUBLIC_CONVEX_URL` | `.env.local`, EAS env per profile | Cloud deployment URL |
+| `EXPO_PUBLIC_TEST_USER_*` | `.env.local` only | Honoured with `pk_test_` keys only |
+| `GOOGLE_MAPS_ANDROID_API_KEY` | EAS env (build time) | Without it Android draws the vector schematic instead of satellite |
+| `EXPO_TOKEN` | GitHub secret | Needed by the local-build workflow |
+
+EAS environment variables per profile are not set yet (see the open issues).
+
+## Builds
+
+- CI: label a PR `build:ios` / `build:android`, or run **Mobile Build** manually
+  (`.github/workflows/mobile-build.yml` → `eas-local-build.yml`). Builds run
+  `eas build --local` on the runner and spend no EAS Build credits.
+- Cloud EAS builds and store submissions are manual release steps; nothing in CI
+  submits.
+
+## Runtime notes
+
+- Online first: Convex is the source of truth; a write counts as saved when the
+  server acknowledges it. Anything stored on the phone (`expo-sqlite/kv-store`
+  preferences, the query cache) can be deleted at any time without data loss.
+- "GPS while locked" (Profile) is opt-in, needs Always location, and runs
+  background updates only while the Play screen is mounted. On iOS the "Change to
+  Always" prompt answers late; `background-location.ts` re-reads for 15 s.
+- Monitoring: Sentry is not wired (no project/DSN yet). "Report a problem" shows an
+  explanation instead of opening a report.

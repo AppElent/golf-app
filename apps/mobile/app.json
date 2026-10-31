@@ -71,7 +71,8 @@
 			"reactCompiler": true
 		},
 		"extra": {
-			"router": {}
+			"router": {},
+			"eas": { "projectId": "e42512f9-8d86-4f78-8dd5-85383f239df7" }
 		},
 		"owner": "appelent"
 	}
