@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatDistance, metersToYards } from "./format";
+import { formatDistance, formatTravelDistance, metersToYards } from "./format";
 
 describe("metersToYards", () => {
 	it("converts with the standard 1.09361 factor", () => {
@@ -18,5 +18,17 @@ describe("formatDistance", () => {
 
 	it("shows an em dash for null", () => {
 		expect(formatDistance(null, "m")).toBe("—");
+	});
+});
+
+describe("formatTravelDistance", () => {
+	it("rounds to tens of meters, then km, then whole km", () => {
+		expect(formatTravelDistance(844, "m")).toBe("840 m");
+		expect(formatTravelDistance(4321, "m")).toBe("4.3 km");
+		expect(formatTravelDistance(23_600, "m")).toBe("24 km");
+	});
+	it("uses miles in yard mode", () => {
+		expect(formatTravelDistance(1609.344 * 3.25, "yd")).toBe("3.3 mi");
+		expect(formatTravelDistance(1609.344 * 42, "yd")).toBe("42 mi");
 	});
 });

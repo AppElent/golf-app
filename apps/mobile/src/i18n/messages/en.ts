@@ -5,6 +5,7 @@
  */
 import { signInEn, signUpEn, verifyEmailEn } from "./auth";
 import { commonEn, tabsEn } from "./common";
+import { coursesEn, homeEn, setupEn } from "./start";
 
 export const en = {
 	common: commonEn,
@@ -12,6 +13,9 @@ export const en = {
 	signIn: signInEn,
 	signUp: signUpEn,
 	verifyEmail: verifyEmailEn,
+	home: homeEn,
+	courses: coursesEn,
+	setup: setupEn,
 };
 
 export type Messages = typeof en;

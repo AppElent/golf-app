@@ -1,3 +1,4 @@
+import { type LatLng, polygonCentroid } from "@fairway/core/geo";
 import { normalizeCourse } from "@fairway/core/osm";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
@@ -183,7 +184,41 @@ export const storeImport = internalMutation({
 		);
 		await ctx.db.patch(courseId, {
 			importStatus: complete ? "imported" : "partial",
+			location: courseLocation(geometry) ?? undefined,
 		});
+	},
+});
+
+/** The course's "where": the centroid of its greens (for nearby sorting). */
+function courseLocation(
+	geometry: ReadonlyArray<{ greens: ReadonlyArray<ReadonlyArray<LatLng>> }>,
+): LatLng | null {
+	const greens = geometry.flatMap((g) =>
+		g.greens.filter((p) => p.length > 0).map(polygonCentroid),
+	);
+	return greens.length > 0 ? polygonCentroid(greens) : null;
+}
+
+/** One-off: give imported courses without a location one from their geometry.
+ *  `pnpm exec convex run courses:backfillLocations` (idempotent). */
+export const backfillLocations = internalMutation({
+	args: {},
+	handler: async (ctx) => {
+		const courses = await ctx.db.query("courses").collect();
+		let updated = 0;
+		for (const course of courses) {
+			if (course.location) continue;
+			const geometry = await ctx.db
+				.query("holeGeometry")
+				.withIndex("by_course", (q) => q.eq("courseId", course._id))
+				.collect();
+			const location = courseLocation(geometry);
+			if (location) {
+				await ctx.db.patch(course._id, { location });
+				updated += 1;
+			}
+		}
+		return { updated };
 	},
 });
 
