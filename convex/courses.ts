@@ -1,12 +1,7 @@
-import { v } from "convex/values";
 import { normalizeCourse } from "@fairway/core/osm";
+import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import {
-	action,
-	internalMutation,
-	mutation,
-	query,
-} from "./_generated/server";
+import { action, internalMutation, mutation, query } from "./_generated/server";
 
 /** All courses, name-sorted, for the picker/list. */
 export const list = query({

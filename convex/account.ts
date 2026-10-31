@@ -1,6 +1,6 @@
-import { deleteRoundData } from "./rounds";
 import { mutation } from "./_generated/server";
 import { getUserId } from "./lib";
+import { deleteRoundData } from "./rounds";
 
 /**
  * Delete everything this app stores for the signed-in user (rounds, scores,

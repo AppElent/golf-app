@@ -1,10 +1,10 @@
-import { v } from "convex/values";
 import {
 	adjustedGrossScore,
 	playingHandicap,
 	scoreDifferential,
 } from "@fairway/core/handicap";
 import { stablefordPoints, totalStrokes, vsPar } from "@fairway/core/scoring";
+import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
@@ -157,10 +157,7 @@ async function requireActiveRound(ctx: MutationCtx, roundId: Id<"rounds">) {
 }
 
 /** Delete a round with its scores and shots. */
-export async function deleteRoundData(
-	ctx: MutationCtx,
-	roundId: Id<"rounds">,
-) {
+export async function deleteRoundData(ctx: MutationCtx, roundId: Id<"rounds">) {
 	const [scores, shots] = await Promise.all([
 		ctx.db
 			.query("holeScores")
@@ -359,9 +356,7 @@ export const history = query({
 					.withIndex("by_round", (q) => q.eq("roundId", round._id))
 					.collect();
 				const ownerScore = (holeIndex: number) =>
-					scores.find(
-						(s) => s.holeIndex === holeIndex && s.playerIndex === 0,
-					);
+					scores.find((s) => s.holeIndex === holeIndex && s.playerIndex === 0);
 
 				const strokes = holes.map((_, i) => {
 					const s = ownerScore(i);

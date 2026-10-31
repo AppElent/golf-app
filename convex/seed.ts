@@ -1,7 +1,7 @@
 import { detectLoops } from "@fairway/core/loops";
 import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { action, type ActionCtx } from "./_generated/server";
+import { type ActionCtx, action } from "./_generated/server";
 
 const HOME_COURSES = [
 	{ name: "Golfbaan Landgoed Welderen", city: "Elst", osmRelationId: 901850 },
@@ -165,11 +165,15 @@ async function loadCourseHoles(
 	const courses = await ctx.runQuery(api.courses.list, {});
 	const course = courses.find((c) => c.name === courseName);
 	if (!course) {
-		throw new Error(`Course "${courseName}" not found — run seed:seedData first.`);
+		throw new Error(
+			`Course "${courseName}" not found — run seed:seedData first.`,
+		);
 	}
 	const detail = await ctx.runQuery(api.courses.get, { courseId: course._id });
 	if (!detail || detail.tees.length === 0) {
-		throw new Error(`Course "${courseName}" has no tee — run seed:seedData first.`);
+		throw new Error(
+			`Course "${courseName}" has no tee — run seed:seedData first.`,
+		);
 	}
 
 	// A course can carry multiple 9-hole loops (spec §8) — take exactly one
@@ -188,7 +192,9 @@ async function loadCourseHoles(
 	const holeRefs = [...loops[0].refs, ...loops[1].refs];
 
 	await ensureCompleteHoles(ctx, detail.holes);
-	const parByRef = new Map(detail.holes.map((h) => [h.ref, h.par ?? DEFAULT_PAR]));
+	const parByRef = new Map(
+		detail.holes.map((h) => [h.ref, h.par ?? DEFAULT_PAR]),
+	);
 	return {
 		courseId: course._id,
 		teeId: detail.tees[0]._id,
@@ -249,7 +255,10 @@ async function seedActiveRound(
 			gir: GIR_PATTERN[i % GIR_PATTERN.length],
 		});
 	}
-	await ctx.runMutation(api.rounds.setCurrentHole, { roundId, holeIndex: holesPlayed });
+	await ctx.runMutation(api.rounds.setCurrentHole, {
+		roundId,
+		holeIndex: holesPlayed,
+	});
 }
 
 /**

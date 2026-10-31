@@ -10,9 +10,7 @@ export default defineSchema({
 		city: v.optional(v.string()),
 		location: v.optional(latLng),
 		osmRelationId: v.optional(v.number()),
-		externalRef: v.optional(
-			v.object({ source: v.string(), id: v.string() }),
-		),
+		externalRef: v.optional(v.object({ source: v.string(), id: v.string() })),
 		// "manual" = hand-entered, "imported" = OSM import complete,
 		// "partial" = imported but some holes lack par/SI/geometry.
 		importStatus: v.union(
