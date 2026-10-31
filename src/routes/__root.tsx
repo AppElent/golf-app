@@ -1,4 +1,3 @@
-import { THEME_INIT_SCRIPT } from "@appelent/auth";
 import { TanStackDevtools } from "@tanstack/react-devtools";
 import type { QueryClient } from "@tanstack/react-query";
 import {
@@ -9,9 +8,11 @@ import {
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import BottomNav from "../components/BottomNav";
 import { ServiceWorker } from "../components/ServiceWorker";
+import { AuthGate } from "../integrations/clerk/auth-gate";
 import ClerkProvider from "../integrations/clerk/provider";
 import ConvexProvider from "../integrations/convex/provider";
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
+import { THEME_INIT_SCRIPT } from "../integrations/theme/theme-init-script";
 import appCss from "../styles.css?url";
 
 interface MyRouterContext {
@@ -42,7 +43,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 	return (
 		<html lang="en" suppressHydrationWarning>
 			<head>
-				{/* biome-ignore lint/security/noDangerouslySetInnerHtml: pre-paint theme init script from @appelent/auth */}
+				{/* biome-ignore lint/security/noDangerouslySetInnerHtml: pre-paint theme init script (static string) */}
 				<script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
 				<HeadContent />
 			</head>
@@ -50,7 +51,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<ClerkProvider>
 					<ConvexProvider>
 						<div className="relative mx-auto min-h-dvh w-full max-w-[430px] bg-cream shadow-2xl">
-							{children}
+							<AuthGate>{children}</AuthGate>
 						</div>
 						<BottomNav />
 						<ServiceWorker />

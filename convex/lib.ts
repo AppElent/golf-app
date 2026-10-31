@@ -1,11 +1,11 @@
 import type { QueryCtx } from "./_generated/server";
 
-/**
- * Owner identity with a local-dev fallback: the anonymous local deployment
- * (dummy Clerk issuer) and `convex run` have no identity. Single-user app —
- * tighten to a hard throw when real Clerk auth is wired end-to-end.
- */
+/** Signed-in Clerk user id. Every per-user function goes through this, so an
+ *  unauthenticated call fails instead of reading a shared fallback account.
+ *  Seed per-user demo data with
+ *  `pnpm exec convex run seed:seedDummyData --identity '{"subject":"user_…"}'`. */
 export async function getUserId(ctx: QueryCtx): Promise<string> {
 	const identity = await ctx.auth.getUserIdentity();
-	return identity?.subject ?? "local-dev";
+	if (!identity) throw new Error("Not signed in.");
+	return identity.subject;
 }

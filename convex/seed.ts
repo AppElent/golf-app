@@ -253,15 +253,14 @@ async function seedActiveRound(
 }
 
 /**
- * Demo content so an empty backend (fresh PR preview, or `local-dev`
- * anonymous dev deployment) isn't blank on first load: a handicap + club bag,
+ * Demo content for one signed-in user so an empty account isn't blank: a handicap + club bag,
  * three finished rounds (so Home/Progress show a trend and stats), and one
  * active in-progress round on holes 1–4 (so Play/Card have something to show).
  * Requires `seedData` to have already run. Idempotent — skips entirely if any
  * round already exists for the seeding user, so re-running on every PR-preview
  * redeploy is a safe no-op after the first run.
  *
- * Run with: pnpm exec convex run seed:seedDummyData
+ * Run with: pnpm exec convex run seed:seedDummyData --identity '{"subject":"user_…"}'
  */
 export const seedDummyData = action({
 	args: {},

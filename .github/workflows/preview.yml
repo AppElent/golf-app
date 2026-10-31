@@ -28,13 +28,6 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      # @appelent/* is a private GitHub Packages scope - pnpm won't expand env
-      # vars from the committed .npmrc, so write the token to the runner's
-      # user-level ~/.npmrc instead.
-      - name: Configure GitHub Packages auth
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || secrets.GITHUB_TOKEN }}
-        run: echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
 
       - run: pnpm install --frozen-lockfile
 
@@ -100,10 +93,6 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - name: Configure GitHub Packages auth
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || secrets.GITHUB_TOKEN }}
-        run: echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
       - run: pnpm install --frozen-lockfile
       - name: Delete Worker
         env:
