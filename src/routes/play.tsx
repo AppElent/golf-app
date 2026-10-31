@@ -102,7 +102,7 @@ function PlayInner({
 	}, [ref, greenCenter?.lat, greenCenter?.lng]);
 
 	const distances =
-		position && shapes && shapes.greens[0]
+		position && shapes?.greens[0]
 			? distancesToGreen(position, shapes.greens[0])
 			: null;
 

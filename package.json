@@ -13,16 +13,18 @@
     "build": "vite build",
     "build:development": "vite build --mode development",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit && pnpm --filter @fairway/core typecheck",
+    "typecheck": "tsc --noEmit && pnpm --filter @fairway/core typecheck && pnpm --filter @fairway/mobile typecheck",
     "test": "vitest run",
     "format": "biome format",
     "lint": "biome lint",
     "lint:fix": "biome check --write",
-    "check": "biome check",
+    "check": "biome check && pnpm check:mobile-structure",
     "cf-typegen": "wrangler types",
     "deploy": "pnpm run deploy:prod",
     "deploy:dev": "pnpm exec convex dev --once && pnpm run build:development && wrangler deploy --env dev",
-    "deploy:prod": "pnpm exec convex deploy && pnpm run build && wrangler deploy"
+    "deploy:prod": "pnpm exec convex deploy && pnpm run build && wrangler deploy",
+    "test:mobile": "pnpm --filter @fairway/mobile test",
+    "check:mobile-structure": "node scripts/check-mobile-structure.mjs"
   },
   "dependencies": {
     "@clerk/react": "^6.18.3",
@@ -52,7 +54,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.4.5",
+    "@biomejs/biome": "2.6.2",
     "@tailwindcss/typography": "^0.5.16",
     "@tanstack/devtools-vite": "latest",
     "@tanstack/router-cli": "^1.132.0",

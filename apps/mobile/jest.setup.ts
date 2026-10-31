@@ -103,7 +103,6 @@ jest.mock(
 	},
 );
 
-
 // Expo UI is native-only. These thin host shims keep tests focused on the
 // React contract (callbacks, roles and presentation options), not SwiftUI.
 jest.mock("@expo/ui/swift-ui", () => {
@@ -616,7 +615,6 @@ jest.mock("convex/react", () => {
 		})),
 	};
 });
-
 
 jest.mock("expo-sqlite/kv-store", () => {
 	const store = new Map<string, string>();

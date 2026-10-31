@@ -13,11 +13,7 @@ import {
 	readPreference,
 	writePreference,
 } from "../prefs/local-preference";
-import {
-	darkColors,
-	lightColors,
-	type Tokens,
-} from "./tokens";
+import { darkColors, lightColors, type Tokens } from "./tokens";
 
 export type AppearancePreference = "system" | "light" | "dark";
 export type ColorScheme = "light" | "dark";

@@ -13,11 +13,11 @@ export {
 	chrome,
 	colors,
 	colorsLight,
+	course,
 	metrics,
 	motion,
 	opacity,
 	radius,
 	spacing,
-	course,
 	type,
 } from "./tokens";

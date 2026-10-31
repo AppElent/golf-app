@@ -17,9 +17,7 @@ import type { RowAction } from "./swipeable-row";
 export type SFSymbol = NonNullable<ImageProps["systemName"]>;
 
 /** What sits before the title. An SF Symbol, or anything RN. */
-export type RowLeading =
-	| { symbol: SFSymbol }
-	| ReactElement;
+export type RowLeading = { symbol: SFSymbol } | ReactElement;
 
 export interface InsetListProps {
 	/** Content card inside an existing scroll view; no outer section margins. */

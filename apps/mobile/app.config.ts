@@ -12,7 +12,11 @@ export type AppVariant = "development" | "preview" | "production";
 
 const VARIANTS = {
 	production: { suffix: "", name: "Fairway", scheme: "fairway" },
-	preview: { suffix: ".preview", name: "Fairway Preview", scheme: "fairway-preview" },
+	preview: {
+		suffix: ".preview",
+		name: "Fairway Preview",
+		scheme: "fairway-preview",
+	},
 	development: { suffix: ".dev", name: "Fairway Dev", scheme: "fairway-dev" },
 } as const satisfies Record<AppVariant, object>;
 

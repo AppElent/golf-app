@@ -29,13 +29,11 @@ import {
 	Image,
 	List,
 	RNHostView,
-	RoundedRectangle,
 	Section,
 	Spacer,
 	SwipeActions,
 	Text,
 	VStack,
-	ZStack,
 } from "@expo/ui/swift-ui";
 import {
 	accessibilityAddTraits,
@@ -61,11 +59,7 @@ import {
 } from "@expo/ui/swift-ui/modifiers";
 import { Children, Fragment, isValidElement, useState } from "react";
 import { StyleSheet, useWindowDimensions, View } from "react-native";
-import {
-	metrics,
-	useHostScheme,
-	useTokens,
-} from "../theme";
+import { metrics, useHostScheme, useTokens } from "../theme";
 import type {
 	InsetListProps,
 	InsetRowProps,
@@ -152,7 +146,6 @@ function Leading({ leading }: { leading: RowLeading }) {
 		/>
 	);
 }
-
 
 export function InsetRow({
 	leading,

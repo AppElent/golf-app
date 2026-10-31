@@ -14,7 +14,6 @@ import { useMemo } from "react";
 import { Platform, View } from "react-native";
 import { ConvexSessionGate } from "../../src/auth/convex-session-gate";
 import { AppQueryCacheProvider } from "../../src/convex/query-cache";
-import { useI18n } from "../../src/i18n";
 import { useTokens } from "../../src/theme";
 import { ConfirmProvider } from "../../src/ui/confirm-dialog";
 import { OfflineBanner } from "../../src/ui/offline-banner";
@@ -25,7 +24,6 @@ export const unstable_settings = { anchor: "(tabs)" };
 export default function AppLayout() {
 	const colors = useTokens();
 	const { isSignedIn, userId } = useAuth();
-	const { t } = useI18n();
 	const screenOptions = useMemo(
 		() => ({
 			headerShown: true,
