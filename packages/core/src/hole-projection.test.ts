@@ -1,6 +1,6 @@
-import type { LatLng } from "@fairway/core/geo";
 import { describe, expect, it } from "vitest";
-import { buildProjector } from "./projection";
+import type { LatLng } from "./geo";
+import { buildProjector } from "./hole-projection";
 
 const tee: LatLng = { lat: 52.0, lng: 5.8 };
 // ~300 m roughly north-east of the tee
@@ -43,5 +43,21 @@ describe("buildProjector", () => {
 
 	it("scale is positive pixels-per-meter", () => {
 		expect(buildProjector(opts).scale).toBeGreaterThan(0);
+	});
+
+	it("frames only the features when the tee is left out", () => {
+		const ring = [
+			{ lat: green.lat + 0.0001, lng: green.lng },
+			{ lat: green.lat - 0.0001, lng: green.lng + 0.0001 },
+		];
+		const wide = buildProjector({ ...opts, features: [ring] });
+		const close = buildProjector({
+			...opts,
+			features: [ring],
+			includeTee: false,
+		});
+		expect(close.scale).toBeGreaterThan(wide.scale * 5);
+		const t = close.project(tee);
+		expect(t.y).toBeGreaterThan(opts.height); // tee is off-screen below
 	});
 });

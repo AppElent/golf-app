@@ -1,5 +1,5 @@
-import { AppText } from "../../src/ui/text";
+import { PlayScreen } from "../../src/features/play/round/play-screen";
 
-export default function Play() {
-	return <AppText>Play</AppText>;
+export default function PlayRoute() {
+	return <PlayScreen />;
 }

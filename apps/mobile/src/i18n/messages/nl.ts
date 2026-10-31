@@ -1,6 +1,7 @@
 import { signInNl, signUpNl, verifyEmailNl } from "./auth";
 import { commonNl, tabsNl } from "./common";
 import type { Messages } from "./en";
+import { playNl } from "./play";
 import { coursesNl, homeNl, setupNl } from "./start";
 
 export const nl = {
@@ -12,4 +13,5 @@ export const nl = {
 	home: homeNl,
 	courses: coursesNl,
 	setup: setupNl,
+	play: playNl,
 } satisfies Messages;

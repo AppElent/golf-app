@@ -102,6 +102,7 @@ export const colorsLight = lightColors;
 export const course = {
 	targetLine: "#ffd60a",
 	target: "#ffd60a",
+	onTarget: "#1a1600",
 	shotLine: "#ffffff",
 	distanceText: "#ffffff",
 	distanceShadow: "rgba(0, 0, 0, 0.75)",
@@ -113,6 +114,19 @@ export const course = {
 	flag: "#e0532f",
 	measure: "#ffffff",
 	ring: "rgba(255, 255, 255, 0.55)",
+	/** Behind distance labels on the imagery. */
+	labelFill: "rgba(0, 0, 0, 0.55)",
+	/** HUD controls where Liquid Glass is unavailable (Android, iOS < 26). */
+	hudFill: "rgba(14, 20, 17, 0.72)",
+	hudText: "#ffffff",
+	hudTextMuted: "rgba(255, 255, 255, 0.72)",
+	/** Schematic (no-imagery) ground. */
+	rough: "#2f5d3a",
+	fairway: "#4f9a5c",
+	greenFill: "#79c98a",
+	tee: "#5fae6e",
+	bunker: "#e9d8a6",
+	water: "#3f8fbf",
 	birdie: "#e0532f",
 	eagle: "#e0532f",
 	bogey: "#8a968d",

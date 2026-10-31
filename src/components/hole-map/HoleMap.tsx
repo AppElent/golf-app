@@ -3,11 +3,15 @@ import {
 	haversineMeters,
 	type LatLng,
 } from "@fairway/core/geo";
+import {
+	buildProjector,
+	type HoleShapes,
+	type Point,
+} from "@fairway/core/hole-projection";
 import { useRef, useState } from "react";
 import { HoleMapDefs } from "./defs";
 import { GroundLayer } from "./GroundLayer";
 import { type HazardChip, InfoOverlay } from "./InfoOverlay";
-import { buildProjector, type HoleShapes, type Point } from "./projection";
 
 export type MapVariant = "map" | "rings" | "bignumbers";
 

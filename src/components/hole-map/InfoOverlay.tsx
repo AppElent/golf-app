@@ -1,4 +1,4 @@
-import type { Point, Projector } from "./projection";
+import type { Point, Projector } from "@fairway/core/hole-projection";
 
 export interface HazardChip {
 	label: string; // e.g. "Water"

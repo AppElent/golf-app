@@ -1,4 +1,4 @@
-import { type LatLng, projectToLocal } from "@fairway/core/geo";
+import { type LatLng, projectToLocal } from "./geo";
 
 export interface Point {
 	x: number;
@@ -37,8 +37,12 @@ export function buildProjector(opts: {
 	width: number;
 	height: number;
 	padding: number;
+	/** Keep the tee in frame (default). Off frames only `features` — a
+	 *  close-up such as a green view, still oriented tee → green. */
+	includeTee?: boolean;
 }): Projector {
 	const { tee, green, features, width, height, padding } = opts;
+	const origin = opts.includeTee === false ? [] : [0];
 
 	// 1) Local meters around the tee (x east, y north).
 	const teeLocal = projectToLocal(tee, tee); // {0,0}
@@ -63,10 +67,11 @@ export function buildProjector(opts: {
 		.map((p) => rotate(projectToLocal(tee, p)));
 	const xs = rotatedPoints.map((p) => p.x);
 	const ys = rotatedPoints.map((p) => p.y);
-	const minX = Math.min(...xs, 0);
-	const maxX = Math.max(...xs, 0);
-	const minY = Math.min(...ys, 0);
-	const maxY = Math.max(...ys, 0);
+	if (xs.length === 0) origin.push(0);
+	const minX = Math.min(...xs, ...origin);
+	const maxX = Math.max(...xs, ...origin);
+	const minY = Math.min(...ys, ...origin);
+	const maxY = Math.max(...ys, ...origin);
 
 	const availW = width - 2 * padding;
 	const availH = height - 2 * padding;

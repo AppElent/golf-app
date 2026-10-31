@@ -10,6 +10,8 @@
 		"./geo": "./src/geo.ts",
 		"./handicap": "./src/handicap.ts",
 		"./hole-advance": "./src/hole-advance.ts",
+		"./hole-projection": "./src/hole-projection.ts",
+		"./hole-view": "./src/hole-view.ts",
 		"./loops": "./src/loops.ts",
 		"./osm": "./src/osm.ts",
 		"./par-stats": "./src/par-stats.ts",

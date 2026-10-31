@@ -61,6 +61,20 @@ export default function AppLayout() {
 										gestureEnabled: false,
 									}}
 								/>
+								<Stack.Screen
+									name="score"
+									options={{
+										headerShown: false,
+										presentation: "formSheet",
+										sheetAllowedDetents: [0.62, 1],
+										sheetGrabberVisible: true,
+										sheetCornerRadius: 28,
+									}}
+								/>
+								<Stack.Screen
+									name="scorecard"
+									options={{ presentation: "modal" }}
+								/>
 							</Stack>
 						</View>
 					</AppQueryCacheProvider>
