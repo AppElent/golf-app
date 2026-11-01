@@ -1,11 +1,6 @@
 {
   "schemaVersion": 1,
   "envManifest": "env.manifest.ts",
-  "features": {
-    "baseline": { "version": 1 },
-    "auth": { "version": 1 },
-    "mcp": { "version": 1 }
-  },
   "workspace": {
     "backend": {
       "mode": "cloud",
