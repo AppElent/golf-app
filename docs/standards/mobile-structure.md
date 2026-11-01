@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when adding, moving, or naming files in a native mobile app.
-version: 1.0.0
+version: 1.1.0
 applies_to: [mobile]
 ---
 
@@ -43,7 +43,7 @@ src/
       use-food-editor.ts
 ```
 
-Copy [`check-mobile-structure.mjs`](mobile-structure/examples/check-mobile-structure.mjs) into `scripts/`, set its source root, and run it from the project's `check` script. It enforces feature filenames, the `src/ui/` import boundary, and literal font sizes; ownership still needs review.
+Copy [`check-mobile-structure.mjs`](mobile-structure/examples/check-mobile-structure.mjs) into `scripts/`, set its source root, and run it from the project's `check` script. It enforces feature filenames, the `src/ui/` import boundary, and literal font sizes. Across `src/` and `app/` it also reports UI text outside the message catalog: literal JSX text, readable props such as `accessibilityLabel` and `placeholder`, literal toast and alert messages, `locale === "…"` branches that pick text, and `*-copy.ts` modules. Set `messagesRoot` to the catalog folder, or `null` when the app has no catalog, and list words that read the same in every language in `UNTRANSLATED`. Ownership still needs review.
 
 ## Verify
 
@@ -51,6 +51,8 @@ Copy [`check-mobile-structure.mjs`](mobile-structure/examples/check-mobile-struc
 - Review: no screen or state under `app/`, no feature import from `src/ui/`, no shared component living in one subject's folder.
 
 ## Migration
+
+From 1.0: copy the new checker over the old one and keep your configured roots. It now reports literal UI text; move that text into the catalog, or add a word that every language shares to `UNTRANSLATED`.
 
 New work follows this structure. Move a legacy screen when changing its behavior, not in a bulk rename. Record the adopted scope and any project owners (data layer, shared component folders) in the app's `CODING_STANDARDS.md`.
 

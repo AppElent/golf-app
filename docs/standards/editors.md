@@ -2,7 +2,7 @@
 type: standard
 kind: pattern
 description: Read when choosing fullscreen, sheet, or keyboard-anchored editing, or handling drafts.
-version: 1.1.0
+version: 1.1.1
 applies_to: [web, mobile]
 ---
 
@@ -28,7 +28,7 @@ Choose the editing presentation by attention, space, and navigation needs, and n
 
 ## Implementation
 
-The developer-tools mobile lab demonstrates native inputs. Workouts' Diary Entry and goals editors are product bindings with dated evidence. Workouts' InputAccessoryView/SwiftUI crash workaround is runtime-specific, not a ban on keyboard-anchored editors.
+The developer-tools mobile lab demonstrates native inputs. App editors built on these rules are product bindings, not shared code. A crash workaround for InputAccessoryView with SwiftUI is runtime-specific, not a ban on keyboard-anchored editors.
 
 ## Verify
 

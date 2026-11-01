@@ -58,10 +58,10 @@ export function validateManifest(value) {
         value.schemaVersion !== CURRENT_SCHEMA_VERSION) {
         issues.push(`schemaVersion must be ${CURRENT_SCHEMA_VERSION}`);
     }
-    if (!isRecord(value.features)) {
+    if (value.features !== undefined && !isRecord(value.features)) {
         issues.push("features must be an object");
     }
-    else {
+    else if (value.features !== undefined) {
         for (const [name, feature] of Object.entries(value.features)) {
             const at = `features.${name}`;
             if (!isRecord(feature)) {
@@ -131,6 +131,14 @@ export function validateManifest(value) {
     if (issues.length > 0)
         throw new ManifestValidationError(issues);
     return value;
+}
+/** Non-blocking findings for a valid manifest. */
+export function manifestWarnings(manifest) {
+    return manifest.features === undefined
+        ? []
+        : [
+            "features is legacy metadata from the retired feature catalog and drives nothing; remove it. Current keys: schemaVersion, workspace, envManifest (see standards/workspaces.md)",
+        ];
 }
 export async function loadManifest(path) {
     const source = await readFile(path, "utf8");

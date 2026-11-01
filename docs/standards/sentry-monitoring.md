@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when adding or reviewing error reporting, tracing, replay, feedback, or source-map uploads.
-version: 2.1.0
+version: 2.2.0
 applies_to: [web, mobile, backend]
 ---
 
@@ -29,7 +29,7 @@ Each enabled surface reports actionable errors once, with privacy by default, re
 - The DSN is public; `SENTRY_AUTH_TOKEN` only authorizes uploads and never lands in `VITE_*`, `EXPO_PUBLIC_*`, a bundle, event data, or tracked dotenv files. Route values through [environments](environments.md).
 - Upload source maps only from builds that are deployed or distributed (previews, production, store/OTA releases). Check-only CI builds that verify bundling run without `SENTRY_AUTH_TOKEN`, so they create no release per run; keep the build-time environment tag so a check build is never mistaken for a deployment.
 - Upload hidden source maps for the exact artifact, then remove public client maps before deployment. Native releases need debug symbols; OTA updates need maps for the exact exported update.
-- Backend coverage needs managed Convex reporting or an always-on log forwarder; client capture alone cannot observe unattended failures. Record inactive coverage explicitly.
+- Backend coverage needs managed Convex reporting or an always-on log forwarder; client capture alone cannot observe unattended failures. Record inactive coverage explicitly. **Default:** the forwarder is the toolkit's [Convex log forwarder](sentry-monitoring/examples/convex-sentry.mjs), copied to `scripts/`.
 - Disable automatic PII. Redact query strings, bodies, headers, cookies, stack locals, extras, credentials, and sensitive text before delivery. Replay masks text/inputs and blocks media by default.
 - Choose tracing, profiling, replay, and error sampling deliberately and document expected cost. Configure alerts and retention separately.
 

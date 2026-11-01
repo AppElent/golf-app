@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { assertSafeProjectPath } from "./files.mjs";
+import { selectPlacements } from "./planning.mjs";
 export class EnvironmentSourceError extends Error {
     kind;
     constructor(message, kind) {
@@ -150,4 +151,18 @@ export async function loadInfisicalSource(request) {
         folders.push({ path, values: normalizeInfisicalExport(parsed) });
     }
     return mergeSourceFolders(folders);
+}
+/**
+ * Source values read from the job environment under their destination names, for
+ * `apply --ci` without canonical-source credentials. A workflow maps each value it
+ * needs onto the destination name; anything unset is treated as missing.
+ */
+export function jobEnvironmentSource(manifest, environment, environ, options = {}) {
+    const values = safeRecord();
+    for (const placement of selectPlacements(manifest, environment, options)) {
+        const value = environ[placement.name];
+        if (value && !Object.hasOwn(values, placement.entry.infisicalKey))
+            values[placement.entry.infisicalKey] = value;
+    }
+    return { values, folders: safeRecord(), overrides: [] };
 }

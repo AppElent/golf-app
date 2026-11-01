@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { assertSafeProjectPath, atomicWrite, parseEnvText, readOwnedFile, renderGeneratedEnv, } from "./files.mjs";
 import { destinationLabel, renderEnvironmentExample, validateEnvironmentManifest, } from "./manifest.mjs";
 import { planOwnedRemovals, readOwnership, recordRemoved, recordWritten, writeOwnership, } from "./ownership.mjs";
-import { planEnvironment } from "./planning.mjs";
+import { planEnvironment, selectPlacements } from "./planning.mjs";
 import { readRemoteDestination, removeRemoteName, writeRemotePlacement, } from "./providers.mjs";
 async function readFileState(root, path) {
     try {
@@ -92,6 +92,44 @@ export async function checkEnvironment(request) {
             });
     }
     return { findings, operations: planned.plan.operations };
+}
+/**
+ * CI without canonical-source credentials: the job environment is all there is.
+ * Checks that every GitHub-routed name is set; values are not compared and other
+ * destinations are not contacted.
+ */
+export function checkJobEnvironment(manifest, environment, environ, options = {}) {
+    const findings = [
+        {
+            level: "note",
+            code: "source.skipped",
+            message: "No INFISICAL_TOKEN: checked names in the job environment only; values were not compared",
+        },
+    ];
+    const skipped = new Set();
+    for (const placement of selectPlacements(manifest, environment, options)) {
+        if (placement.suppliedBy)
+            continue;
+        const label = destinationLabel(placement.destination);
+        if (placement.destination.kind !== "github") {
+            skipped.add(label);
+            continue;
+        }
+        if (environ[placement.name])
+            continue;
+        findings.push({
+            level: placement.entry.optional ? "warning" : "error",
+            code: "destination.missing",
+            message: `${label}/${placement.name}: missing from the job environment (${placement.entry.key})${placement.entry.optional ? " (optional)" : ""}`,
+        });
+    }
+    for (const label of skipped)
+        findings.push({
+            level: "note",
+            code: "destination.skipped",
+            message: `${label}: not checked without canonical-source credentials`,
+        });
+    return findings;
 }
 const expandsDotenv = (consumer) => consumer === "vite-build" || consumer === "expo-local";
 async function applyWithOwnership(request, state) {

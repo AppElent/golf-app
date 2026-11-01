@@ -16,7 +16,8 @@ export type TargetDeclaration = {
 
 export type AppelentManifest = {
 	schemaVersion?: 1;
-	features: Record<string, FeatureDeclaration>;
+	/** Legacy feature-catalog metadata; accepted with a warning, drives nothing. */
+	features?: Record<string, FeatureDeclaration>;
 	targets?: Record<string, TargetDeclaration>;
 	workspace?: Record<string, unknown>;
 	envManifest?: string;

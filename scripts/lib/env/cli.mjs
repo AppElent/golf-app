@@ -2,13 +2,13 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { stdin, stdout } from "node:process";
 import { createInterface } from "node:readline/promises";
-import { applyEnvironment, checkEnvironment, checkManifestAndExample, } from "./engine.mjs";
+import { applyEnvironment, checkEnvironment, checkJobEnvironment, checkManifestAndExample, } from "./engine.mjs";
 import { atomicWrite } from "./files.mjs";
 import { loadEnvironmentManifest, renderEnvironmentExample, validateEnvironmentManifest, } from "./manifest.mjs";
 import { planOwnedRemovals, readOwnership } from "./ownership.mjs";
 import { execVariables, planEnvironment } from "./planning.mjs";
 import { runCommand as defaultRunCommand, runProcess as defaultRunProcess, } from "./process.mjs";
-import { loadInfisicalSource } from "./source.mjs";
+import { jobEnvironmentSource, loadInfisicalSource } from "./source.mjs";
 const kinds = new Set([
     "infisical",
     "file",
@@ -94,7 +94,7 @@ function usage() {
         "  node scripts/env.mjs generate [--dry-run] [--json]",
         "  node scripts/env.mjs check [environment] [--ci] [--only <kind>] [--pr <n>] [--json]",
         "  node scripts/env.mjs plan <environment> [--only <kind>] [--pr <n>] [--json]",
-        "  node scripts/env.mjs apply <environment> [--only <kind>] [--pr <n>] [--prune] [--yes] [--dry-run] [--json]",
+        "  node scripts/env.mjs apply <environment> [--ci] [--only <kind>] [--pr <n>] [--prune] [--yes] [--dry-run] [--json]",
         "  node scripts/env.mjs exec <environment> [--only <kind>] [--pr <n>] -- <command> [args...]",
     ].join("\n");
 }
@@ -235,9 +235,21 @@ export async function runEnvCli(args, options) {
     }
     if (!manifest.ENVIRONMENTS.includes(parsed.environment))
         return finish(failure(parsed.command, "usage", `Unknown environment. Expected: ${manifest.ENVIRONMENTS.join(", ")}`, parsed.environment), 2);
+    const planOptions = { only: parsed.only, prNumber: parsed.prNumber };
+    // CI without Infisical machine-identity credentials: the job env is the only source.
+    const jobOnly = parsed.ci && !environ.INFISICAL_TOKEN;
+    if (jobOnly && parsed.command === "check") {
+        const findings = checkJobEnvironment(manifest, parsed.environment, environ, planOptions);
+        return finish({ command: "check", environment: parsed.environment, operations: [], findings }, findings.some((item) => item.level === "error") ? 1 : 0);
+    }
+    const sourceFindings = jobOnly
+        ? [{ level: "note", code: "source.job-environment", message: "No INFISICAL_TOKEN: values come from the job environment under their destination names" }]
+        : [];
     const runProcess = options.dependencies?.runProcess ?? defaultRunProcess;
     let source;
-    try {
+    if (jobOnly)
+        source = jobEnvironmentSource(manifest, parsed.environment, environ, planOptions);
+    else try {
         const loader = options.dependencies?.loadSource ?? loadInfisicalSource;
         source = await loader({
             root: options.root,
@@ -252,7 +264,6 @@ export async function runEnvCli(args, options) {
             : "unavailable";
         return finish(failure(parsed.command, `source.${kind}`, `Canonical source is ${kind}`, parsed.environment), 1);
     }
-    const planOptions = { only: parsed.only, prNumber: parsed.prNumber };
     if (parsed.command === "exec") {
         let planned;
         let variables;
@@ -285,7 +296,7 @@ export async function runEnvCli(args, options) {
                     : parsed.command,
                 environment: parsed.environment,
                 operations: [...planned.plan.operations, ...removals],
-                findings: planned.plan.findings,
+                findings: [...sourceFindings, ...planned.plan.findings],
             }, planned.plan.findings.some((item) => item.level === "error") ? 1 : 0);
         }
         catch {
@@ -339,7 +350,7 @@ export async function runEnvCli(args, options) {
             command: "apply",
             environment: parsed.environment,
             operations: result.operations,
-            findings: result.findings,
+            findings: [...sourceFindings, ...result.findings],
         }, result.findings.some((item) => item.level === "error") ? 1 : 0);
     }
     catch {
