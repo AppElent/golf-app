@@ -26,7 +26,7 @@ pnpm dev              # Vite dev server only, port 3000
 pnpm dev:all          # push Convex functions once, then start Vite
 pnpm dev:watch        # Convex dev (watching) + Vite; use when editing convex/
 pnpm generate-routes  # route tree codegen
-pnpm check            # Biome + mobile structure check
+pnpm check            # Biome + mobile structure + repo layout checks
 pnpm lint:fix         # biome check --write
 pnpm typecheck        # root, convex, packages/core, apps/mobile
 pnpm test             # Vitest: web, convex (convex-test), packages/core

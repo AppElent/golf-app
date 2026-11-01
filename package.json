@@ -18,7 +18,7 @@
     "format": "biome format",
     "lint": "biome lint",
     "lint:fix": "biome check --write",
-    "check": "biome check && pnpm check:mobile-structure",
+    "check": "biome check && pnpm check:mobile-structure && pnpm check:repo-layout",
     "cf-typegen": "wrangler types",
     "deploy": "pnpm run deploy:prod",
     "env": "node scripts/env.mjs",
@@ -29,7 +29,8 @@
     "deploy:dev": "pnpm exec convex dev --once && pnpm exec convex run courseCatalog:sync && CLOUDFLARE_ENV=dev VITE_SENTRY_ENVIRONMENT=development pnpm run build:development && wrangler deploy",
     "deploy:prod": "pnpm exec convex deploy && pnpm exec convex run courseCatalog:sync --prod && VITE_SENTRY_ENVIRONMENT=production pnpm run build && wrangler deploy",
     "test:mobile": "pnpm --filter @fairway/mobile test",
-    "check:mobile-structure": "node scripts/check-mobile-structure.mjs"
+    "check:mobile-structure": "node scripts/check-mobile-structure.mjs",
+    "check:repo-layout": "node scripts/check-repo-layout.mjs"
   },
   "dependencies": {
     "@clerk/react": "^6.18.3",
