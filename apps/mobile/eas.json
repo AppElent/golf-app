@@ -13,6 +13,7 @@
 			"android": { "buildType": "apk" },
 			"env": {
 				"APP_VARIANT": "development",
+				"SHARP_IGNORE_GLOBAL_LIBVIPS": "1",
 				"SENTRY_DISABLE_AUTO_UPLOAD": "true"
 			}
 		},
@@ -20,7 +21,7 @@
 			"autoIncrement": true,
 			"channel": "preview",
 			"environment": "preview",
-			"env": { "APP_VARIANT": "preview" }
+			"env": { "APP_VARIANT": "preview", "SHARP_IGNORE_GLOBAL_LIBVIPS": "1" }
 		},
 		"preview-internal": {
 			"extends": "preview",
@@ -33,14 +34,15 @@
 			"environment": "development",
 			"env": {
 				"APP_VARIANT": "preview",
-				"SENTRY_DISABLE_AUTO_UPLOAD": "true"
+				"SENTRY_DISABLE_AUTO_UPLOAD": "true",
+				"SHARP_IGNORE_GLOBAL_LIBVIPS": "1"
 			}
 		},
 		"production": {
 			"autoIncrement": true,
 			"channel": "production",
 			"environment": "production",
-			"env": { "APP_VARIANT": "production" }
+			"env": { "APP_VARIANT": "production", "SHARP_IGNORE_GLOBAL_LIBVIPS": "1" }
 		}
 	}
 }
