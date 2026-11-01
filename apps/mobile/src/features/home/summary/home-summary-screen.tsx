@@ -68,7 +68,12 @@ export function HomeSummaryScreen() {
 				</Pressable>
 			) : null}
 
-			<View style={styles.hero}>
+			<Pressable
+				accessibilityRole="button"
+				accessibilityHint={t.home.handicapEdit}
+				onPress={() => router.push("/profile/handicap")}
+				style={({ pressed }) => [styles.hero, pressed && styles.pressed]}
+			>
 				<AppText variant="label">{t.home.handicap}</AppText>
 				{settings === undefined ? (
 					<SkeletonCard lines={1} />
@@ -91,7 +96,7 @@ export function HomeSummaryScreen() {
 						{fmt(t.home.wouldBeHint, { count: wouldBe.count })}
 					</AppText>
 				) : null}
-			</View>
+			</Pressable>
 
 			{active === null ? (
 				<PrimaryButton
