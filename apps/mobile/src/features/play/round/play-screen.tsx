@@ -217,15 +217,17 @@ function PlayHole({
 				},
 				format: (m) => distanceNumber(m, units),
 				url: Linking.createURL("/play"),
+				accepts: (position) => isOnHole(position, anchors),
 			},
 			backgroundLocationPreferred(),
 		);
 	}, [anchors, holeTitle, units, t]);
 	useEffect(() => () => setLiveHole(null, false), []);
+	// Real fixes only: the tee fallback would read as where the player stands.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: on a new fix only
 	useEffect(() => {
-		if (player) liveHolePosition(player, true);
-	}, [player?.lat, player?.lng]);
+		if (gps.position) liveHolePosition(gps.position, true);
+	}, [gps.position?.lat, gps.position?.lng]);
 
 	// Shot just marked, waiting for its club (null: no strip).
 	const [pendingShot, setPendingShot] = useState<Id<"shots"> | null>(null);

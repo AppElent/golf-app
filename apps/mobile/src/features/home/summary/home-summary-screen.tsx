@@ -22,6 +22,9 @@ import { SkeletonCard } from "../../../ui/skeleton";
 import { AppText } from "../../../ui/text";
 import { vsParLabel, wouldBeFromHistory } from "./home-summary-model";
 
+/** Finished rounds listed on Home; the Rounds tab has the rest. */
+const RECENT = 3;
+
 export function HomeSummaryScreen() {
 	const router = useRouter();
 	const styles = useThemedStyles(createStyles);
@@ -31,7 +34,7 @@ export function HomeSummaryScreen() {
 	const history = useQuery(api.rounds.history, { limit: 20 });
 
 	const wouldBe = history ? wouldBeFromHistory(history) : null;
-	const last = history?.[0];
+	const recent = history?.slice(0, RECENT) ?? [];
 	const index = settings?.handicapIndex ?? null;
 
 	return (
@@ -111,26 +114,41 @@ export function HomeSummaryScreen() {
 
 			{history === undefined ? (
 				<SkeletonCard lines={2} />
-			) : last ? (
-				<InsetList compact header={t.home.lastRound}>
-					<InsetRow
-						id={last._id}
-						title={last.courseName}
-						secondary={new Date(last.startedAt).toLocaleDateString(
-							dateLocale(locale),
-							{ day: "numeric", month: "long" },
-						)}
-						value={
-							last.owner.strokes > 0
-								? `${last.owner.strokes} (${vsParLabel(last.owner.vsPar)})`
-								: undefined
-						}
-						chevron
-						onPress={() => router.push(`/rounds/${last._id}`)}
-					/>
+			) : recent.length > 0 ? (
+				<InsetList compact header={t.home.recentRounds}>
+					{recent.map((round) => (
+						<InsetRow
+							key={round._id}
+							id={round._id}
+							title={round.courseName}
+							secondary={[
+								new Date(round.startedAt).toLocaleDateString(
+									dateLocale(locale),
+									{ day: "numeric", month: "long" },
+								),
+								round.holeCount === 9 ? t.home.nineHoles : null,
+							]
+								.filter(Boolean)
+								.join(" · ")}
+							value={
+								round.owner.strokes > 0
+									? `${round.owner.strokes} (${vsParLabel(round.owner.vsPar)})`
+									: undefined
+							}
+							chevron
+							onPress={() => router.push(`/rounds/${round._id}`)}
+						/>
+					))}
+					{history.length > recent.length ? (
+						<InsetRow
+							title={t.home.allRounds}
+							chevron
+							onPress={() => router.navigate("/rounds")}
+						/>
+					) : null}
 				</InsetList>
 			) : (
-				<InsetList compact header={t.home.lastRound}>
+				<InsetList compact header={t.home.recentRounds}>
 					<InsetRow title={t.home.noRounds} secondary={t.home.noRoundsHint} />
 				</InsetList>
 			)}

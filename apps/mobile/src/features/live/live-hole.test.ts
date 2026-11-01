@@ -29,6 +29,7 @@ const hole = (n: string) => ({
 	},
 	format: (m: number) => String(Math.round(m)),
 	url: "fairway://play",
+	accepts: (p: { lat: number }) => p.lat < 52.01,
 });
 
 let live: typeof import("./live-hole");
@@ -37,6 +38,7 @@ beforeEach(() => {
 	jest.clearAllMocks();
 	mockInstance.update.mockResolvedValue(undefined);
 	mockInstance.end.mockResolvedValue(undefined);
+	mockFactory.getInstances.mockReturnValue([]);
 	Platform.OS = "ios";
 	live = require("./live-hole");
 });
@@ -82,4 +84,23 @@ it("takes over an activity left by an earlier launch", () => {
 	expect(mockInstance.update).toHaveBeenCalledWith(
 		expect.objectContaining({ hole: "Hole 2" }),
 	);
+});
+
+it("lands a throttled fix once the interval is over", () => {
+	jest.useFakeTimers();
+	live.setLiveHole(hole("1"), true);
+	live.liveHolePosition(anchors.tee, true);
+	live.liveHolePosition({ lat: 52.0025, lng: 5 }, true);
+	expect(mockInstance.update).not.toHaveBeenCalled();
+	jest.advanceTimersByTime(2000);
+	expect(mockInstance.update).toHaveBeenLastCalledWith(
+		expect.objectContaining({ center: "56" }),
+	);
+	jest.useRealTimers();
+});
+
+it("ignores fixes away from the hole", () => {
+	live.setLiveHole(hole("1"), true);
+	live.liveHolePosition({ lat: 52.5, lng: 5 }, true);
+	expect(mockFactory.start).not.toHaveBeenCalled();
 });

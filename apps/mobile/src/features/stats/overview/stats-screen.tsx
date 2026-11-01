@@ -7,6 +7,7 @@ import { formatDistance } from "@fairway/core/format";
 import { parTypeAverages, scoringDistribution } from "@fairway/core/par-stats";
 import { formatVsPar } from "@fairway/core/scoring";
 import { aggregateStats } from "@fairway/core/stats";
+import { useRouter } from "expo-router";
 import { ScrollView, StyleSheet, View } from "react-native";
 import Svg, { Circle, Path } from "react-native-svg";
 import { api } from "../../../convex/api";
@@ -35,6 +36,7 @@ import {
 } from "./stats-model";
 
 export function StatsScreen() {
+	const router = useRouter();
 	const { t, locale } = useI18n();
 	const colors = useTokens();
 	const styles = useThemedStyles(createStyles);
@@ -230,6 +232,15 @@ export function StatsScreen() {
 							)}
 						/>
 					))}
+				</InsetList>
+			) : bag ? (
+				<InsetList compact header={t.stats.clubs}>
+					<InsetRow
+						title={t.stats.noBag}
+						secondary={t.stats.noBagHint}
+						chevron
+						onPress={() => router.navigate("/profile/clubs")}
+					/>
 				</InsetList>
 			) : null}
 		</ScrollView>

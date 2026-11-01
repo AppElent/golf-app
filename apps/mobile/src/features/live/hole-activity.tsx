@@ -8,8 +8,10 @@
  */
 import { HStack, Image, Spacer, Text, VStack } from "@expo/ui/swift-ui";
 import {
+	fixedSize,
 	font,
 	foregroundStyle,
+	lineLimit,
 	monospacedDigit,
 	padding,
 } from "@expo/ui/swift-ui/modifiers";
@@ -51,7 +53,12 @@ const HoleActivity = (
 				{label}
 			</Text>
 			<Text
-				modifiers={[font({ size: 20, weight: "semibold" }), monospacedDigit()]}
+				modifiers={[
+					font({ size: 20, weight: "semibold" }),
+					monospacedDigit(),
+					lineLimit(1),
+					fixedSize(),
+				]}
 			>
 				{value}
 			</Text>
@@ -64,7 +71,13 @@ const HoleActivity = (
 					<Text modifiers={[font({ size: 20, weight: "bold" })]}>
 						{props.hole}
 					</Text>
-					<Text modifiers={[font({ size: 13 }), foregroundStyle(muted)]}>
+					<Text
+						modifiers={[
+							font({ size: 13 }),
+							foregroundStyle(muted),
+							lineLimit(2),
+						]}
+					>
 						{props.detail}
 					</Text>
 				</VStack>
@@ -85,6 +98,8 @@ const HoleActivity = (
 								font({ size: 34, weight: "heavy" }),
 								monospacedDigit(),
 								foregroundStyle(accent),
+								lineLimit(1),
+								fixedSize(),
 							]}
 						>
 							{props.center}
@@ -139,6 +154,8 @@ const HoleActivity = (
 						font({ size: 30, weight: "heavy" }),
 						monospacedDigit(),
 						foregroundStyle(accent),
+						lineLimit(1),
+						fixedSize(),
 					]}
 				>
 					{props.center}

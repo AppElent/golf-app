@@ -25,6 +25,8 @@ export type LiveHole = {
 	format: (meters: number) => string;
 	/** Opened when the activity is tapped. */
 	url: string;
+	/** False for a fix away from this hole: those would mislead. */
+	accepts: (position: LatLng) => boolean;
 };
 
 let hole: LiveHole | null = null;
@@ -32,6 +34,7 @@ let activity: LiveActivity<HoleActivityProps> | null = null;
 let lastShown = "";
 let lastAt = 0;
 let lastPosition: LatLng | null = null;
+let trailing: ReturnType<typeof setTimeout> | null = null;
 
 /** Fewer than this between updates only when the hole changes. */
 const MIN_INTERVAL_MS = 2000;
@@ -56,6 +59,7 @@ export function setLiveHole(next: LiveHole | null, enabled: boolean) {
 /** A new position, from Play or the background task. */
 export function liveHolePosition(position: LatLng, foreground: boolean) {
 	if (!supported()) return;
+	if (hole && !hole.accepts(position)) return;
 	lastPosition = position;
 	if (hole) show(position, false, foreground);
 }
@@ -80,8 +84,19 @@ function show(position: LatLng, force: boolean, foreground = true) {
 		!force &&
 		now - lastAt < MIN_INTERVAL_MS &&
 		key.split("|")[0] === lastShown.split("|")[0]
-	)
+	) {
+		// Throttled, not dropped: the last fix still lands once the interval
+		// is over, even when no newer one follows (standing at the ball).
+		if (!trailing)
+			trailing = setTimeout(
+				() => {
+					trailing = null;
+					if (lastPosition) show(lastPosition, false, foreground);
+				},
+				MIN_INTERVAL_MS - (now - lastAt),
+			);
 		return;
+	}
 	lastShown = key;
 	lastAt = now;
 	try {
@@ -111,6 +126,8 @@ function adopt(): LiveActivity<HoleActivityProps> | null {
 }
 
 async function endActivity() {
+	if (trailing) clearTimeout(trailing);
+	trailing = null;
 	const current = activity ?? adopt();
 	activity = null;
 	lastShown = "";

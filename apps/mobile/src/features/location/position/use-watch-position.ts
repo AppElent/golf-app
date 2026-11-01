@@ -4,9 +4,10 @@
  * first use (Play is the moment the user expects to be located).
  *
  * iOS pauses the watch while the phone is locked, so a fix from before the
- * lock is dropped on return once it is older than `STALE_MS`: until a new one
- * arrives the screen measures from the tee rather than from where the player
- * stood minutes ago (and a marked shot can't land on the old spot).
+ * lock is dropped on return once it is older than `STALE_MS`, and a fresh one
+ * is requested: until it arrives the screen measures from the tee rather than
+ * from where the player stood minutes ago (and a marked shot can't land on
+ * the old spot).
  */
 import type { LatLng } from "@fairway/core/geo";
 import * as Location from "expo-location";
@@ -31,13 +32,30 @@ export function useWatchPosition(enabled = true): WatchedPosition {
 	useEffect(() => {
 		if (!enabled) return;
 		let fixedAt = 0;
+		let subscription: Location.LocationSubscription | null = null;
+		let cancelled = false;
+		const accept = (fix: Location.LocationObject) => {
+			fixedAt = Date.now();
+			setState({
+				permission: "granted",
+				position: { lat: fix.coords.latitude, lng: fix.coords.longitude },
+				accuracyMeters: fix.coords.accuracy ?? null,
+			});
+		};
 		const appState = AppState.addEventListener("change", (next) => {
 			if (next === "active" && Date.now() - fixedAt > STALE_MS) {
 				setState((s) => ({ ...s, position: null, accuracyMeters: null }));
+				// The watch reports only after moving a couple of metres, so a
+				// player standing at the ball would wait on the tee fallback.
+				Location.getCurrentPositionAsync({
+					accuracy: Location.Accuracy.BestForNavigation,
+				})
+					.then((fix) => {
+						if (!cancelled) accept(fix);
+					})
+					.catch(() => {});
 			}
 		});
-		let subscription: Location.LocationSubscription | null = null;
-		let cancelled = false;
 		(async () => {
 			const { granted } = await Location.requestForegroundPermissionsAsync();
 			if (cancelled) return;
@@ -53,14 +71,7 @@ export function useWatchPosition(enabled = true): WatchedPosition {
 						distanceInterval: 2,
 						timeInterval: 2000,
 					},
-					(fix) => {
-						fixedAt = Date.now();
-						setState({
-							permission: "granted",
-							position: { lat: fix.coords.latitude, lng: fix.coords.longitude },
-							accuracyMeters: fix.coords.accuracy ?? null,
-						});
-					},
+					accept,
 				);
 				if (cancelled) subscription.remove();
 			} catch {
