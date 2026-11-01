@@ -69,7 +69,7 @@ async function overpass(query, attempt = 1) {
 }
 
 for (const id of ids) {
-	const query = `[out:json][timeout:90];rel(${id});map_to_area->.a;(way(area.a)[golf];);out geom tags;`;
+	const query = `[out:json][timeout:90];rel(${id});map_to_area->.a;(way(area.a)[golf];node(area.a)[golf=pin];);out geom tags;`;
 	const { elements } = await overpass(query);
 	const { geometry } = normalizeCourse(elements);
 	const sorted = round(

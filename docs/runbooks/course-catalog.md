@@ -56,3 +56,20 @@ production). Nothing calls Overpass at deploy time.
 
 Overpass sheds load with 429/502/504; the script retries with backoff. If it
 keeps failing, try again later; the committed geometry keeps working.
+
+## Geometry from OpenStreetMap
+
+`normalizeCourse` (`packages/core/src/osm.ts`) gives each hole the green its
+line ends on: either end, within 60 m, one green per hole, closest pairs
+first. A line drawn green-to-tee is flipped. A hole whose green polygon was
+never mapped but whose line ends on a `golf=pin` node gets a 12 m circle
+around the pin. A hole with neither uses its line's end as the green.
+
+Hole lines are rough: they may start at another tee or cut a dogleg, so their
+length can differ from the card. The app shows the card length and measures
+from GPS, so only the hole view's framing uses the line.
+
+Fix bad geometry in OpenStreetMap itself (PDOK aerial imagery is
+CC BY 4.0 and fine to trace from), then run `pnpm courses:geometry` again.
+Known gaps: Welderen par-3 hole (6) has no green mapped (its line end is on
+the green, so the fallback is right).

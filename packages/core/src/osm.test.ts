@@ -173,3 +173,38 @@ describe("normalizeCourse — green matching", () => {
 		expect(course.geometry[0].greens).toHaveLength(1);
 	});
 });
+
+describe("normalizeCourse — lone pins", () => {
+	const hole = (ref: string, from: number, to: number) => ({
+		type: "way",
+		id: Number(ref),
+		tags: { golf: "hole", ref },
+		geometry: [
+			{ lat: from, lon: 5.0 },
+			{ lat: to, lon: 5.0 },
+		],
+	});
+	const pin = (id: number, lat: number) => ({
+		type: "node",
+		id,
+		lat,
+		lon: 5.0,
+		tags: { golf: "pin" },
+	});
+
+	it("draws a stand-in green around a pin at the line's end and flips the line to it", () => {
+		const course = normalizeCourse([
+			hole("1", 52.003, 52.0), // drawn green-to-tee
+			pin(10, 52.003),
+		]);
+		const g = course.geometry[0];
+		expect(g.greens).toHaveLength(1);
+		expect(g.greens[0]).toHaveLength(16);
+		expect(g.holeLine[g.holeLine.length - 1].lat).toBe(52.003);
+	});
+
+	it("ignores a pin far from the line's ends", () => {
+		const course = normalizeCourse([hole("1", 52.0, 52.003), pin(10, 52.0015)]);
+		expect(course.geometry[0].greens).toHaveLength(0);
+	});
+});
