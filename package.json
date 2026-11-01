@@ -24,7 +24,7 @@
     "env": "node scripts/env.mjs",
     "courses:geometry": "node scripts/course-data/refresh-geometry.mjs",
     "courses:sync": "pnpm exec convex run courseCatalog:sync",
-    "deploy:dev": "pnpm exec convex dev --once && pnpm exec convex run courseCatalog:sync && pnpm run build:development && wrangler deploy --env dev",
+    "deploy:dev": "pnpm exec convex dev --once && pnpm exec convex run courseCatalog:sync && CLOUDFLARE_ENV=dev pnpm run build:development && wrangler deploy",
     "deploy:prod": "pnpm exec convex deploy && pnpm exec convex run courseCatalog:sync --prod && pnpm run build && wrangler deploy",
     "test:mobile": "pnpm --filter @fairway/mobile test",
     "check:mobile-structure": "node scripts/check-mobile-structure.mjs"

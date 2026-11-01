@@ -8,6 +8,8 @@ on:
     inputs:
       environment: { type: string, required: true }
       # wrangler.jsonc env block; empty means the top-level `golf-app` Worker.
+      # The Cloudflare Vite plugin resolves it at build time (CLOUDFLARE_ENV)
+      # into dist/server/wrangler.json; `wrangler deploy --env` is ignored.
       wrangler-env: { type: string, default: "" }
 
 jobs:
@@ -27,7 +29,8 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       # Public, inlined into the bundle: a variable, not a secret.
       VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY }}
-      WRANGLER_ENV: ${{ inputs.wrangler-env }}
+      CLOUDFLARE_ENV: ${{ inputs.wrangler-env }}
+      WORKER_NAME: golf-app${{ inputs.wrangler-env && format('-{0}', inputs.wrangler-env) || '' }}
     steps:
       # Fails before anything ships rather than deploying half a target.
       - name: Check environment
@@ -68,12 +71,20 @@ jobs:
         id: worker
         run: |
           set -o pipefail
-          pnpm exec wrangler deploy ${WRANGLER_ENV:+--env "$WRANGLER_ENV"} 2>&1 | tee "$RUNNER_TEMP/wrangler.log"
-          echo "url=$(grep -oE 'https://[^ ]+workers\.dev' "$RUNNER_TEMP/wrangler.log" | head -1)" >> "$GITHUB_OUTPUT"
+          built=$(jq -r .name dist/server/wrangler.json)
+          if [ "$built" != "$WORKER_NAME" ]; then
+            echo "::error::Build targets Worker '$built', expected '$WORKER_NAME'."
+            exit 1
+          fi
+          pnpm exec wrangler deploy 2>&1 | tee "$RUNNER_TEMP/wrangler.log"
+          echo "url=$(grep -oE "https://$WORKER_NAME\.[^ ]+workers\.dev" "$RUNNER_TEMP/wrangler.log" | head -1)" >> "$GITHUB_OUTPUT"
 
       - name: Smoke check
-        if: steps.worker.outputs.url != ''
         env:
           URL: ${{ steps.worker.outputs.url }}
         run: |
+          if [ -z "$URL" ]; then
+            echo "::error::wrangler printed no $WORKER_NAME workers.dev URL."
+            exit 1
+          fi
           curl -fsS --retry 5 --retry-delay 3 --retry-all-errors -o /dev/null -w "%{http_code} $URL\n" "$URL"
