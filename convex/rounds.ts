@@ -195,20 +195,32 @@ export async function deleteRoundData(ctx: MutationCtx, roundId: Id<"rounds">) {
 	await ctx.db.delete(roundId);
 }
 
-/** Upsert one player's result on one hole. Last write wins (single scorer). */
+/**
+ * Upsert one player's result on one hole. Last write wins (single scorer).
+ * Omitted fields keep their value; `null` clears putts / fairway / green.
+ */
 export const setScore = mutation({
 	args: {
 		roundId: v.id("rounds"),
 		holeIndex: v.number(),
 		playerIndex: v.number(),
 		strokes: v.optional(v.number()),
-		putts: v.optional(v.number()),
-		fir: v.optional(v.boolean()),
-		gir: v.optional(v.boolean()),
+		putts: v.optional(v.union(v.number(), v.null())),
+		fir: v.optional(v.union(v.boolean(), v.null())),
+		gir: v.optional(v.union(v.boolean(), v.null())),
 		penalties: v.optional(v.number()),
 		nr: v.optional(v.boolean()),
 	},
-	handler: async (ctx, { roundId, holeIndex, playerIndex, ...fields }) => {
+	handler: async (ctx, { roundId, holeIndex, playerIndex, ...args }) => {
+		// Values to store; a null clears the field (patch() drops undefined).
+		const set = Object.fromEntries(
+			Object.entries(args).filter(([, value]) => value != null),
+		);
+		const cleared = Object.fromEntries(
+			Object.entries(args)
+				.filter(([, value]) => value === null)
+				.map(([key]) => [key, undefined]),
+		);
 		const round = await requireActiveRound(ctx, roundId);
 		if (holeIndex < 0 || holeIndex >= round.holeRefs.length) {
 			throw new Error("holeIndex out of range.");
@@ -226,13 +238,13 @@ export const setScore = mutation({
 			)
 			.first();
 		if (existing) {
-			await ctx.db.patch(existing._id, fields);
+			await ctx.db.patch(existing._id, { ...set, ...cleared });
 		} else {
 			await ctx.db.insert("holeScores", {
 				roundId,
 				holeIndex,
 				playerIndex,
-				...fields,
+				...set,
 			});
 		}
 	},

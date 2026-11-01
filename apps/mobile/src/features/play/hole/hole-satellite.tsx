@@ -44,8 +44,8 @@ export function HoleSatellite(props: HoleCanvasProps) {
 		greenView,
 		paddingFramesCamera: Platform.OS === "android",
 	});
-	// Re-frame on hole change / view toggle, not on every GPS tick.
-	const frameKey = `${green.lat},${green.lng},${greenView},${height > 0}`;
+	// Re-frame on hole change / view toggle / first fix, not on every GPS tick.
+	const frameKey = `${green.lat},${green.lng},${greenView},${height > 0},${located}`;
 	// biome-ignore lint/correctness/useExhaustiveDependencies: frameKey is the trigger
 	useEffect(() => {
 		if (height === 0) return;
@@ -103,7 +103,8 @@ export function HoleSatellite(props: HoleCanvasProps) {
 					) : null}
 					{shots.map((shot, i) => (
 						<Marker
-							key={`shot-${shot.lat},${shot.lng}`}
+							// biome-ignore lint/suspicious/noArrayIndexKey: shots only append; a re-tee can repeat a spot
+							key={`shot-${i}`}
 							coordinate={toCoord(shot)}
 							anchor={{ x: 0.5, y: 0.5 }}
 							tracksViewChanges={false}

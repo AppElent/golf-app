@@ -63,7 +63,8 @@ export function distancesToGreen(
 		return l.x * ux + l.y * uy;
 	});
 	return {
-		front: Math.min(...along),
+		// On the green the front edge is behind you: 0, not negative.
+		front: Math.max(0, Math.min(...along)),
 		center: haversineMeters(position, center),
 		back: Math.max(...along),
 	};

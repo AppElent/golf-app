@@ -1,5 +1,6 @@
 import {
 	courseLoops,
+	indexText,
 	parseIndex,
 	playingHandicapPreview,
 	selection,
@@ -46,6 +47,13 @@ describe("round setup model", () => {
 		expect(parseIndex(" 8.0 ")).toBe(8);
 		expect(parseIndex("")).toBeUndefined();
 		expect(parseIndex("99")).toBeUndefined();
+	});
+
+	it("reads a plus index as negative", () => {
+		expect(parseIndex("+2,0")).toBe(-2);
+		expect(parseIndex("-1.5")).toBe(-1.5);
+		expect(indexText(-2)).toBe("+2.0");
+		expect(indexText(18.4)).toBe("18.4");
 	});
 
 	it("previews the playing handicap only with a tee and holes", () => {

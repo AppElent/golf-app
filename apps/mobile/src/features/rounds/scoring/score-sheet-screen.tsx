@@ -10,7 +10,7 @@
 import { holeLabel } from "@fairway/core/format";
 import { useMutation } from "convex/react";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Platform, Pressable, StyleSheet, Switch, View } from "react-native";
 import { api } from "../../../convex/api";
 import { useQuery } from "../../../convex/query-cache";
@@ -92,14 +92,27 @@ function ScoreSheet({
 	const setCurrentHole = useMutation(api.rounds.setCurrentHole);
 	const { round, holes, scores } = active;
 	const hole = holes[holeIndex];
+	// Cancel stays available while a slow save is pending: Convex still
+	// delivers the score, but the sheet must not advance or navigate after
+	// it has gone (router.back() would pop Play).
+	const open = useRef(true);
+	useEffect(
+		() => () => {
+			open.current = false;
+		},
+		[],
+	);
 	const [drafts, setDrafts] = useState<ScoreDraft[]>(() =>
 		initialDrafts(scores, holeIndex, round.players.length, hole.par),
 	);
 	const [saving, setSaving] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const isLast = holeIndex === holes.length - 1;
-	// "Next hole" only when scoring the hole being played, not a correction.
-	const advances = !isLast && holeIndex === (round.currentHoleIndex ?? 0);
+	// "Next hole" only on the first entry for the hole being played; a
+	// correction (also after browsing back with the chevrons) stays put.
+	const firstEntry = !scores.some((x) => x.holeIndex === holeIndex);
+	const advances =
+		!isLast && firstEntry && holeIndex === (round.currentHoleIndex ?? 0);
 
 	const update = (playerIndex: number, patch: Partial<ScoreDraft>) =>
 		setDrafts((all) =>
@@ -120,16 +133,19 @@ function ScoreSheet({
 					}),
 				),
 			);
+			if (!open.current) return;
 			if (advances) {
 				await setCurrentHole({ roundId: round._id, holeIndex: holeIndex + 1 });
 			}
+			if (!open.current) return;
 			haptics.entryLogged();
-			if (isLast && holeIndex === (round.currentHoleIndex ?? 0)) {
+			if (isLast && firstEntry) {
 				router.replace("/scorecard");
 			} else {
 				router.back();
 			}
 		} catch (e) {
+			if (!open.current) return;
 			setError(convexErrorMessage(e, t.score.saveError));
 			setSaving(false);
 		}

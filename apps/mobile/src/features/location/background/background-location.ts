@@ -6,7 +6,9 @@
  *
  * The task itself stores nothing: the positions only keep the receiver awake.
  * The Play screen's own foreground watch draws everything. Updates stop when
- * Play unmounts, so nothing runs outside a round.
+ * Play unmounts, so nothing runs outside a round — and if the app was killed
+ * with Play open, the first update after the OS relaunches it finds no Play
+ * mounted and stops them.
  */
 import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
@@ -19,11 +21,15 @@ import {
 
 const TASK = "fairway-background-location";
 
+/** Whether a Play screen is mounted in this JS runtime. */
+let playing = false;
+
 // Must run at module scope (app entry imports this file) so the OS can wake
 // the JS runtime into a defined task.
 if (!TaskManager.isTaskDefined(TASK)) {
 	TaskManager.defineTask(TASK, async () => {
-		// Intentionally empty: see the module comment.
+		// No positions stored (see the module comment); just don't outlive Play.
+		if (!playing) await stop();
 	});
 }
 
@@ -79,7 +85,12 @@ export function useBackgroundLocationWhilePlaying(notification: {
 }) {
 	const { title, body } = notification;
 	useEffect(() => {
-		if (!backgroundLocationPreferred()) return;
+		playing = true;
+		if (!backgroundLocationPreferred()) {
+			return () => {
+				playing = false;
+			};
+		}
 		let started = false;
 		let cancelled = false;
 		(async () => {
@@ -104,6 +115,7 @@ export function useBackgroundLocationWhilePlaying(notification: {
 			}
 		})();
 		return () => {
+			playing = false;
 			cancelled = true;
 			if (started) void stop();
 		};

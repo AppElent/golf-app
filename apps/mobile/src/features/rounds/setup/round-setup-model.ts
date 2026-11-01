@@ -50,11 +50,22 @@ export function selection(
 	return { holeRefs, incomplete, par, label };
 }
 
-/** "12,4" or "12.4" → 12.4; blank → undefined (scratch / unknown). */
+/**
+ * "12,4" or "12.4" → 12.4; a plus index "+2,0" → −2.0 (as it is written in
+ * NL); blank → undefined (scratch / unknown).
+ */
 export function parseIndex(raw: string): number | undefined {
-	const n = Number.parseFloat(raw.trim().replace(",", "."));
-	if (Number.isNaN(n) || n < -10 || n > 54) return undefined;
-	return Math.round(n * 10) / 10;
+	const text = raw.trim().replace(",", ".");
+	const n = Number.parseFloat(text.replace(/^\+/, ""));
+	if (Number.isNaN(n)) return undefined;
+	const value = text.startsWith("+") ? -Math.abs(n) : n;
+	if (value < -10 || value > 54) return undefined;
+	return Math.round(value * 10) / 10;
+}
+
+/** The index as a golfer writes it: "18,4", or "+2,0" for a plus index. */
+export function indexText(value: number): string {
+	return value < 0 ? `+${Math.abs(value).toFixed(1)}` : value.toFixed(1);
 }
 
 export function playingHandicapPreview(

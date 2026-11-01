@@ -29,6 +29,7 @@ import { SkeletonList } from "../../../ui/skeleton";
 import { AppText } from "../../../ui/text";
 import {
 	courseLoops,
+	indexText,
 	parseIndex,
 	playingHandicapPreview,
 	selection,
@@ -78,7 +79,7 @@ export function RoundSetupScreen({ courseId }: { courseId: Id<"courses"> }) {
 			setOwnerIndex(
 				settings.handicapIndex === null
 					? ""
-					: localizeDecimal(settings.handicapIndex.toFixed(1), locale),
+					: localizeDecimal(indexText(settings.handicapIndex), locale),
 			);
 	}, [settings, ownerIndex, locale]);
 
@@ -229,7 +230,7 @@ export function RoundSetupScreen({ courseId }: { courseId: Id<"courses"> }) {
 					value={ownerIndex ?? ""}
 					onChangeText={setOwnerIndex}
 					placeholder={t.setup.handicapIndex}
-					keyboardType="decimal-pad"
+					keyboardType="numbers-and-punctuation"
 					accessibilityLabel={`${ownerName}, ${t.setup.handicapIndex}`}
 				/>
 				{guests.map((g, i) => {
@@ -254,7 +255,7 @@ export function RoundSetupScreen({ courseId }: { courseId: Id<"courses"> }) {
 									label={t.setup.handicapIndex}
 									suffix={phLabel(g.index)}
 									value={g.index}
-									keyboardType="decimal-pad"
+									keyboardType="numbers-and-punctuation"
 									onChangeText={(text) =>
 										setGuests((prev) =>
 											prev.map((x) =>

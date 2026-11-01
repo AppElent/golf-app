@@ -78,9 +78,10 @@ export const tracksFairway = (par: number) => par >= 4;
 export function draftToScore(draft: ScoreDraft) {
 	return {
 		strokes: draft.strokes,
-		putts: draft.putts ?? undefined,
-		fir: draft.fir ?? undefined,
-		gir: draft.gir ?? undefined,
+		// null clears a value saved earlier (undefined would keep it).
+		putts: draft.putts,
+		fir: draft.fir,
+		gir: draft.gir,
 		penalties: draft.penalties,
 		nr: draft.nr,
 	};

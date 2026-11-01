@@ -26,7 +26,7 @@ import { useMutation } from "convex/react";
 import { useKeepAwake } from "expo-keep-awake";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api, type Doc, type Id } from "../../../convex/api";
@@ -124,9 +124,17 @@ function PlayHole({
 	const { round, holes } = active;
 	const allShots = useQuery(api.shots.forRound, { roundId: round._id });
 	const [holeIndex, setHoleIndex] = useState(round.currentHoleIndex ?? 0);
-	// Follow the server when another device moves the round on.
+	// The hole this screen asked the server for, until the server has it:
+	// acks of earlier taps must not snap the screen back.
+	const requestedHole = useRef<number | null>(null);
+	// Follow the server when the score sheet or another device moves on.
 	useEffect(() => {
-		setHoleIndex(round.currentHoleIndex ?? 0);
+		const server = round.currentHoleIndex ?? 0;
+		if (requestedHole.current !== null && requestedHole.current !== server) {
+			return;
+		}
+		requestedHole.current = null;
+		setHoleIndex(server);
 	}, [round.currentHoleIndex]);
 
 	const [greenView, setGreenView] = useState(false);
@@ -189,6 +197,14 @@ function PlayHole({
 		setGreenView(false);
 		setPendingShot(null);
 	}, [ref, anchors?.green.lat, anchors?.green.lng]);
+	// The first fix on the hole: aim from the ball, not from the tee (Play
+	// opened mid-hole would otherwise draw the line backwards).
+	// biome-ignore lint/correctness/useExhaustiveDependencies: on gaining a fix only
+	useEffect(() => {
+		if (located && anchors && gps.position) {
+			setTarget(defaultTarget(gps.position, anchors.green, bag));
+		}
+	}, [located]);
 
 	async function onMarkShot() {
 		if (!located || !gps.position) {
@@ -237,9 +253,11 @@ function PlayHole({
 		if (next < 0 || next >= round.holeRefs.length) return;
 		haptics.selectionChanged();
 		setHoleIndex(next);
-		setCurrentHole({ roundId: round._id, holeIndex: next }).catch(() =>
-			toast.error(t.play.holeError),
-		);
+		requestedHole.current = next;
+		setCurrentHole({ roundId: round._id, holeIndex: next }).catch(() => {
+			requestedHole.current = null;
+			toast.error(t.play.holeError);
+		});
 	}
 
 	const numbers = anchors && player ? greenNumbers(player, anchors) : null;
@@ -474,7 +492,9 @@ function PlayHole({
 							style={[styles.onHud, styles.offerText]}
 							accessibilityRole="alert"
 						>
-							{fmt(t.play.nextTee, { n: holeIndex + 2 })}
+							{fmt(t.play.nextTee, {
+								n: holeLabel(round.holeRefs[holeIndex + 1] ?? ""),
+							})}
 						</AppText>
 						<Pressable
 							accessibilityRole="button"
@@ -500,7 +520,9 @@ function PlayHole({
 							]}
 						>
 							<AppText variant="control" style={styles.offerGoText}>
-								{fmt(t.play.goToHole, { n: holeIndex + 2 })}
+								{fmt(t.play.goToHole, {
+									n: holeLabel(round.holeRefs[holeIndex + 1] ?? ""),
+								})}
 							</AppText>
 						</Pressable>
 					</HudGlass>

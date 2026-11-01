@@ -27,7 +27,7 @@ describe("quickStrokes", () => {
 });
 
 describe("draftToScore", () => {
-	it("drops unanswered stats instead of storing nulls", () => {
+	it("sends unanswered stats as null so they clear a saved value", () => {
 		expect(
 			draftToScore({
 				strokes: 5,
@@ -39,8 +39,8 @@ describe("draftToScore", () => {
 			}),
 		).toEqual({
 			strokes: 5,
-			putts: undefined,
-			fir: undefined,
+			putts: null,
+			fir: null,
 			gir: true,
 			penalties: 0,
 			nr: false,
