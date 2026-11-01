@@ -1,15 +1,16 @@
 import { detectLoops } from "@fairway/core/loops";
 import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { type ActionCtx, action } from "./_generated/server";
+import { type ActionCtx, internalAction } from "./_generated/server";
 
 /**
  * Write the course catalog (convex/catalog) into this deployment — the
- * shared course data every other seed builds on. Idempotent.
+ * shared course data every other seed builds on. Idempotent. Internal:
+ * only an admin key (`convex run`, `--preview-run`) can start it.
  *
  * Run with: pnpm exec convex run seed:seedData
  */
-export const seedData = action({
+export const seedData = internalAction({
 	args: {},
 	handler: async (ctx): Promise<{ key: string; created: boolean }[]> => {
 		const results = await ctx.runMutation(internal.courseCatalog.sync, {});
@@ -198,7 +199,7 @@ async function seedActiveRound(
  *
  * Run with: pnpm exec convex run seed:seedDummyData --identity '{"subject":"user_…"}'
  */
-export const seedDummyData = action({
+export const seedDummyData = internalAction({
 	args: {},
 	handler: async (ctx): Promise<{ skipped: boolean }> => {
 		const [active, history] = await Promise.all([

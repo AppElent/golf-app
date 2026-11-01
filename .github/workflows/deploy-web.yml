@@ -23,7 +23,6 @@ jobs:
       url: ${{ steps.worker.outputs.url }}
     permissions:
       contents: read
-      packages: read
     env:
       # The deploy key alone picks the Convex deployment.
       CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}

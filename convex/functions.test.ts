@@ -9,6 +9,8 @@ import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
 import { api, internal } from "./_generated/api";
 import schema from "./schema";
+import * as seed from "./seed";
+import * as seedPreview from "./seedPreview";
 
 // Function modules plus `_generated`, which convex-test uses to find the root.
 const modules = import.meta.glob([
@@ -58,6 +60,39 @@ describe("auth", () => {
 		await expect(t.mutation(api.account.deleteMyData, {})).rejects.toThrow(
 			"Not signed in.",
 		);
+	});
+
+	it("refuses course writes without a session", async () => {
+		const { t, course } = await setup();
+		const courseId = course.course._id;
+		const writes = [
+			t.mutation(api.courses.fork, { courseId }),
+			t.mutation(api.courses.updateMeta, { courseId, name: "x" }),
+			t.mutation(api.courses.upsertTee, {
+				courseId,
+				name: "x",
+				courseRating: 70,
+				slopeRating: 120,
+			}),
+			t.mutation(api.courses.upsertHole, {
+				holeId: course.holes[0]._id,
+				par: 3,
+			}),
+			t.mutation(api.courses.remove, { courseId }),
+			t.mutation(api.courses.suggest, { courseId, message: "x" }),
+		];
+		for (const write of writes)
+			await expect(write).rejects.toThrow("Not signed in.");
+	});
+
+	it("keeps the seed entry points internal", () => {
+		for (const fn of [
+			seed.seedData,
+			seed.seedDummyData,
+			seedPreview.seedPreview,
+		]) {
+			expect(fn.isInternal).toBe(true);
+		}
 	});
 });
 
@@ -167,6 +202,49 @@ describe("courses", () => {
 		expect(bobList.map((c) => c._id)).not.toContain(copyId);
 	});
 
+	it("keeps another user's copy out of reach", async () => {
+		const { alice, bob, course } = await setup();
+		const copyId = await alice.mutation(api.courses.fork, {
+			courseId: course.course._id,
+		});
+		const copy = await alice.query(api.courses.get, { courseId: copyId });
+		const notFound = "Course not found.";
+		await expect(
+			bob.mutation(api.courses.updateMeta, { courseId: copyId, name: "x" }),
+		).rejects.toThrow(notFound);
+		await expect(
+			bob.mutation(api.courses.upsertHole, {
+				holeId: copy?.holes[0]._id ?? course.holes[0]._id,
+				par: 3,
+			}),
+		).rejects.toThrow(notFound);
+		await expect(
+			bob.mutation(api.courses.remove, { courseId: copyId }),
+		).rejects.toThrow(notFound);
+		await expect(
+			bob.mutation(api.courses.fork, { courseId: copyId }),
+		).rejects.toThrow(notFound);
+		await expect(
+			bob.mutation(api.courses.suggest, {
+				courseId: course.course._id,
+				message: "hole 1 is a par 4",
+				forkId: copyId,
+			}),
+		).rejects.toThrow("Copy not found.");
+		await expect(
+			bob.mutation(api.settings.update, { homeCourseId: copyId }),
+		).rejects.toThrow(notFound);
+		await expect(
+			bob.mutation(api.rounds.start, {
+				courseId: copyId,
+				teeId: course.tees[0]._id,
+				holeRefs: ["1"],
+				format: "stroke",
+				players: [{ name: "Bob" }],
+			}),
+		).rejects.toThrow(notFound);
+	});
+
 	it("syncs the catalog idempotently", async () => {
 		const { t, alice } = await setup();
 		const before = await alice.query(api.courses.list, {});
@@ -174,6 +252,50 @@ describe("courses", () => {
 		expect(results.every((r) => !r.created)).toBe(true);
 		const after = await alice.query(api.courses.list, {});
 		expect(after.map((c) => c._id)).toEqual(before.map((c) => c._id));
+	});
+});
+
+describe("clubs and shots", () => {
+	it("keep one user's clubs and shots from another", async () => {
+		const { alice, bob, course } = await setup();
+		const clubId = await alice.mutation(api.clubs.create, {
+			name: "7i",
+			carryMeters: 150,
+		});
+		const roundId = await startRound(alice, course);
+		const shotId = await alice.mutation(api.shots.mark, {
+			roundId,
+			holeIndex: 0,
+			position: { lat: 51.6, lng: 4.87 },
+		});
+
+		expect(await bob.query(api.clubs.list, {})).toEqual([]);
+		expect(await bob.query(api.shots.mine, {})).toEqual([]);
+		expect(await bob.query(api.rounds.detail, { roundId })).toBeNull();
+		await expect(
+			bob.mutation(api.clubs.update, { clubId, carryMeters: 1 }),
+		).rejects.toThrow("Club not found.");
+		await expect(
+			bob.mutation(api.clubs.reorder, { orderedIds: [clubId] }),
+		).rejects.toThrow("Club not found.");
+		await expect(bob.mutation(api.clubs.remove, { clubId })).rejects.toThrow(
+			"Club not found.",
+		);
+		await expect(bob.query(api.shots.forRound, { roundId })).rejects.toThrow(
+			"Round not found.",
+		);
+		await expect(
+			bob.mutation(api.shots.setClub, { shotId, club: "PW" }),
+		).rejects.toThrow("Shot not found.");
+		await expect(bob.mutation(api.shots.remove, { shotId })).rejects.toThrow(
+			"Shot not found.",
+		);
+		await expect(bob.mutation(api.rounds.finish, { roundId })).rejects.toThrow(
+			"Round not found.",
+		);
+		await expect(bob.mutation(api.rounds.abandon, { roundId })).rejects.toThrow(
+			"Round not found.",
+		);
 	});
 });
 
