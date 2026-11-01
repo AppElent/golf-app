@@ -1,13 +1,13 @@
-import { v } from "convex/values";
 import {
-	adjustedGrossScore,
-	playingHandicap,
-	scoreDifferential,
-} from "../src/domain/handicap";
-import { stablefordPoints, totalStrokes, vsPar } from "../src/domain/scoring";
+	roundDifferential,
+	roundPlayingHandicap,
+} from "@fairway/core/handicap";
+import { stablefordTotal, totalStrokes, vsPar } from "@fairway/core/scoring";
+import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
+import { canSee } from "./courses";
 import { getUserId } from "./lib";
 
 const playerInput = v.object({
@@ -49,8 +49,12 @@ export const start = mutation({
 			throw new Error("A round needs at least one hole.");
 		}
 
+		const course = await ctx.db.get(args.courseId);
+		if (!course || course.retired || !canSee(course, userId)) {
+			throw new Error("Course not found.");
+		}
 		const tee = await ctx.db.get(args.teeId);
-		if (!tee || tee.courseId !== args.courseId) {
+		if (!tee || tee.courseId !== args.courseId || tee.retired) {
 			throw new Error("Tee does not belong to this course.");
 		}
 
@@ -58,7 +62,9 @@ export const start = mutation({
 			.query("holes")
 			.withIndex("by_course", (q) => q.eq("courseId", args.courseId))
 			.collect();
-		const byRef = new Map(courseHoles.map((h) => [h.ref, h]));
+		const byRef = new Map(
+			courseHoles.filter((h) => !h.retired).map((h) => [h.ref, h]),
+		);
 
 		const incomplete: string[] = [];
 		let parTotal = 0;
@@ -82,13 +88,32 @@ export const start = mutation({
 			playingHandicap:
 				p.handicapIndex === undefined
 					? undefined
-					: playingHandicap(
+					: roundPlayingHandicap(
 							p.handicapIndex,
-							tee.slopeRating,
-							tee.courseRating,
+							tee,
 							parTotal,
+							args.holeRefs.length,
 						),
 		}));
+
+		// The index you tee off with is your current one: keep the profile
+		// in step so Home and the next setup show it.
+		const ownerIndex = args.players[0].handicapIndex;
+		if (ownerIndex !== undefined) {
+			const settings = await ctx.db
+				.query("userSettings")
+				.withIndex("by_user", (q) => q.eq("userId", userId))
+				.unique();
+			if (!settings) {
+				await ctx.db.insert("userSettings", {
+					userId,
+					units: "m",
+					handicapIndex: ownerIndex,
+				});
+			} else if (settings.handicapIndex !== ownerIndex) {
+				await ctx.db.patch(settings._id, { handicapIndex: ownerIndex });
+			}
+		}
 
 		return await ctx.db.insert("rounds", {
 			userId,
@@ -156,20 +181,48 @@ async function requireActiveRound(ctx: MutationCtx, roundId: Id<"rounds">) {
 	return round;
 }
 
-/** Upsert one player's result on one hole. Last write wins (single scorer). */
+/** Delete a round with its scores and shots. */
+export async function deleteRoundData(ctx: MutationCtx, roundId: Id<"rounds">) {
+	const [scores, shots] = await Promise.all([
+		ctx.db
+			.query("holeScores")
+			.withIndex("by_round", (q) => q.eq("roundId", roundId))
+			.collect(),
+		ctx.db
+			.query("shots")
+			.withIndex("by_round", (q) => q.eq("roundId", roundId))
+			.collect(),
+	]);
+	await Promise.all([...scores, ...shots].map((d) => ctx.db.delete(d._id)));
+	await ctx.db.delete(roundId);
+}
+
+/**
+ * Upsert one player's result on one hole. Last write wins (single scorer).
+ * Omitted fields keep their value; `null` clears putts / fairway / green.
+ */
 export const setScore = mutation({
 	args: {
 		roundId: v.id("rounds"),
 		holeIndex: v.number(),
 		playerIndex: v.number(),
 		strokes: v.optional(v.number()),
-		putts: v.optional(v.number()),
-		fir: v.optional(v.boolean()),
-		gir: v.optional(v.boolean()),
+		putts: v.optional(v.union(v.number(), v.null())),
+		fir: v.optional(v.union(v.boolean(), v.null())),
+		gir: v.optional(v.union(v.boolean(), v.null())),
 		penalties: v.optional(v.number()),
 		nr: v.optional(v.boolean()),
 	},
-	handler: async (ctx, { roundId, holeIndex, playerIndex, ...fields }) => {
+	handler: async (ctx, { roundId, holeIndex, playerIndex, ...args }) => {
+		// Values to store; a null clears the field (patch() drops undefined).
+		const set = Object.fromEntries(
+			Object.entries(args).filter(([, value]) => value != null),
+		);
+		const cleared = Object.fromEntries(
+			Object.entries(args)
+				.filter(([, value]) => value === null)
+				.map(([key]) => [key, undefined]),
+		);
 		const round = await requireActiveRound(ctx, roundId);
 		if (holeIndex < 0 || holeIndex >= round.holeRefs.length) {
 			throw new Error("holeIndex out of range.");
@@ -187,13 +240,13 @@ export const setScore = mutation({
 			)
 			.first();
 		if (existing) {
-			await ctx.db.patch(existing._id, fields);
+			await ctx.db.patch(existing._id, { ...set, ...cleared });
 		} else {
 			await ctx.db.insert("holeScores", {
 				roundId,
 				holeIndex,
 				playerIndex,
-				...fields,
+				...set,
 			});
 		}
 	},
@@ -215,19 +268,14 @@ export const abandon = mutation({
 	args: { roundId: v.id("rounds") },
 	handler: async (ctx, { roundId }) => {
 		await requireActiveRound(ctx, roundId);
-		const scores = await ctx.db
-			.query("holeScores")
-			.withIndex("by_round", (q) => q.eq("roundId", roundId))
-			.collect();
-		await Promise.all(scores.map((s) => ctx.db.delete(s._id)));
-		await ctx.db.delete(roundId);
+		await deleteRoundData(ctx, roundId);
 	},
 });
 
 /**
  * Finish the round: stamp per-player totals (strokes + Stableford points) and
- * the owner's WHS score differential — only for complete 18-hole rounds with
- * no NR (spec §8); otherwise null.
+ * the owner's WHS score differential — only for complete 9- or 18-hole rounds
+ * with no NR; otherwise null. 9-hole rounds add the expected differential.
  */
 export const finish = mutation({
 	args: { roundId: v.id("rounds") },
@@ -262,32 +310,29 @@ export const finish = mutation({
 				const s = scoreOf(holeIndex, playerIndex);
 				return s?.nr ? null : (s?.strokes ?? null);
 			});
-			const points = strokes.reduce<number>(
-				(sum, s, i) =>
-					sum + stablefordPoints(holes[i], s, player.playingHandicap ?? 0),
-				0,
+			const points = stablefordTotal(
+				holes,
+				strokes,
+				player.playingHandicap ?? 0,
 			);
 			return { strokes: totalStrokes(strokes), points };
 		});
 
-		// Owner differential: 18 holes, no NR, every stroke entered.
+		// Owner differential: 9 or 18 holes, no NR, every stroke entered.
 		const owner = round.players[0];
-		const ownerStrokes = holes.map((_, i) => scoreOf(i, 0));
-		const complete =
-			round.holeRefs.length === 18 &&
-			ownerStrokes.every((s) => s?.strokes !== undefined && !s.nr);
 		const differential =
-			complete && owner.playingHandicap !== undefined
-				? scoreDifferential(
-						adjustedGrossScore(
-							holes,
-							ownerStrokes.map((s) => s?.strokes ?? 0),
-							owner.playingHandicap,
-						),
-						tee.courseRating,
-						tee.slopeRating,
-					)
-				: null;
+			owner.playingHandicap === undefined
+				? null
+				: roundDifferential({
+						holes,
+						strokes: holes.map((_, i) => {
+							const s = scoreOf(i, 0);
+							return s && !s.nr && s.strokes !== undefined ? s.strokes : null;
+						}),
+						playingHandicap: owner.playingHandicap,
+						handicapIndex: owner.handicapIndex,
+						tee,
+					});
 
 		await ctx.db.patch(roundId, {
 			status: "finished",
@@ -345,9 +390,7 @@ export const history = query({
 					.withIndex("by_round", (q) => q.eq("roundId", round._id))
 					.collect();
 				const ownerScore = (holeIndex: number) =>
-					scores.find(
-						(s) => s.holeIndex === holeIndex && s.playerIndex === 0,
-					);
+					scores.find((s) => s.holeIndex === holeIndex && s.playerIndex === 0);
 
 				const strokes = holes.map((_, i) => {
 					const s = ownerScore(i);
@@ -399,5 +442,98 @@ export const history = query({
 		);
 
 		return summaries;
+	},
+});
+
+/** One of the user's rounds (any status) with course, tee, holes and scores. */
+export const detail = query({
+	args: { roundId: v.id("rounds") },
+	handler: async (ctx, { roundId }) => {
+		const userId = await getUserId(ctx);
+		const round = await ctx.db.get(roundId);
+		if (!round || round.userId !== userId) return null;
+		const [course, tee, courseHoles, scores] = await Promise.all([
+			ctx.db.get(round.courseId),
+			ctx.db.get(round.teeId),
+			ctx.db
+				.query("holes")
+				.withIndex("by_course", (q) => q.eq("courseId", round.courseId))
+				.collect(),
+			ctx.db
+				.query("holeScores")
+				.withIndex("by_round", (q) => q.eq("roundId", round._id))
+				.collect(),
+		]);
+		if (!course || !tee) return null;
+		const byRef = new Map(courseHoles.map((h) => [h.ref, h]));
+		const holes = round.holeRefs.map((ref) => {
+			const hole = byRef.get(ref);
+			return {
+				ref,
+				par: hole?.par ?? 0,
+				strokeIndex: hole?.strokeIndex ?? 0,
+				lengthMeters: hole?.lengthMeters,
+			};
+		});
+		return { round, course, tee, holes, scores };
+	},
+});
+
+/** Delete one of the user's finished rounds. */
+export const remove = mutation({
+	args: { roundId: v.id("rounds") },
+	handler: async (ctx, { roundId }) => {
+		const userId = await getUserId(ctx);
+		const round = await ctx.db.get(roundId);
+		if (!round || round.userId !== userId) throw new Error("Round not found.");
+		await deleteRoundData(ctx, roundId);
+	},
+});
+
+/**
+ * The owner's per-hole results (par + strokes, NR as null) over the latest
+ * finished rounds — input for par-type averages and the scoring distribution.
+ */
+export const holeResults = query({
+	args: { limit: v.optional(v.number()) },
+	handler: async (ctx, { limit }) => {
+		const userId = await getUserId(ctx);
+		const rounds = await ctx.db
+			.query("rounds")
+			.withIndex("by_user", (q) => q.eq("userId", userId))
+			.filter((q) => q.eq(q.field("status"), "finished"))
+			.collect();
+		rounds.sort((a, b) => b.startedAt - a.startedAt);
+		const parsByCourse = new Map<string, Map<string, number>>();
+		const results: Array<{ par: number; strokes: number | null }> = [];
+		for (const round of rounds.slice(0, limit ?? 20)) {
+			let pars = parsByCourse.get(round.courseId);
+			if (pars === undefined) {
+				const holes = await ctx.db
+					.query("holes")
+					.withIndex("by_course", (q) => q.eq("courseId", round.courseId))
+					.collect();
+				const map = new Map<string, number>();
+				for (const h of holes) if (h.ref && h.par) map.set(h.ref, h.par);
+				parsByCourse.set(round.courseId, map);
+				pars = map;
+			}
+			const coursePars = pars;
+			const scores = await ctx.db
+				.query("holeScores")
+				.withIndex("by_round", (q) => q.eq("roundId", round._id))
+				.collect();
+			round.holeRefs.forEach((ref, holeIndex) => {
+				const s = scores.find(
+					(x) => x.holeIndex === holeIndex && x.playerIndex === 0,
+				);
+				if (!s) return;
+				results.push({
+					par: coursePars.get(ref) ?? 0,
+					strokes: s.nr ? null : (s.strokes ?? null),
+				});
+			});
+		}
+		return results;
 	},
 });

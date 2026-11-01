@@ -4,7 +4,16 @@
   "compatibility_date": "2026-07-10",
   "compatibility_flags": ["nodejs_compat"],
   "main": "@tanstack/react-start/server-entry",
+  // `stg` is what a merge to main deploys (.github/workflows/deploy.yml);
+  // `dev` is only reached by hand (`pnpm deploy:dev`).
+  // Production only. Routes are inherited, so each env clears them.
+  "routes": [{ "pattern": "fairway.appelent.nl", "custom_domain": true }],
   "env": {
-    "dev": { "name": "golf-app-dev", "workers_dev": true }
+    "dev": { "name": "golf-app-dev", "workers_dev": true, "routes": [] },
+    "stg": { "name": "golf-app-stg", "workers_dev": true, "routes": [] },
+    // PR previews (.github/workflows/preview.yml) build with CLOUDFLARE_ENV=pr
+    // and deploy under --name golf-app-pr-<N>. Without this env they inherit
+    // the production route and take over fairway.appelent.nl.
+    "pr": { "name": "golf-app-pr", "workers_dev": true, "routes": [] }
   }
 }

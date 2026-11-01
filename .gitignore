@@ -16,3 +16,7 @@ mcp-todos.json
 .claude/worktrees/
 CLAUDE.local.md
 .superpowers/
+# env CLI ownership state (scripts/env.mjs)
+.appelent/env-state.json
+.appelent/env.lock/
+.dev.vars

@@ -1,0 +1,48 @@
+{
+	"cli": {
+		"version": ">= 16.0.1",
+		"appVersionSource": "remote"
+	},
+	"build": {
+		"development": {
+			"developmentClient": true,
+			"distribution": "internal",
+			"autoIncrement": true,
+			"channel": "development",
+			"environment": "development",
+			"android": { "buildType": "apk" },
+			"env": {
+				"APP_VARIANT": "development",
+				"SHARP_IGNORE_GLOBAL_LIBVIPS": "1",
+				"SENTRY_DISABLE_AUTO_UPLOAD": "true"
+			}
+		},
+		"preview": {
+			"autoIncrement": true,
+			"channel": "preview",
+			"environment": "preview",
+			"env": { "APP_VARIANT": "preview", "SHARP_IGNORE_GLOBAL_LIBVIPS": "1" }
+		},
+		"preview-internal": {
+			"extends": "preview",
+			"distribution": "internal",
+			"android": { "buildType": "apk" }
+		},
+		"device": {
+			"extends": "preview-internal",
+			"channel": "device",
+			"environment": "development",
+			"env": {
+				"APP_VARIANT": "preview",
+				"SENTRY_DISABLE_AUTO_UPLOAD": "true",
+				"SHARP_IGNORE_GLOBAL_LIBVIPS": "1"
+			}
+		},
+		"production": {
+			"autoIncrement": true,
+			"channel": "production",
+			"environment": "production",
+			"env": { "APP_VARIANT": "production", "SHARP_IGNORE_GLOBAL_LIBVIPS": "1" }
+		}
+	}
+}

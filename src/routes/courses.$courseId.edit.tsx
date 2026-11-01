@@ -1,5 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
+import { ConvexError } from "convex/values";
 import { useEffect, useState } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -16,6 +17,9 @@ function CourseEditor() {
 	const updateMeta = useMutation(api.courses.updateMeta);
 	const upsertTee = useMutation(api.courses.upsertTee);
 	const upsertHole = useMutation(api.courses.upsertHole);
+	const fork = useMutation(api.courses.fork);
+	const remove = useMutation(api.courses.remove);
+	const navigate = useNavigate();
 
 	if (data === undefined) {
 		return (
@@ -35,16 +39,73 @@ function CourseEditor() {
 	const { course, tees, holes, geometry } = data;
 	const refsWithGeometry = new Set(geometry.map((g) => g.ref));
 	const tee = tees[0];
+	const isCatalog = course.ownerId === undefined;
+
+	const makeCopy = async () => {
+		const copyId = await fork({
+			courseId: course._id,
+			name: `${course.name} (my copy)`,
+		});
+		navigate({ to: "/courses/$courseId/edit", params: { courseId: copyId } });
+	};
+
+	if (isCatalog) {
+		return (
+			<main className="px-5 pt-16 pb-[110px]">
+				<h1 className="font-display text-2xl font-bold tracking-tight text-ink">
+					{course.name}
+				</h1>
+				<p className="mt-1 text-[13px] text-moss">
+					Catalog course — checked against the club's scorecard and kept the
+					same for everyone. Spot a mistake? Suggest a correction, or make your
+					own copy to change it for yourself.
+				</p>
+				<div className="mt-4 flex gap-2">
+					<button
+						type="button"
+						onClick={makeCopy}
+						className="rounded-full bg-pine px-5 py-2 font-display text-[13px] font-semibold text-cream"
+					>
+						Make my copy
+					</button>
+				</div>
+				<SuggestSection courseId={course._id} />
+				<TeeList tees={tees} />
+				<section className="mt-8">
+					<h2 className="font-display text-sm font-semibold uppercase tracking-wide text-moss">
+						Holes
+					</h2>
+					<ul className="mt-3 grid grid-cols-3 gap-2">
+						{holes.map((hole) => (
+							<li
+								key={hole._id}
+								className="rounded-xl border border-card-line bg-white/60 px-3 py-2 text-[13px] text-ink"
+							>
+								<span className="font-display font-semibold">
+									{hole.number}
+								</span>{" "}
+								· par {hole.par ?? "–"} · SI {hole.strokeIndex ?? "–"}
+								{hole.lengthMeters ? (
+									<span className="block text-[11px] text-moss">
+										{Math.round(hole.lengthMeters)} m
+									</span>
+								) : null}
+							</li>
+						))}
+					</ul>
+				</section>
+			</main>
+		);
+	}
 
 	return (
 		<main className="px-5 pt-16 pb-[110px]">
 			<h1 className="font-display text-2xl font-bold tracking-tight text-ink">
-				Edit course
+				Edit my copy
 			</h1>
 			<p className="mt-1 text-[13px] text-moss">
-				{course.importStatus === "partial"
-					? "Imported from OSM — fill in the missing par and stroke index below."
-					: "Course details."}
+				Only you see this copy. Changes here don't touch the catalog — suggest
+				them below if everyone should have them.
 			</p>
 
 			<MetaSection
@@ -90,7 +151,119 @@ function CourseEditor() {
 					))}
 				</ul>
 			</section>
+
+			{course.forkedFrom ? <SuggestSection courseId={course._id} /> : null}
+
+			<button
+				type="button"
+				onClick={async () => {
+					if (!window.confirm("Delete this copy?")) return;
+					try {
+						await remove({ courseId: course._id });
+					} catch (error) {
+						if (
+							error instanceof ConvexError &&
+							error.data?.code === "courseInActiveRound"
+						) {
+							window.alert(
+								"Finish or abandon the round you're playing on this copy first.",
+							);
+							return;
+						}
+						throw error;
+					}
+					navigate({ to: "/courses" });
+				}}
+				className="mt-8 rounded-full border border-flag/40 px-5 py-2 font-display text-[13px] font-semibold text-flag"
+			>
+				Delete my copy
+			</button>
 		</main>
+	);
+}
+
+function TeeList({
+	tees,
+}: {
+	tees: ReadonlyArray<{
+		_id: string;
+		name: string;
+		color?: string;
+		courseRating: number;
+		slopeRating: number;
+	}>;
+}) {
+	return (
+		<section className="mt-6 rounded-2xl border border-card-line bg-white/60 p-4">
+			<h2 className="font-display text-sm font-semibold uppercase tracking-wide text-moss">
+				Tees
+			</h2>
+			<ul className="mt-2 flex flex-col gap-1.5">
+				{tees.map((t) => (
+					<li key={t._id} className="flex items-center gap-2 text-[14px]">
+						<span
+							className="size-3 rounded-full border border-card-line"
+							style={{ backgroundColor: t.color }}
+						/>
+						<span className="text-ink">{t.name}</span>
+						<span className="ml-auto text-moss">
+							CR {t.courseRating.toFixed(1)} · slope {t.slopeRating}
+						</span>
+					</li>
+				))}
+			</ul>
+		</section>
+	);
+}
+
+function SuggestSection({ courseId }: { courseId: Id<"courses"> }) {
+	const suggest = useMutation(api.courses.suggest);
+	const [message, setMessage] = useState("");
+	const [state, setState] = useState<"idle" | "sent" | "error">("idle");
+	return (
+		<section className="mt-6 rounded-2xl border border-card-line bg-white/60 p-4">
+			<h2 className="font-display text-sm font-semibold uppercase tracking-wide text-moss">
+				Suggest a correction
+			</h2>
+			<textarea
+				value={message}
+				onChange={(e) => {
+					setMessage(e.target.value);
+					setState("idle");
+				}}
+				rows={3}
+				maxLength={2000}
+				placeholder="For example: hole 7 is par 4 since the 2025 card."
+				className="mt-2 w-full rounded-lg border border-card-line bg-cream px-3 py-2 font-sans text-[15px] text-ink"
+			/>
+			<div className="mt-2 flex items-center gap-3">
+				<button
+					type="button"
+					disabled={message.trim() === ""}
+					onClick={async () => {
+						try {
+							await suggest({ courseId, message });
+							setMessage("");
+							setState("sent");
+						} catch {
+							setState("error");
+						}
+					}}
+					className="rounded-full bg-live px-4 py-1.5 font-display text-[12px] font-semibold text-white disabled:opacity-40"
+				>
+					Send suggestion
+				</button>
+				{state === "sent" ? (
+					<span className="text-[12px] text-moss">
+						Thanks — we'll check it.
+					</span>
+				) : state === "error" ? (
+					<span className="text-[12px] text-flag">
+						Couldn't send. Try again.
+					</span>
+				) : null}
+			</div>
+		</section>
 	);
 }
 

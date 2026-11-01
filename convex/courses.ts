@@ -1,28 +1,107 @@
-import { v } from "convex/values";
-import { normalizeCourse } from "../src/domain/osm";
-import { internal } from "./_generated/api";
+import { ConvexError, v } from "convex/values";
+import type { Doc, Id } from "./_generated/dataModel";
 import {
-	action,
-	internalMutation,
+	type MutationCtx,
 	mutation,
+	type QueryCtx,
 	query,
 } from "./_generated/server";
+import { getUserId } from "./lib";
 
-/** All courses, name-sorted, for the picker/list. */
+/**
+ * Courses come from the catalog (convex/catalog, read-only, everyone sees
+ * them) or are a user's own copy of one (`ownerId`, private, editable).
+ * Corrections to the catalog go through `suggest`, not through edits.
+ */
+
+async function viewerId(ctx: QueryCtx): Promise<string | null> {
+	return (await ctx.auth.getUserIdentity())?.subject ?? null;
+}
+
+/** Catalog courses are visible to all; a copy only to its owner. */
+export function canSee(course: Doc<"courses">, userId: string | null) {
+	return course.ownerId === undefined || course.ownerId === userId;
+}
+
+/** The course, if the signed-in user may edit it (their own copy). */
+async function requireOwnCourse(
+	ctx: QueryCtx,
+	courseId: Id<"courses">,
+): Promise<Doc<"courses">> {
+	const userId = await getUserId(ctx);
+	const course = await ctx.db.get(courseId);
+	if (!course) throw new Error("Course not found.");
+	if (course.ownerId === undefined) {
+		throw new Error(
+			"Catalog courses are read-only. Make your own copy, or suggest a correction.",
+		);
+	}
+	if (course.ownerId !== userId) throw new Error("Course not found.");
+	return course;
+}
+
+/** Every round played on the course (rounds reach a course through its tees). */
+export async function roundsOnCourse(
+	ctx: QueryCtx,
+	courseId: Id<"courses">,
+): Promise<Doc<"rounds">[]> {
+	const tees = await ctx.db
+		.query("tees")
+		.withIndex("by_course", (q) => q.eq("courseId", courseId))
+		.collect();
+	const rounds = await Promise.all(
+		tees.map((tee) =>
+			ctx.db
+				.query("rounds")
+				.withIndex("by_tee", (q) => q.eq("teeId", tee._id))
+				.collect(),
+		),
+	);
+	return rounds.flat();
+}
+
+/** Delete a course with its tees, holes and geometry. */
+export async function deleteCourseData(
+	ctx: MutationCtx,
+	courseId: Id<"courses">,
+) {
+	for (const table of ["tees", "holes", "holeGeometry"] as const) {
+		const docs = await ctx.db
+			.query(table)
+			.withIndex("by_course", (q) => q.eq("courseId", courseId))
+			.collect();
+		await Promise.all(docs.map((doc) => ctx.db.delete(doc._id)));
+	}
+	await ctx.db.delete(courseId);
+}
+
+/** Catalog courses plus the viewer's own copies, name-sorted. */
 export const list = query({
 	args: {},
 	handler: async (ctx) => {
-		const courses = await ctx.db.query("courses").collect();
-		return courses.sort((a, b) => a.name.localeCompare(b.name));
+		const userId = await viewerId(ctx);
+		const catalog = await ctx.db
+			.query("courses")
+			.withIndex("by_owner", (q) => q.eq("ownerId", undefined))
+			.collect();
+		const own = userId
+			? await ctx.db
+					.query("courses")
+					.withIndex("by_owner", (q) => q.eq("ownerId", userId))
+					.collect()
+			: [];
+		return [...catalog, ...own.filter((c) => !c.retired)].sort((a, b) =>
+			a.name.localeCompare(b.name),
+		);
 	},
 });
 
-/** One course with its tees, holes (number-sorted), and geometry. */
+/** One course with its tees (current only), holes (number-sorted), geometry. */
 export const get = query({
 	args: { courseId: v.id("courses") },
 	handler: async (ctx, { courseId }) => {
 		const course = await ctx.db.get(courseId);
-		if (!course) return null;
+		if (!course || !canSee(course, await viewerId(ctx))) return null;
 		const [tees, holes, geometry] = await Promise.all([
 			ctx.db
 				.query("tees")
@@ -39,26 +118,43 @@ export const get = query({
 		]);
 		return {
 			course,
-			tees,
-			holes: holes.sort((a, b) => a.number - b.number),
+			tees: tees.filter((t) => !t.retired),
+			holes: holes
+				.filter((h) => !h.retired)
+				.sort((a, b) => a.number - b.number),
 			geometry,
 		};
 	},
 });
 
-export const create = mutation({
-	args: {
-		name: v.string(),
-		city: v.optional(v.string()),
-		osmRelationId: v.optional(v.number()),
-	},
-	handler: async (ctx, args) => {
-		return await ctx.db.insert("courses", {
-			name: args.name,
-			city: args.city,
-			osmRelationId: args.osmRelationId,
-			importStatus: "manual",
+/** Copy a course (tees, holes, geometry) into a private, editable course. */
+export const fork = mutation({
+	args: { courseId: v.id("courses"), name: v.optional(v.string()) },
+	handler: async (ctx, { courseId, name }) => {
+		const userId = await getUserId(ctx);
+		const source = await ctx.db.get(courseId);
+		if (!source || !canSee(source, userId))
+			throw new Error("Course not found.");
+		const copyId = await ctx.db.insert("courses", {
+			name: name?.trim() || source.name,
+			city: source.city,
+			location: source.location,
+			osmRelationId: source.osmRelationId,
+			importStatus: source.importStatus,
+			ownerId: userId,
+			forkedFrom: source._id,
 		});
+		for (const table of ["tees", "holes", "holeGeometry"] as const) {
+			const docs = await ctx.db
+				.query(table)
+				.withIndex("by_course", (q) => q.eq("courseId", courseId))
+				.collect();
+			for (const { _id, _creationTime, ...doc } of docs) {
+				if ("retired" in doc && doc.retired) continue;
+				await ctx.db.insert(table, { ...doc, courseId: copyId });
+			}
+		}
+		return copyId;
 	},
 });
 
@@ -69,6 +165,7 @@ export const updateMeta = mutation({
 		city: v.optional(v.string()),
 	},
 	handler: async (ctx, { courseId, name, city }) => {
+		await requireOwnCourse(ctx, courseId);
 		const patch: { name?: string; city?: string } = {};
 		if (name !== undefined) patch.name = name;
 		if (city !== undefined) patch.city = city;
@@ -86,7 +183,12 @@ export const upsertTee = mutation({
 		slopeRating: v.number(),
 	},
 	handler: async (ctx, { teeId, ...fields }) => {
+		await requireOwnCourse(ctx, fields.courseId);
 		if (teeId) {
+			const tee = await ctx.db.get(teeId);
+			if (!tee || tee.courseId !== fields.courseId) {
+				throw new Error("Tee does not belong to this course.");
+			}
 			await ctx.db.patch(teeId, fields);
 			return teeId;
 		}
@@ -94,7 +196,7 @@ export const upsertTee = mutation({
 	},
 });
 
-/** Set par + stroke index for a hole (editor's main job for OSM gaps). */
+/** Set par + stroke index for a hole of the user's own copy. */
 export const upsertHole = mutation({
 	args: {
 		holeId: v.id("holes"),
@@ -102,127 +204,74 @@ export const upsertHole = mutation({
 		strokeIndex: v.optional(v.number()),
 	},
 	handler: async (ctx, { holeId, par, strokeIndex }) => {
+		const hole = await ctx.db.get(holeId);
+		if (!hole) throw new Error("Hole not found.");
+		await requireOwnCourse(ctx, hole.courseId);
 		await ctx.db.patch(holeId, { par, strokeIndex });
 	},
 });
 
-/** Delete a course and all its tees, holes, and geometry. */
+/**
+ * Delete one of the user's own copies (never a catalog course). Refused while
+ * an active round is on it. A copy finished rounds were played on is retired
+ * instead: hidden from the list and new rounds, kept for their history.
+ */
 export const remove = mutation({
 	args: { courseId: v.id("courses") },
 	handler: async (ctx, { courseId }) => {
-		for (const table of ["tees", "holes", "holeGeometry"] as const) {
-			const docs = await ctx.db
-				.query(table)
-				.withIndex("by_course", (q) => q.eq("courseId", courseId))
-				.collect();
-			await Promise.all(docs.map((doc) => ctx.db.delete(doc._id)));
+		await requireOwnCourse(ctx, courseId);
+		const rounds = await roundsOnCourse(ctx, courseId);
+		if (rounds.some((r) => r.status === "active")) {
+			// Clients map the code to their own copy (web course editor).
+			throw new ConvexError({ code: "courseInActiveRound" });
 		}
-		await ctx.db.delete(courseId);
+		if (rounds.length > 0) await ctx.db.patch(courseId, { retired: true });
+		else await deleteCourseData(ctx, courseId);
 	},
 });
 
-const latLng = v.object({ lat: v.number(), lng: v.number() });
-const polygon = v.array(latLng);
+const MAX_SUGGESTION_LENGTH = 2000;
 
 /**
- * Replace a course's holes + geometry from a normalized import. Wipes existing
- * holes/geometry first so re-imports are idempotent. Internal — only the import
- * action calls it.
+ * Suggest a correction to a catalog course ("hole 7 is par 4", "the yellow
+ * tee's slope is 129"). A copy may be attached as the worked-out fix.
+ * Maintainers review open suggestions and edit convex/catalog.
  */
-export const storeImport = internalMutation({
+export const suggest = mutation({
 	args: {
 		courseId: v.id("courses"),
-		holes: v.array(
-			v.object({
-				number: v.number(),
-				ref: v.string(),
-				par: v.union(v.number(), v.null()),
-				strokeIndex: v.union(v.number(), v.null()),
-				lengthMeters: v.number(),
-			}),
-		),
-		geometry: v.array(
-			v.object({
-				ref: v.string(),
-				holeNumber: v.number(),
-				holeLine: polygon,
-				fairways: v.array(polygon),
-				greens: v.array(polygon),
-				bunkers: v.array(polygon),
-				tees: v.array(polygon),
-				water: v.array(polygon),
-			}),
-		),
+		message: v.string(),
+		forkId: v.optional(v.id("courses")),
 	},
-	handler: async (ctx, { courseId, holes, geometry }) => {
-		const oldHoles = await ctx.db
-			.query("holes")
-			.withIndex("by_course", (q) => q.eq("courseId", courseId))
-			.collect();
-		const oldGeometry = await ctx.db
-			.query("holeGeometry")
-			.withIndex("by_course", (q) => q.eq("courseId", courseId))
-			.collect();
-		await Promise.all(
-			[...oldHoles, ...oldGeometry].map((doc) => ctx.db.delete(doc._id)),
-		);
-
-		await Promise.all(
-			holes.map((h) =>
-				ctx.db.insert("holes", {
-					courseId,
-					number: h.number,
-					ref: h.ref,
-					par: h.par ?? undefined,
-					strokeIndex: h.strokeIndex ?? undefined,
-					lengthMeters: h.lengthMeters,
-				}),
-			),
-		);
-		await Promise.all(
-			geometry.map((g) => ctx.db.insert("holeGeometry", { courseId, ...g })),
-		);
-
-		const complete = holes.every(
-			(h) => h.par !== null && h.strokeIndex !== null,
-		);
-		await ctx.db.patch(courseId, {
-			importStatus: complete ? "imported" : "partial",
-		});
-	},
-});
-
-/** Fetch a course's geometry from Overpass and store it. Re-runnable. */
-export const importFromOsm = action({
-	args: { courseId: v.id("courses"), osmRelationId: v.number() },
-	handler: async (ctx, { courseId, osmRelationId }) => {
-		const q = `[out:json][timeout:90];rel(${osmRelationId});map_to_area->.a;(way(area.a)[golf];);out geom tags;`;
-		const res = await fetch("https://overpass-api.de/api/interpreter", {
-			method: "POST",
-			headers: {
-				"Content-Type": "application/x-www-form-urlencoded",
-				"User-Agent": "golf-app/0.1",
-			},
-			body: `data=${encodeURIComponent(q)}`,
-		});
-		if (!res.ok) {
-			throw new Error(`Overpass request failed: HTTP ${res.status}`);
+	handler: async (ctx, { courseId, message, forkId }) => {
+		const userId = await getUserId(ctx);
+		const course = await ctx.db.get(courseId);
+		if (!course || !canSee(course, userId))
+			throw new Error("Course not found.");
+		// Suggestions on a copy are about the catalog course it came from.
+		const target = course.ownerId === undefined ? course : null;
+		const catalogId = target?._id ?? course.forkedFrom;
+		if (!catalogId) {
+			throw new Error("Only catalog courses take suggestions.");
 		}
-		const data = (await res.json()) as { elements: unknown[] };
-		const normalized = normalizeCourse(
-			data.elements as Parameters<typeof normalizeCourse>[0],
-		);
-		await ctx.runMutation(internal.courses.storeImport, {
-			courseId,
-			holes: normalized.holes.map((h) => ({
-				number: h.number,
-				ref: h.ref,
-				par: h.par,
-				strokeIndex: h.strokeIndex,
-				lengthMeters: h.lengthMeters,
-			})),
-			geometry: normalized.geometry,
+		const text = message.trim();
+		if (text.length === 0) throw new Error("Describe what is wrong.");
+		if (text.length > MAX_SUGGESTION_LENGTH) {
+			throw new Error("Keep the suggestion under 2000 characters.");
+		}
+		const attached =
+			forkId ?? (course.ownerId === userId ? course._id : undefined);
+		if (attached) {
+			const copy = await ctx.db.get(attached);
+			if (!copy || copy.ownerId !== userId) throw new Error("Copy not found.");
+		}
+		return await ctx.db.insert("courseSuggestions", {
+			courseId: catalogId,
+			userId,
+			message: text,
+			forkId: attached,
+			status: "open",
+			createdAt: Date.now(),
 		});
-		return { holes: normalized.holes.length };
 	},
 });

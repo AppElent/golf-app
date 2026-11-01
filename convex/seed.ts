@@ -1,61 +1,27 @@
-import { detectLoops } from "../src/domain/loops";
-import { api } from "./_generated/api";
+import { detectLoops } from "@fairway/core/loops";
+import { api, internal } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
-import { action, type ActionCtx } from "./_generated/server";
-
-const HOME_COURSES = [
-	{ name: "Golfbaan Landgoed Welderen", city: "Elst", osmRelationId: 901850 },
-	{
-		name: "De Oosterhoutse Golf Club",
-		city: "Oosterhout",
-		osmRelationId: 4458605,
-	},
-];
+import { type ActionCtx, internalAction } from "./_generated/server";
 
 /**
- * Seed both home courses: create the course row, import geometry from OSM, and
- * add one editable default tee (neutral slope 113 so course handicap == index
- * until real ratings are entered in the editor). Idempotent by `osmRelationId`
- * — safe to re-run on every PR-preview redeploy without creating duplicates.
+ * Write the course catalog (convex/catalog) into this deployment — the
+ * shared course data every other seed builds on. Idempotent. Internal:
+ * only an admin key (`convex run`, `--preview-run`) can start it.
  *
  * Run with: pnpm exec convex run seed:seedData
  */
-export const seedData = action({
+export const seedData = internalAction({
 	args: {},
-	handler: async (
-		ctx,
-	): Promise<{ course: string; holes: number; skipped: boolean }[]> => {
-		const existing = await ctx.runQuery(api.courses.list, {});
-		const results: { course: string; holes: number; skipped: boolean }[] = [];
-		for (const c of HOME_COURSES) {
-			if (existing.some((e) => e.osmRelationId === c.osmRelationId)) {
-				results.push({ course: c.name, holes: 0, skipped: true });
-				continue;
-			}
-			const courseId = await ctx.runMutation(api.courses.create, {
-				name: c.name,
-				city: c.city,
-				osmRelationId: c.osmRelationId,
-			});
-			const { holes } = await ctx.runAction(api.courses.importFromOsm, {
-				courseId,
-				osmRelationId: c.osmRelationId,
-			});
-			await ctx.runMutation(api.courses.upsertTee, {
-				courseId,
-				name: "Default (edit me)",
-				courseRating: 72,
-				slopeRating: 113,
-			});
-			results.push({ course: c.name, holes, skipped: false });
-		}
-		return results;
+	handler: async (ctx): Promise<{ key: string; created: boolean }[]> => {
+		const results = await ctx.runMutation(internal.courseCatalog.sync, {});
+		return results.map(({ key, created }) => ({ key, created }));
 	},
 });
 
 // ─── Dummy round data (demo content for PR previews / empty dev backends) ────
 
 const DUMMY_HANDICAP_INDEX = 18.4;
+const DUMMY_TEE = "Geel · heren";
 const DUMMY_CLUBS = [
 	{ name: "Driver", carryMeters: 230 },
 	{ name: "7i", carryMeters: 150 },
@@ -122,54 +88,21 @@ interface CourseHoles {
 
 const DEFAULT_PAR = 4;
 
-/**
- * Fill any hole missing par/stroke-index so the dummy round doesn't depend on
- * live OSM tag completeness — that's a real editor-completion concern for
- * actual imports (spec §8), but this seed exists to always produce a
- * demo-able round regardless of what the live Overpass data looks like on
- * any given preview redeploy.
- */
-async function ensureCompleteHoles(
-	ctx: ActionCtx,
-	holes: ReadonlyArray<{
-		_id: Id<"holes">;
-		par?: number;
-		strokeIndex?: number;
-	}>,
-): Promise<void> {
-	const usedStrokeIndexes = new Set(
-		holes
-			.map((h) => h.strokeIndex)
-			.filter((si): si is number => si !== undefined),
-	);
-	let candidate = 1;
-	const nextFreeStrokeIndex = (): number => {
-		while (usedStrokeIndexes.has(candidate)) candidate++;
-		usedStrokeIndexes.add(candidate);
-		return candidate;
-	};
-	for (const h of holes) {
-		if (h.par !== undefined && h.strokeIndex !== undefined) continue;
-		await ctx.runMutation(api.courses.upsertHole, {
-			holeId: h._id,
-			par: h.par ?? DEFAULT_PAR,
-			strokeIndex: h.strokeIndex ?? nextFreeStrokeIndex(),
-		});
-	}
-}
-
 async function loadCourseHoles(
 	ctx: ActionCtx,
-	courseName: string,
+	catalogKey: string,
 ): Promise<CourseHoles> {
 	const courses = await ctx.runQuery(api.courses.list, {});
-	const course = courses.find((c) => c.name === courseName);
+	const course = courses.find((c) => c.catalogKey === catalogKey);
 	if (!course) {
-		throw new Error(`Course "${courseName}" not found — run seed:seedData first.`);
+		throw new Error(
+			`Catalog course "${catalogKey}" not found — run seed:seedData first.`,
+		);
 	}
 	const detail = await ctx.runQuery(api.courses.get, { courseId: course._id });
-	if (!detail || detail.tees.length === 0) {
-		throw new Error(`Course "${courseName}" has no tee — run seed:seedData first.`);
+	const tee = detail?.tees.find((t) => t.name === DUMMY_TEE) ?? detail?.tees[0];
+	if (!detail || !tee) {
+		throw new Error(`Course "${catalogKey}" has no tee — fix the catalog.`);
 	}
 
 	// A course can carry multiple 9-hole loops (spec §8) — take exactly one
@@ -182,16 +115,17 @@ async function loadCourseHoles(
 	const loops = detectLoops(withRefs);
 	if (loops.length < 2) {
 		throw new Error(
-			`Course "${courseName}" doesn't have a front+back 18-hole combination.`,
+			`Course "${catalogKey}" doesn't have a front+back 18-hole combination.`,
 		);
 	}
 	const holeRefs = [...loops[0].refs, ...loops[1].refs];
 
-	await ensureCompleteHoles(ctx, detail.holes);
-	const parByRef = new Map(detail.holes.map((h) => [h.ref, h.par ?? DEFAULT_PAR]));
+	const parByRef = new Map(
+		detail.holes.map((h) => [h.ref, h.par ?? DEFAULT_PAR]),
+	);
 	return {
 		courseId: course._id,
-		teeId: detail.tees[0]._id,
+		teeId: tee._id,
 		holeRefs,
 		pars: holeRefs.map((ref) => parByRef.get(ref) ?? DEFAULT_PAR),
 	};
@@ -249,21 +183,23 @@ async function seedActiveRound(
 			gir: GIR_PATTERN[i % GIR_PATTERN.length],
 		});
 	}
-	await ctx.runMutation(api.rounds.setCurrentHole, { roundId, holeIndex: holesPlayed });
+	await ctx.runMutation(api.rounds.setCurrentHole, {
+		roundId,
+		holeIndex: holesPlayed,
+	});
 }
 
 /**
- * Demo content so an empty backend (fresh PR preview, or `local-dev`
- * anonymous dev deployment) isn't blank on first load: a handicap + club bag,
+ * Demo content for one signed-in user so an empty account isn't blank: a handicap + club bag,
  * three finished rounds (so Home/Progress show a trend and stats), and one
  * active in-progress round on holes 1–4 (so Play/Card have something to show).
  * Requires `seedData` to have already run. Idempotent — skips entirely if any
  * round already exists for the seeding user, so re-running on every PR-preview
  * redeploy is a safe no-op after the first run.
  *
- * Run with: pnpm exec convex run seed:seedDummyData
+ * Run with: pnpm exec convex run seed:seedDummyData --identity '{"subject":"user_…"}'
  */
-export const seedDummyData = action({
+export const seedDummyData = internalAction({
 	args: {},
 	handler: async (ctx): Promise<{ skipped: boolean }> => {
 		const [active, history] = await Promise.all([
@@ -284,7 +220,7 @@ export const seedDummyData = action({
 			await ctx.runMutation(api.clubs.create, club);
 		}
 
-		const course = await loadCourseHoles(ctx, "De Oosterhoutse Golf Club");
+		const course = await loadCourseHoles(ctx, "oosterhoutse");
 		for (const offsets of OFFSET_PATTERNS) {
 			await seedFinishedRound(ctx, course, offsets);
 		}

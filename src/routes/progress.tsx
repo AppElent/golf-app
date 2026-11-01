@@ -1,10 +1,10 @@
+import { formatDistance } from "@fairway/core/format";
+import { wouldBeIndex, wouldBeIndexHistory } from "@fairway/core/handicap";
+import { aggregateStats, type RoundStatInput } from "@fairway/core/stats";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import { Sparkline } from "../components/Sparkline";
-import { formatDistance } from "../domain/format";
-import { wouldBeIndex, wouldBeIndexHistory } from "../domain/handicap";
-import { aggregateStats, type RoundStatInput } from "../domain/stats";
 
 export const Route = createFileRoute("/progress")({
 	component: ProgressScreen,

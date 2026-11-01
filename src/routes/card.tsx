@@ -1,18 +1,18 @@
+import {
+	formatVsPar,
+	type ScoreMark,
+	scoreMark,
+	splitTotals,
+	stablefordTotal,
+	totalStrokes,
+	vsPar,
+} from "@fairway/core/scoring";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
 import { api } from "../../convex/_generated/api";
 import { SyncPill } from "../components/SyncPill";
-import {
-	formatVsPar,
-	type ScoreMark,
-	scoreMark,
-	splitTotals,
-	stablefordPoints,
-	totalStrokes,
-	vsPar,
-} from "../domain/scoring";
 import { useOnlineStatus } from "../hooks/useOnlineStatus";
 import { keyFor } from "../offline/scoreQueue";
 import { useScoreSync } from "../offline/useScoreSync";
@@ -87,10 +87,10 @@ function CardScreen() {
 		playedPars.map((par) => ({ par })),
 		ownerStrokes,
 	);
-	const points = ownerStrokes.reduce<number>(
-		(sum, s, i) =>
-			sum + stablefordPoints(holes[i], s, player.playingHandicap ?? 0),
-		0,
+	const points = stablefordTotal(
+		holes,
+		ownerStrokes,
+		player.playingHandicap ?? 0,
 	);
 	const nines = splitTotals(ownerStrokes, 9);
 

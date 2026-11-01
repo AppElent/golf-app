@@ -12,6 +12,7 @@ export default defineConfig({
       '**/.claude/**',
       '**/node_modules_OLD/**',
       '**/node_modules.*/**',
+      'apps/mobile/**',
     ],
   },
 })

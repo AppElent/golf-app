@@ -1,3 +1,13 @@
+# Web app (TanStack Start) + convex/ stay at the repo root; apps/mobile (Expo) and
+# packages/core (shared, dependency-free domain logic) are workspace members.
+packages:
+  - "apps/*"
+  - "packages/*"
+
+# Expo fingerprints hash .pnpm paths; keep the same length on every machine (macOS,
+# Windows, EAS Linux) so identical installs produce identical runtime fingerprints.
+virtualStoreDirMaxLength: 60
+
 onlyBuiltDependencies:
   - esbuild
   - lightningcss
@@ -9,8 +19,6 @@ onlyBuiltDependencies:
 minimumReleaseAge: 1440 # 1 day - blocks the worm/account-takeover window (lowered from the usual
 # 3-day default because a fresh scaffold's "latest"-pinned deps, e.g. radix-ui@1.6.2, were only
 # 2 days old and had no older semver-compatible version - a 3-day floor blocked every pnpm script)
-minimumReleaseAgeExclude:
-  - "@appelent/*" # our own registry, always trusted
 
 # pnpm re-checks the lockfile against minimumReleaseAge on every `pnpm run`/`pnpm exec`
 # (default "install", which re-resolves and hard-fails on any already-locked package that's
@@ -24,3 +32,13 @@ allowBuilds:
   esbuild: true
   sharp: true
   workerd: true
+  # Expo Device Hub's Android streaming binary (mobile dev tooling).
+  node-datachannel: true
+  # Downloads the sentry-cli binary, needed for source-map/debug-symbol upload.
+  '@sentry/cli': true
+  # Install scripts not needed: jest/expo transitives ship working dist.
+  '@parcel/watcher': false
+  browser-tabs-lock: false
+  core-js: false
+  dtrace-provider: false
+  unrs-resolver: false

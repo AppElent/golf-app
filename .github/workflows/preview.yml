@@ -1,25 +1,38 @@
 name: PR Preview
 
+# Opt-in: a PR gets a preview backend + Worker only while it carries the
+# `preview:web` label. Pushes to a labelled PR redeploy; removing the label or
+# closing the PR deletes the Worker. Close always cleans up, so Workers from
+# before the label gate are not left behind. Other label changes are ignored.
 on:
   pull_request:
-    types: [opened, synchronize, reopened, closed]
-
-concurrency:
-  group: preview-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+    types: [opened, synchronize, reopened, labeled, unlabeled, closed]
 
 jobs:
   deploy:
-    if: github.event.action != 'closed'
+    # Fork and Dependabot runs get no Actions secrets, so a deploy cannot work.
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      contains(github.event.pull_request.labels.*.name, 'preview:web') &&
+      github.event.action != 'closed' && github.event.action != 'unlabeled' &&
+      (github.event.action != 'labeled' || github.event.label.name == 'preview:web')
+    # Job-level, so a run whose jobs are all skipped (an unrelated label) does
+    # not cancel an in-flight deploy. Cleanup shares the group and supersedes it.
+    concurrency:
+      group: preview-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
       contents: read
-      packages: read
     env:
       WORKER_NAME: golf-app-pr-${{ github.event.pull_request.number }}
       CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
       VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.PREVIEW_CLERK_PUBLISHABLE_KEY }}
+      # The Cloudflare Vite plugin picks the wrangler env at build time; `pr`
+      # clears the production route so a preview never claims the domain.
+      CLOUDFLARE_ENV: pr
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -28,13 +41,6 @@ jobs:
           node-version: 22
           cache: pnpm
 
-      # @appelent/* is a private GitHub Packages scope - pnpm won't expand env
-      # vars from the committed .npmrc, so write the token to the runner's
-      # user-level ~/.npmrc instead.
-      - name: Configure GitHub Packages auth
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || secrets.GITHUB_TOKEN }}
-        run: echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
 
       - run: pnpm install --frozen-lockfile
 
@@ -65,6 +71,10 @@ jobs:
             --var "VITE_CLERK_PUBLISHABLE_KEY:$VITE_CLERK_PUBLISHABLE_KEY" \
             --var "environment_name:preview" \
             2>&1 | tee /tmp/wrangler-deploy.log
+          if grep -q 'custom domain' /tmp/wrangler-deploy.log; then
+            echo "::error::The preview Worker claimed a custom domain. Redeploy production and fix the wrangler env."
+            exit 1
+          fi
           URL=$(grep -oE 'https://[^ ]+workers\.dev' /tmp/wrangler-deploy.log | head -1)
           echo "url=$URL" >> $GITHUB_OUTPUT
 
@@ -88,11 +98,17 @@ jobs:
             }
 
   cleanup:
-    if: github.event.action == 'closed'
+    if: >-
+      github.event.pull_request.head.repo.full_name == github.repository &&
+      github.event.pull_request.user.login != 'dependabot[bot]' &&
+      (github.event.action == 'closed' ||
+      (github.event.action == 'unlabeled' && github.event.label.name == 'preview:web'))
+    concurrency:
+      group: preview-${{ github.event.pull_request.number }}
+      cancel-in-progress: true
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: read
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -100,15 +116,17 @@ jobs:
         with:
           node-version: 22
           cache: pnpm
-      - name: Configure GitHub Packages auth
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NODE_AUTH_TOKEN || secrets.GITHUB_TOKEN }}
-        run: echo "//npm.pkg.github.com/:_authToken=${NODE_AUTH_TOKEN}" >> ~/.npmrc
       - run: pnpm install --frozen-lockfile
       - name: Delete Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: pnpm exec wrangler delete --name "golf-app-pr-${{ github.event.pull_request.number }}" || true
+        # Close always runs cleanup, so a PR that never deployed has no Worker.
+        # Tolerate only that; any other failure must stay visible.
+        run: |
+          status=0; out=$(pnpm exec wrangler delete --name "golf-app-pr-${{ github.event.pull_request.number }}" 2>&1) || status=$?
+          echo "$out"
+          # Wrangler reports a missing Worker as code 10007 ("This Worker does not exist").
+          [ "$status" -eq 0 ] || echo "$out" | grep -qE "10007|does not exist" || exit "$status"
       # Convex preview deployments idle-expire automatically (~14 days).
       # No reliable CLI delete today; prune from the dashboard if needed.
