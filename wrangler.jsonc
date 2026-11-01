@@ -10,6 +10,10 @@
   "routes": [{ "pattern": "fairway.appelent.nl", "custom_domain": true }],
   "env": {
     "dev": { "name": "golf-app-dev", "workers_dev": true, "routes": [] },
-    "stg": { "name": "golf-app-stg", "workers_dev": true, "routes": [] }
+    "stg": { "name": "golf-app-stg", "workers_dev": true, "routes": [] },
+    // PR previews (.github/workflows/preview.yml) build with CLOUDFLARE_ENV=pr
+    // and deploy under --name golf-app-pr-<N>. Without this env they inherit
+    // the production route and take over fairway.appelent.nl.
+    "pr": { "name": "golf-app-pr", "workers_dev": true, "routes": [] }
   }
 }

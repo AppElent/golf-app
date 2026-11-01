@@ -31,6 +31,9 @@ jobs:
       WORKER_NAME: golf-app-pr-${{ github.event.pull_request.number }}
       CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
       VITE_CLERK_PUBLISHABLE_KEY: ${{ secrets.PREVIEW_CLERK_PUBLISHABLE_KEY }}
+      # The Cloudflare Vite plugin picks the wrangler env at build time; `pr`
+      # clears the production route so a preview never claims the domain.
+      CLOUDFLARE_ENV: pr
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -69,6 +72,10 @@ jobs:
             --var "VITE_CLERK_PUBLISHABLE_KEY:$VITE_CLERK_PUBLISHABLE_KEY" \
             --var "environment_name:preview" \
             2>&1 | tee /tmp/wrangler-deploy.log
+          if grep -q 'custom domain' /tmp/wrangler-deploy.log; then
+            echo "::error::The preview Worker claimed a custom domain. Redeploy production and fix the wrangler env."
+            exit 1
+          fi
           URL=$(grep -oE 'https://[^ ]+workers\.dev' /tmp/wrangler-deploy.log | head -1)
           echo "url=$URL" >> $GITHUB_OUTPUT
 
