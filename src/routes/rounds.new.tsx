@@ -1,4 +1,4 @@
-import { playingHandicap } from "@fairway/core/handicap";
+import { roundPlayingHandicap } from "@fairway/core/handicap";
 import { detectLoops } from "@fairway/core/loops";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
@@ -96,7 +96,7 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 	const phFor = (hi: string): number | undefined => {
 		const n = Number.parseFloat(hi);
 		if (Number.isNaN(n) || !tee || holeRefs.length === 0) return undefined;
-		return playingHandicap(n, tee.slopeRating, tee.courseRating, parTotal);
+		return roundPlayingHandicap(n, tee, parTotal, holeRefs.length);
 	};
 
 	const canStart = tee && holeRefs.length > 0 && incomplete.length === 0;

@@ -5,35 +5,69 @@ export interface HoleInfo {
 }
 
 /**
- * WHS stroke allocation: positive playing handicaps receive strokes starting
- * at stroke index 1; plus (negative) handicaps give strokes back starting at
- * stroke index 18.
+ * WHS stroke allocation over `holeCount` holes: positive playing handicaps
+ * receive strokes starting at stroke index 1; plus (negative) handicaps give
+ * strokes back starting at the highest index.
  */
 export function strokesReceived(
 	strokeIndex: number,
 	playingHandicap: number,
+	holeCount = 18,
 ): number {
 	if (playingHandicap >= 0) {
-		const base = Math.floor(playingHandicap / 18);
-		const extra = strokeIndex <= playingHandicap % 18 ? 1 : 0;
+		const base = Math.floor(playingHandicap / holeCount);
+		const extra = strokeIndex <= playingHandicap % holeCount ? 1 : 0;
 		return base + extra;
 	}
 	const plus = Math.abs(playingHandicap);
-	const base = Math.floor(plus / 18);
-	const extra = strokeIndex > 18 - (plus % 18) ? 1 : 0;
+	const base = Math.floor(plus / holeCount);
+	const extra = strokeIndex > holeCount - (plus % holeCount) ? 1 : 0;
 	const total = base + extra;
 	return total === 0 ? 0 : -total;
 }
 
+/**
+ * Strokes received on each hole of a round. The card's stroke indexes are
+ * ranked within the round's own holes, so a 9-hole loop allocates over 1–9
+ * (a 9-hole playing handicap of 9 is a stroke on every hole, not on the
+ * loop's holes that happen to have SI ≤ 9). Identity for a full 18.
+ */
+export function strokesPerHole(
+	holes: ReadonlyArray<Pick<HoleInfo, "strokeIndex">>,
+	playingHandicap: number,
+): number[] {
+	const order = holes
+		.map((hole, i) => ({ si: hole.strokeIndex, i }))
+		.sort((a, b) => a.si - b.si || a.i - b.i);
+	const rank = new Array<number>(holes.length);
+	order.forEach(({ i }, r) => {
+		rank[i] = r + 1;
+	});
+	return rank.map((r) => strokesReceived(r, playingHandicap, holes.length));
+}
+
 /** null strokes = hole not played / picked up → 0 points. */
 export function stablefordPoints(
-	hole: Pick<HoleInfo, "par" | "strokeIndex">,
+	hole: Pick<HoleInfo, "par">,
 	strokes: number | null,
-	playingHandicap: number,
+	received: number,
 ): number {
 	if (strokes === null) return 0;
-	const received = strokesReceived(hole.strokeIndex, playingHandicap);
 	return Math.max(0, 2 + hole.par + received - strokes);
+}
+
+/** Stableford points for a round, strokes allocated over its own holes. */
+export function stablefordTotal(
+	holes: ReadonlyArray<Pick<HoleInfo, "par" | "strokeIndex">>,
+	strokes: ReadonlyArray<number | null>,
+	playingHandicap: number,
+): number {
+	const received = strokesPerHole(holes, playingHandicap);
+	return holes.reduce(
+		(total, hole, i) =>
+			total + stablefordPoints(hole, strokes[i] ?? null, received[i]),
+		0,
+	);
 }
 
 export function totalStrokes(strokes: ReadonlyArray<number | null>): number {

@@ -3,6 +3,8 @@ import {
 	adjustedGrossScore,
 	courseHandicap,
 	playingHandicap,
+	ratedHoles,
+	roundPlayingHandicap,
 	scoreDifferential,
 	wouldBeIndex,
 	wouldBeIndexHistory,
@@ -22,6 +24,37 @@ describe("courseHandicap / playingHandicap", () => {
 	});
 });
 
+describe("roundPlayingHandicap", () => {
+	const eighteenHoleTee = { courseRating: 71.8, slopeRating: 129 };
+	const nineHoleTee = { courseRating: 26.7, slopeRating: 84 };
+
+	it("tells 9-hole from 18-hole ratings", () => {
+		expect(ratedHoles(71.8)).toBe(18);
+		expect(ratedHoles(26.7)).toBe(9);
+	});
+
+	it("is the plain playing handicap for 18 holes", () => {
+		expect(roundPlayingHandicap(18, eighteenHoleTee, 72, 18)).toBe(
+			playingHandicap(18, 129, 71.8, 72),
+		);
+	});
+
+	it("halves index and rating for one nine of an 18-hole course", () => {
+		// 9 × 129/113 + (35.9 − 36) = 10.17 → 10 (not 18-hole CR minus 9-hole par)
+		expect(roundPlayingHandicap(18, eighteenHoleTee, 36, 9)).toBe(10);
+	});
+
+	it("halves the index on a 9-hole-rated course", () => {
+		// 9 × 84/113 + (26.7 − 27) = 6.39 → 6
+		expect(roundPlayingHandicap(18, nineHoleTee, 27, 9)).toBe(6);
+	});
+
+	it("doubles a 9-hole rating when the loop is played twice", () => {
+		// 18 × 84/113 + (53.4 − 54) = 12.78 → 13
+		expect(roundPlayingHandicap(18, nineHoleTee, 54, 18)).toBe(13);
+	});
+});
+
 describe("adjustedGrossScore", () => {
 	const holes = [
 		{ par: 4, strokeIndex: 10 },
@@ -32,8 +65,9 @@ describe("adjustedGrossScore", () => {
 		expect(adjustedGrossScore(holes, [9, 4], 0)).toBe(10);
 	});
 
-	it("raises the cap by strokes received", () => {
-		expect(adjustedGrossScore(holes, [7, 9], 10)).toBe(12);
+	it("raises the cap by strokes received over the round's holes", () => {
+		// Handicap 3 over two holes: SI 10 gets 2, SI 18 gets 1.
+		expect(adjustedGrossScore(holes, [9, 9], 3)).toBe(8 + 6);
 	});
 });
 

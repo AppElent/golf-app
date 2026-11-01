@@ -50,8 +50,14 @@ describe("round setup model", () => {
 
 	it("previews the playing handicap only with a tee and holes", () => {
 		const tee = { slopeRating: 130, courseRating: 72.1 };
-		expect(playingHandicapPreview("18", tee, 72)).toBe(21);
-		expect(playingHandicapPreview("18", undefined, 72)).toBeUndefined();
-		expect(playingHandicapPreview("18", tee, 0)).toBeUndefined();
+		expect(playingHandicapPreview("18", tee, 72, 18)).toBe(21);
+		expect(playingHandicapPreview("18", undefined, 72, 18)).toBeUndefined();
+		expect(playingHandicapPreview("18", tee, 0, 0)).toBeUndefined();
+	});
+
+	it("previews a 9-hole loop with half the index and half the rating", () => {
+		const tee = { slopeRating: 130, courseRating: 72.1 };
+		// 9 × 130/113 + (36.05 − 36) = 10.4 → 10
+		expect(playingHandicapPreview("18", tee, 36, 9)).toBe(10);
 	});
 });

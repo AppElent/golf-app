@@ -4,6 +4,8 @@ import {
 	scoreMark,
 	splitTotals,
 	stablefordPoints,
+	stablefordTotal,
+	strokesPerHole,
 	strokesReceived,
 	totalStrokes,
 	vsPar,
@@ -34,28 +36,67 @@ describe("strokesReceived", () => {
 	});
 });
 
-describe("stablefordPoints", () => {
-	const par4si10 = { par: 4, strokeIndex: 10 };
+describe("strokesReceived over 9 holes", () => {
+	it("cycles every 9 holes", () => {
+		expect(strokesReceived(1, 10, 9)).toBe(2);
+		expect(strokesReceived(2, 10, 9)).toBe(1);
+		expect(strokesReceived(9, -1, 9)).toBe(-1);
+	});
+});
 
-	it("scores the standard table at scratch", () => {
-		expect(stablefordPoints(par4si10, 2, 0)).toBe(4);
-		expect(stablefordPoints(par4si10, 3, 0)).toBe(3);
-		expect(stablefordPoints(par4si10, 4, 0)).toBe(2);
-		expect(stablefordPoints(par4si10, 5, 0)).toBe(1);
-		expect(stablefordPoints(par4si10, 6, 0)).toBe(0);
-		expect(stablefordPoints(par4si10, 9, 0)).toBe(0);
+describe("strokesPerHole", () => {
+	const front = [1, 7, 15, 3, 11, 5, 17, 9, 13].map((strokeIndex) => ({
+		strokeIndex,
+	}));
+
+	it("allocates a 9-hole loop by rank within the loop", () => {
+		// A front nine with the card's odd SIs: 9 strokes = one per hole.
+		expect(strokesPerHole(front, 9)).toEqual([1, 1, 1, 1, 1, 1, 1, 1, 1]);
+		// 4 strokes go to the four hardest holes (SI 1, 3, 5, 7).
+		expect(strokesPerHole(front, 4)).toEqual([1, 1, 0, 1, 0, 1, 0, 0, 0]);
 	});
 
-	it("applies received strokes via stroke index", () => {
-		const par4si1 = { par: 4, strokeIndex: 1 };
-		expect(stablefordPoints(par4si1, 5, 11)).toBe(2);
-		expect(stablefordPoints(par4si10, 5, 11)).toBe(2);
-		const par4si12 = { par: 4, strokeIndex: 12 };
-		expect(stablefordPoints(par4si12, 5, 11)).toBe(1);
+	it("matches the card's stroke index on a full 18", () => {
+		const eighteen = Array.from({ length: 18 }, (_, i) => ({
+			strokeIndex: 18 - i,
+		}));
+		expect(strokesPerHole(eighteen, 11)).toEqual(
+			eighteen.map((h) => strokesReceived(h.strokeIndex, 11)),
+		);
+	});
+});
+
+describe("stablefordPoints", () => {
+	const par4 = { par: 4 };
+
+	it("scores the standard table without strokes", () => {
+		expect(stablefordPoints(par4, 2, 0)).toBe(4);
+		expect(stablefordPoints(par4, 3, 0)).toBe(3);
+		expect(stablefordPoints(par4, 4, 0)).toBe(2);
+		expect(stablefordPoints(par4, 5, 0)).toBe(1);
+		expect(stablefordPoints(par4, 6, 0)).toBe(0);
+		expect(stablefordPoints(par4, 9, 0)).toBe(0);
+	});
+
+	it("adds received strokes", () => {
+		expect(stablefordPoints(par4, 5, 1)).toBe(2);
+		expect(stablefordPoints(par4, 6, 2)).toBe(2);
 	});
 
 	it("scores 0 for a hole not played (null / NR)", () => {
-		expect(stablefordPoints(par4si10, null, 11)).toBe(0);
+		expect(stablefordPoints(par4, null, 1)).toBe(0);
+	});
+});
+
+describe("stablefordTotal", () => {
+	it("allocates strokes over the round's own holes", () => {
+		// Two par 4s with card SIs 10 and 12, playing handicap 1: the stroke
+		// goes to SI 10, the harder of the two.
+		const holes = [
+			{ par: 4, strokeIndex: 12 },
+			{ par: 4, strokeIndex: 10 },
+		];
+		expect(stablefordTotal(holes, [5, 5], 1)).toBe(1 + 2);
 	});
 });
 

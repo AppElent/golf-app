@@ -7,7 +7,7 @@ import {
 	formatVsPar,
 	type ScoreMark,
 	scoreMark,
-	stablefordPoints,
+	stablefordTotal,
 	vsPar,
 } from "@fairway/core/scoring";
 
@@ -122,11 +122,7 @@ export function cardRows(
 		const nines =
 			holes.length > 9 ? [sum(0, 9), sum(9, holes.length)] : [sum(0, 9)];
 		const scored = cells.filter((c) => c.strokes !== null).length;
-		const points = holes.reduce(
-			(t, hole, i) =>
-				t + stablefordPoints(hole, strokes[i], player.playingHandicap ?? 0),
-			0,
-		);
+		const points = stablefordTotal(holes, strokes, player.playingHandicap ?? 0);
 		return {
 			cells,
 			nines,

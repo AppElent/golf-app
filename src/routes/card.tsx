@@ -3,7 +3,7 @@ import {
 	type ScoreMark,
 	scoreMark,
 	splitTotals,
-	stablefordPoints,
+	stablefordTotal,
 	totalStrokes,
 	vsPar,
 } from "@fairway/core/scoring";
@@ -87,10 +87,10 @@ function CardScreen() {
 		playedPars.map((par) => ({ par })),
 		ownerStrokes,
 	);
-	const points = ownerStrokes.reduce<number>(
-		(sum, s, i) =>
-			sum + stablefordPoints(holes[i], s, player.playingHandicap ?? 0),
-		0,
+	const points = stablefordTotal(
+		holes,
+		ownerStrokes,
+		player.playingHandicap ?? 0,
 	);
 	const nines = splitTotals(ownerStrokes, 9);
 

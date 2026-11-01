@@ -1,4 +1,4 @@
-import { strokesReceived } from "./scoring";
+import { strokesPerHole } from "./scoring";
 
 export function courseHandicap(
 	handicapIndex: number,
@@ -22,6 +22,44 @@ export function playingHandicap(
 }
 
 /**
+ * How many holes a course rating covers. 9-hole ratings (about 27–37) sit far
+ * below any 18-hole rating (about 55–80), so the rating itself tells.
+ */
+export function ratedHoles(courseRating: number): 9 | 18 {
+	return courseRating < 45 ? 9 : 18;
+}
+
+/**
+ * WHS playing handicap for a round of `holeCount` holes on a tee. A 9-hole
+ * round uses half the index and a 9-hole course rating (half the tee's
+ * 18-hole rating when only that is published); 18 holes on a 9-hole-rated
+ * loop double it. `par` is the round's par.
+ */
+export function roundPlayingHandicap(
+	handicapIndex: number,
+	tee: { slopeRating: number; courseRating: number },
+	par: number,
+	holeCount: number,
+	allowance = 1,
+): number {
+	const nine = holeCount <= 9;
+	const rated = ratedHoles(tee.courseRating);
+	const courseRating =
+		nine && rated === 18
+			? tee.courseRating / 2
+			: !nine && rated === 9
+				? tee.courseRating * 2
+				: tee.courseRating;
+	return playingHandicap(
+		nine ? handicapIndex / 2 : handicapIndex,
+		tee.slopeRating,
+		courseRating,
+		par,
+		allowance,
+	);
+}
+
+/**
  * WHS adjusted gross score: every hole capped at net double bogey
  * (par + 2 + strokes received). Callers must pass fully played rounds —
  * rounds containing NR holes don't produce a differential.
@@ -31,8 +69,9 @@ export function adjustedGrossScore(
 	strokes: ReadonlyArray<number>,
 	playingHcp: number,
 ): number {
+	const received = strokesPerHole(holes, playingHcp);
 	return holes.reduce((total, hole, i) => {
-		const cap = hole.par + 2 + strokesReceived(hole.strokeIndex, playingHcp);
+		const cap = hole.par + 2 + received[i];
 		return total + Math.min(strokes[i], cap);
 	}, 0);
 }

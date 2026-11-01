@@ -3,7 +3,7 @@
  * whether they can be scored, and each player's playing handicap preview.
  * The server recomputes playing handicaps on start; this is display only.
  */
-import { playingHandicap } from "@fairway/core/handicap";
+import { roundPlayingHandicap } from "@fairway/core/handicap";
 import { detectLoops, type Loop } from "@fairway/core/loops";
 
 export interface SetupHole {
@@ -61,8 +61,9 @@ export function playingHandicapPreview(
 	rawIndex: string,
 	tee: SetupTee | undefined,
 	par: number,
+	holeCount: number,
 ): number | undefined {
 	const index = parseIndex(rawIndex);
 	if (index === undefined || !tee || par === 0) return undefined;
-	return playingHandicap(index, tee.slopeRating, tee.courseRating, par);
+	return roundPlayingHandicap(index, tee, par, holeCount);
 }

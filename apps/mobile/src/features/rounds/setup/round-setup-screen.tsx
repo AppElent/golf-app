@@ -136,7 +136,7 @@ export function RoundSetupScreen({ courseId }: { courseId: Id<"courses"> }) {
 	}
 
 	const phLabel = (raw: string) => {
-		const ph = playingHandicapPreview(raw, tee, par);
+		const ph = playingHandicapPreview(raw, tee, par, holeRefs.length);
 		return ph === undefined ? "" : fmt(t.setup.playingHandicap, { value: ph });
 	};
 

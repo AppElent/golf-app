@@ -1,9 +1,9 @@
 import {
 	adjustedGrossScore,
-	playingHandicap,
+	roundPlayingHandicap,
 	scoreDifferential,
 } from "@fairway/core/handicap";
-import { stablefordPoints, totalStrokes, vsPar } from "@fairway/core/scoring";
+import { stablefordTotal, totalStrokes, vsPar } from "@fairway/core/scoring";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
@@ -87,11 +87,11 @@ export const start = mutation({
 			playingHandicap:
 				p.handicapIndex === undefined
 					? undefined
-					: playingHandicap(
+					: roundPlayingHandicap(
 							p.handicapIndex,
-							tee.slopeRating,
-							tee.courseRating,
+							tee,
 							parTotal,
+							args.holeRefs.length,
 						),
 		}));
 
@@ -278,10 +278,10 @@ export const finish = mutation({
 				const s = scoreOf(holeIndex, playerIndex);
 				return s?.nr ? null : (s?.strokes ?? null);
 			});
-			const points = strokes.reduce<number>(
-				(sum, s, i) =>
-					sum + stablefordPoints(holes[i], s, player.playingHandicap ?? 0),
-				0,
+			const points = stablefordTotal(
+				holes,
+				strokes,
+				player.playingHandicap ?? 0,
 			);
 			return { strokes: totalStrokes(strokes), points };
 		});
