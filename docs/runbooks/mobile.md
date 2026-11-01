@@ -64,6 +64,15 @@ app-specific): `pnpm env plan local`, `pnpm env apply local|preview|production`,
   `eas build --local` on the runner and spend no EAS Build credits.
 - Cloud EAS builds and store submissions are manual release steps; nothing in CI
   submits.
+- Updates: a push to `main` that touches the app runs **Mobile Update**
+  (`.github/workflows/mobile-update.yml`), which publishes to channel
+  `preview` per platform when an earlier update or a finished EAS build on
+  that channel has the same runtime fingerprint. Otherwise the run summary
+  says a `preview-internal` rebuild is due. A local build is not recorded on
+  EAS: after installing one, run the workflow by hand with `force` once.
+- The app checks for an update on launch and on resume (at most hourly), and
+  Home shows "Update ready" once one has downloaded; tapping it restarts into
+  it. It never restarts by itself.
 
 ### On your own iPhone
 
