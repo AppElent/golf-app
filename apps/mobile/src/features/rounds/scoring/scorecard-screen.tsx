@@ -5,7 +5,7 @@
  */
 import { useMutation } from "convex/react";
 import { Stack, useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button, Platform, StyleSheet, View } from "react-native";
 import { api } from "../../../convex/api";
 import { useQuery } from "../../../convex/query-cache";
@@ -38,6 +38,15 @@ export function ScorecardScreen() {
 	const abandon = useMutation(api.rounds.abandon);
 	const [busy, setBusy] = useState<"finish" | "abandon" | null>(null);
 	const [error, setError] = useState<string | null>(null);
+	// A slow mutation can resolve after the user left this screen: Convex
+	// still applies it, but navigating then would pop an unrelated screen.
+	const open = useRef(true);
+	useEffect(
+		() => () => {
+			open.current = false;
+		},
+		[],
+	);
 
 	const header = (
 		<>
@@ -106,6 +115,7 @@ export function ScorecardScreen() {
 		setError(null);
 		try {
 			await finish({ roundId });
+			if (!open.current) return;
 			haptics.entryLogged();
 			router.dismissAll();
 			router.push({
@@ -113,6 +123,7 @@ export function ScorecardScreen() {
 				params: { roundId },
 			});
 		} catch (e) {
+			if (!open.current) return;
 			setError(convexErrorMessage(e, t.scorecard.finishError));
 			setBusy(null);
 		}
@@ -130,8 +141,9 @@ export function ScorecardScreen() {
 		setError(null);
 		try {
 			await abandon({ roundId });
-			router.dismissAll();
+			if (open.current) router.dismissAll();
 		} catch (e) {
+			if (!open.current) return;
 			setError(convexErrorMessage(e, t.scorecard.abandonError));
 			setBusy(null);
 		}

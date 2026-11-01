@@ -6,7 +6,7 @@
 import { useUser } from "@clerk/expo";
 import { useMutation } from "convex/react";
 import { Stack, useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { api, type Id } from "../../../convex/api";
 import { useQuery } from "../../../convex/query-cache";
@@ -59,6 +59,15 @@ export function RoundSetupScreen({ courseId }: { courseId: Id<"courses"> }) {
 	const [guests, setGuests] = useState<GuestDraft[]>([]);
 	const [starting, setStarting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	// A slow mutation can resolve after the user left this screen: Convex
+	// still applies it, but navigating then would pop an unrelated screen.
+	const open = useRef(true);
+	useEffect(
+		() => () => {
+			open.current = false;
+		},
+		[],
+	);
 
 	const loops = useMemo(
 		() => (detail ? courseLoops(detail.holes) : []),
@@ -127,10 +136,12 @@ export function RoundSetupScreen({ courseId }: { courseId: Id<"courses"> }) {
 					handicapIndex: parseIndex(p.index),
 				})),
 			});
+			if (!open.current) return;
 			haptics.entryLogged();
 			router.dismissAll();
 			router.push("/play");
 		} catch (e) {
+			if (!open.current) return;
 			setError(convexErrorMessage(e, t.setup.startError));
 			setStarting(false);
 		}

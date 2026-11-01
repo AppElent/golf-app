@@ -40,9 +40,9 @@ export function useCurrentPosition() {
 			setState(toLatLng(fresh));
 		} catch {
 			// No fix (simulator without a location, services off): keep any
-			// last-known fix, otherwise fall back to the unsorted list.
+			// last-known fix, otherwise offer a retry over the unsorted list.
 			setState((prev) =>
-				prev.status === "ready" ? prev : { status: "denied" },
+				prev.status === "ready" ? prev : { status: "unavailable" },
 			);
 		}
 	}, []);

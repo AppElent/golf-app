@@ -49,11 +49,13 @@ export function setLiveHole(next: LiveHole | null, enabled: boolean) {
 	if (!supported()) return;
 	if (!next || !enabled) {
 		hole = null;
+		// A fix from this round must not seed the next one (another course).
+		lastPosition = null;
 		void endActivity();
 		return;
 	}
 	hole = next;
-	if (lastPosition) show(lastPosition, true);
+	if (lastPosition && next.accepts(lastPosition)) show(lastPosition, true);
 }
 
 /** A new position, from Play or the background task. */

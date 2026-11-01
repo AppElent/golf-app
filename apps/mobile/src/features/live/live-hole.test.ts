@@ -104,3 +104,20 @@ it("ignores fixes away from the hole", () => {
 	live.liveHolePosition({ lat: 52.5, lng: 5 }, true);
 	expect(mockFactory.start).not.toHaveBeenCalled();
 });
+
+it("shows a new hole only with a fix it accepts", () => {
+	live.setLiveHole(hole("1"), true);
+	live.liveHolePosition(anchors.tee, true);
+	jest.clearAllMocks();
+	live.setLiveHole({ ...hole("2"), accepts: () => false }, true);
+	expect(mockInstance.update).not.toHaveBeenCalled();
+});
+
+it("forgets the last fix when the activity ends", () => {
+	live.setLiveHole(hole("1"), true);
+	live.liveHolePosition(anchors.tee, true);
+	live.setLiveHole(null, false);
+	jest.clearAllMocks();
+	live.setLiveHole(hole("1"), true);
+	expect(mockFactory.start).not.toHaveBeenCalled();
+});
