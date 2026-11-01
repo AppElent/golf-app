@@ -28,7 +28,7 @@ pnpm test:mobile      # jest in apps/mobile
 pnpm check            # biome check (lint + format check)
 pnpm lint:fix         # biome check --write
 pnpm cf-typegen       # regenerate worker-configuration.d.ts (rerun after editing wrangler.jsonc)
-pnpm deploy:dev       # convex dev --once, build:development, wrangler deploy --env dev
+pnpm deploy:dev       # convex dev --once, CLOUDFLARE_ENV=dev build:development, wrangler deploy
 pnpm deploy:prod      # convex deploy, build, wrangler deploy (aliased as `pnpm deploy`)
 ```
 
@@ -77,8 +77,9 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   Convex (`pnpm sentry:convex` log forwarder, not yet hosted) and mobile; shared
   helpers in `src/lib/observability/`. Local hosts never report. Read
   `docs/runbooks/sentry.md` before touching it.
-- **Deploy target**: Cloudflare Workers, name `golf-app` (`golf-app-stg` for
-  `--env stg`, `golf-app-dev` for `--env dev`). A merge to `main` runs
+- **Deploy target**: Cloudflare Workers, name `golf-app` (`golf-app-stg`, `golf-app-dev` for the
+  `wrangler.jsonc` envs). The Cloudflare Vite plugin picks the env at build
+  time from `CLOUDFLARE_ENV`; `wrangler deploy --env` is ignored. A merge to `main` runs
   `.github/workflows/deploy.yml`: checks → staging (Convex `staging`
   deployment) → production after approval on the `production` GitHub
   Environment → EAS update to the mobile `preview` channel. Read
