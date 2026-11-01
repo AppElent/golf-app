@@ -4,7 +4,7 @@
  * Android build without a Google Maps key — and as a fallback that never
  * needs the network. Tap or drag anywhere to move the target.
  */
-import { haversineMeters, interpolate, type LatLng } from "@fairway/core/geo";
+import { haversineMeters, type LatLng, labelSpot } from "@fairway/core/geo";
 import { buildProjector } from "@fairway/core/hole-projection";
 import { useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
@@ -47,6 +47,8 @@ export function HoleSchematic(props: HoleCanvasProps) {
 	const from = located ? player : tee;
 	// Shot to shot, then on to the ball when there is a fix.
 	const trail = located ? [...shots, player] : shots;
+	// Distance labels step aside for the hazard callouts.
+	const hazardSpots = hazards.map((h) => h.at);
 	const innerHeight = size.height - insets.top - insets.bottom;
 	const innerWidth = size.width - insets.left - insets.right;
 
@@ -236,12 +238,12 @@ export function HoleSchematic(props: HoleCanvasProps) {
 								/>
 							))}
 							<Label
-								p={at(interpolate(from, target, 0.5))}
+								p={at(labelSpot(from, target, hazardSpots))}
 								text={toTargetLabel}
 							/>
 							{targetToGreenLabel ? (
 								<Label
-									p={at(interpolate(target, green, 0.5))}
+									p={at(labelSpot(target, green, hazardSpots))}
 									text={targetToGreenLabel}
 								/>
 							) : null}

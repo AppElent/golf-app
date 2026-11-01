@@ -99,6 +99,32 @@ export function interpolate(a: LatLng, b: LatLng, t: number): LatLng {
 	return { lat: a.lat + (b.lat - a.lat) * t, lng: a.lng + (b.lng - a.lng) * t };
 }
 
+/** Where along a→b to put the line's distance label: midway, unless another
+ *  label (a hazard callout) sits within `clearance` meters of that spot — then
+ *  the nearest fraction that clears it, or failing that the clearest one. */
+export function labelSpot(
+	a: LatLng,
+	b: LatLng,
+	avoid: ReadonlyArray<LatLng>,
+	clearance = 30,
+): LatLng {
+	let best = interpolate(a, b, 0.5);
+	let bestGap = -1;
+	for (const t of [0.5, 0.42, 0.58, 0.34, 0.66, 0.26, 0.74]) {
+		const spot = interpolate(a, b, t);
+		const gap = Math.min(
+			Number.POSITIVE_INFINITY,
+			...avoid.map((p) => haversineMeters(spot, p)),
+		);
+		if (gap >= clearance) return spot;
+		if (gap > bestGap) {
+			best = spot;
+			bestGap = gap;
+		}
+	}
+	return best;
+}
+
 /** Items sorted nearest-first from `position`; items without a location last
  *  (in their original order). Pure: does not mutate the input. */
 export function sortByDistance<T extends { location?: LatLng | null }>(

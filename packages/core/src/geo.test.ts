@@ -4,6 +4,8 @@ import {
 	carryDistances,
 	distancesToGreen,
 	haversineMeters,
+	interpolate,
+	labelSpot,
 	polygonCentroid,
 	projectToLocal,
 	sortByDistance,
@@ -120,5 +122,25 @@ describe("sortByDistance", () => {
 		);
 		expect(sorted.map((c) => c.name)).toEqual(["near", "far", "none"]);
 		expect(sorted[2].distanceMeters).toBeNull();
+	});
+});
+
+describe("labelSpot", () => {
+	const a = { lat: 52, lng: 5 };
+	const b = { lat: 52.002, lng: 5 }; // ~222 m north
+	it("is midway with nothing to avoid", () => {
+		expect(labelSpot(a, b, [])).toEqual(interpolate(a, b, 0.5));
+	});
+	it("moves off a hazard label at the midpoint", () => {
+		const spot = labelSpot(a, b, [interpolate(a, b, 0.5)]);
+		expect(
+			haversineMeters(spot, interpolate(a, b, 0.5)),
+		).toBeGreaterThanOrEqual(30);
+	});
+	it("keeps the clearest spot when nothing clears", () => {
+		const crowd = [0.26, 0.34, 0.42, 0.5, 0.58, 0.66, 0.74].map((t) =>
+			interpolate(a, b, t),
+		);
+		expect(labelSpot(a, b, crowd)).toBeDefined();
 	});
 });
