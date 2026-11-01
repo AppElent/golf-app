@@ -13,7 +13,7 @@ name: Deploy
 # every PR at a real backend without failing.
 on:
   push:
-    branches: [main, feat/mobile-m0-workspace]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
