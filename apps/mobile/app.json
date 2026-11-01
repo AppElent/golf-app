@@ -38,6 +38,14 @@
 			["expo-secure-store", { "faceIDPermission": false }],
 			["expo-localization", { "supportedLocales": ["en", "nl"] }],
 			"expo-sqlite",
+			[
+				"@sentry/react-native/expo",
+				{
+					"url": "https://sentry.io/",
+					"organization": "appelent",
+					"project": "fairway"
+				}
+			],
 			"expo-web-browser",
 			"expo-apple-authentication",
 			"expo-font",

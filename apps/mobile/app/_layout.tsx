@@ -10,8 +10,11 @@
  * mounted above the router so it is never torn down by navigation) →
  * appearance-aware navigation theme.
  */
+// First, so a crash during the rest of module evaluation is still reported.
+import "../src/monitoring/init";
 import { ClerkProvider, useAuth } from "@clerk/expo";
 import { tokenCache } from "@clerk/expo/token-cache";
+import * as Sentry from "@sentry/react-native";
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
@@ -25,17 +28,21 @@ import { AppConvexProvider } from "../src/convex/provider";
 // Defines the background location task at module scope (see the module).
 import "../src/features/location/background/background-location";
 import { LocaleProvider } from "../src/i18n";
+import { sentryEnabled } from "../src/monitoring/init";
+import { useNavigationBreadcrumbs } from "../src/monitoring/navigation";
 import { AppearanceProvider, useAppearance, useTokens } from "../src/theme";
 
 SplashScreen.preventAutoHideAsync();
 
-export default function RootLayout() {
+function RootLayout() {
 	return (
 		<AppearanceProvider>
 			<ThemedRoot />
 		</AppearanceProvider>
 	);
 }
+
+export default sentryEnabled ? Sentry.wrap(RootLayout) : RootLayout;
 
 function ThemedRoot() {
 	const { scheme, colors } = useAppearance();
@@ -91,6 +98,7 @@ function ThemedRoot() {
 function RootNavigator({ windowReady }: { windowReady: boolean }) {
 	const colors = useTokens();
 	const { isLoaded } = useAuth();
+	useNavigationBreadcrumbs();
 
 	useEffect(() => {
 		if (isLoaded && windowReady) SplashScreen.hideAsync();

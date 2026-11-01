@@ -34,6 +34,8 @@ allowBuilds:
   workerd: true
   # Expo Device Hub's Android streaming binary (mobile dev tooling).
   node-datachannel: true
+  # Downloads the sentry-cli binary, needed for source-map/debug-symbol upload.
+  '@sentry/cli': true
   # Install scripts not needed: jest/expo transitives ship working dist.
   '@parcel/watcher': false
   browser-tabs-lock: false

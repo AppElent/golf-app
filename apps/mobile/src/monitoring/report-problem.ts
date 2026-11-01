@@ -1,9 +1,13 @@
 /**
  * "Report a problem" (issue-reporting standard): opens Sentry User Feedback.
- * Returns false when the form can't open, so the caller shows the localized
- * fallback. Sentry isn't wired into this build yet (no DSN), so for now the
- * form is never available.
+ * Returns false when the form can't open — a development bundle, or a build
+ * without a DSN — so the caller shows the localized fallback.
  */
+import * as Sentry from "@sentry/react-native";
+import { sentryEnabled } from "./init";
+
 export function openProblemReport(): boolean {
-	return false;
+	if (!sentryEnabled) return false;
+	Sentry.showFeedbackWidget();
+	return true;
 }

@@ -13,6 +13,7 @@
  */
 import { useEffect } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
+import { reportError } from "../monitoring/report";
 import { spacing, type Tokens, useThemedStyles, useTokens } from "../theme";
 import { PrimaryButton } from "./button";
 import { AppText } from "./text";
@@ -33,7 +34,9 @@ export function RouteError({
 	const colors = useTokens();
 	const styles = useThemedStyles(createStyles);
 	useEffect(() => {
-		if (error) console.error("route.render", error);
+		if (!error) return;
+		console.error("route.render", error);
+		reportError(error);
 	}, [error]);
 	return (
 		<ScrollView
