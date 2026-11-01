@@ -1,5 +1,6 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
+import { canSee } from "./courses";
 import { getUserId } from "./lib";
 
 /** Current user's settings, with defaults when no row exists yet. */
@@ -28,6 +29,12 @@ export const update = mutation({
 	},
 	handler: async (ctx, args) => {
 		const userId = await getUserId(ctx);
+		if (args.homeCourseId) {
+			const course = await ctx.db.get(args.homeCourseId);
+			if (!course || !canSee(course, userId)) {
+				throw new Error("Course not found.");
+			}
+		}
 		const existing = await ctx.db
 			.query("userSettings")
 			.withIndex("by_user", (q) => q.eq("userId", userId))

@@ -1,5 +1,5 @@
-import { api } from "./_generated/api";
-import { action } from "./_generated/server";
+import { internal } from "./_generated/api";
+import { internalAction } from "./_generated/server";
 
 /**
  * Single entry point for PR-preview seeding (`convex deploy --preview-run`
@@ -11,14 +11,14 @@ import { action } from "./_generated/server";
  *
  * Wired into .github/workflows/preview.yml as `--preview-run seedPreview:seedPreview`.
  */
-export const seedPreview = action({
+export const seedPreview = internalAction({
 	args: {},
 	handler: async (
 		ctx,
 	): Promise<{
 		data: { key: string; created: boolean }[];
 	}> => {
-		const data = await ctx.runAction(api.seed.seedData, {});
+		const data = await ctx.runAction(internal.seed.seedData, {});
 		return { data };
 	},
 });
