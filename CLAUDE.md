@@ -65,7 +65,7 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   `--identity`; skips if any round exists). `convex/seedPreview.ts` wraps the
   sync for `--preview-run` (Convex accepts one function name there).
 - **Env vars**: routed by `env.manifest.ts` from Infisical (`/` and `/fairway`)
-  with `pnpm env plan|apply|check <local|preview|production>` (see
+  with `pnpm run env plan|apply|check <local|preview|production>` (see
   `docs/standards/environments.md`). It owns the local `.env.local` files, the EAS
   environments, `CLERK_JWT_ISSUER_DOMAIN` on Convex dev and prod, and the
   `EXPO_TOKEN` secret. The Convex **preview** default and the web CI secrets are

@@ -44,8 +44,8 @@ pnpm check && pnpm typecheck && pnpm test             # repo-wide
 ## Environment
 
 Values are routed by `env.manifest.ts` from Infisical (`/` shared, `/fairway`
-app-specific): `pnpm env plan local`, `pnpm env apply local|preview|production`,
-`pnpm env check <environment>`. Local apply writes `apps/mobile/.env.local`.
+app-specific): `pnpm run env plan local`, `pnpm run env apply local|preview|production`,
+`pnpm run env check <environment>`. Local apply writes `apps/mobile/.env.local`.
 
 | Variable | Lands in | Notes |
 | --- | --- | --- |
