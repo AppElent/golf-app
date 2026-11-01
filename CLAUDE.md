@@ -76,10 +76,12 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   `wrangler deploy --env dev`). `wrangler.jsonc`'s `env.dev` block exists for this;
   add a top-level `vars` + `env.dev.vars` block if per-environment runtime vars are
   ever needed.
-- **PR previews**: `.github/workflows/preview.yml` spins up a per-PR Convex preview
-  deployment + a per-PR `golf-app-pr-<N>` Worker on open/sync/reopen, syncs the
-  course catalog (`--preview-run seedPreview:seedPreview`, no network calls), and
-  tears the Worker down on close. Requires `CONVEX_DEPLOY_KEY` (a Convex
+- **PR previews** (opt-in, label `preview:web`): `.github/workflows/preview.yml`
+  spins up a per-PR Convex preview deployment + a per-PR `golf-app-pr-<N>` Worker
+  while the label is on (redeploying on push), syncs the course catalog
+  (`--preview-run seedPreview:seedPreview`, no network calls), and tears the
+  Worker down on unlabel or close. Labels `build:ios` / `build:android` build the
+  mobile dev client the same way (`mobile-build.yml`, no EAS credits). Requires `CONVEX_DEPLOY_KEY` (a Convex
   **Preview**-kind deploy key), `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`,
   `PREVIEW_CLERK_PUBLISHABLE_KEY`, optionally `NODE_AUTH_TOKEN` — and the
   `CLERK_JWT_ISSUER_DOMAIN` **preview**-type default, since each preview deployment
