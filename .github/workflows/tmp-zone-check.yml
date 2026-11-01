@@ -15,5 +15,10 @@ jobs:
           zone=$(api "zones?name=appelent.nl" | jq -r '.result[0].id // empty')
           echo "zone found: $([ -n "$zone" ] && echo yes || echo no)"
           api "zones?name=appelent.nl" | jq -c '{success, account_matches: (.result[0].account.id == env.A), errors}'
-          [ -n "$zone" ] && api "zones/$zone/dns_records?name=fairway.appelent.nl" | jq -c '{success, records: [.result[]? | {type, name}], errors}'
-          api "accounts/$A/workers/domains" | jq -c '{success, domains: [.result[]? | .hostname], errors}'
+          put=$(curl -s -X PUT -H "Authorization: Bearer $T" -H "Content-Type: application/json" \
+            "https://api.cloudflare.com/client/v4/accounts/$A/workers/domains" \
+            -d "{\"hostname\":\"fairway-check.appelent.nl\",\"service\":\"golf-app-stg\",\"zone_id\":\"$zone\",\"environment\":\"production\"}")
+          echo "$put" | jq -c '{success, errors}'
+          id=$(echo "$put" | jq -r '.result.id // empty')
+          [ -n "$id" ] && curl -s -X DELETE -H "Authorization: Bearer $T" \
+            "https://api.cloudflare.com/client/v4/accounts/$A/workers/domains/$id" -o /dev/null -w "deleted %{http_code}\n"
