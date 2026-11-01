@@ -72,7 +72,8 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   still set by hand (the preview default pairs with the test-instance
   `PREVIEW_CLERK_PUBLISHABLE_KEY`). `CONVEX_DEPLOYMENT` in `.env.local` is
   written by `convex dev`, not the manifest.
-- **Deploy target**: Cloudflare Workers, name `golf-app` (`golf-app-stg`, `golf-app-dev` for the
+- **Deploy target**: Cloudflare Workers, name `golf-app` on `fairway.appelent.nl`
+  (the production Clerk instance only signs in on `*.appelent.nl`; `golf-app-stg`, `golf-app-dev` for the
   `wrangler.jsonc` envs). The Cloudflare Vite plugin picks the env at build
   time from `CLOUDFLARE_ENV`; `wrangler deploy --env` is ignored. A merge to `main` runs
   `.github/workflows/deploy.yml`: checks → staging (Convex `staging`

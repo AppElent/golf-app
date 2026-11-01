@@ -1,0 +1,19 @@
+name: TEMP zone check
+on:
+  push:
+    branches: [feat/mobile-m0-workspace]
+jobs:
+  zone:
+    runs-on: ubuntu-latest
+    permissions: { contents: read }
+    env:
+      T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      A: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - run: |
+          api() { curl -s -H "Authorization: Bearer $T" "https://api.cloudflare.com/client/v4/$1"; }
+          zone=$(api "zones?name=appelent.nl" | jq -r '.result[0].id // empty')
+          echo "zone found: $([ -n "$zone" ] && echo yes || echo no)"
+          api "zones?name=appelent.nl" | jq -c '{success, account_matches: (.result[0].account.id == env.A), errors}'
+          [ -n "$zone" ] && api "zones/$zone/dns_records?name=fairway.appelent.nl" | jq -c '{success, records: [.result[]? | {type, name}], errors}'
+          api "accounts/$A/workers/domains" | jq -c '{success, domains: [.result[]? | .hostname], errors}'

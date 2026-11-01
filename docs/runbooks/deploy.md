@@ -12,7 +12,10 @@ A merge to `main` runs **Deploy** (`.github/workflows/deploy.yml`):
    `golf-app-stg`, smoke check.
 3. **production**: waits for approval on the `production` GitHub
    Environment (Actions → the run → *Review deployments*), then the same
-   steps against production Convex and the `golf-app` Worker.
+   steps against production Convex and the `golf-app` Worker on
+   https://fairway.appelent.nl. The production Clerk instance
+   (`clerk.appelent.nl`) only signs in on `*.appelent.nl`, so the Worker has
+   no workers.dev URL.
 4. **mobile**: `mobile-update.yml` publishes an EAS update to channel
    `preview` when the app changed (see [mobile](mobile.md#builds)). It runs
    after production because `preview` builds use production Convex.
