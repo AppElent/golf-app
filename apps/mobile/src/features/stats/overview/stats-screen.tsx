@@ -210,9 +210,14 @@ export function StatsScreen() {
 							secondary={
 								club.learned
 									? [
-											club.carryMeters === null
-												? null
-												: formatDistance(club.carryMeters, units),
+											fmt(t.stats.typical, {
+												// "142–156 m": the unit once.
+												low: formatDistance(
+													club.learned.lowMeters,
+													units,
+												).split(" ")[0],
+												high: formatDistance(club.learned.highMeters, units),
+											}),
 											plural(locale, club.learned.shots, t.stats.clubShots),
 										]
 											.filter(Boolean)

@@ -22,6 +22,7 @@ import {
 	hazardsInPlay,
 	holeAnchors,
 } from "@fairway/core/hole-view";
+import { learnedBag } from "@fairway/core/shots";
 import { useMutation } from "convex/react";
 import { useKeepAwake } from "expo-keep-awake";
 import { useRouter } from "expo-router";
@@ -67,6 +68,8 @@ export function PlayScreen() {
 	);
 	const clubs = useQuery(api.clubs.list);
 	const settings = useQuery(api.settings.get);
+	// Suggestions use what you actually hit once a club has enough shots.
+	const shots = useQuery(api.shots.mine);
 
 	if (active === null) {
 		return (
@@ -91,7 +94,10 @@ export function PlayScreen() {
 		<PlayHole
 			active={active}
 			detail={detail}
-			bag={clubs && clubs.length > 0 ? clubs : DEFAULT_BAG}
+			bag={learnedBag(
+				clubs && clubs.length > 0 ? clubs : DEFAULT_BAG,
+				shots ?? [],
+			)}
 			units={settings?.units ?? "m"}
 		/>
 	);

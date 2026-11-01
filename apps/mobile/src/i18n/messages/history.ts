@@ -111,6 +111,7 @@ export const statsEn = {
 	clubs: "Club distances",
 	clubsHint: "Learned from shots you mark on the course.",
 	clubShots: { one: "{count} shot", other: "{count} shots" },
+	typical: "Typically {low}–{high}",
 	trend: "Would-be index after each round",
 };
 
@@ -141,6 +142,7 @@ export const statsNl: typeof statsEn = {
 	clubs: "Clubafstanden",
 	clubsHint: "Geleerd van slagen die je op de baan markeert.",
 	clubShots: { one: "{count} slag", other: "{count} slagen" },
+	typical: "Meestal {low}–{high}",
 	trend: "Indicatieve handicap na elke ronde",
 };
 
@@ -246,6 +248,9 @@ export const clubsEn = {
 	moveUp: "Move up",
 	moveDown: "Move down",
 	saveError: "Club not saved. Check your connection and try again.",
+	learned:
+		"Your {median} m from {count} marked shots, typically {low}–{high} m. On the course Fairway uses it once a club has 3 shots.",
+	useLearned: "Use {median} m",
 };
 
 export const clubsNl: typeof clubsEn = {
@@ -265,4 +270,7 @@ export const clubsNl: typeof clubsEn = {
 	moveDown: "Omlaag",
 	saveError:
 		"Club niet opgeslagen. Controleer je verbinding en probeer opnieuw.",
+	learned:
+		"Jouw {median} m uit {count} gemarkeerde slagen, meestal {low}–{high} m. Op de baan gebruikt Fairway die zodra een club 3 slagen heeft.",
+	useLearned: "Gebruik {median} m",
 };

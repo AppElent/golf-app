@@ -1,10 +1,12 @@
 /** Add a club, or edit one (`clubId` param): name and carry in metres. */
+import { clubDistances } from "@fairway/core/shots";
 import { useMutation } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { api, type Doc, type Id } from "../../../convex/api";
 import { useQuery } from "../../../convex/query-cache";
-import { useI18n } from "../../../i18n";
+import { fmt, useI18n } from "../../../i18n";
+import { GhostButton } from "../../../ui/button";
 import { convexErrorMessage } from "../../../ui/confirm-dialog";
 import { FormScreen, FormSection, FormTextField } from "../../../ui/form";
 import { ScreenHeader } from "../../../ui/screen-header";
@@ -32,6 +34,10 @@ function ClubForm({ club }: { club?: Doc<"clubs"> }) {
 		save?: string;
 	}>({});
 	const [saving, setSaving] = useState(false);
+	const shots = useQuery(api.shots.mine);
+	const learned = club
+		? clubDistances(shots ?? []).find((d) => d.club === club.name)
+		: undefined;
 
 	async function onSave() {
 		const parsed = parseCarry(carry);
@@ -89,6 +95,22 @@ function ClubForm({ club }: { club?: Doc<"clubs"> }) {
 						error={errors.carry}
 					/>
 				</FormSection>
+				{learned ? (
+					<FormSection
+						footer={fmt(t.clubs.learned, {
+							median: learned.medianMeters,
+							count: learned.shots,
+							low: learned.lowMeters,
+							high: learned.highMeters,
+						})}
+					>
+						<GhostButton
+							label={fmt(t.clubs.useLearned, { median: learned.medianMeters })}
+							onPress={() => setCarry(String(learned.medianMeters))}
+							disabled={carry === String(learned.medianMeters)}
+						/>
+					</FormSection>
+				) : null}
 			</FormScreen>
 		</>
 	);

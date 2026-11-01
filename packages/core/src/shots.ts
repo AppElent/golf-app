@@ -14,6 +14,10 @@ export interface ClubDistance {
 	medianMeters: number;
 	averageMeters: number;
 	longestMeters: number;
+	/** The middle half of the shots (25th–75th percentile): a typical range
+	 *  that one topped or flushed shot doesn't stretch. */
+	lowMeters: number;
+	highMeters: number;
 	shots: number;
 }
 
@@ -49,10 +53,17 @@ export function shotDistances(
 	return result;
 }
 
-function median(values: number[]): number {
+/** Linear-interpolated percentile (0–1) of a non-empty list. */
+function percentile(values: number[], p: number): number {
 	const sorted = [...values].sort((a, b) => a - b);
-	const mid = Math.floor(sorted.length / 2);
-	return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+	const at = (sorted.length - 1) * p;
+	const lo = Math.floor(at);
+	const hi = Math.ceil(at);
+	return sorted[lo] + (sorted[hi] - sorted[lo]) * (at - lo);
+}
+
+function median(values: number[]): number {
+	return percentile(values, 0.5);
 }
 
 /** Learned distance per club from marked shots, longest club first. Shots
@@ -76,7 +87,30 @@ export function clubDistances(
 				values.reduce((t, m) => t + m, 0) / values.length,
 			),
 			longestMeters: Math.round(Math.max(...values)),
+			lowMeters: Math.round(percentile(values, 0.25)),
+			highMeters: Math.round(percentile(values, 0.75)),
 			shots: values.length,
 		}))
 		.sort((a, b) => b.medianMeters - a.medianMeters);
+}
+
+/** Shots a club needs before its learned distance replaces the bag's. */
+export const LEARNED_MIN_SHOTS = 3;
+
+/**
+ * The bag as the course sees it: each club's carry is its learned median once
+ * it has `LEARNED_MIN_SHOTS` measured shots, otherwise the distance entered
+ * in the bag. Club suggestions on the course use this.
+ */
+export function learnedBag<C extends { name: string; carryMeters: number }>(
+	bag: ReadonlyArray<C>,
+	shots: ReadonlyArray<MarkedShot>,
+): C[] {
+	const learned = new Map(clubDistances(shots).map((d) => [d.club, d]));
+	return bag.map((club) => {
+		const d = learned.get(club.name);
+		return d && d.shots >= LEARNED_MIN_SHOTS
+			? { ...club, carryMeters: d.medianMeters }
+			: club;
+	});
 }
