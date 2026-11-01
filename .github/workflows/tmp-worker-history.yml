@@ -1,4 +1,4 @@
-name: TEMP worker history
+name: TEMP worker cleanup
 on:
   push:
     branches: [feat/mobile-m0-workspace]
@@ -10,4 +10,4 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
     steps:
-      - run: npx -y wrangler@4 deployments list --name golf-app
+      - run: npx -y wrangler@4 delete --name golf-app --force
