@@ -5,6 +5,9 @@
 		"runtimeVersion": {
 			"policy": "fingerprint"
 		},
+		"updates": {
+			"url": "https://u.expo.dev/e42512f9-8d86-4f78-8dd5-85383f239df7"
+		},
 		"orientation": "portrait",
 		"icon": "./assets/images/icon.png",
 		"userInterfaceStyle": "automatic",
