@@ -25,6 +25,7 @@ import {
 import { learnedBag } from "@fairway/core/shots";
 import { useMutation } from "convex/react";
 import { useKeepAwake } from "expo-keep-awake";
+import * as Linking from "expo-linking";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -38,7 +39,11 @@ import { course, spacing, type as typeRamp } from "../../../theme";
 import { EmptyState } from "../../../ui/empty-state";
 import { AppText } from "../../../ui/text";
 import { useToast } from "../../../ui/toast";
-import { useBackgroundLocationWhilePlaying } from "../../location/background/background-location";
+import { liveHolePosition, setLiveHole } from "../../live/live-hole";
+import {
+	backgroundLocationPreferred,
+	useBackgroundLocationWhilePlaying,
+} from "../../location/background/background-location";
 import { useWatchPosition } from "../../location/position/use-watch-position";
 import { HoleCanvas, hasSatellite } from "../hole/hole-canvas";
 import { HudButton } from "../hud/hud-button";
@@ -190,6 +195,37 @@ function PlayHole({
 			? gps.position
 			: anchors.tee
 		: null;
+
+	// Lock-screen distances (a Live Activity) while "GPS while locked" is on.
+	const holeTitle = fmt(t.play.hole, {
+		n: meta ? holeLabel(meta.ref) : holeIndex + 1,
+	});
+	// biome-ignore lint/correctness/useExhaustiveDependencies: per hole and language
+	useEffect(() => {
+		if (!anchors || !meta) return;
+		setLiveHole(
+			{
+				anchors,
+				props: {
+					hole: holeTitle,
+					holeShort: holeLabel(meta.ref),
+					detail: `${fmt(t.play.holeMeta, { par: meta.par, si: meta.strokeIndex })} · ${active.course.name}`,
+					unit: units,
+					frontLabel: t.play.front,
+					centerLabel: t.play.center,
+					backLabel: t.play.back,
+				},
+				format: (m) => distanceNumber(m, units),
+				url: Linking.createURL("/play"),
+			},
+			backgroundLocationPreferred(),
+		);
+	}, [anchors, holeTitle, units, t]);
+	useEffect(() => () => setLiveHole(null, false), []);
+	// biome-ignore lint/correctness/useExhaustiveDependencies: on a new fix only
+	useEffect(() => {
+		if (player) liveHolePosition(player, true);
+	}, [player?.lat, player?.lng]);
 
 	// Shot just marked, waiting for its club (null: no strip).
 	const [pendingShot, setPendingShot] = useState<Id<"shots"> | null>(null);

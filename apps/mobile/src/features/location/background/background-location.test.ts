@@ -7,6 +7,7 @@ jest.mock("expo-location", () => ({
 	getBackgroundPermissionsAsync: jest.fn(),
 	requestBackgroundPermissionsAsync: jest.fn(),
 }));
+jest.mock("../../live/live-hole", () => ({ liveHolePosition: jest.fn() }));
 jest.mock("expo-task-manager", () => ({
 	isTaskDefined: () => false,
 	defineTask: jest.fn(),

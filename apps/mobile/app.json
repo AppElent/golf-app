@@ -38,6 +38,7 @@
 		"plugins": [
 			"expo-router",
 			"@clerk/expo",
+			"expo-widgets",
 			["expo-secure-store", { "faceIDPermission": false }],
 			["expo-localization", { "supportedLocales": ["en", "nl"] }],
 			"expo-sqlite",

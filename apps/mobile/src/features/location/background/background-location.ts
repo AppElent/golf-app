@@ -4,8 +4,9 @@
  * (no ten-second wait for the blue dot on every glance). Off by default; the
  * switch lives in Profile and needs the Always permission.
  *
- * The task itself stores nothing: the positions only keep the receiver awake.
- * The Play screen's own foreground watch draws everything. Updates stop when
+ * The task stores nothing. Its positions keep the receiver awake, and feed
+ * the Lock Screen's Live Activity (`live/live-hole`) while the phone is
+ * locked; the Play screen's own foreground watch draws everything else. Updates stop when
  * Play unmounts, so nothing runs outside a round — and if the app was killed
  * with Play open, the first update after the OS relaunches it finds no Play
  * mounted and stops them.
@@ -18,6 +19,7 @@ import {
 	readPreference,
 	writePreference,
 } from "../../../prefs/local-preference";
+import { liveHolePosition } from "../../live/live-hole";
 
 const TASK = "fairway-background-location";
 
@@ -27,10 +29,23 @@ let playing = false;
 // Must run at module scope (app entry imports this file) so the OS can wake
 // the JS runtime into a defined task.
 if (!TaskManager.isTaskDefined(TASK)) {
-	TaskManager.defineTask(TASK, async () => {
-		// No positions stored (see the module comment); just don't outlive Play.
-		if (!playing) await stop();
-	});
+	TaskManager.defineTask<{ locations?: Location.LocationObject[] }>(
+		TASK,
+		async ({ data }) => {
+			// Don't outlive Play.
+			if (!playing) {
+				await stop();
+				return;
+			}
+			const last = data?.locations?.at(-1);
+			if (last) {
+				liveHolePosition(
+					{ lat: last.coords.latitude, lng: last.coords.longitude },
+					false,
+				);
+			}
+		},
+	);
 }
 
 export function backgroundLocationPreferred(): boolean {
