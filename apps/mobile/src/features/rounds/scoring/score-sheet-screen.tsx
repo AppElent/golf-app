@@ -278,7 +278,8 @@ function PlayerScore({
 						<View style={styles.statHalf}>
 							<StepperField
 								label={t.score.putts}
-								value={draft.putts ?? 0}
+								value={draft.putts}
+								startAt={2}
 								onChange={(putts) => onChange({ putts })}
 							/>
 						</View>

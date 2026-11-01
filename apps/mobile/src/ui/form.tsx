@@ -474,12 +474,15 @@ export function StepperField({
 	value,
 	step = 1,
 	min = 0,
+	startAt = min,
 	onChange,
 }: {
 	label: string;
-	value: number;
+	/** null: not entered yet, shown as "–"; the first tap lands on `startAt`. */
+	value: number | null;
 	step?: number;
 	min?: number;
+	startAt?: number;
 	onChange: (value: number) => void;
 }) {
 	const styles = useThemedStyles(createStyles);
@@ -488,7 +491,13 @@ export function StepperField({
 	return (
 		<View style={styles.stepperField}>
 			<Pressable
-				onPress={() => onChange(round(Math.max(min, value - step)))}
+				onPress={() =>
+					onChange(
+						value === null
+							? Math.max(min, startAt - step)
+							: round(Math.max(min, value - step)),
+					)
+				}
 				accessibilityRole="button"
 				accessibilityLabel={fmt(t.common.decrease, { label })}
 				style={styles.stepperButton}
@@ -496,11 +505,11 @@ export function StepperField({
 				<AppText style={styles.stepperGlyph}>−</AppText>
 			</Pressable>
 			<View style={styles.stepperValue}>
-				<AppText style={styles.tabularValue}>{value}</AppText>
+				<AppText style={styles.tabularValue}>{value ?? "–"}</AppText>
 				<AppText variant="caption">{label}</AppText>
 			</View>
 			<Pressable
-				onPress={() => onChange(round(value + step))}
+				onPress={() => onChange(value === null ? startAt : round(value + step))}
 				accessibilityRole="button"
 				accessibilityLabel={fmt(t.common.increase, { label })}
 				style={styles.stepperButton}
