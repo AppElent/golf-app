@@ -24,7 +24,7 @@
     "env": "node scripts/env.mjs",
     "env:check": "node scripts/env.mjs check",
     "courses:geometry": "node scripts/course-data/refresh-geometry.mjs",
-    "sentry:convex": "node scripts/convex-sentry.mjs",
+    "sentry:convex": "SENTRY_APP=fairway-convex SENTRY_DSN=${SENTRY_DSN:-$VITE_SENTRY_DSN} node scripts/convex-sentry.mjs",
     "courses:sync": "pnpm exec convex run courseCatalog:sync",
     "deploy:dev": "pnpm exec convex dev --once && pnpm exec convex run courseCatalog:sync && CLOUDFLARE_ENV=dev VITE_SENTRY_ENVIRONMENT=development pnpm run build:development && wrangler deploy",
     "deploy:prod": "pnpm exec convex deploy && pnpm exec convex run courseCatalog:sync --prod && VITE_SENTRY_ENVIRONMENT=production pnpm run build && wrangler deploy",

@@ -45,7 +45,7 @@ Revisit if a surface's volume or alerting needs to diverge.
 - **User**: the opaque Clerk user id only, set and cleared on sign-out/unmount
   by `SentryUser` in the Clerk provider. No email, name or IP.
 - **Privacy** (`src/lib/observability/privacy.ts`, same rules in
-  `scripts/convex-sentry-events.mjs`): automatic collection is off; events keep
+  `scripts/convex-sentry.mjs`): automatic collection is off; events keep
   method + query-less URL, the stack, tags and the user id. Dropped: headers,
   cookies, bodies, query strings, `extra`, stack-frame locals, console
   breadcrumbs, and breadcrumb data other than url/method/status/from/to. Error
@@ -105,6 +105,14 @@ error in Sentry and check the stack resolves to `src/` files.
 Convex's managed exception reporting needs the Pro plan, which this project is
 not on. Browser capture only sees failures returned to an active user, so the
 backend path is a log forwarder:
+
+The script is a verbatim copy of the toolkit's
+[forwarder](../standards/sentry-monitoring/examples/convex-sentry.mjs); refresh
+it by copying again after a toolkit sync. `pnpm sentry:convex` supplies the
+Fairway parts: `SENTRY_APP=fairway-convex` (the default tag would be
+`golf-app-convex`) and `SENTRY_DSN` from `VITE_SENTRY_DSN` when unset, which
+is the name the manifest's workflow placement uses. `SENTRY_CONVEX_DSN` wins
+over both.
 
 ```sh
 SENTRY_DSN=<dsn> pnpm sentry:convex --prod
