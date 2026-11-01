@@ -23,7 +23,7 @@ pnpm dev:watch        # Convex dev (watching) + Vite together — use this when 
 pnpm generate-routes  # tsr generate (route tree codegen)
 pnpm build            # production build
 pnpm typecheck        # tsc --noEmit
-pnpm test             # vitest run (web, convex, packages/core)
+pnpm test             # vitest run (web, convex — functions via convex-test, packages/core)
 pnpm test:mobile      # jest in apps/mobile
 pnpm check            # biome check (lint + format check)
 pnpm lint:fix         # biome check --write
