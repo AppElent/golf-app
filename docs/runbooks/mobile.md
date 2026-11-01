@@ -65,6 +65,32 @@ app-specific): `pnpm env plan local`, `pnpm env apply local|preview|production`,
 - Cloud EAS builds and store submissions are manual release steps; nothing in CI
   submits.
 
+### On your own iPhone
+
+Two internal builds install side by side (the phone's UDID is registered with
+the Apple team on EAS; add another with `eas device:create`):
+
+| Profile | App | JS from | Backend |
+| --- | --- | --- | --- |
+| `development` | Fairway Dev | Metro on your Mac (same Wi‑Fi) | `EXPO_PUBLIC_*` of EAS *development* |
+| `device` | Fairway Preview | bundled; updates over the air on channel `device` | Convex dev + Clerk test instance |
+
+```bash
+cd apps/mobile
+pnpm exec eas build -p ios --profile device        # first run: Apple login creates the ad hoc profile
+pnpm exec eas build -p ios --profile development
+pnpm exec eas update --channel device --environment development -m "…"   # JS-only change to the device build
+```
+
+- The first build per profile needs an interactive Apple login; afterwards
+  `--non-interactive` works.
+- `device` exists because `preview` and `production` point at production
+  Convex, which only has `main`'s functions.
+- Both profiles set `SENTRY_DISABLE_AUTO_UPLOAD`: the *development* EAS
+  environment has no Sentry token, and a Release build fails on the upload.
+- Sign in with an email code. Native Sign in with Apple needs the bundle ID
+  on the Clerk instance, and the dev instance is shared with other apps.
+
 ## Runtime notes
 
 - Online first: Convex is the source of truth; a write counts as saved when the
