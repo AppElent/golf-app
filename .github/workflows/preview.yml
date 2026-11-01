@@ -26,7 +26,6 @@ jobs:
     permissions:
       pull-requests: write
       contents: read
-      packages: read
     env:
       WORKER_NAME: golf-app-pr-${{ github.event.pull_request.number }}
       CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
@@ -110,7 +109,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      packages: read
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
