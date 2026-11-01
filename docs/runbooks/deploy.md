@@ -65,6 +65,10 @@ manual escape hatch; nothing automated calls them.
 
 - **Production never starts**: it is waiting for approval, or a newer merge
   replaced it in the queue. Approve the newest run.
+- **Build targets the wrong Worker**: the Cloudflare Vite plugin writes the
+  Worker name into `dist/server/wrangler.json` from `CLOUDFLARE_ENV` at build
+  time, and `wrangler deploy --env` is ignored. The deploy step refuses a
+  mismatched name.
 - **Check environment fails**: the named value is missing on that GitHub
   Environment.
 - **Catalog sync fails after the Convex deploy**: functions are live, the
