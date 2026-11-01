@@ -3,7 +3,8 @@
  * is finished: where and when, the headline numbers (score, to par, net,
  * points, differential, putts, fairways, greens), how it went (birdies, pars
  * and so on, the best and the toughest hole, the nines) and the full
- * scorecard. Share sends a text summary through the system share sheet;
+ * scorecard. Share sends a card image (and a text summary with it) through
+ * the system share sheet, the text alone if the capture fails;
  * deleting the round is the other action, confirmed.
  */
 import { holeLabel } from "@fairway/core/format";
@@ -11,8 +12,9 @@ import { roundRecap } from "@fairway/core/recap";
 import { formatVsPar } from "@fairway/core/scoring";
 import { useMutation } from "convex/react";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { type ComponentRef, useRef, useState } from "react";
 import { ScrollView, Share, StyleSheet, View } from "react-native";
+import { captureRef } from "react-native-view-shot";
 import { api, type Id } from "../../../convex/api";
 import { useQuery } from "../../../convex/query-cache";
 import { dateLocale, fmt, localizeDecimal, useI18n } from "../../../i18n";
@@ -32,6 +34,7 @@ import { AppText } from "../../../ui/text";
 import { cardRows } from "../scoring/score-model";
 import { ScorecardGrid } from "../scoring/scorecard-grid";
 import { ownerRoundStats } from "./history-model";
+import { ShareCard } from "./share-card";
 
 export function RoundDetailScreen() {
 	const { t, locale } = useI18n();
@@ -45,6 +48,7 @@ export function RoundDetailScreen() {
 	const remove = useMutation(api.rounds.remove);
 	const [busy, setBusy] = useState(false);
 	const [error, setError] = useState<string | null>(null);
+	const cardRef = useRef<ComponentRef<typeof View>>(null);
 	const header = <Stack.Screen options={{ title: t.rounds.detailTitle }} />;
 
 	if (detail === undefined) {
@@ -149,7 +153,12 @@ export function RoundDetailScreen() {
 		{ weekday: "long", day: "numeric", month: "long", year: "numeric" },
 	);
 
-	function onShare() {
+	const ninesText =
+		recap.nines.length > 1
+			? recap.nines.map((n, i) => `${nineLabels[i]} ${n.strokes}`).join(" · ")
+			: null;
+
+	async function onShare() {
 		const lines = [
 			`⛳ ${course.name}`,
 			[dateText, round.loopLabel, tee.name].filter(Boolean).join(" · "),
@@ -162,9 +171,7 @@ export function RoundDetailScreen() {
 						.join(" "),
 				)
 				.join(" · "),
-			recap.nines.length > 1
-				? recap.nines.map((n, i) => `${nineLabels[i]} ${n.strokes}`).join(" · ")
-				: null,
+			ninesText,
 			markOrder
 				.filter((m) => recap.marks[m] > 0)
 				.map((m) => `${t.rounds.markShort[m]} ${recap.marks[m]}`)
@@ -176,7 +183,16 @@ export function RoundDetailScreen() {
 			"",
 			t.rounds.shareFooter,
 		].filter((line) => line !== null);
-		Share.share({ message: lines.join("\n") }).catch(() => {});
+		const message = lines.join("\n");
+		let url: string | undefined;
+		try {
+			if (cardRef.current) {
+				url = await captureRef(cardRef, { format: "png", result: "tmpfile" });
+			}
+		} catch {
+			// No image: the text alone still says it all.
+		}
+		Share.share(url ? { url, message } : { message }).catch(() => {});
 	}
 
 	async function onDelete() {
@@ -277,6 +293,28 @@ export function RoundDetailScreen() {
 				</View>
 			) : null}
 			<ScorecardGrid holes={holes} players={round.players} rows={rows} />
+			{recap.scored > 0 ? (
+				<View style={styles.offscreen} pointerEvents="none">
+					<ShareCard
+						ref={cardRef}
+						brand="Fairway"
+						course={course.name}
+						detail={[dateText, round.loopLabel, tee.name]
+							.filter(Boolean)
+							.join(" · ")}
+						score={tiles[0]?.value ?? "–"}
+						toPar={tiles[1]?.value ?? "–"}
+						stats={tiles.slice(2, 5)}
+						marks={markOrder
+							.filter((m) => recap.marks[m] > 0)
+							.map((m) => ({
+								label: t.rounds.markShort[m],
+								count: recap.marks[m],
+							}))}
+						nines={ninesText}
+					/>
+				</View>
+			) : null}
 			{error ? (
 				<AppText selectable accessibilityRole="alert" style={styles.error}>
 					{error}
@@ -327,6 +365,8 @@ const createStyles = (colors: Tokens) =>
 		},
 		tileValue: { fontVariant: ["tabular-nums"] },
 		error: { color: colors.danger },
+		// Laid out but never seen: the share capture's source.
+		offscreen: { position: "absolute", left: -10_000, top: 0 },
 		recap: {
 			gap: spacing.sm,
 			padding: spacing.md,
