@@ -1,7 +1,13 @@
 name: Mobile Update
 
-# Publishes the merged JavaScript to the `preview` update channel, the one the
-# owner's daily-driver build (`preview-internal`) follows.
+# Publishes the app's JavaScript to the `preview` update channel, the one the
+# owner's daily-driver build (`preview-internal`) follows. deploy.yml calls it
+# after the production deploy: `preview` builds talk to production Convex, so
+# the update must not land before the functions it calls.
+#
+# Skipped when nothing the app bundles changed since the last publish (the
+# `mobile-ota/preview` tag), so a web-only release does not show "Update
+# ready" for nothing.
 #
 # Gated by the runtime fingerprint, per platform: an update is published only
 # when something on the channel already runs this fingerprint — an earlier
@@ -11,17 +17,11 @@ name: Mobile Update
 # recorded on EAS, so after installing one, run this workflow by hand with
 # `force` to seed the channel.
 on:
-  push:
-    branches: [main]
-    paths:
-      - apps/mobile/**
-      - packages/core/**
-      - convex/_generated/**
-      - pnpm-lock.yaml
+  workflow_call:
   workflow_dispatch:
     inputs:
       force:
-        description: Publish even when no build on the channel has this fingerprint
+        description: Publish even when nothing changed or no build on the channel has this fingerprint
         type: boolean
         default: false
 
@@ -34,11 +34,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
-      contents: read
+      # Moves the mobile-ota/preview tag.
+      contents: write
     env:
       EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
       APP_VARIANT: preview
       CHANNEL: preview
+      TAG: mobile-ota/preview
       FORCE: ${{ inputs.force && 'true' || 'false' }}
     defaults:
       run:
@@ -53,19 +55,37 @@ jobs:
           fi
 
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Changed since last publish
+        id: changed
+        working-directory: .
+        run: |
+          if [ "$FORCE" != true ] && git rev-parse -q --verify "refs/tags/$TAG" >/dev/null &&
+            git diff --quiet "$TAG" HEAD -- apps/mobile packages/core pnpm-lock.yaml; then
+            echo "Nothing the app bundles changed since \`$TAG\`; no update published." >> "$GITHUB_STEP_SUMMARY"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
 
       - uses: pnpm/action-setup@v4
+        if: steps.changed.outputs.changed == 'true'
 
       - uses: actions/setup-node@v4
+        if: steps.changed.outputs.changed == 'true'
         with:
           node-version: 22.15.0
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+        if: steps.changed.outputs.changed == 'true'
         working-directory: .
 
       - name: Match fingerprints
         id: match
+        if: steps.changed.outputs.changed == 'true'
         run: |
           publish=()
           for platform in ios android; do
@@ -91,10 +111,11 @@ jobs:
           # The preview environment's Sentry token is for builds; source maps
           # for updates are not uploaded yet.
           SENTRY_DISABLE_AUTO_UPLOAD: "true"
-          MESSAGE: ${{ github.event.head_commit.message || format('Manual publish of {0}', github.sha) }}
         run: |
+          message=$(git log -1 --format=%s)
           for platform in ${{ steps.match.outputs.platforms }}; do
             pnpm exec eas update --channel "$CHANNEL" --environment preview \
-              --platform "$platform" --non-interactive \
-              --message "$(printf '%s' "$MESSAGE" | head -n 1)"
+              --platform "$platform" --non-interactive --message "$message"
           done
+          git tag -f "$TAG"
+          git push -f origin "refs/tags/$TAG"

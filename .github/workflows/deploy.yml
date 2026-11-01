@@ -1,0 +1,54 @@
+name: Deploy
+
+# A merge to main: checks → staging → production (waits for approval) →
+# mobile update. Production deploys the commit staging just ran, through the
+# same steps; the approval is the `production` GitHub Environment's required
+# reviewer. Releases queue rather than cancel: a newer merge waiting behind
+# another replaces the older waiting one.
+#
+# Each target's values are environment-scoped: the `stg` and `production`
+# GitHub Environments hold the same names with their own values, so this
+# file names each once. PR previews (preview.yml) declare no environment and
+# keep the repo-level preview CONVEX_DEPLOY_KEY; giving them one would point
+# every PR at a real backend without failing.
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  checks:
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+      packages: read
+
+  stg:
+    needs: checks
+    concurrency:
+      group: deploy-stg
+      cancel-in-progress: false
+    uses: ./.github/workflows/deploy-web.yml
+    with:
+      environment: stg
+      wrangler-env: stg
+    secrets: inherit
+
+  production:
+    needs: stg
+    # Only main reaches production, also from a manual run.
+    if: github.ref == 'refs/heads/main'
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    uses: ./.github/workflows/deploy-web.yml
+    with:
+      environment: production
+    secrets: inherit
+
+  mobile:
+    needs: production
+    uses: ./.github/workflows/mobile-update.yml
+    permissions:
+      contents: write
+    secrets: inherit

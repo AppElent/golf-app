@@ -1,0 +1,79 @@
+name: Deploy web
+
+# One web target: Convex functions, the course catalog, then the Worker. The
+# backend is complete before the new frontend can be reached. Called by
+# deploy.yml for `stg` and `production`.
+on:
+  workflow_call:
+    inputs:
+      environment: { type: string, required: true }
+      # wrangler.jsonc env block; empty means the top-level `golf-app` Worker.
+      wrangler-env: { type: string, default: "" }
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: ${{ inputs.environment }}
+      url: ${{ steps.worker.outputs.url }}
+    permissions:
+      contents: read
+      packages: read
+    env:
+      # The deploy key alone picks the Convex deployment.
+      CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      # Public, inlined into the bundle: a variable, not a secret.
+      VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY }}
+      WRANGLER_ENV: ${{ inputs.wrangler-env }}
+    steps:
+      # Fails before anything ships rather than deploying half a target.
+      - name: Check environment
+        run: |
+          missing=0
+          for name in CONVEX_DEPLOY_KEY CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID VITE_CLERK_PUBLISHABLE_KEY; do
+            if [ -z "${!name}" ]; then
+              echo "::error::$name is not set on the '${{ inputs.environment }}' GitHub Environment (or the repo)."
+              missing=1
+            fi
+          done
+          case "$CONVEX_DEPLOY_KEY" in
+            prod:*|"") ;;
+            *) echo "::error::CONVEX_DEPLOY_KEY on '${{ inputs.environment }}' must be a prod: key (convex deployment create … --type prod)."; missing=1 ;;
+          esac
+          exit $missing
+
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+
+      # Convex exposes the deployment's URL to --cmd as $CONVEX_URL; the app
+      # reads VITE_CONVEX_URL at build time. Both targets build in production
+      # mode: staging exists to run the bundle production ships.
+      - name: Convex deploy + build
+        run: |
+          # shellcheck disable=SC2016 # $CONVEX_URL expands inside convex deploy
+          pnpm exec convex deploy \
+            --cmd-url-env-var-name CONVEX_URL \
+            --cmd 'VITE_CONVEX_URL=$CONVEX_URL pnpm build'
+
+      - name: Sync course catalog
+        run: pnpm exec convex run courseCatalog:sync
+
+      - name: Deploy Worker
+        id: worker
+        run: |
+          set -o pipefail
+          pnpm exec wrangler deploy ${WRANGLER_ENV:+--env "$WRANGLER_ENV"} 2>&1 | tee "$RUNNER_TEMP/wrangler.log"
+          echo "url=$(grep -oE 'https://[^ ]+workers\.dev' "$RUNNER_TEMP/wrangler.log" | head -1)" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke check
+        if: steps.worker.outputs.url != ''
+        env:
+          URL: ${{ steps.worker.outputs.url }}
+        run: |
+          curl -fsS --retry 5 --retry-delay 3 --retry-all-errors -o /dev/null -w "%{http_code} $URL\n" "$URL"
