@@ -11,7 +11,10 @@
 			"channel": "development",
 			"environment": "development",
 			"android": { "buildType": "apk" },
-			"env": { "APP_VARIANT": "development" }
+			"env": {
+				"APP_VARIANT": "development",
+				"SENTRY_DISABLE_AUTO_UPLOAD": "true"
+			}
 		},
 		"preview": {
 			"autoIncrement": true,
@@ -27,7 +30,11 @@
 		"device": {
 			"extends": "preview-internal",
 			"channel": "device",
-			"environment": "development"
+			"environment": "development",
+			"env": {
+				"APP_VARIANT": "preview",
+				"SENTRY_DISABLE_AUTO_UPLOAD": "true"
+			}
 		},
 		"production": {
 			"autoIncrement": true,

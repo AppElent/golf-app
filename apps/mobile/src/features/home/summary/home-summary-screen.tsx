@@ -54,7 +54,10 @@ export function HomeSummaryScreen() {
 						</AppText>
 						<AppText variant="footnote" style={styles.onAccent}>
 							{fmt(t.home.resumeDetail, {
-								hole: (active.round.currentHoleIndex ?? 0) + 1,
+								hole:
+									active.holes[active.round.currentHoleIndex ?? 0]?.ref ??
+									(active.round.currentHoleIndex ?? 0) + 1,
+								n: active.scores.filter((x) => x.playerIndex === 0).length,
 								total: active.holes.length,
 							})}
 						</AppText>
