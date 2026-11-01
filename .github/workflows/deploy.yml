@@ -44,6 +44,7 @@ jobs:
     uses: ./.github/workflows/deploy-web.yml
     with:
       environment: production
+      url: https://fairway.appelent.nl
     secrets: inherit
 
   mobile:

@@ -7,8 +7,10 @@
   "main": "src/server.ts",
   // `stg` is what a merge to main deploys (.github/workflows/deploy.yml);
   // `dev` is only reached by hand (`pnpm deploy:dev`).
+  // Production only. Routes are inherited, so each env clears them.
+  "routes": [{ "pattern": "fairway.appelent.nl", "custom_domain": true }],
   "env": {
-    "dev": { "name": "golf-app-dev", "workers_dev": true },
-    "stg": { "name": "golf-app-stg", "workers_dev": true }
+    "dev": { "name": "golf-app-dev", "workers_dev": true, "routes": [] },
+    "stg": { "name": "golf-app-stg", "workers_dev": true, "routes": [] }
   }
 }

@@ -77,7 +77,8 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   Convex (`pnpm sentry:convex` log forwarder, not yet hosted) and mobile; shared
   helpers in `src/lib/observability/`. Local hosts never report. Read
   `docs/runbooks/sentry.md` before touching it.
-- **Deploy target**: Cloudflare Workers, name `golf-app` (`golf-app-stg`, `golf-app-dev` for the
+- **Deploy target**: Cloudflare Workers, name `golf-app` on `fairway.appelent.nl`
+  (the production Clerk instance only signs in on `*.appelent.nl`; `golf-app-stg`, `golf-app-dev` for the
   `wrangler.jsonc` envs). The Cloudflare Vite plugin picks the env at build
   time from `CLOUDFLARE_ENV`; `wrangler deploy --env` is ignored. A merge to `main` runs
   `.github/workflows/deploy.yml`: checks → staging (Convex `staging`
