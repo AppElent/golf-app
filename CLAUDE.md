@@ -72,6 +72,11 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   still set by hand (the preview default pairs with the test-instance
   `PREVIEW_CLERK_PUBLISHABLE_KEY`). `CONVEX_DEPLOYMENT` in `.env.local` is
   written by `convex dev`, not the manifest.
+- **Sentry**: one project (`appelent/fairway`) for browser (`src/instrument.client.ts`
+  via `src/client.tsx`), Worker SSR (`src/server.ts`, the `wrangler.jsonc` `main`),
+  Convex (`pnpm sentry:convex` log forwarder, not yet hosted) and mobile; shared
+  helpers in `src/lib/observability/`. Local hosts never report. Read
+  `docs/runbooks/sentry.md` before touching it.
 - **Deploy target**: Cloudflare Workers, name `golf-app` (`golf-app-dev` for
   `wrangler deploy --env dev`). `wrangler.jsonc`'s `env.dev` block exists for this;
   add a top-level `vars` + `env.dev.vars` block if per-environment runtime vars are

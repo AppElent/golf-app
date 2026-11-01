@@ -22,4 +22,9 @@ jobs:
       # Build catches bundling/plugin/SSR-compile breakage that typecheck + tests
       # miss. preview.yml only builds on pull_request, so without this a build-only
       # failure could land green on a direct push to main.
+      # No SENTRY_AUTH_TOKEN or DSN: this artifact is never deployed, so it
+      # uploads no source maps and creates no Sentry release. The environment
+      # tag keeps it from passing for a deployment if it is ever run.
       - run: pnpm build
+        env:
+          VITE_SENTRY_ENVIRONMENT: ci
