@@ -1,7 +1,7 @@
 /**
- * Home: the resume card while a round is live, the handicap hero, "Start
- * round" and the last finished round. Everything here is a read of Convex;
- * nothing is stored on the phone.
+ * Home: the resume card while a round is live, an "update ready" row, the
+ * handicap hero, "Start round" and the recent finished rounds. Everything
+ * here is a read of Convex; nothing is stored on the phone.
  */
 import { holeLabel } from "@fairway/core/format";
 import { useRouter } from "expo-router";
@@ -20,6 +20,7 @@ import { PrimaryButton } from "../../../ui/button";
 import { InsetList, InsetRow } from "../../../ui/inset-list";
 import { SkeletonCard } from "../../../ui/skeleton";
 import { AppText } from "../../../ui/text";
+import { useAppUpdate } from "../../../updates/use-app-update";
 import { vsParLabel, wouldBeFromHistory } from "./home-summary-model";
 
 /** Finished rounds listed on Home; the Rounds tab has the rest. */
@@ -32,6 +33,7 @@ export function HomeSummaryScreen() {
 	const active = useQuery(api.rounds.active);
 	const settings = useQuery(api.settings.get);
 	const history = useQuery(api.rounds.history, { limit: 20 });
+	const update = useAppUpdate();
 
 	const wouldBe = history ? wouldBeFromHistory(history) : null;
 	const recent = history?.slice(0, RECENT) ?? [];
@@ -70,6 +72,17 @@ export function HomeSummaryScreen() {
 						{t.home.resume}
 					</AppText>
 				</Pressable>
+			) : null}
+
+			{update.ready ? (
+				<InsetList compact>
+					<InsetRow
+						leading={{ symbol: "arrow.down.circle.fill" }}
+						title={t.home.updateReady}
+						secondary={t.home.updateReadyHint}
+						onPress={update.restart}
+					/>
+				</InsetList>
 			) : null}
 
 			<Pressable

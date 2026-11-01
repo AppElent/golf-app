@@ -17,6 +17,8 @@ export const homeEn = {
 	noRounds: "No rounds yet",
 	noRoundsHint: "Your finished rounds show up here.",
 	loadError: "Could not load your rounds.",
+	updateReady: "Update ready",
+	updateReadyHint: "Tap to restart Fairway with the new version.",
 };
 
 export const homeNl: typeof homeEn = {
@@ -37,6 +39,8 @@ export const homeNl: typeof homeEn = {
 	noRounds: "Nog geen rondes",
 	noRoundsHint: "Je afgeronde rondes verschijnen hier.",
 	loadError: "Je rondes konden niet worden geladen.",
+	updateReady: "Update klaar",
+	updateReadyHint: "Tik om Fairway met de nieuwe versie te herstarten.",
 };
 
 export const coursesEn = {
