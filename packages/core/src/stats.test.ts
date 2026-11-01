@@ -20,6 +20,8 @@ describe("aggregateStats", () => {
 			rounds: 0,
 			avgScore: null,
 			avgVsPar: null,
+			avgScore9: null,
+			avgVsPar9: null,
 			puttsPer18: null,
 			firPct: null,
 			girPct: null,
@@ -42,7 +44,7 @@ describe("aggregateStats", () => {
 		expect(s.puttsPer18).toBe(34);
 	});
 
-	it("excludes 9-hole rounds from avg score but keeps their rate stats", () => {
+	it("averages 9-hole rounds separately and keeps their rate stats", () => {
 		const s = aggregateStats([
 			round({ holeCount: 18, strokes: 90, vsPar: 18 }),
 			round({
@@ -58,6 +60,8 @@ describe("aggregateStats", () => {
 			}),
 		]);
 		expect(s.avgScore).toBe(90); // only the 18-hole round
+		expect(s.avgScore9).toBe(46); // 9-hole rounds average on their own
+		expect(s.avgVsPar9).toBe(10);
 		expect(s.firPct).toBeCloseTo((8 + 4) / (14 + 7), 4);
 	});
 

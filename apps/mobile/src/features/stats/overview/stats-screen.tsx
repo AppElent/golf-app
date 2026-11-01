@@ -61,6 +61,8 @@ export function StatsScreen() {
 	}
 
 	const decimal = (n: number) => localizeDecimal(n.toFixed(1), locale);
+	const toPar = (v: number | null) =>
+		v === null ? "—" : localizeDecimal(formatVsPar(v), locale);
 	const pct = (v: number | null) =>
 		v === null ? "—" : `${Math.round(v * 100)}%`;
 	const wouldBe = wouldBeFromHistory(history);
@@ -110,18 +112,27 @@ export function StatsScreen() {
 
 			<InsetList compact header={t.stats.averages}>
 				<InsetRow title={t.stats.rounds} value={String(stats.rounds)} />
-				<InsetRow
-					title={t.stats.avgScore}
-					value={stats.avgScore === null ? "—" : decimal(stats.avgScore)}
-				/>
-				<InsetRow
-					title={t.stats.avgToPar}
-					value={
-						stats.avgVsPar === null
-							? "—"
-							: localizeDecimal(formatVsPar(stats.avgVsPar), locale)
-					}
-				/>
+				{stats.avgScore !== null || stats.avgScore9 === null ? (
+					<>
+						<InsetRow
+							title={t.stats.avgScore}
+							value={stats.avgScore === null ? "—" : decimal(stats.avgScore)}
+						/>
+						<InsetRow title={t.stats.avgToPar} value={toPar(stats.avgVsPar)} />
+					</>
+				) : null}
+				{stats.avgScore9 !== null ? (
+					<>
+						<InsetRow
+							title={t.stats.avgScore9}
+							value={decimal(stats.avgScore9)}
+						/>
+						<InsetRow
+							title={t.stats.avgToPar9}
+							value={toPar(stats.avgVsPar9)}
+						/>
+					</>
+				) : null}
 				<InsetRow
 					title={t.stats.puttsPer18}
 					value={stats.puttsPer18 === null ? "—" : decimal(stats.puttsPer18)}

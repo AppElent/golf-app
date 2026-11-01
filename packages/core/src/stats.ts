@@ -14,6 +14,8 @@ export interface AggregateStats {
 	rounds: number;
 	avgScore: number | null; // mean strokes over 18-hole rounds
 	avgVsPar: number | null; // mean vs par over 18-hole rounds
+	avgScore9: number | null; // the same over 9-hole rounds
+	avgVsPar9: number | null;
 	puttsPer18: number | null; // pooled putts/hole × 18
 	firPct: number | null; // pooled fairways hit
 	girPct: number | null; // pooled greens in regulation
@@ -27,15 +29,12 @@ const ratio = (made: number, total: number): number | null =>
 export function aggregateStats(
 	rounds: ReadonlyArray<RoundStatInput>,
 ): AggregateStats {
-	const full = rounds.filter((r) => r.holeCount === 18);
-	const avgScore =
-		full.length > 0
-			? round1(full.reduce((t, r) => t + r.strokes, 0) / full.length)
+	const mean = (holes: number, pick: (r: RoundStatInput) => number) => {
+		const of = rounds.filter((r) => r.holeCount === holes);
+		return of.length > 0
+			? round1(of.reduce((t, r) => t + pick(r), 0) / of.length)
 			: null;
-	const avgVsPar =
-		full.length > 0
-			? round1(full.reduce((t, r) => t + r.vsPar, 0) / full.length)
-			: null;
+	};
 
 	const puttHoles = rounds.reduce((t, r) => t + r.holesWithPutts, 0);
 	const puttTotal = rounds.reduce((t, r) => t + (r.putts ?? 0), 0);
@@ -44,8 +43,10 @@ export function aggregateStats(
 
 	return {
 		rounds: rounds.length,
-		avgScore,
-		avgVsPar,
+		avgScore: mean(18, (r) => r.strokes),
+		avgVsPar: mean(18, (r) => r.vsPar),
+		avgScore9: mean(9, (r) => r.strokes),
+		avgVsPar9: mean(9, (r) => r.vsPar),
 		puttsPer18,
 		firPct: ratio(
 			rounds.reduce((t, r) => t + r.firMade, 0),

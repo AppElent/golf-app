@@ -96,6 +96,8 @@ export function HomeSummaryScreen() {
 						{" · "}
 						{fmt(t.home.wouldBeHint, { count: wouldBe.count })}
 					</AppText>
+				) : index === null && settings !== undefined ? (
+					<AppText variant="footnote">{t.home.handicapUnsetHint}</AppText>
 				) : null}
 			</Pressable>
 
