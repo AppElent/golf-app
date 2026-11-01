@@ -43,15 +43,19 @@ pnpm check && pnpm typecheck && pnpm test             # repo-wide
 
 ## Environment
 
-| Variable | Where | Notes |
-| --- | --- | --- |
-| `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` | `.env.local`, EAS env per profile | Public |
-| `EXPO_PUBLIC_CONVEX_URL` | `.env.local`, EAS env per profile | Cloud deployment URL |
-| `EXPO_PUBLIC_TEST_USER_*` | `.env.local` only | Honoured with `pk_test_` keys only |
-| `GOOGLE_MAPS_ANDROID_API_KEY` | EAS env (build time) | Without it Android draws the vector schematic instead of satellite |
-| `EXPO_TOKEN` | GitHub secret | Needed by the local-build workflow |
+Values are routed by `env.manifest.ts` from Infisical (`/` shared, `/fairway`
+app-specific): `pnpm env plan local`, `pnpm env apply local|preview|production`,
+`pnpm env check <environment>`. Local apply writes `apps/mobile/.env.local`.
 
-EAS environment variables per profile are not set yet (#5).
+| Variable | Lands in | Notes |
+| --- | --- | --- |
+| `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` | `.env.local`, EAS development/preview/production | `pk_test_` locally and in development, `pk_live_` for preview and production |
+| `EXPO_PUBLIC_CONVEX_URL` | `.env.local`, EAS all | Dev deployment locally, production for preview/production builds |
+| `EXPO_PUBLIC_TEST_USER_*` | `.env.local` only | Honoured with `pk_test_` keys only |
+| `EXPO_PUBLIC_SENTRY_DSN` | EAS preview/production | No DSN → no reporting |
+| `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` | EAS preview/production | Debug-symbol and source-map upload |
+| `GOOGLE_MAPS_ANDROID_API_KEY` | EAS (optional, not set) | Android satellite view only; iOS uses Apple Maps. Without it Android draws the schematic |
+| `EXPO_TOKEN` | GitHub secret | The local-build workflow |
 
 ## Builds
 
@@ -69,5 +73,12 @@ EAS environment variables per profile are not set yet (#5).
 - "GPS while locked" (Profile) is opt-in, needs Always location, and runs
   background updates only while the Play screen is mounted. On iOS the "Change to
   Always" prompt answers late; `background-location.ts` re-reads for 15 s.
-- Monitoring: Sentry is not wired (#3). "Report a problem" shows an
-  explanation instead of opening a report.
+- Monitoring: Sentry project `appelent/fairway` (`src/monitoring/`). Errors
+  only — no tracing, replay, sessions or screenshots — with user, request and
+  console arguments scrubbed (`options.ts`). Reports from preview/production
+  builds; a development bundle stays silent unless
+  `EXPO_PUBLIC_SENTRY_DEBUG=1`. "Report a problem" opens Sentry User Feedback
+  when reporting is on, otherwise shows an explanation. Convex backend errors
+  are not forwarded (no managed reporting on this plan).
+- Courses: the catalog is read-only on the phone; round setup links to
+  "Suggest a correction". See [course catalog](course-catalog.md).

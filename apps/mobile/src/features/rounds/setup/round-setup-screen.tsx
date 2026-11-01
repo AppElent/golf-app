@@ -23,6 +23,7 @@ import {
 	FormSegmentedRow,
 	FormTextField,
 	InlineNumberFieldRow,
+	TextAction,
 } from "../../../ui/form";
 import { SkeletonList } from "../../../ui/skeleton";
 import { AppText } from "../../../ui/text";
@@ -301,6 +302,16 @@ export function RoundSetupScreen({ courseId }: { courseId: Id<"courses"> }) {
 				>
 					{error}
 				</AppText>
+			) : null}
+
+			{detail.course.ownerId === undefined ? (
+				<FormSection>
+					<TextAction
+						label={t.setup.suggest}
+						tone="neutral"
+						onPress={() => router.push(`/suggest/${courseId}`)}
+					/>
+				</FormSection>
 			) : null}
 		</FormScreen>
 	);

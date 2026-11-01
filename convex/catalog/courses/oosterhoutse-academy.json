@@ -1,0 +1,102 @@
+{
+	"key": "oosterhoutse-academy",
+	"name": "De Oosterhoutse Golf Club · Academy (par 3)",
+	"city": "Oosterhout",
+	"osmRelationId": 4458605,
+	"notes": "9 holes, all par 3. Stroke index: first-loop value from the card. Ratings are 9-hole values (2021); the oranje tee has no rating.",
+	"sources": [
+		"https://www.ogcgolf.nl/assets/files/02.oosterhoutse-golf-onze-banen/ogc155-par3-scorekaart-2-luik-2025.pdf",
+		"https://www.ogcgolf.nl/assets/files/02.oosterhoutse-golf-onze-banen/2021-02-18-oosterhoutse-whs-tabel-par-3-baan-dames-en-heren.pdf"
+	],
+	"tees": [
+		{
+			"name": "Geel · heren",
+			"color": "#f2c94c",
+			"courseRating": 26.7,
+			"slopeRating": 70
+		},
+		{
+			"name": "Rood · dames",
+			"color": "#d64545",
+			"courseRating": 26.0,
+			"slopeRating": 67
+		},
+		{
+			"name": "Geel · dames",
+			"color": "#f2c94c",
+			"courseRating": 27.2,
+			"slopeRating": 72
+		},
+		{
+			"name": "Rood · heren",
+			"color": "#d64545",
+			"courseRating": 25.7,
+			"slopeRating": 65
+		}
+	],
+	"holes": [
+		{
+			"number": 1,
+			"ref": "(1)",
+			"par": 3,
+			"strokeIndex": 9,
+			"lengthMeters": 145
+		},
+		{
+			"number": 2,
+			"ref": "(2)",
+			"par": 3,
+			"strokeIndex": 17,
+			"lengthMeters": 95
+		},
+		{
+			"number": 3,
+			"ref": "(3)",
+			"par": 3,
+			"strokeIndex": 11,
+			"lengthMeters": 117
+		},
+		{
+			"number": 4,
+			"ref": "(4)",
+			"par": 3,
+			"strokeIndex": 3,
+			"lengthMeters": 178
+		},
+		{
+			"number": 5,
+			"ref": "(5)",
+			"par": 3,
+			"strokeIndex": 1,
+			"lengthMeters": 175
+		},
+		{
+			"number": 6,
+			"ref": "(6)",
+			"par": 3,
+			"strokeIndex": 7,
+			"lengthMeters": 158
+		},
+		{
+			"number": 7,
+			"ref": "(7)",
+			"par": 3,
+			"strokeIndex": 15,
+			"lengthMeters": 113
+		},
+		{
+			"number": 8,
+			"ref": "(8)",
+			"par": 3,
+			"strokeIndex": 13,
+			"lengthMeters": 114
+		},
+		{
+			"number": 9,
+			"ref": "(9)",
+			"par": 3,
+			"strokeIndex": 5,
+			"lengthMeters": 175
+		}
+	]
+}

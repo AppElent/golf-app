@@ -87,6 +87,19 @@ export const setupEn = {
 	startError: "Could not start the round.",
 	notFound: "Course not found.",
 	noTees: "This course has no tees yet. Add one on the web first.",
+	myCopy: "My copy",
+	suggest: "Suggest a correction",
+};
+
+export const suggestEn = {
+	title: "Suggest a correction",
+	label: "What's wrong?",
+	placeholder: "For example: hole 7 is par 4 on the 2025 scorecard.",
+	footer:
+		"Course data is checked against the club's scorecard and is the same for everyone. We review every suggestion.",
+	send: "Send",
+	sent: "Thanks — we'll check it.",
+	error: "Couldn't send your suggestion.",
 };
 
 export const setupNl: typeof setupEn = {
@@ -115,4 +128,17 @@ export const setupNl: typeof setupEn = {
 	startError: "De ronde kon niet worden gestart.",
 	notFound: "Baan niet gevonden.",
 	noTees: "Deze baan heeft nog geen tees. Voeg er eerst een toe op het web.",
+	myCopy: "Mijn kopie",
+	suggest: "Correctie voorstellen",
+};
+
+export const suggestNl: typeof suggestEn = {
+	title: "Correctie voorstellen",
+	label: "Wat klopt er niet?",
+	placeholder: "Bijvoorbeeld: hole 7 is par 4 op de scorekaart van 2025.",
+	footer:
+		"Baangegevens worden gecontroleerd met de scorekaart van de club en zijn voor iedereen gelijk. We bekijken elk voorstel.",
+	send: "Versturen",
+	sent: "Bedankt — we kijken ernaar.",
+	error: "Je voorstel kon niet worden verstuurd.",
 };

@@ -3,7 +3,8 @@ import { action } from "./_generated/server";
 
 /**
  * Single entry point for PR-preview seeding (`convex deploy --preview-run`
- * only accepts one function name). Seeds the shared course data only:
+ * only accepts one function name). Syncs the course catalog only — from
+ * committed data, no network calls:
  * per-user demo rounds need a signed-in identity, which a deploy hook does
  * not have — run `seed:seedDummyData --identity …` for a specific user.
  * Safe to re-run on every push (already-seeded courses are skipped).
@@ -15,7 +16,7 @@ export const seedPreview = action({
 	handler: async (
 		ctx,
 	): Promise<{
-		data: { course: string; holes: number; skipped: boolean }[];
+		data: { key: string; created: boolean }[];
 	}> => {
 		const data = await ctx.runAction(api.seed.seedData, {});
 		return { data };

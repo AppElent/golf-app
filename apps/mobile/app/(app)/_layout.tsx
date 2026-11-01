@@ -76,6 +76,10 @@ export default function AppLayout() {
 									name="scorecard"
 									options={{ presentation: "modal" }}
 								/>
+								<Stack.Screen
+									name="suggest/[courseId]"
+									options={{ presentation: "modal" }}
+								/>
 							</Stack>
 						</View>
 					</AppQueryCacheProvider>

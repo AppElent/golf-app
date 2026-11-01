@@ -124,3 +124,52 @@ describe("normalizeCourse — De Oosterhoutse (relation 4458605)", () => {
 		expect(bunkers).toBeGreaterThanOrEqual(20);
 	});
 });
+
+describe("normalizeCourse — green matching", () => {
+	// ~0.0005° ≈ 55 m north per step.
+	const square = (lat: number, lon: number) =>
+		[
+			[lat - 0.0001, lon - 0.0001],
+			[lat - 0.0001, lon + 0.0001],
+			[lat + 0.0001, lon + 0.0001],
+			[lat + 0.0001, lon - 0.0001],
+			[lat - 0.0001, lon - 0.0001],
+		].map(([la, lo]) => ({ lat: la, lon: lo }));
+	const hole = (ref: string, from: number, to: number, lon: number) => ({
+		type: "way",
+		id: Number(ref),
+		tags: { golf: "hole", ref },
+		geometry: [
+			{ lat: from, lon },
+			{ lat: to, lon },
+		],
+	});
+	const green = (id: number, lat: number, lon: number) => ({
+		type: "way",
+		id,
+		tags: { golf: "green" },
+		geometry: square(lat, lon),
+	});
+
+	it("puts the green at the line's end and flips a hole drawn green-to-tee", () => {
+		const course = normalizeCourse([
+			hole("1", 52.0, 52.003, 5.0),
+			hole("2", 52.003, 52.0, 5.01), // drawn backwards
+			green(10, 52.003, 5.0),
+			green(11, 52.0, 5.01),
+		]);
+		const byRef = new Map(course.geometry.map((g) => [g.ref, g]));
+		expect(byRef.get("1")?.greens).toHaveLength(1);
+		expect(byRef.get("2")?.greens).toHaveLength(1);
+		expect(byRef.get("2")?.holeLine[0].lat).toBe(52.003);
+	});
+
+	it("drops a practice green that no hole ends on", () => {
+		const course = normalizeCourse([
+			hole("1", 52.0, 52.003, 5.0),
+			green(10, 52.003, 5.0),
+			green(11, 52.0015, 5.003), // ~200 m beside the fairway
+		]);
+		expect(course.geometry[0].greens).toHaveLength(1);
+	});
+});

@@ -65,6 +65,7 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 	const [ownerHi, setOwnerHi] = useState("");
 	const [guests, setGuests] = useState<GuestDraft[]>([]);
 	const [format, setFormat] = useState<"stroke" | "stableford">("stableford");
+	const [teeId, setTeeId] = useState<Id<"tees"> | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
 	if (detail === undefined) {
@@ -90,7 +91,7 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 		(sum, ref) => sum + (byRef.get(ref)?.par ?? 0),
 		0,
 	);
-	const tee = detail.tees[0];
+	const tee = detail.tees.find((t) => t._id === teeId) ?? detail.tees[0];
 
 	const phFor = (hi: string): number | undefined => {
 		const n = Number.parseFloat(hi);
@@ -249,6 +250,23 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 					>
 						<Plus className="size-4" /> Add guest
 					</button>
+				</Section>
+			) : null}
+
+			{/* Tee */}
+			{detail.tees.length > 1 ? (
+				<Section title="Tee">
+					<select
+						value={tee?._id ?? ""}
+						onChange={(e) => setTeeId(e.target.value as Id<"tees">)}
+						className="w-full rounded-lg border border-card-line bg-cream px-3 py-2 font-sans text-[15px] text-ink"
+					>
+						{detail.tees.map((t) => (
+							<option key={t._id} value={t._id}>
+								{t.name} · CR {t.courseRating.toFixed(1)} / {t.slopeRating}
+							</option>
+						))}
+					</select>
 				</Section>
 			) : null}
 

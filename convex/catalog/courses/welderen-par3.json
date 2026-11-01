@@ -1,0 +1,102 @@
+{
+	"key": "welderen-par3",
+	"name": "Golfbaan Landgoed Welderen · Par 3-4 baan",
+	"city": "Elst",
+	"osmRelationId": 901850,
+	"notes": "9 holes. Stroke index: the first-loop value from the card (pairs like 17/18). Ratings are 9-hole values (2023). Hole data from the 2016 card.",
+	"sources": [
+		"https://welderen.nl/wp-content/uploads/2017/01/3721-welderen-scorepar3-4.pdf",
+		"https://welderen.nl/wp-content/uploads/2023/10/Welderen-Par-3-4-Baan-Dames-Heren.pdf"
+	],
+	"tees": [
+		{
+			"name": "Geel · heren",
+			"color": "#f2c94c",
+			"courseRating": 26.7,
+			"slopeRating": 84
+		},
+		{
+			"name": "Rood · dames",
+			"color": "#d64545",
+			"courseRating": 27.5,
+			"slopeRating": 84
+		},
+		{
+			"name": "Geel · dames",
+			"color": "#f2c94c",
+			"courseRating": 27.8,
+			"slopeRating": 85
+		},
+		{
+			"name": "Rood · heren",
+			"color": "#d64545",
+			"courseRating": 26.3,
+			"slopeRating": 83
+		}
+	],
+	"holes": [
+		{
+			"number": 1,
+			"ref": "(1)",
+			"par": 3,
+			"strokeIndex": 17,
+			"lengthMeters": 101
+		},
+		{
+			"number": 2,
+			"ref": "(2)",
+			"par": 4,
+			"strokeIndex": 7,
+			"lengthMeters": 237
+		},
+		{
+			"number": 3,
+			"ref": "(3)",
+			"par": 3,
+			"strokeIndex": 11,
+			"lengthMeters": 130
+		},
+		{
+			"number": 4,
+			"ref": "(4)",
+			"par": 3,
+			"strokeIndex": 13,
+			"lengthMeters": 110
+		},
+		{
+			"number": 5,
+			"ref": "(5)",
+			"par": 3,
+			"strokeIndex": 15,
+			"lengthMeters": 71
+		},
+		{
+			"number": 6,
+			"ref": "(6)",
+			"par": 3,
+			"strokeIndex": 1,
+			"lengthMeters": 158
+		},
+		{
+			"number": 7,
+			"ref": "(7)",
+			"par": 4,
+			"strokeIndex": 3,
+			"lengthMeters": 230
+		},
+		{
+			"number": 8,
+			"ref": "(8)",
+			"par": 3,
+			"strokeIndex": 5,
+			"lengthMeters": 80
+		},
+		{
+			"number": 9,
+			"ref": "(9)",
+			"par": 3,
+			"strokeIndex": 9,
+			"lengthMeters": 100
+		}
+	]
+}

@@ -8,6 +8,7 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import type { MutationCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
+import { canSee } from "./courses";
 import { getUserId } from "./lib";
 
 const playerInput = v.object({
@@ -49,8 +50,12 @@ export const start = mutation({
 			throw new Error("A round needs at least one hole.");
 		}
 
+		const course = await ctx.db.get(args.courseId);
+		if (!course || !canSee(course, userId)) {
+			throw new Error("Course not found.");
+		}
 		const tee = await ctx.db.get(args.teeId);
-		if (!tee || tee.courseId !== args.courseId) {
+		if (!tee || tee.courseId !== args.courseId || tee.retired) {
 			throw new Error("Tee does not belong to this course.");
 		}
 

@@ -21,8 +21,11 @@
     "check": "biome check && pnpm check:mobile-structure",
     "cf-typegen": "wrangler types",
     "deploy": "pnpm run deploy:prod",
-    "deploy:dev": "pnpm exec convex dev --once && pnpm run build:development && wrangler deploy --env dev",
-    "deploy:prod": "pnpm exec convex deploy && pnpm run build && wrangler deploy",
+    "env": "node scripts/env.mjs",
+    "courses:geometry": "node scripts/course-data/refresh-geometry.mjs",
+    "courses:sync": "pnpm exec convex run courseCatalog:sync",
+    "deploy:dev": "pnpm exec convex dev --once && pnpm exec convex run courseCatalog:sync && pnpm run build:development && wrangler deploy --env dev",
+    "deploy:prod": "pnpm exec convex deploy && pnpm exec convex run courseCatalog:sync --prod && pnpm run build && wrangler deploy",
     "test:mobile": "pnpm --filter @fairway/mobile test",
     "check:mobile-structure": "node scripts/check-mobile-structure.mjs"
   },

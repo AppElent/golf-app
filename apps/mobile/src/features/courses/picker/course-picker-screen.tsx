@@ -94,11 +94,13 @@ export function CoursePickerScreen() {
 									course._id === homeCourseId ? "house.fill" : "flag.fill",
 							}}
 							title={course.name}
-							secondary={
-								course._id === homeCourseId
-									? [t.courses.home, course.city].filter(Boolean).join(" · ")
-									: course.city
-							}
+							secondary={[
+								course._id === homeCourseId ? t.courses.home : null,
+								course.ownerId ? t.setup.myCopy : null,
+								course.city,
+							]
+								.filter(Boolean)
+								.join(" · ")}
 							value={
 								course.distanceMeters === null
 									? undefined

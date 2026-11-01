@@ -56,45 +56,35 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   `src/integrations/clerk/header-user.tsx` is still the hand-rolled Clerk
   `SignedIn`/`SignedOut`/`UserButton` version; swap it for the package's `HeaderUser`
   once those routes exist.
-- **Convex functions**: `convex/seed.ts` has two idempotent actions —
-  `seedData` (imports the two home courses from OSM) and `seedDummyData`
-  (adds a handicap/clubs/3 finished rounds/1 active round so an empty
-  backend isn't blank; requires `seedData` to have run first, skips
-  entirely if any round already exists). `convex/seedPreview.ts` composes
-  both into one `seedPreview` action for `--preview-run` (Convex only
-  accepts a single function name there) — wired into
-  `.github/workflows/preview.yml`.
-- **Env vars**: `.env.local` (gitignored) holds `VITE_CLERK_PUBLISHABLE_KEY`,
-  `CONVEX_DEPLOYMENT`, `VITE_CONVEX_URL` — see `.env.example` for the full list
-  (values never committed). `CLERK_JWT_ISSUER_DOMAIN` lives on the Convex deployment,
-  not in a local env file — set on dev (`pnpm exec convex env set`) and as the
-  `preview` deployment-type default (`pnpm exec convex env default set ... --type
-preview`), both already configured. **Not yet set on the prod deployment** — the
-  first real `pnpm deploy:prod` will need `CLERK_JWT_ISSUER_DOMAIN` set via
-  `pnpm exec convex env set CLERK_JWT_ISSUER_DOMAIN <value> --prod` first, or Convex
-  functions can't read the signed-in identity in production.
+- **Courses** are a fixed dataset in `convex/catalog/` (curated JSON per
+  course + OSM geometry), written into a deployment by the idempotent
+  `courseCatalog:sync` — read-only to users, who can fork a private copy or
+  suggest a correction. Read `docs/runbooks/course-catalog.md` before touching
+  course data. `convex/seed.ts`: `seedData` (= the catalog sync) and
+  `seedDummyData` (handicap/clubs/3 finished rounds/1 active round for one
+  `--identity`; skips if any round exists). `convex/seedPreview.ts` wraps the
+  sync for `--preview-run` (Convex accepts one function name there).
+- **Env vars**: routed by `env.manifest.ts` from Infisical (`/` and `/fairway`)
+  with `pnpm env plan|apply|check <local|preview|production>` (see
+  `docs/standards/environments.md`). It owns the local `.env.local` files, the EAS
+  environments, `CLERK_JWT_ISSUER_DOMAIN` on Convex dev and prod, and the
+  `EXPO_TOKEN` secret. The Convex **preview** default and the web CI secrets are
+  still set by hand (the preview default pairs with the test-instance
+  `PREVIEW_CLERK_PUBLISHABLE_KEY`). `CONVEX_DEPLOYMENT` in `.env.local` is
+  written by `convex dev`, not the manifest.
 - **Deploy target**: Cloudflare Workers, name `golf-app` (`golf-app-dev` for
   `wrangler deploy --env dev`). `wrangler.jsonc`'s `env.dev` block exists for this;
   add a top-level `vars` + `env.dev.vars` block if per-environment runtime vars are
   ever needed.
 - **PR previews**: `.github/workflows/preview.yml` spins up a per-PR Convex preview
-  deployment + a per-PR `golf-app-pr-<N>` Worker on open/sync/reopen, and tears the
-  Worker down on close. The repo has a GitHub remote (`AppElent/golf-app`) and all
-  required secrets are set (`CONVEX_DEPLOY_KEY`, `CLOUDFLARE_API_TOKEN`,
-  `CLOUDFLARE_ACCOUNT_ID`, `PREVIEW_CLERK_PUBLISHABLE_KEY`, `NODE_AUTH_TOKEN`). It has
-  no `--preview-run` seed step yet — there's no `convex/seed.ts` in this app, so PR
-  previews currently deploy a genuinely empty Convex backend; wire seeding once seed
-  data exists (see the baseline skill's preview-seeding subsection). `.github/workflows/ci.yml`
-  runs check/typecheck/test/build on every push to `main` and every PR.
-  deployment + a per-PR `golf-app-pr-<N>` Worker on open/sync/reopen, seeds the fresh
-  backend (`--preview-run seedPreview:seedPreview` — see `convex/seedPreview.ts`), and
-  tears the Worker down on close. Requires `CONVEX_DEPLOY_KEY` (a Convex **Preview**-kind
-  deploy key), `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`,
+  deployment + a per-PR `golf-app-pr-<N>` Worker on open/sync/reopen, syncs the
+  course catalog (`--preview-run seedPreview:seedPreview`, no network calls), and
+  tears the Worker down on close. Requires `CONVEX_DEPLOY_KEY` (a Convex
+  **Preview**-kind deploy key), `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`,
   `PREVIEW_CLERK_PUBLISHABLE_KEY`, optionally `NODE_AUTH_TOKEN` — and the
-  `CLERK_JWT_ISSUER_DOMAIN` **preview**-type default (`convex env default set
-CLERK_JWT_ISSUER_DOMAIN <value> --type preview`), since each preview deployment is a
-  fresh backend that doesn't inherit dev/prod env vars. `.github/workflows/ci.yml` runs
-  check/typecheck/test/build on every push to `main` and every PR.
+  `CLERK_JWT_ISSUER_DOMAIN` **preview**-type default, since each preview deployment
+  is a fresh backend that doesn't inherit dev/prod env vars. `.github/workflows/ci.yml`
+  runs check/typecheck/test/build on every push to `main` and every PR.
 - **Supply-chain hardening**: `pnpm-workspace.yaml` sets `onlyBuiltDependencies`
   (esbuild/lightningcss/workerd/sharp only — `@clerk/shared`'s postinstall is denied,
   it only prints a telemetry notice) and `minimumReleaseAge: 1440` (1 day, tuned down

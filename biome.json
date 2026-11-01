@@ -11,6 +11,7 @@
 			"**/src/**/*",
 			"convex/**/*",
 			"!convex/_generated",
+			"!convex/catalog/geometry",
 			"scripts/check-mobile-structure*",
 			"apps/mobile/app/**/*",
 			"apps/mobile/*.{ts,tsx,js}",

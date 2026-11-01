@@ -5,8 +5,13 @@ const latLng = v.object({ lat: v.number(), lng: v.number() });
 const polygon = v.array(latLng);
 
 export default defineSchema({
+	// A catalog course (no ownerId) is synced from convex/catalog and read-only
+	// to users; a course with an ownerId is that user's private, editable copy.
 	courses: defineTable({
 		name: v.string(),
+		catalogKey: v.optional(v.string()),
+		ownerId: v.optional(v.string()),
+		forkedFrom: v.optional(v.id("courses")),
 		city: v.optional(v.string()),
 		location: v.optional(latLng),
 		osmRelationId: v.optional(v.number()),
@@ -18,7 +23,9 @@ export default defineSchema({
 			v.literal("imported"),
 			v.literal("partial"),
 		),
-	}),
+	})
+		.index("by_catalog_key", ["catalogKey"])
+		.index("by_owner", ["ownerId"]),
 
 	tees: defineTable({
 		courseId: v.id("courses"),
@@ -26,6 +33,9 @@ export default defineSchema({
 		color: v.optional(v.string()),
 		courseRating: v.number(),
 		slopeRating: v.number(),
+		// Dropped from the catalog but still referenced by a round: kept for
+		// that round's history, hidden from new rounds.
+		retired: v.optional(v.boolean()),
 	}).index("by_course", ["courseId"]),
 
 	holes: defineTable({
@@ -93,7 +103,9 @@ export default defineSchema({
 			),
 		),
 		scoreDifferential: v.optional(v.union(v.number(), v.null())),
-	}).index("by_user", ["userId"]),
+	})
+		.index("by_user", ["userId"])
+		.index("by_tee", ["teeId"]),
 
 	holeScores: defineTable({
 		roundId: v.id("rounds"),
@@ -109,6 +121,24 @@ export default defineSchema({
 	})
 		.index("by_round", ["roundId"])
 		.index("by_round_hole_player", ["roundId", "holeIndex", "playerIndex"]),
+
+	// "This hole's par is wrong": a user's correction to a catalog course,
+	// reviewed by a maintainer and applied to convex/catalog by hand.
+	courseSuggestions: defineTable({
+		courseId: v.id("courses"),
+		userId: v.string(),
+		message: v.string(),
+		// Optional own copy with the fix already made, to diff against.
+		forkId: v.optional(v.id("courses")),
+		status: v.union(
+			v.literal("open"),
+			v.literal("applied"),
+			v.literal("dismissed"),
+		),
+		createdAt: v.number(),
+	})
+		.index("by_course", ["courseId"])
+		.index("by_status", ["status"]),
 
 	// Marked ball positions (owner only). Consecutive shots on one hole give
 	// the distance hit with the earlier shot's club.
