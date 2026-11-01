@@ -94,6 +94,25 @@ export const start = mutation({
 						),
 		}));
 
+		// The index you tee off with is your current one: keep the profile
+		// in step so Home and the next setup show it.
+		const ownerIndex = args.players[0].handicapIndex;
+		if (ownerIndex !== undefined) {
+			const settings = await ctx.db
+				.query("userSettings")
+				.withIndex("by_user", (q) => q.eq("userId", userId))
+				.unique();
+			if (!settings) {
+				await ctx.db.insert("userSettings", {
+					userId,
+					units: "m",
+					handicapIndex: ownerIndex,
+				});
+			} else if (settings.handicapIndex !== ownerIndex) {
+				await ctx.db.patch(settings._id, { handicapIndex: ownerIndex });
+			}
+		}
+
 		return await ctx.db.insert("rounds", {
 			userId,
 			courseId: args.courseId,

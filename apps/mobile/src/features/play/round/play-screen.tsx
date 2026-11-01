@@ -325,7 +325,7 @@ function PlayHole({
 					</Pressable>
 					<View style={styles.switcherText} accessibilityRole="header">
 						<AppText variant="heading" style={styles.onHud}>
-							{fmt(t.play.hole, { n: holeIndex + 1 })}
+							{fmt(t.play.hole, { n: meta?.ref ?? holeIndex + 1 })}
 						</AppText>
 						<AppText variant="caption" style={styles.onHudMuted}>
 							{fmt(t.play.holeMeta, {
@@ -365,7 +365,7 @@ function PlayHole({
 				>
 					<HudGlass style={styles.gpsPill}>
 						<AppText variant="caption" style={styles.onHudMuted}>
-							{t.play.noGps}
+							{gps.position ? t.play.offHole : t.play.noGps}
 						</AppText>
 					</HudGlass>
 				</View>
@@ -521,7 +521,9 @@ function PlayHole({
 				/>
 				<Pressable
 					accessibilityRole="button"
-					accessibilityLabel={fmt(t.play.scoreHole, { n: holeIndex + 1 })}
+					accessibilityLabel={fmt(t.play.scoreHole, {
+						n: meta?.ref ?? holeIndex + 1,
+					})}
 					onPress={() =>
 						router.push({
 							pathname: "/score",
@@ -534,7 +536,7 @@ function PlayHole({
 					]}
 				>
 					<AppText variant="control" style={styles.scoreLabel}>
-						{fmt(t.play.scoreHole, { n: holeIndex + 1 })}
+						{fmt(t.play.scoreHole, { n: meta?.ref ?? holeIndex + 1 })}
 					</AppText>
 				</Pressable>
 				<HudButton

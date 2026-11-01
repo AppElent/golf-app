@@ -605,7 +605,7 @@ const createStyles = (colors: Tokens) =>
 			fontVariant: ["tabular-nums"],
 			textAlign: "right",
 		},
-		suffix: { width: 30 },
+		suffix: { minWidth: 30 },
 		actionRow: {
 			minHeight: metrics.rowMinHeight,
 			paddingHorizontal: spacing.md,

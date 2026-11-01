@@ -35,6 +35,8 @@ export interface ScoreDraft {
 }
 
 export interface CardHole {
+	/** Hole number on the course card (10, or "(1)" on a par-3 loop). */
+	ref?: string;
 	par: number;
 	strokeIndex: number;
 }

@@ -18,7 +18,7 @@ import {
 import { AppText } from "../../../ui/text";
 import type { CardHole, CardPlayerRow } from "./score-model";
 
-const CELL = 32;
+const CELL = 28;
 
 export function ScorecardGrid({
 	holes,
@@ -69,11 +69,13 @@ export function ScorecardGrid({
 										disabled={!onHolePress}
 										onPress={() => onHolePress?.(i)}
 										accessibilityRole={onHolePress ? "button" : undefined}
-										accessibilityLabel={fmt(t.scorecard.editHole, { n: i + 1 })}
+										accessibilityLabel={fmt(t.scorecard.editHole, {
+											n: holes[i].ref ?? i + 1,
+										})}
 										style={[styles.cell, i === currentHole && styles.current]}
 									>
 										<AppText variant="label" style={styles.headText}>
-											{i + 1}
+											{holes[i].ref ?? i + 1}
 										</AppText>
 									</Pressable>
 								))}
@@ -108,7 +110,7 @@ export function ScorecardGrid({
 											disabled={!onHolePress}
 											onPress={() => onHolePress?.(i)}
 											accessibilityLabel={fmt(t.scorecard.editHole, {
-												n: i + 1,
+												n: holes[i].ref ?? i + 1,
 											})}
 											style={styles.cell}
 										>
@@ -196,14 +198,14 @@ const createStyles = (colors: Tokens) =>
 			borderBottomWidth: StyleSheet.hairlineWidth,
 			borderBottomColor: colors.separator,
 		},
-		nameCell: { width: 56, paddingRight: spacing.xs },
+		nameCell: { width: 52, paddingRight: spacing.xs },
 		cell: {
 			width: CELL,
 			height: CELL + 8,
 			alignItems: "center",
 			justifyContent: "center",
 		},
-		sumCell: { width: CELL + 12 },
+		sumCell: { width: CELL + 10 },
 		current: { backgroundColor: colors.accentDim, borderRadius: radius.sm },
 		headText: { color: colors.text, fontWeight: "700" },
 		num: { fontVariant: ["tabular-nums"], textAlign: "center" },

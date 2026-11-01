@@ -134,7 +134,10 @@ function ScoreSheet({
 		}
 	}
 
-	const title = fmt(t.score.title, { n: holeIndex + 1, par: hole.par });
+	const title = fmt(t.score.title, {
+		n: hole.ref ?? holeIndex + 1,
+		par: hole.par,
+	});
 	const saveLabel = saving ? t.score.saving : t.score.save;
 	const ios = Platform.OS === "ios";
 
