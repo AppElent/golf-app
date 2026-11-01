@@ -5,6 +5,7 @@
  *
  * Shared by the live scorecard (holes tappable to edit) and round detail.
  */
+import { holeLabel } from "@fairway/core/format";
 import type { ScoreMark } from "@fairway/core/scoring";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { fmt, useI18n } from "../../../i18n";
@@ -37,6 +38,10 @@ export function ScorecardGrid({
 	const { t } = useI18n();
 	const styles = useThemedStyles(createStyles);
 	const nines = holes.length > 9 ? [0, 9] : [0];
+	const label = (i: number) => {
+		const ref = holes[i].ref;
+		return ref ? holeLabel(ref) : String(i + 1);
+	};
 
 	return (
 		<View style={styles.blocks}>
@@ -70,12 +75,12 @@ export function ScorecardGrid({
 										onPress={() => onHolePress?.(i)}
 										accessibilityRole={onHolePress ? "button" : undefined}
 										accessibilityLabel={fmt(t.scorecard.editHole, {
-											n: holes[i].ref ?? i + 1,
+											n: label(i),
 										})}
 										style={[styles.cell, i === currentHole && styles.current]}
 									>
 										<AppText variant="label" style={styles.headText}>
-											{holes[i].ref ?? i + 1}
+											{label(i)}
 										</AppText>
 									</Pressable>
 								))}
@@ -110,7 +115,7 @@ export function ScorecardGrid({
 											disabled={!onHolePress}
 											onPress={() => onHolePress?.(i)}
 											accessibilityLabel={fmt(t.scorecard.editHole, {
-												n: holes[i].ref ?? i + 1,
+												n: label(i),
 											})}
 											style={styles.cell}
 										>

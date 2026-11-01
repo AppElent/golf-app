@@ -3,6 +3,7 @@
  * round" and the last finished round. Everything here is a read of Convex;
  * nothing is stored on the phone.
  */
+import { holeLabel } from "@fairway/core/format";
 import { useRouter } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { api } from "../../../convex/api";
@@ -54,9 +55,9 @@ export function HomeSummaryScreen() {
 						</AppText>
 						<AppText variant="footnote" style={styles.onAccent}>
 							{fmt(t.home.resumeDetail, {
-								hole:
-									active.holes[active.round.currentHoleIndex ?? 0]?.ref ??
-									(active.round.currentHoleIndex ?? 0) + 1,
+								hole: holeLabel(
+									active.holes[active.round.currentHoleIndex ?? 0]?.ref ?? "",
+								),
 								n: active.scores.filter((x) => x.playerIndex === 0).length,
 								total: active.holes.length,
 							})}

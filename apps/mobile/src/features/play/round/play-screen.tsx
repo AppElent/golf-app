@@ -11,7 +11,9 @@
  * for the club, which is what learns club distances. Standing on the next
  * tee offers the next hole; it never moves on by itself.
  */
+
 import { DEFAULT_BAG } from "@fairway/core/club-suggest";
+import { holeLabel } from "@fairway/core/format";
 import { haversineMeters, type LatLng } from "@fairway/core/geo";
 import { shouldAdvance } from "@fairway/core/hole-advance";
 import {
@@ -325,7 +327,9 @@ function PlayHole({
 					</Pressable>
 					<View style={styles.switcherText} accessibilityRole="header">
 						<AppText variant="heading" style={styles.onHud}>
-							{fmt(t.play.hole, { n: meta?.ref ?? holeIndex + 1 })}
+							{fmt(t.play.hole, {
+								n: meta ? holeLabel(meta.ref) : holeIndex + 1,
+							})}
 						</AppText>
 						<AppText variant="caption" style={styles.onHudMuted}>
 							{fmt(t.play.holeMeta, {
@@ -522,7 +526,7 @@ function PlayHole({
 				<Pressable
 					accessibilityRole="button"
 					accessibilityLabel={fmt(t.play.scoreHole, {
-						n: meta?.ref ?? holeIndex + 1,
+						n: meta ? holeLabel(meta.ref) : holeIndex + 1,
 					})}
 					onPress={() =>
 						router.push({
@@ -536,7 +540,9 @@ function PlayHole({
 					]}
 				>
 					<AppText variant="control" style={styles.scoreLabel}>
-						{fmt(t.play.scoreHole, { n: meta?.ref ?? holeIndex + 1 })}
+						{fmt(t.play.scoreHole, {
+							n: meta ? holeLabel(meta.ref) : holeIndex + 1,
+						})}
 					</AppText>
 				</Pressable>
 				<HudButton

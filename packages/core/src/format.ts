@@ -26,3 +26,11 @@ export function formatTravelDistance(meters: number, units: Units): string {
 	const km = meters / 1000;
 	return km < 10 ? `${km.toFixed(1)} km` : `${Math.round(km)} km`;
 }
+
+/**
+ * A hole's ref as shown to the player. OSM marks a club's second course with
+ * parenthesised refs ("(1)"); within its own course those are just "1".
+ */
+export function holeLabel(ref: string): string {
+	return ref.replace(/^\((.+)\)$/, "$1");
+}

@@ -7,6 +7,7 @@
  * Online first: the sheet closes only once the server has every score. A
  * failed save keeps the sheet and its edits open and says so.
  */
+import { holeLabel } from "@fairway/core/format";
 import { useMutation } from "convex/react";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
@@ -135,7 +136,7 @@ function ScoreSheet({
 	}
 
 	const title = fmt(t.score.title, {
-		n: hole.ref ?? holeIndex + 1,
+		n: holeLabel(hole.ref),
 		par: hole.par,
 	});
 	const saveLabel = saving ? t.score.saving : t.score.save;
