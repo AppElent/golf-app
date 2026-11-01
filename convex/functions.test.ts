@@ -1,4 +1,5 @@
 // @vitest-environment edge-runtime
+/// <reference types="vite/client" />
 /**
  * Convex functions against an in-memory backend (convex-test): the auth and
  * ownership rules every per-user function relies on, a round from start to

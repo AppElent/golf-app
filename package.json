@@ -13,7 +13,7 @@
     "build": "vite build",
     "build:development": "vite build --mode development",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit && pnpm --filter @fairway/core typecheck && pnpm --filter @fairway/mobile typecheck",
+    "typecheck": "tsc --noEmit && tsc -p convex --noEmit && pnpm --filter @fairway/core typecheck && pnpm --filter @fairway/mobile typecheck",
     "test": "vitest run",
     "format": "biome format",
     "lint": "biome lint",
