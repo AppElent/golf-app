@@ -59,6 +59,12 @@ jobs:
       # reads VITE_CONVEX_URL at build time. Both targets build in production
       # mode: staging exists to run the bundle production ships.
       - name: Convex deploy + build
+        # Sentry: tagged with this target, and the hidden source maps upload
+        # when the token is set (see docs/runbooks/sentry.md).
+        env:
+          VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+          VITE_SENTRY_ENVIRONMENT: ${{ inputs.environment == 'stg' && 'staging' || inputs.environment }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           # shellcheck disable=SC2016 # $CONVEX_URL expands inside convex deploy
           pnpm exec convex deploy \

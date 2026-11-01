@@ -8,10 +8,11 @@
  * docs/standards/environments.md and docs/runbooks/mobile.md.
  *
  * Scope: the local files, Convex deployment env, EAS environments and the
- * repo-level CI secrets (`EXPO_TOKEN`, `CLOUDFLARE_*`). Still set by hand:
- * the three `CONVEX_DEPLOY_KEY`s (repo = preview, `stg` and `production`
- * GitHub environments) and `PREVIEW_CLERK_PUBLISHABLE_KEY` (Clerk test
- * instance); Infisical holds no values for them yet.
+ * repo-scoped GitHub secrets/variables the workflows read (`EXPO_TOKEN`,
+ * `CLOUDFLARE_*`, Sentry). Still set by hand: the three `CONVEX_DEPLOY_KEY`s
+ * (repo = preview, `stg` and `production` GitHub environments) and
+ * `PREVIEW_CLERK_PUBLISHABLE_KEY` (Clerk test instance); Infisical holds no
+ * values for them yet.
  */
 
 export const ENV_CONFIG = {
@@ -31,7 +32,8 @@ export type Environment = (typeof ENVIRONMENTS)[number];
  * - `vite-build` / `expo-build` / `expo-local` are inlined into a client
  *   bundle, so they are public by construction.
  * - `eas-tooling` is read by the native build on EAS (never inlined).
- * - `workflow` authenticates a GitHub Actions job.
+ * - `workflow` is read by a GitHub Actions job: a secret lands as a repo
+ *   secret, anything else as a repo variable.
  */
 export const CONSUMERS = [
 	"vite-build",
@@ -87,7 +89,7 @@ export function destinationFor(
 			return environment === "local"
 				? { kind: "file", path: "apps/mobile/.env.local" }
 				: null;
-		// One repo-scoped secret serves every mobile build job.
+		// One repo-scoped secret/variable serves every workflow job.
 		case "workflow":
 			return environment === "production"
 				? { kind: "github", scope: "repo" }
@@ -192,15 +194,21 @@ export const ENTRIES = [
 	},
 
 	// ---------- Sentry (/fairway, project appelent/fairway) ----------
+	// docs/runbooks/sentry.md: one project for every surface, split by `app` tag.
 	{
 		key: "sentryDsn",
 		infisicalKey: "sentry-dsn",
 		description:
-			"Sentry DSN (public by design). The phone reports from release builds only.",
+			"Sentry DSN (public by design). The phone reports from release builds only; the web reports from deployed hosts only.",
 		optional: true,
 		secret: false,
 		lands: {
 			"expo-build": { name: "EXPO_PUBLIC_SENTRY_DSN", environments: RELEASES },
+			// Laptop deploys (`pnpm deploy:*`) build from .env.local; localhost
+			// itself never reports.
+			"vite-build": { name: "VITE_SENTRY_DSN", environments: ["local"] },
+			// GitHub variable for the PR-preview build (preview.yml).
+			workflow: { name: "VITE_SENTRY_DSN", environments: ["production"] },
 		},
 	},
 	{
@@ -223,10 +231,16 @@ export const ENTRIES = [
 		key: "sentryAuthToken",
 		infisicalKey: "sentry-auth-token",
 		description:
-			"Uploads debug symbols and source maps from EAS release builds. Never inlined.",
+			"Uploads debug symbols and source maps from deployed/released builds only. Never inlined, never in a file.",
 		optional: true,
 		secret: true,
-		lands: { "eas-tooling": { name: "SENTRY_AUTH_TOKEN", environments: RELEASES } },
+		lands: {
+			"eas-tooling": { name: "SENTRY_AUTH_TOKEN", environments: RELEASES },
+			// GitHub secret for preview.yml; laptop deploys get it through
+			// `pnpm env exec production --only github -- pnpm deploy:prod`.
+			// ci.yml's check build never sees it.
+			workflow: { name: "SENTRY_AUTH_TOKEN", environments: ["production"] },
+		},
 	},
 
 	// ---------- Maps ----------

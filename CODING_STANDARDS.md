@@ -60,8 +60,5 @@ Project decisions below select implementations and explain deviations from share
 - **Exception — tests:** Jest (`jest-expo`) inside `apps/mobile` only; the rest of
   the repo stays on Vitest. Scope: `apps/mobile/src/**/*.test.ts(x)`. Reason: the
   React Native transform and native-module mocks are only maintained for Jest.
-- **Exception — Sentry:** not wired yet. Scope: mobile. Replacement:
-  `src/monitoring/report-problem.ts` returns `false` and the UI explains it.
-  Reason: no Sentry project or DSN exists for Fairway yet (#3).
 
 Project facts (identity, env, builds): [mobile runbook](docs/runbooks/mobile.md).

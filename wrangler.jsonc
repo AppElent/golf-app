@@ -3,7 +3,8 @@
   "name": "golf-app",
   "compatibility_date": "2026-07-10",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "@tanstack/react-start/server-entry",
+  // Wraps @tanstack/react-start/server-entry with Sentry (deployed hosts only).
+  "main": "src/server.ts",
   // `stg` is what a merge to main deploys (.github/workflows/deploy.yml);
   // `dev` is only reached by hand (`pnpm deploy:dev`).
   // Production only. Routes are inherited, so each env clears them.

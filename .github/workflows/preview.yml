@@ -49,6 +49,12 @@ jobs:
       # VITE_CONVEX_URL since the app reads the Vite-prefixed var at build
       # time), then seeds the fresh backend so the preview isn't empty.
       - name: Convex preview deploy + build + seed
+        # Sentry: the deployed preview reports as `preview`, and its hidden
+        # source maps upload when the token is set (see docs/runbooks/sentry.md).
+        env:
+          VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+          VITE_SENTRY_ENVIRONMENT: preview
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         run: |
           pnpm exec convex deploy \
             --preview-create pr-${{ github.event.pull_request.number }} \

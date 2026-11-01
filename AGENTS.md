@@ -61,6 +61,11 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   `pnpm run env` (see `docs/standards/environments.md`). The Convex preview default
   and the web CI secrets are still set by hand (listed in the manifest header).
   `CONVEX_DEPLOYMENT` in `.env.local` is written by `convex dev`.
+- **Sentry**: one project (`appelent/fairway`) for browser (`src/instrument.client.ts`
+  via `src/client.tsx`), Worker SSR (`src/server.ts`, the `wrangler.jsonc` `main`),
+  Convex (`pnpm sentry:convex` log forwarder, not yet hosted) and mobile; shared
+  helpers in `src/lib/observability/`. Local hosts never report. Read
+  `docs/runbooks/sentry.md` before touching it.
 - **Deploy**: Worker `golf-app` on `fairway.appelent.nl` (production Clerk signs in
   only on `*.appelent.nl`), with `golf-app-stg` and `golf-app-dev` envs. The Vite plugin
   picks the Worker env at build time from `CLOUDFLARE_ENV`; `wrangler deploy --env`

@@ -24,4 +24,8 @@ jobs:
       - run: pnpm test:mobile
       # Build catches bundling/plugin/SSR-compile breakage that typecheck + tests
       # miss, before deploy.yml builds again with real environment values.
+      # No SENTRY_AUTH_TOKEN or DSN: this artifact is never deployed, so it
+      # uploads no source maps and creates no Sentry release.
       - run: pnpm build
+        env:
+          VITE_SENTRY_ENVIRONMENT: ci
