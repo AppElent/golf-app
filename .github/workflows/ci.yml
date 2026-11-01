@@ -19,6 +19,9 @@ jobs:
         with: { node-version: 22, cache: pnpm }
       - run: pnpm install --frozen-lockfile
       - run: pnpm run check
+      # Manifest and .env.example only; needs no credentials.
+      - run: pnpm env:check
+      # Web, convex, packages/core and apps/mobile in one root script.
       - run: pnpm run typecheck
       - run: pnpm test
       - run: pnpm test:mobile

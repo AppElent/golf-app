@@ -22,6 +22,7 @@
     "cf-typegen": "wrangler types",
     "deploy": "pnpm run deploy:prod",
     "env": "node scripts/env.mjs",
+    "env:check": "node scripts/env.mjs check",
     "courses:geometry": "node scripts/course-data/refresh-geometry.mjs",
     "sentry:convex": "node scripts/convex-sentry.mjs",
     "courses:sync": "pnpm exec convex run courseCatalog:sync",
