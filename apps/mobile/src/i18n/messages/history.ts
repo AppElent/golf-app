@@ -22,6 +22,23 @@ export const roundsEn = {
 	inProgress: "In progress",
 	stableford: "Stableford",
 	strokePlay: "Stroke play",
+	net: "Net",
+	recap: "How it went",
+	bestHole: "Best hole",
+	toughestHole: "Toughest hole",
+	holeResult: "{result} on hole {hole}",
+	eagle: "Eagle",
+	birdie: "Birdie",
+	par: "Par",
+	markShort: {
+		eagle: "Eagle+",
+		birdie: "Birdie",
+		par: "Par",
+		bogey: "Bogey",
+		double: "Double+",
+	},
+	share: "Share",
+	shareFooter: "Scored with Fairway",
 };
 
 export const roundsNl: typeof roundsEn = {
@@ -48,6 +65,23 @@ export const roundsNl: typeof roundsEn = {
 	inProgress: "Bezig",
 	stableford: "Stableford",
 	strokePlay: "Strokeplay",
+	net: "Netto",
+	recap: "Zo ging het",
+	bestHole: "Beste hole",
+	toughestHole: "Lastigste hole",
+	holeResult: "{result} op hole {hole}",
+	eagle: "Eagle",
+	birdie: "Birdie",
+	par: "Par",
+	markShort: {
+		eagle: "Eagle+",
+		birdie: "Birdie",
+		par: "Par",
+		bogey: "Bogey",
+		double: "Dubbel+",
+	},
+	share: "Delen",
+	shareFooter: "Bijgehouden met Fairway",
 };
 
 export const statsEn = {

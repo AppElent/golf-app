@@ -15,6 +15,7 @@
 		"./loops": "./src/loops.ts",
 		"./osm": "./src/osm.ts",
 		"./par-stats": "./src/par-stats.ts",
+		"./recap": "./src/recap.ts",
 		"./scoring": "./src/scoring.ts",
 		"./shots": "./src/shots.ts",
 		"./stats": "./src/stats.ts"
