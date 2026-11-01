@@ -35,9 +35,10 @@ Revisit if a surface's volume or alerting needs to diverge.
   regression test in `src/server.test.ts`). LAN addresses and tunnels are not
   detected — don't build with the DSN to test on a phone over Wi-Fi.
 - **Environment = deployment.** `VITE_SENTRY_ENVIRONMENT` is set by the command
-  that deploys: `production` (`pnpm deploy:prod`), `development`
-  (`pnpm deploy:dev`), `preview` (preview.yml, which also sets the Worker's
-  `environment_name`), `ci` (ci.yml's check build). A build without it reports
+  that deploys: `staging` and `production` (deploy.yml, or
+  `pnpm deploy:prod` by hand), `development` (`pnpm deploy:dev`), `preview`
+  (preview.yml, which also sets the Worker's `environment_name`), `ci`
+  (ci.yml's check build). A build without it reports
   as `unknown`.
 - **Release** = `SENTRY_RELEASE`, else the git commit; one value is inlined in
   the browser bundle and the Worker and names the uploaded maps.

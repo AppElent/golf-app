@@ -23,7 +23,7 @@ pnpm dev:watch        # Convex dev (watching) + Vite together — use this when 
 pnpm generate-routes  # tsr generate (route tree codegen)
 pnpm build            # production build
 pnpm typecheck        # tsc --noEmit
-pnpm test             # vitest run (web, convex, packages/core)
+pnpm test             # vitest run (web, convex — functions via convex-test, packages/core)
 pnpm test:mobile      # jest in apps/mobile
 pnpm check            # biome check (lint + format check)
 pnpm lint:fix         # biome check --write
@@ -77,10 +77,13 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   Convex (`pnpm sentry:convex` log forwarder, not yet hosted) and mobile; shared
   helpers in `src/lib/observability/`. Local hosts never report. Read
   `docs/runbooks/sentry.md` before touching it.
-- **Deploy target**: Cloudflare Workers, name `golf-app` (`golf-app-dev` for
-  `wrangler deploy --env dev`). `wrangler.jsonc`'s `env.dev` block exists for this;
-  add a top-level `vars` + `env.dev.vars` block if per-environment runtime vars are
-  ever needed.
+- **Deploy target**: Cloudflare Workers, name `golf-app` (`golf-app-stg` for
+  `--env stg`, `golf-app-dev` for `--env dev`). A merge to `main` runs
+  `.github/workflows/deploy.yml`: checks → staging (Convex `staging`
+  deployment) → production after approval on the `production` GitHub
+  Environment → EAS update to the mobile `preview` channel. Read
+  `docs/runbooks/deploy.md` before changing it. `pnpm deploy:dev` /
+  `deploy:prod` are a manual escape hatch.
 - **PR previews** (opt-in, label `preview:web`): `.github/workflows/preview.yml`
   spins up a per-PR Convex preview deployment + a per-PR `golf-app-pr-<N>` Worker
   while the label is on (redeploying on push), syncs the course catalog
@@ -91,7 +94,8 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   `PREVIEW_CLERK_PUBLISHABLE_KEY`, optionally `NODE_AUTH_TOKEN` — and the
   `CLERK_JWT_ISSUER_DOMAIN` **preview**-type default, since each preview deployment
   is a fresh backend that doesn't inherit dev/prod env vars. `.github/workflows/ci.yml`
-  runs check/typecheck/test/build on every push to `main` and every PR.
+  runs check/typecheck/test/build on every PR and as the first job of every deploy.
+  The `main` ruleset requires a pull request with a passing `check` job.
 - **Supply-chain hardening**: `pnpm-workspace.yaml` sets `onlyBuiltDependencies`
   (esbuild/lightningcss/workerd/sharp only — `@clerk/shared`'s postinstall is denied,
   it only prints a telemetry notice) and `minimumReleaseAge: 1440` (1 day, tuned down

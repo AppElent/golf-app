@@ -5,7 +5,10 @@
   "compatibility_flags": ["nodejs_compat"],
   // Wraps @tanstack/react-start/server-entry with Sentry (deployed hosts only).
   "main": "src/server.ts",
+  // `stg` is what a merge to main deploys (.github/workflows/deploy.yml);
+  // `dev` is only reached by hand (`pnpm deploy:dev`).
   "env": {
-    "dev": { "name": "golf-app-dev", "workers_dev": true }
+    "dev": { "name": "golf-app-dev", "workers_dev": true },
+    "stg": { "name": "golf-app-stg", "workers_dev": true }
   }
 }
