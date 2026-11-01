@@ -12,6 +12,9 @@ export default defineSchema({
 		catalogKey: v.optional(v.string()),
 		ownerId: v.optional(v.string()),
 		forkedFrom: v.optional(v.id("courses")),
+		// A deleted copy that finished rounds still use: kept for their
+		// history, hidden from the course list and new rounds.
+		retired: v.optional(v.boolean()),
 		city: v.optional(v.string()),
 		location: v.optional(latLng),
 		osmRelationId: v.optional(v.number()),
@@ -45,6 +48,9 @@ export default defineSchema({
 		par: v.optional(v.number()),
 		strokeIndex: v.optional(v.number()),
 		lengthMeters: v.optional(v.number()),
+		// Dropped from the catalog but still in a round's holeRefs: kept for
+		// that round's par and stroke index, hidden from the course.
+		retired: v.optional(v.boolean()),
 	}).index("by_course", ["courseId"]),
 
 	holeGeometry: defineTable({
@@ -138,7 +144,8 @@ export default defineSchema({
 		createdAt: v.number(),
 	})
 		.index("by_course", ["courseId"])
-		.index("by_status", ["status"]),
+		.index("by_status", ["status"])
+		.index("by_user", ["userId"]),
 
 	// Marked ball positions (owner only). Consecutive shots on one hole give
 	// the distance hit with the earlier shot's club.

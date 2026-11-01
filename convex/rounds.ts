@@ -50,7 +50,7 @@ export const start = mutation({
 		}
 
 		const course = await ctx.db.get(args.courseId);
-		if (!course || !canSee(course, userId)) {
+		if (!course || course.retired || !canSee(course, userId)) {
 			throw new Error("Course not found.");
 		}
 		const tee = await ctx.db.get(args.teeId);
@@ -62,7 +62,9 @@ export const start = mutation({
 			.query("holes")
 			.withIndex("by_course", (q) => q.eq("courseId", args.courseId))
 			.collect();
-		const byRef = new Map(courseHoles.map((h) => [h.ref, h]));
+		const byRef = new Map(
+			courseHoles.filter((h) => !h.retired).map((h) => [h.ref, h]),
+		);
 
 		const incomplete: string[] = [];
 		let parTotal = 0;

@@ -16,9 +16,11 @@ Courses are a fixed, reviewed dataset in the repo, not user-editable rows.
 
 `courseCatalog:sync` writes the catalog into a deployment. It matches rows by
 stable keys (course `catalogKey`, tee name, hole ref), so the ids that rounds
-point at survive. The catalog always wins over database edits. A tee the
-catalog drops is deleted, or retired (hidden from new rounds) while a round
-still uses it.
+point at survive. The catalog always wins over database edits. A tee or hole
+the catalog drops is deleted, or retired (hidden from the course and new
+rounds) while a round still uses it, so that round keeps its par and stroke
+index. This covers pre-catalog Welderen and Oosterhoutse rows, whose par-3
+loop holes `(1)`–`(9)` moved to their own catalog courses.
 
 It runs from `seedPreview` on every PR preview, from `pnpm deploy:dev` and
 `pnpm deploy:prod`, and by hand with `pnpm courses:sync` (add `-- --prod` for
@@ -28,7 +30,8 @@ production). Nothing calls Overpass at deploy time.
 
 - Catalog courses are read-only and visible to everyone.
 - **Make my copy** (`courses.fork`) creates a private, editable copy, owned by
-  one user and listed only for them.
+  one user and listed only for them. Deleting it is refused during an active
+  round on it; with finished rounds on it, it is retired (hidden) instead.
 - **Suggest a correction** (`courses.suggest`) stores a free-text note, with
   the user's copy attached when sent from one, in `courseSuggestions` with
   status `open`.

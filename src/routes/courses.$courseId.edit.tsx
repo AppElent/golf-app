@@ -1,5 +1,6 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
+import { ConvexError } from "convex/values";
 import { useEffect, useState } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
@@ -157,7 +158,20 @@ function CourseEditor() {
 				type="button"
 				onClick={async () => {
 					if (!window.confirm("Delete this copy?")) return;
-					await remove({ courseId: course._id });
+					try {
+						await remove({ courseId: course._id });
+					} catch (error) {
+						if (
+							error instanceof ConvexError &&
+							error.data?.code === "courseInActiveRound"
+						) {
+							window.alert(
+								"Finish or abandon the round you're playing on this copy first.",
+							);
+							return;
+						}
+						throw error;
+					}
 					navigate({ to: "/courses" });
 				}}
 				className="mt-8 rounded-full border border-flag/40 px-5 py-2 font-display text-[13px] font-semibold text-flag"

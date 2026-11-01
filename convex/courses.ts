@@ -1,6 +1,11 @@
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
-import { mutation, type QueryCtx, query } from "./_generated/server";
+import {
+	type MutationCtx,
+	mutation,
+	type QueryCtx,
+	query,
+} from "./_generated/server";
 import { getUserId } from "./lib";
 
 /**
@@ -35,6 +40,41 @@ async function requireOwnCourse(
 	return course;
 }
 
+/** Every round played on the course (rounds reach a course through its tees). */
+export async function roundsOnCourse(
+	ctx: QueryCtx,
+	courseId: Id<"courses">,
+): Promise<Doc<"rounds">[]> {
+	const tees = await ctx.db
+		.query("tees")
+		.withIndex("by_course", (q) => q.eq("courseId", courseId))
+		.collect();
+	const rounds = await Promise.all(
+		tees.map((tee) =>
+			ctx.db
+				.query("rounds")
+				.withIndex("by_tee", (q) => q.eq("teeId", tee._id))
+				.collect(),
+		),
+	);
+	return rounds.flat();
+}
+
+/** Delete a course with its tees, holes and geometry. */
+export async function deleteCourseData(
+	ctx: MutationCtx,
+	courseId: Id<"courses">,
+) {
+	for (const table of ["tees", "holes", "holeGeometry"] as const) {
+		const docs = await ctx.db
+			.query(table)
+			.withIndex("by_course", (q) => q.eq("courseId", courseId))
+			.collect();
+		await Promise.all(docs.map((doc) => ctx.db.delete(doc._id)));
+	}
+	await ctx.db.delete(courseId);
+}
+
 /** Catalog courses plus the viewer's own copies, name-sorted. */
 export const list = query({
 	args: {},
@@ -50,7 +90,9 @@ export const list = query({
 					.withIndex("by_owner", (q) => q.eq("ownerId", userId))
 					.collect()
 			: [];
-		return [...catalog, ...own].sort((a, b) => a.name.localeCompare(b.name));
+		return [...catalog, ...own.filter((c) => !c.retired)].sort((a, b) =>
+			a.name.localeCompare(b.name),
+		);
 	},
 });
 
@@ -77,7 +119,9 @@ export const get = query({
 		return {
 			course,
 			tees: tees.filter((t) => !t.retired),
-			holes: holes.sort((a, b) => a.number - b.number),
+			holes: holes
+				.filter((h) => !h.retired)
+				.sort((a, b) => a.number - b.number),
 			geometry,
 		};
 	},
@@ -167,20 +211,22 @@ export const upsertHole = mutation({
 	},
 });
 
-/** Delete one of the user's own copies (never a catalog course). Rounds
- *  played on it keep their scores but lose the course. */
+/**
+ * Delete one of the user's own copies (never a catalog course). Refused while
+ * an active round is on it. A copy finished rounds were played on is retired
+ * instead: hidden from the list and new rounds, kept for their history.
+ */
 export const remove = mutation({
 	args: { courseId: v.id("courses") },
 	handler: async (ctx, { courseId }) => {
 		await requireOwnCourse(ctx, courseId);
-		for (const table of ["tees", "holes", "holeGeometry"] as const) {
-			const docs = await ctx.db
-				.query(table)
-				.withIndex("by_course", (q) => q.eq("courseId", courseId))
-				.collect();
-			await Promise.all(docs.map((doc) => ctx.db.delete(doc._id)));
+		const rounds = await roundsOnCourse(ctx, courseId);
+		if (rounds.some((r) => r.status === "active")) {
+			// Clients map the code to their own copy (web course editor).
+			throw new ConvexError({ code: "courseInActiveRound" });
 		}
-		await ctx.db.delete(courseId);
+		if (rounds.length > 0) await ctx.db.patch(courseId, { retired: true });
+		else await deleteCourseData(ctx, courseId);
 	},
 });
 

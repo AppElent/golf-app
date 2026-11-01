@@ -2,14 +2,16 @@ import { type LatLng, polygonCentroid } from "@fairway/core/geo";
 import type { Doc, Id } from "./_generated/dataModel";
 import { internalMutation, type MutationCtx } from "./_generated/server";
 import { CATALOG, type CatalogCourse, geometryFor } from "./catalog";
+import { roundsOnCourse } from "./courses";
 
 /**
  * Write the committed course catalog (convex/catalog) into the database.
  * Idempotent and safe on every deploy: rows are matched by stable keys
  * (course `catalogKey`, tee name, hole/geometry ref) and patched in place, so
  * ids that rounds point at survive. The catalog always wins over database
- * edits. Holes and geometry the catalog dropped are deleted (rounds keep refs,
- * not ids); a dropped tee is deleted, or retired when a round still uses it.
+ * edits. Dropped geometry is deleted. A dropped tee or hole is deleted, or
+ * retired when a round still uses it (rounds keep hole refs, not ids, and
+ * read par and stroke index from the hole row).
  *
  * `pnpm exec convex run courseCatalog:sync` (add `--prod` for production).
  * PR previews run it through `seedPreview:seedPreview`.
@@ -116,12 +118,22 @@ async function syncHoles(
 		.collect();
 	for (const hole of entry.holes) {
 		const match = current.find((h) => h.ref === hole.ref);
-		if (match) await ctx.db.patch(match._id, hole);
-		else await ctx.db.insert("holes", { courseId, ...hole });
+		const fields = { courseId, ...hole, retired: undefined };
+		if (match) await ctx.db.patch(match._id, fields);
+		else await ctx.db.insert("holes", fields);
 	}
 	const wanted = new Set(entry.holes.map((h) => h.ref));
+	let usedRefs: Set<string> | undefined;
 	for (const hole of current) {
-		if (hole.ref === undefined || !wanted.has(hole.ref)) {
+		if (hole.ref !== undefined && wanted.has(hole.ref)) continue;
+		// A course adopted from before the catalog split can hold another
+		// layout's holes (Welderen's "(1)"–"(9)") that old rounds played.
+		usedRefs ??= new Set(
+			(await roundsOnCourse(ctx, courseId)).flatMap((r) => r.holeRefs),
+		);
+		if (hole.ref !== undefined && usedRefs.has(hole.ref)) {
+			await ctx.db.patch(hole._id, { retired: true });
+		} else {
 			await ctx.db.delete(hole._id);
 		}
 	}

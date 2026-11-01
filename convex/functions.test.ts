@@ -5,6 +5,8 @@
  * ownership rules every per-user function relies on, a round from start to
  * history, and the catalog sync's idempotence.
  */
+
+import { ConvexError } from "convex/values";
 import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
 import { api, internal } from "./_generated/api";
@@ -255,6 +257,193 @@ describe("courses", () => {
 	});
 });
 
+describe("legacy catalog adoption", () => {
+	const loopRefs = Array.from({ length: 9 }, (_, i) => `(${i + 1})`);
+
+	/** A pre-catalog Welderen: one OSM import holding both layouts, with a
+	 *  finished round and an active one on the par-3 loop. */
+	async function legacyDeployment() {
+		const t = convexTest(schema, modules);
+		const ids = await t.run(async (ctx) => {
+			const courseId = await ctx.db.insert("courses", {
+				name: "Golfbaan Landgoed Welderen",
+				osmRelationId: 901850,
+				importStatus: "imported",
+			});
+			for (let n = 1; n <= 18; n++) {
+				await ctx.db.insert("holes", {
+					courseId,
+					number: n,
+					ref: String(n),
+					par: 4,
+					strokeIndex: n,
+				});
+			}
+			for (const [i, ref] of loopRefs.entries()) {
+				await ctx.db.insert("holes", {
+					courseId,
+					number: i + 1,
+					ref,
+					par: 3,
+					strokeIndex: i + 1,
+				});
+			}
+			const teeId = await ctx.db.insert("tees", {
+				courseId,
+				name: "Geel",
+				courseRating: 60,
+				slopeRating: 100,
+			});
+			const round = {
+				courseId,
+				teeId,
+				holeRefs: loopRefs,
+				startedAt: 1,
+				format: "stroke" as const,
+				players: [{ name: "Alice" }],
+			};
+			const finished = await ctx.db.insert("rounds", {
+				...round,
+				userId: ALICE.subject,
+				status: "finished",
+			});
+			for (const [holeIndex] of loopRefs.entries()) {
+				await ctx.db.insert("holeScores", {
+					roundId: finished,
+					holeIndex,
+					playerIndex: 0,
+					strokes: 4,
+				});
+			}
+			const active = await ctx.db.insert("rounds", {
+				...round,
+				userId: BOB.subject,
+				status: "active",
+			});
+			return { courseId, finished, active };
+		});
+		return { t, ...ids };
+	}
+
+	it("keeps the par of holes old rounds played", async () => {
+		const { t, courseId, finished, active } = await legacyDeployment();
+		await t.mutation(internal.courseCatalog.sync, {});
+		await t.mutation(internal.courseCatalog.sync, {});
+
+		const alice = t.withIdentity(ALICE);
+		const detail = await alice.query(api.rounds.detail, { roundId: finished });
+		if (!detail) throw new Error("legacy round missing");
+		const finishedTee = detail.tee._id;
+		expect(detail.holes.map((h) => h.par)).toEqual(loopRefs.map(() => 3));
+		const [summary] = await alice.query(api.rounds.history, {});
+		expect(summary.owner.vsPar).toBe(9);
+		const bobRound = await t.withIdentity(BOB).query(api.rounds.active, {});
+		expect(bobRound?.round._id).toBe(active);
+		expect(bobRound?.holes.every((h) => h.par === 3)).toBe(true);
+
+		// The adopted course now shows only its own 18 holes.
+		const course = await alice.query(api.courses.get, { courseId });
+		expect(course?.course.catalogKey).toBe("welderen");
+		expect(course?.holes.map((h) => h.ref)).toEqual(
+			Array.from({ length: 18 }, (_, i) => String(i + 1)),
+		);
+		await expect(
+			alice.mutation(api.rounds.start, {
+				courseId,
+				teeId: course?.tees[0]._id ?? finishedTee,
+				holeRefs: ["(1)"],
+				format: "stroke",
+				players: [{ name: "Alice" }],
+			}),
+		).rejects.toThrow("Holes missing par/stroke index: (1)");
+	});
+
+	it("deletes retired holes once no round uses them", async () => {
+		const { t, courseId, finished, active } = await legacyDeployment();
+		await t.mutation(internal.courseCatalog.sync, {});
+		await t.withIdentity(ALICE).mutation(api.rounds.remove, {
+			roundId: finished,
+		});
+		await t.withIdentity(BOB).mutation(api.rounds.abandon, { roundId: active });
+		await t.mutation(internal.courseCatalog.sync, {});
+		const holes = await t.run((ctx) =>
+			ctx.db
+				.query("holes")
+				.withIndex("by_course", (q) => q.eq("courseId", courseId))
+				.collect(),
+		);
+		expect(holes).toHaveLength(18);
+		expect(holes.some((h) => h.retired)).toBe(false);
+	});
+});
+
+describe("course copies", () => {
+	async function playOnCopy() {
+		const { t, alice, course } = await setup();
+		const copyId = await alice.mutation(api.courses.fork, {
+			courseId: course.course._id,
+		});
+		const copy = await alice.query(api.courses.get, { courseId: copyId });
+		if (!copy) throw new Error("copy missing");
+		const roundId = await startRound(alice, copy);
+		return { t, alice, course, copyId, roundId };
+	}
+
+	it("refuses to delete a copy an active round is on", async () => {
+		const { alice, copyId } = await playOnCopy();
+		const error = await alice
+			.mutation(api.courses.remove, { courseId: copyId })
+			.catch((e: unknown) => e);
+		expect(error).toBeInstanceOf(ConvexError);
+		expect((error as ConvexError<{ code: string }>).data.code).toBe(
+			"courseInActiveRound",
+		);
+		expect(await alice.query(api.rounds.active, {})).not.toBeNull();
+	});
+
+	it("retires a copy finished rounds were played on", async () => {
+		const { alice, course, copyId, roundId } = await playOnCopy();
+		await alice.mutation(api.rounds.finish, { roundId });
+		await alice.mutation(api.courses.remove, { courseId: copyId });
+
+		const list = await alice.query(api.courses.list, {});
+		expect(list.map((c) => c._id)).not.toContain(copyId);
+		const detail = await alice.query(api.rounds.detail, { roundId });
+		expect(detail?.course._id).toBe(copyId);
+		expect(detail?.holes.every((h) => h.par > 0)).toBe(true);
+		await expect(
+			alice.mutation(api.rounds.start, {
+				courseId: copyId,
+				teeId: detail?.tee._id ?? course.tees[0]._id,
+				holeRefs: ["1"],
+				format: "stroke",
+				players: [{ name: "Alice" }],
+			}),
+		).rejects.toThrow("Course not found.");
+	});
+
+	it("deletes an unplayed copy with its tees, holes and geometry", async () => {
+		const { t, alice, copyId, roundId } = await playOnCopy();
+		await alice.mutation(api.rounds.abandon, { roundId });
+		await alice.mutation(api.courses.remove, { courseId: copyId });
+		const left = await t.run(async (ctx) => ({
+			course: await ctx.db.get(copyId),
+			rows: (
+				await Promise.all(
+					(["tees", "holes", "holeGeometry"] as const).map((table) =>
+						ctx.db
+							.query(table)
+							.withIndex("by_course", (q) => q.eq("courseId", copyId))
+							.collect(),
+					),
+				)
+			).flat(),
+		}));
+		expect(left.course).toBeNull();
+		expect(left.rows).toHaveLength(0);
+	});
+});
+
 describe("clubs and shots", () => {
 	it("keep one user's clubs and shots from another", async () => {
 		const { alice, bob, course } = await setup();
@@ -320,5 +509,50 @@ describe("account", () => {
 		}));
 		expect(leftovers.shots).toHaveLength(0);
 		expect(leftovers.settings.map((s) => s.userId)).toEqual([BOB.subject]);
+	});
+
+	it("deletes the caller's course copies and suggestions, not the catalog", async () => {
+		const { t, alice, bob, course } = await setup();
+		const catalogId = course.course._id;
+		const aliceCopy = await alice.mutation(api.courses.fork, {
+			courseId: catalogId,
+		});
+		await alice.mutation(api.courses.suggest, {
+			courseId: aliceCopy,
+			message: "hole 1 is a par 4",
+		});
+		const bobCopy = await bob.mutation(api.courses.fork, {
+			courseId: catalogId,
+		});
+		await bob.mutation(api.courses.suggest, {
+			courseId: catalogId,
+			message: "hole 2 is a par 5",
+		});
+
+		await alice.mutation(api.account.deleteMyData, {});
+
+		const left = await t.run(async (ctx) => ({
+			courses: await ctx.db.query("courses").collect(),
+			suggestions: await ctx.db.query("courseSuggestions").collect(),
+			copyRows: (
+				await Promise.all(
+					(["tees", "holes", "holeGeometry"] as const).map((table) =>
+						ctx.db
+							.query(table)
+							.withIndex("by_course", (q) => q.eq("courseId", aliceCopy))
+							.collect(),
+					),
+				)
+			).flat(),
+		}));
+		const ids = left.courses.map((c) => c._id);
+		expect(ids).not.toContain(aliceCopy);
+		expect(ids).toContain(bobCopy);
+		expect(ids).toContain(catalogId);
+		expect(left.copyRows).toHaveLength(0);
+		expect(left.suggestions.map((s) => s.userId)).toEqual([BOB.subject]);
+		expect(await alice.query(api.courses.get, { courseId: catalogId })).toEqual(
+			course,
+		);
 	});
 });
