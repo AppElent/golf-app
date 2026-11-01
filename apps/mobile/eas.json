@@ -24,6 +24,11 @@
 			"distribution": "internal",
 			"android": { "buildType": "apk" }
 		},
+		"device": {
+			"extends": "preview-internal",
+			"channel": "device",
+			"environment": "development"
+		},
 		"production": {
 			"autoIncrement": true,
 			"channel": "production",
