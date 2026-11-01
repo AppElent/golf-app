@@ -6,11 +6,12 @@
 import { useMutation } from "convex/react";
 import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
-import { StyleSheet } from "react-native";
+import { Button, Platform, StyleSheet } from "react-native";
 import { api, type Id } from "../../../convex/api";
 import { useQuery } from "../../../convex/query-cache";
 import { haptics } from "../../../feedback/haptics";
 import { useI18n } from "../../../i18n";
+import { useTokens } from "../../../theme";
 import { convexErrorMessage } from "../../../ui/confirm-dialog";
 import { FormScreen, FormSection, FormTextField } from "../../../ui/form";
 import { useToast } from "../../../ui/toast";
@@ -25,6 +26,7 @@ export function SuggestCorrectionScreen({
 	const router = useRouter();
 	const { t } = useI18n();
 	const toast = useToast();
+	const colors = useTokens();
 	const detail = useQuery(api.courses.get, { courseId });
 	const suggest = useMutation(api.courses.suggest);
 	const [message, setMessage] = useState("");
@@ -45,28 +47,52 @@ export function SuggestCorrectionScreen({
 	};
 
 	return (
-		<FormScreen
-			primaryAction={{
-				label: t.suggest.send,
-				onPress: send,
-				loading: sending,
-				disabled: message.trim() === "",
-			}}
-		>
-			<Stack.Screen options={{ title: t.suggest.title }} />
-			<FormSection title={detail?.course.name} footer={t.suggest.footer}>
-				<FormTextField
-					label={t.suggest.label}
-					placeholder={t.suggest.placeholder}
-					value={message}
-					onChangeText={setMessage}
-					multiline
-					maxLength={MAX_LENGTH}
-					autoFocus
-					style={styles.input}
-				/>
-			</FormSection>
-		</FormScreen>
+		<>
+			<Stack.Screen
+				options={{
+					title: t.suggest.title,
+					...(Platform.OS !== "ios"
+						? {
+								headerLeft: () => (
+									<Button
+										title={t.common.cancel}
+										onPress={() => router.back()}
+										color={colors.accent}
+									/>
+								),
+							}
+						: {}),
+				}}
+			/>
+			{Platform.OS === "ios" ? (
+				<Stack.Toolbar placement="left">
+					<Stack.Toolbar.Button onPress={() => router.back()}>
+						{t.common.cancel}
+					</Stack.Toolbar.Button>
+				</Stack.Toolbar>
+			) : null}
+			<FormScreen
+				primaryAction={{
+					label: t.suggest.send,
+					onPress: send,
+					loading: sending,
+					disabled: message.trim() === "",
+				}}
+			>
+				<FormSection title={detail?.course.name} footer={t.suggest.footer}>
+					<FormTextField
+						label={t.suggest.label}
+						placeholder={t.suggest.placeholder}
+						value={message}
+						onChangeText={setMessage}
+						multiline
+						maxLength={MAX_LENGTH}
+						autoFocus
+						style={styles.input}
+					/>
+				</FormSection>
+			</FormScreen>
+		</>
 	);
 }
 
