@@ -66,3 +66,30 @@ Project decisions below select implementations and explain deviations from share
   React Native transform and native-module mocks are only maintained for Jest.
 
 Project facts (identity, env, builds): [mobile runbook](docs/runbooks/mobile.md).
+
+### Baseline and toolkit (recorded 2026-11-01)
+
+- **Exception — release age:** `minimumReleaseAge: 1440` (1 day), not the
+  template's 4320. Scope: `pnpm-workspace.yaml`. Reason: 3 days rejects six
+  lockfile entries published 2026-10-29..31 (`@expo/ui`, `expo-widgets`,
+  `convex-helpers`, …), so every install would fail. Raise it to 4320 once they
+  age out (from 2026-11-04). Dependabot's 7-day cooldown stays above either.
+- **Exception — CI triggers:** `ci.yml` runs on `pull_request` and
+  `workflow_call` instead of `push: main`. `deploy.yml` calls it as its first job,
+  so a merge is checked once and deploys only after it passes. Node is
+  `22` (latest 22.x, ≥ 22.15) as in the other workflows, not a pinned
+  `22.15.0`. One root `pnpm typecheck` covers web, convex, core and mobile.
+- **Toolkit copies with Fairway settings:** `scripts/convex-sentry.mjs` is the
+  toolkit forwarder verbatim; `pnpm sentry:convex` sets `SENTRY_APP=fairway-convex`
+  and falls back to `VITE_SENTRY_DSN` ([Sentry runbook](docs/runbooks/sentry.md)).
+  `scripts/check-mobile-structure.mjs` (mobile-structure 1.1) adds the app and
+  language names to `UNTRANSLATED` and skips `console.*` calls, which upstream
+  reports as toast text.
+- **Not yet migrated** (differences from shared standards, to be agreed or fixed):
+  - [Convex backend](docs/standards/convex.md): the auth helper is `getUserId`
+    in `convex/lib.ts`, not `convex/lib/auth.ts`; public functions declare no
+    `returns` validators; `ConvexError` codes are not typed against a shared
+    catalog; `account:deleteMyData` has no `expectedSubject`, batching or
+    per-table registry, and there is no data export.
+  - [i18n](docs/standards/i18n.md): the web app hardcodes English; only
+    `apps/mobile` has a catalog.
