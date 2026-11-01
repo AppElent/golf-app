@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { executionErrorEvent } from "./convex-sentry-events.mjs";
+import { executionErrorEvent } from "./convex-sentry.mjs";
 
-const options = { deployment: "happy-otter-123" };
+// package.json sets SENTRY_APP=fairway-convex for `pnpm sentry:convex`.
+const options = { deployment: "happy-otter-123", app: "fairway-convex" };
 const failure = {
 	kind: "Completion",
 	error:
@@ -76,7 +77,10 @@ describe("executionErrorEvent", () => {
 				.eventId,
 		).not.toBe(id);
 		expect(
-			executionErrorEvent(failure, { deployment: "other-deployment-1" })
+			executionErrorEvent(failure, {
+				...options,
+				deployment: "other-deployment-1",
+			})
 				.eventId,
 		).not.toBe(id);
 	});

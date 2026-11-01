@@ -18,6 +18,9 @@ const standardsEnd = '<!-- appelent-standards:end -->';
 const standardsPaths = ['CODING_STANDARDS.md', 'DESIGN_SYSTEM.md'];
 const block = `${start}\nBefore implementing or reviewing code, read CODING_STANDARDS.md.\nFor UI work, also read DESIGN_SYSTEM.md. Follow their task-specific links.\n${end}`;
 const claudeBlock = `${start}\nRead [AGENTS.md](AGENTS.md).\n${end}`;
+// Retired: pointed at the appelent plugin and appelent-packages feature catalog.
+const retiredStart = '<!-- appelent-managed:start -->';
+const retiredEnd = '<!-- appelent-managed:end -->';
 const digest = value => typeof value === 'string' && /^[a-f0-9]{64}$/.test(value);
 
 export function safePath(path) {
@@ -103,6 +106,15 @@ export function extractBlock(text, first = start, last = end) {
   return text.slice(a, b + last.length);
 }
 
+/** Drops the retired appelent-managed block and the blank lines around it. */
+export function removeRetiredBlock(text) {
+  const retired = extractBlock(text, retiredStart, retiredEnd);
+  if (!retired) return text;
+  const at = text.indexOf(retired);
+  const before = text.slice(0, at).replace(/\n+$/, ''), after = text.slice(at + retired.length).replace(/^\n+/, '');
+  return before && after ? `${before}\n\n${after}` : before ? `${before}\n` : after;
+}
+
 function parseReceipt(text, scope) {
   if (text === null) return { files: {}, blocks: {} };
   const receipt = JSON.parse(text);
@@ -150,6 +162,10 @@ export async function sync(options = {}) {
       const text = await inspect(root, path);
       const content = standardsPaths.includes(path) ? extractBlock(text, standardsStart, standardsEnd) : extractBlock(text);
       if (content === null || hash(content) !== expected) drift.push(path);
+    }
+    for (const path of ['AGENTS.md', 'CLAUDE.md']) {
+      const text = await inspect(root, path);
+      if (text !== null && removeRetiredBlock(text) !== text) drift.push(`${path} (retired appelent-managed block; run sync to remove it)`);
     }
     if (drift.length) throw new Error(`Local drift:\n${drift.join('\n')}`);
     log('Installed toolkit matches its receipt (offline).'); return;
@@ -218,12 +234,14 @@ export async function sync(options = {}) {
   if (scope === 'project') {
     for (const path of ['AGENTS.md', 'CLAUDE.md']) {
       const agentBlock = path === 'CLAUDE.md' ? claudeBlock : block;
-      const current = await inspect(root, path), oldBlock = extractBlock(current);
-      observed.set(path, current);
+      const original = await inspect(root, path), current = original === null ? null : removeRetiredBlock(original);
+      const oldBlock = extractBlock(current);
+      observed.set(path, original);
+      if (current !== original) log(`${path}: removing the retired appelent-managed block.`);
       if (oldBlock && hash(oldBlock) !== previous.blocks?.[path] && oldBlock !== agentBlock) conflicts.push(path);
       if (!oldBlock && previous.blocks?.[path]) conflicts.push(path);
       const value = oldBlock ? current.replace(oldBlock, agentBlock) : `${current ?? ''}${current ? '\n' : ''}${agentBlock}\n`;
-      if (value !== current) operations.push({ path, before: current, after: value });
+      if (value !== original) operations.push({ path, before: original, after: value });
       next.blocks[path] = hash(agentBlock);
     }
     for (const [path, { text, managed }] of standards) {

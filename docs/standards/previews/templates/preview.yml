@@ -1,4 +1,6 @@
 # Adapt APP_NAME, provider references, and the seed function before use.
+# wrangler.jsonc needs a route-free env for previews:
+#   "env": { "pr": { "name": "APP_NAME-pr", "workers_dev": true, "routes": [] } }
 # Opt-in: deploys only while the PR carries the `preview:web` label; pushes
 # redeploy, removing the label or closing the PR deletes the Worker. Close
 # always cleans up, so Workers deployed before the label gate are not left behind.
@@ -27,6 +29,9 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       CONVEX_DEPLOY_KEY: ${{ secrets.PREVIEW_CONVEX_DEPLOY_KEY }}
       VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.PREVIEW_CLERK_PUBLISHABLE_KEY }}
+      # The Cloudflare Vite plugin picks the wrangler env at build time. `pr`
+      # clears the production routes, so a preview never claims the domain.
+      CLOUDFLARE_ENV: pr
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -43,7 +48,16 @@ jobs:
           --cmd-url-env-var-name CONVEX_URL
           --cmd 'VITE_CONVEX_URL=$CONVEX_URL pnpm build'
       - name: Deploy isolated Worker
-        run: pnpm exec wrangler deploy --name "$WORKER_NAME"
+        run: |
+          set -o pipefail
+          pnpm exec wrangler deploy --name "$WORKER_NAME" 2>&1 | tee "$RUNNER_TEMP/wrangler-deploy.log"
+      # A preview that inherits production routes takes over the production domain.
+      - name: Guard against custom domains
+        run: |
+          if grep -qi 'custom domain' "$RUNNER_TEMP/wrangler-deploy.log"; then
+            echo "::error::The preview Worker claimed a custom domain. Redeploy production, then fix the wrangler pr env."
+            exit 1
+          fi
   cleanup:
     if: >-
       github.event.pull_request.head.repo.full_name == github.repository &&

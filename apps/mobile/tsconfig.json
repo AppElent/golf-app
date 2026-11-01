@@ -2,6 +2,9 @@
 	"extends": "expo/tsconfig.base",
 	"compilerOptions": {
 		"strict": true,
+		"noUnusedLocals": true,
+		"noUnusedParameters": true,
+		"noUncheckedSideEffectImports": true,
 		"types": ["jest", "react"],
 		// Its exports send the react-native condition to raw src/, which
 		// doesn't typecheck under strict; the published types are fine.

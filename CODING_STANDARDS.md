@@ -17,18 +17,22 @@ Read only what the task needs; never preload every standard.
 | --- | --- |
 | Adding, moving, or naming native files | [Mobile structure](docs/standards/mobile-structure.md) |
 | Repository, package manager, formatter, types, tests, CI, or toolkit sync | [Baseline](docs/standards/baseline.md) |
+| Top-level folders, workspace packages, or shared code between web, Convex, and mobile | [Repository layout](docs/standards/repo-layout.md) |
 | Dependabot or automated dependency PRs | [Dependency updates](docs/standards/dependency-updates.md) |
 | Web app stack, UI states, or browser capabilities | [Web baseline](docs/standards/web-baseline.md) |
 | Expo setup, native configuration, builds, or releases | [Mobile baseline](docs/standards/mobile-baseline.md) |
+| Getting a build onto a phone, TestFlight, or OTA updates | [Mobile distribution](docs/standards/mobile-distribution.md) |
 | Verification | [Verification](docs/standards/verification.md), then the project's check commands |
 | Environment variables and secrets | [Environments](docs/standards/environments.md) |
 | Worktrees and isolated backends | [Workspaces](docs/standards/workspaces.md) |
 | Authentication | [Auth](docs/standards/auth.md) |
+| Convex functions, schema, migrations, seeds, tests, or account deletion and export | [Convex backend](docs/standards/convex.md) |
 | Convex query reads, subscription retention, or local read caches | [Convex query caching](docs/standards/convex-query-caching.md) |
 | Localization | [i18n](docs/standards/i18n.md) |
 | Error reporting and source maps | [Sentry monitoring](docs/standards/sentry-monitoring.md) |
 | In-app problem reports | [Issue reporting](docs/standards/issue-reporting.md) |
 | Pull-request previews | [Previews](docs/standards/previews.md) |
+| Staging or production deploys, deploy workflows, or branch rules | [Deployments](docs/standards/deployments.md) |
 | Web manifest, installability, or service worker | [PWA](docs/standards/pwa.md) |
 | Application CLI or browser login for it | [App CLI](docs/standards/app-cli.md) |
 | MCP server or tools | [MCP](docs/standards/mcp.md) |
@@ -62,3 +66,30 @@ Project decisions below select implementations and explain deviations from share
   React Native transform and native-module mocks are only maintained for Jest.
 
 Project facts (identity, env, builds): [mobile runbook](docs/runbooks/mobile.md).
+
+### Baseline and toolkit (recorded 2026-11-01)
+
+- **Exception — release age:** `minimumReleaseAge: 1440` (1 day), not the
+  template's 4320. Scope: `pnpm-workspace.yaml`. Reason: 3 days rejects six
+  lockfile entries published 2026-10-29..31 (`@expo/ui`, `expo-widgets`,
+  `convex-helpers`, …), so every install would fail. Raise it to 4320 once they
+  age out (from 2026-11-04). Dependabot's 7-day cooldown stays above either.
+- **Exception — CI triggers:** `ci.yml` runs on `pull_request` and
+  `workflow_call` instead of `push: main`. `deploy.yml` calls it as its first job,
+  so a merge is checked once and deploys only after it passes. Node is
+  `22` (latest 22.x, ≥ 22.15) as in the other workflows, not a pinned
+  `22.15.0`. One root `pnpm typecheck` covers web, convex, core and mobile.
+- **Toolkit copies with Fairway settings:** `scripts/convex-sentry.mjs` is the
+  toolkit forwarder verbatim; `pnpm sentry:convex` sets `SENTRY_APP=fairway-convex`
+  and falls back to `VITE_SENTRY_DSN` ([Sentry runbook](docs/runbooks/sentry.md)).
+  `scripts/check-mobile-structure.mjs` (mobile-structure 1.1) adds the app and
+  language names to `UNTRANSLATED` and skips `console.*` calls, which upstream
+  reports as toast text.
+- **Not yet migrated** (differences from shared standards, to be agreed or fixed):
+  - [Convex backend](docs/standards/convex.md): the auth helper is `getUserId`
+    in `convex/lib.ts`, not `convex/lib/auth.ts`; public functions declare no
+    `returns` validators; `ConvexError` codes are not typed against a shared
+    catalog; `account:deleteMyData` has no `expectedSubject`, batching or
+    per-table registry, and there is no data export.
+  - [i18n](docs/standards/i18n.md): the web app hardcodes English; only
+    `apps/mobile` has a catalog.

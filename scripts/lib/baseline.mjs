@@ -61,7 +61,7 @@ export async function planBaseline(kind, options = {}) {
     else notes.push('TypeScript is not declared; preserve the language/tooling choice or install it before typecheck setup.');
     if (dependencies.vitest) script('test', 'vitest run');
     else notes.push('No Vitest dependency; keep the existing test runner or add one explicitly.');
-    await create('pnpm-workspace.yaml', '# Review native build-script allowances for this project.\nminimumReleaseAge: 4320\nonlyBuiltDependencies: []\n');
+    await create('pnpm-workspace.yaml', '# Start from docs/standards/baseline/templates/pnpm-workspace.yaml; give every allowBuilds entry a reason.\nminimumReleaseAge: 4320\nallowBuilds: {}\n');
     if (kind === 'web') {
       if (!dependencies['@tanstack/react-start'] || !dependencies.vite) throw new Error('Web baseline requires an existing TanStack Start + Vite scaffold.');
       script('dev', 'vite dev --port 3000 --host'); script('build', 'vite build');

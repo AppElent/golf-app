@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when setting up or changing repository, package-manager, formatter, type, test, or CI configuration, or when installing or updating the toolkit.
-version: 2.1.0
+version: 2.2.0
 applies_to: [all]
 ---
 
@@ -13,6 +13,15 @@ Every JavaScript/TypeScript repository uses the same package manager, checks, an
 ## Rules
 
 Use pnpm, TypeScript, and Biome for new JavaScript/TypeScript applications. Keep versions and formatter options in configuration. Commit the lockfile; CI installs it frozen and runs the affected targets' lint/format, types, tests, and build checks. Existing target-specific test runners remain valid: the web baseline uses Vitest and the mobile baseline uses Jest with Expo support. Respect the configured dependency release-age policy and build-script approvals; security overrides need a demonstrated advisory and compatible resolution.
+
+### Dependencies and configuration
+
+- Start `pnpm-workspace.yaml` from the [template](baseline/templates/pnpm-workspace.yaml): `minimumReleaseAge: 4320`, an `allowBuilds` ledger where every entry carries its reason, `virtualStoreDirMaxLength: 60`, and `verifyDepsBeforeRun: install`. A cooldown exemption names its date and reason.
+- Every dependency has an explicit version or semver range. Never `latest`, `*`, or a dist-tag; the lockfile pins what installs. Use `expo install` versions for SDK packages.
+- One TypeScript channel: `typescript` from npm on the 6.0 line (`~6.0.x`), with no npm aliases. Do not add `@typescript/native` or alias `typescript` to `@typescript/typescript6`. Toolkit checks such as `check-mobile-structure.mjs` use the TypeScript compiler API, and Expo and the Vite toolchain still target 6.0. Move every app to 7 in one coordinated change.
+- Every tsconfig keeps the root's strictness: `strict`, `noUnusedLocals`, `noUnusedParameters`, `noUncheckedSideEffectImports`. `noUncheckedIndexedAccess` is optional. It catches unguarded record and array lookups, but it also flags every index into a known-length tuple or a just-checked array, so existing code needs many non-null assertions. Enable it per app when the code base is ready, for every target at once.
+- Merge the [Biome fragment](baseline/templates/biome.fragment.json) into `biome.json`: tabs and double quotes; in `apps/mobile`, `noReactNativeRawText` (skipping the app's `AppText`) and `noRestrictedImports` that sends Convex query hooks through `src/convex/query-cache` ([Convex query caching](convex-query-caching.md)).
+- CI starts from the [shared workflow](baseline/templates/ci.yml): check, env:check, typecheck for web, core, and mobile, Vitest, mobile Jest when present, and build. An optional [lefthook pre-commit](baseline/templates/lefthook.yml) runs `biome check --staged`.
 
 Install and update the toolkit with `scripts/sync-devtools.mjs`; it needs Node 22.15+ and GitHub CLI authenticated for AppElent/developer-tools. Commit installed files and `.appelent/devtools.json`. Never edit toolkit-owned files in the project: change them upstream. Sync never runs downloaded code, provisions resources, enables a capability, or migrates application code. Review changed scripts before running them. Install skills separately with the skills CLI.
 
@@ -57,6 +66,8 @@ Setup output becomes app-owned. No capability catalog, adoption version, or perm
 `node scripts/sync-devtools.mjs --check` passes. Run the actual install, check, typecheck, test, and build roles. A successful setup command proves configuration writes only. `check-project.mjs` reads metadata and routing files without executing app code, reading dotenv values, or contacting providers.
 
 ## Migration
+
+From 2.1: compare `pnpm-workspace.yaml`, `biome.json`, and CI with the templates and add what is missing. Replace `latest` ranges with the installed versions. Add the root's strictness flags to `apps/mobile/tsconfig.json` and fix what they report. Record existing differences, such as another formatter style or an aliased TypeScript, as exceptions until they are migrated.
 
 Replace `appelent recipe ... baseline.config` with focused baseline script invocations. Preserve prior recipe receipts and feature records as historical evidence until project migration is reviewed. Do not infer that old numbered steps are all complete.
 

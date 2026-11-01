@@ -2,7 +2,7 @@
 type: standard
 kind: pattern
 description: Read when entering or adjusting a numeric value.
-version: 1.0.1
+version: 1.0.2
 applies_to: [web, mobile]
 ---
 
@@ -22,7 +22,7 @@ Numbers are edited inline, parsed separately from their text, and validated at a
 
 ## Implementation
 
-Origin: Workouts' InlineNumberFieldRow and Diary Entry quantity editor. These are examples, not proof that all variants or locales pass.
+These patterns came from an app's inline number row and quantity editor. They are examples, not proof that every variant or locale passes.
 
 ## Verify
 

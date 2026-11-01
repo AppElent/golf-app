@@ -3,6 +3,7 @@ import { readFile, realpath } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertSafeProjectPath } from './lib/env/files.mjs';
+import { manifestWarnings, validateManifest } from './lib/project/manifest.mjs';
 
 export async function checkProject(root) {
   root = await realpath(root);
@@ -23,6 +24,15 @@ export async function checkProject(root) {
     for (const lock of ['package-lock.json', 'yarn.lock', 'bun.lock', 'bun.lockb']) if (await read(lock) !== null) add('warn', `Review package-manager ownership: ${lock}`);
   } else add('info', 'No package.json; no JavaScript baseline assumed');
   for (const path of ['CODING_STANDARDS.md', 'DESIGN_SYSTEM.md', 'docs/standards/documentation.md']) add(await read(path) === null ? 'warn' : 'pass', `Toolkit routing: ${path}`);
+  const appelent = await read('appelent.json');
+  if (appelent !== null) {
+    try {
+      const manifest = validateManifest(JSON.parse(appelent));
+      const warnings = manifestWarnings(manifest);
+      for (const warning of warnings) add('warn', `appelent.json: ${warning}`);
+      if (!warnings.length) add('pass', 'appelent.json matches the current schema');
+    } catch (error) { add('fail', error.issues ? error.message : 'Invalid appelent.json: file is not valid JSON'); }
+  }
   if (await read('env.manifest.ts') !== null) add('info', 'Environment manifest exists; use env.mjs check for trusted execution and validation');
   add('info', 'Read-only file checks; no app code, dotenv values, providers, builds, or live acceptance were inspected');
   return { ok: !findings.some(x => x.level === 'fail'), findings };

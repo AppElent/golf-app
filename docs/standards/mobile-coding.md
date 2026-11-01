@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read before implementing or reviewing native mobile code.
-version: 1.2.0
+version: 1.3.0
 applies_to: [mobile]
 ---
 
@@ -26,6 +26,8 @@ Expo Router and React Native traps that fail silently or only on device:
 - **Discard guards:** dispatching the blocked action from inside a `usePreventRemove` callback is blocked again. Lift the guard (state or ref) first, then dispatch.
 - **Hidden headers:** `headerShown: false` in a `_layout` hides any header the screen configures with `Stack.Screen`. Set `headerShown` per screen when screens draw their own.
 - **Local files:** React Native does not implement the `file://` scheme in `fetch`. `fetch(uri)` on a local file returns a tiny "File not found" body that then uploads as a valid but corrupt file. Read local files with `expo-file-system`; `File(uri).upload()` also sets the exact `Content-Type` an upload endpoint may demand, where an empty one is rejected.
+- **Babel-gated packages:** `babel-preset-expo` turns on some transforms only when the package is installed, for example the `'widget'` directive of `expo-widgets`. It decides this once per Metro cache. After installing such a package, restart Metro with `--clear`. Otherwise the code runs untransformed, and `createLiveActivity` fails with "Conversion from JavaScript value of type 'function' to native 'String' failed".
+- **Live Activities:** a Live Activity left by an earlier launch survives a restart. Take it over with `getInstances()` before calling `start`, or the Lock Screen shows two. iOS starts an activity only from the foreground. Background updates (for example, from a location task) can only update one that is already running. Throttle updates, but keep the last one: schedule it for the end of the interval, because a value that stops changing produces no further event.
 
 ## Verify
 

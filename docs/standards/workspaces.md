@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when preparing or cleaning an isolated worktree and its backend resources.
-version: 2.0.0
+version: 2.1.0
 applies_to: [all]
 ---
 
@@ -30,7 +30,17 @@ node scripts/workspace.mjs gc --dry-run
 node scripts/workspace.mjs gc --apply
 ```
 
-Retain the existing appelent.json workspace object and env.manifest.ts during extraction. The [configuration example](workspaces/examples/appelent.json) shows policy fields; replace provider identities and paths deliberately. Legacy features metadata is accepted for compatibility but does not drive a new capability engine.
+Retain the existing appelent.json workspace object and env.manifest.ts during extraction. The [configuration example](workspaces/examples/appelent.json) shows policy fields; replace provider identities and paths deliberately.
+
+### appelent.json
+
+| Key | Purpose |
+| --- | --- |
+| `schemaVersion` | Always `1`. |
+| `workspace` | Policy for `workspace.mjs`: backend mode and lease, install/build steps, generated env outputs, ports. |
+| `envManifest` | Path to the environment manifest that `workspace.mjs prepare` routes; defaults to `env.manifest.ts`. |
+| `targets`, `guidelines` | Accepted for compatibility; no script reads them. |
+| `features` | Legacy metadata from the retired feature catalog. `check-project.mjs` warns; remove it. |
 
 ### Preparation
 

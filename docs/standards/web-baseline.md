@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when setting up or changing a TanStack Start web app stack, its UI states, or browser capabilities.
-version: 2.0.3
+version: 2.1.0
 applies_to: [web]
 ---
 
@@ -32,6 +32,8 @@ node scripts/baseline-web.mjs --name my-worker --apply
 `--name` is required only when creating Wrangler configuration. Shared setup includes pnpm and editor configuration. Missing dev/build scripts are added, plus deploy/type-generation scripts when Wrangler is declared. Existing configuration dates, environment names, bindings, domains, package scripts, and IDs are preserved.
 
 For a new Wrangler config, the script sets the TanStack server entry, today's compatibility date, nodejs_compat, and observability. Complete Vite wiring according to the app's installed framework version and [Cloudflare's TanStack guide](https://developers.cloudflare.com/workers/framework-guides/web-apps/tanstack-start/). Review the server environment name expected by the Cloudflare plugin, plugin ordering, and output directory; configuration alone does not establish SSR deployment readiness.
+
+With `@cloudflare/vite-plugin`, the build picks the Wrangler environment. It reads `CLOUDFLARE_ENV` at build time and writes the resolved Worker into `dist/server/wrangler.json`. `wrangler deploy` then follows that output, and `wrangler deploy --env <name>` is ignored. Build each environment with `CLOUDFLARE_ENV=<name>`, including in package scripts such as `deploy:dev`. A deploy job compares the built Worker name (`jq -r .name dist/server/wrangler.json`) with the target it expects and fails on a mismatch. Without that check, a staging deploy silently replaces the production Worker.
 
 ### Finish the application wiring
 

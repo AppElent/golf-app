@@ -68,7 +68,6 @@ function validateLedger(value, id) {
         !isRecord(value.policy))
         throw new Error("Workspace ledger is invalid");
     const parsedPolicy = readWorkspacePolicy({
-        features: {},
         workspace: value.policy,
     }, new Date(value.createdAt));
     if (parsedPolicy.findings.some((item) => item.level === "error") ||

@@ -2,7 +2,7 @@
 type: standard
 kind: pattern
 description: Read when adding row actions, selection, or section menus to a list.
-version: 1.0.1
+version: 1.0.2
 applies_to: [web, mobile]
 ---
 
@@ -19,7 +19,7 @@ Every row action is discoverable without gestures, and bulk work uses an explici
 
 ## Implementation
 
-The Workouts nutrition diary is the originating example; its domain actions and platform adapters remain local.
+A nutrition diary was the originating example; its domain actions and platform adapters remain app-owned.
 
 ## Verify
 
