@@ -30,10 +30,24 @@ export function ratedHoles(courseRating: number): 9 | 18 {
 }
 
 /**
+ * The course rating for a round of `holeCount` holes on a tee: half the
+ * tee's 18-hole rating for 9 holes, double a 9-hole rating for 18 holes.
+ */
+export function roundCourseRating(
+	courseRating: number,
+	holeCount: number,
+): number {
+	const nine = holeCount <= 9;
+	const rated = ratedHoles(courseRating);
+	if (nine && rated === 18) return courseRating / 2;
+	if (!nine && rated === 9) return courseRating * 2;
+	return courseRating;
+}
+
+/**
  * WHS playing handicap for a round of `holeCount` holes on a tee. A 9-hole
- * round uses half the index and a 9-hole course rating (half the tee's
- * 18-hole rating when only that is published); 18 holes on a 9-hole-rated
- * loop double it. `par` is the round's par.
+ * round uses half the index and a 9-hole course rating. `par` is the
+ * round's par.
  */
 export function roundPlayingHandicap(
 	handicapIndex: number,
@@ -42,18 +56,10 @@ export function roundPlayingHandicap(
 	holeCount: number,
 	allowance = 1,
 ): number {
-	const nine = holeCount <= 9;
-	const rated = ratedHoles(tee.courseRating);
-	const courseRating =
-		nine && rated === 18
-			? tee.courseRating / 2
-			: !nine && rated === 9
-				? tee.courseRating * 2
-				: tee.courseRating;
 	return playingHandicap(
-		nine ? handicapIndex / 2 : handicapIndex,
+		holeCount <= 9 ? handicapIndex / 2 : handicapIndex,
 		tee.slopeRating,
-		courseRating,
+		roundCourseRating(tee.courseRating, holeCount),
 		par,
 		allowance,
 	);
@@ -83,6 +89,51 @@ export function scoreDifferential(
 ): number {
 	const raw = (113 / slopeRating) * (adjustedGross - courseRating);
 	return Math.round(raw * 10) / 10;
+}
+
+/**
+ * Expected 9-hole score differential for a handicap index, used by WHS (and
+ * the NGF) since 2024 to turn a 9-hole score into an 18-hole differential.
+ * The official formula is unpublished; this linear fit reproduces the
+ * published worked examples to within 0.1.
+ */
+export function expectedNineHoleDifferential(handicapIndex: number): number {
+	return Math.round((0.52 * handicapIndex + 1.2) * 10) / 10;
+}
+
+/**
+ * The 18-hole score differential a finished round counts for, or null when
+ * it can't count: only 9 or 18 holes, every stroke entered. A 9-hole round
+ * adds the expected differential for the index it was played off, so it
+ * needs `handicapIndex`.
+ */
+export function roundDifferential(round: {
+	holes: ReadonlyArray<{ par: number; strokeIndex: number }>;
+	strokes: ReadonlyArray<number | null>;
+	playingHandicap: number;
+	handicapIndex?: number;
+	tee: { slopeRating: number; courseRating: number };
+}): number | null {
+	const count = round.holes.length;
+	if (count !== 9 && count !== 18) return null;
+	if (round.strokes.some((s) => s === null)) return null;
+	const gross = adjustedGrossScore(
+		round.holes,
+		round.strokes as number[],
+		round.playingHandicap,
+	);
+	const differential = scoreDifferential(
+		gross,
+		roundCourseRating(round.tee.courseRating, count),
+		round.tee.slopeRating,
+	);
+	if (count === 18) return differential;
+	if (round.handicapIndex === undefined) return null;
+	return (
+		Math.round(
+			(differential + expectedNineHoleDifferential(round.handicapIndex)) * 10,
+		) / 10
+	);
 }
 
 /** WHS small-sample table: how many differentials count + adjustment. */

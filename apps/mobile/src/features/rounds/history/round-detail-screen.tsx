@@ -81,7 +81,10 @@ export function RoundDetailScreen() {
 			: null,
 		round.scoreDifferential != null
 			? {
-					label: t.rounds.differential,
+					label:
+						round.holeRefs.length === 9
+							? t.rounds.differentialNine
+							: t.rounds.differential,
 					value: decimal(round.scoreDifferential),
 				}
 			: null,

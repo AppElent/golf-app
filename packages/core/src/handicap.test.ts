@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 import {
 	adjustedGrossScore,
 	courseHandicap,
+	expectedNineHoleDifferential,
 	playingHandicap,
 	ratedHoles,
+	roundDifferential,
 	roundPlayingHandicap,
 	scoreDifferential,
 	wouldBeIndex,
@@ -74,6 +76,75 @@ describe("adjustedGrossScore", () => {
 describe("scoreDifferential", () => {
 	it("computes (113/slope) × (AGS − CR) to one decimal", () => {
 		expect(scoreDifferential(82, 72.1, 132)).toBeCloseTo(8.5, 5);
+	});
+});
+
+describe("roundDifferential", () => {
+	const nine = Array.from({ length: 9 }, (_, i) => ({
+		par: 4,
+		strokeIndex: i * 2 + 1,
+	}));
+	const tee = { courseRating: 72, slopeRating: 113 };
+
+	it("18 holes: the plain differential on the full rating", () => {
+		const holes = [...nine, ...nine];
+		expect(
+			roundDifferential({
+				holes,
+				strokes: holes.map(() => 5),
+				playingHandicap: 18,
+				tee,
+			}),
+		).toBe(18);
+	});
+
+	it("9 holes: half rating plus the expected 9-hole differential", () => {
+		// 45 on CR 36 / slope 113 = 9.0, plus expected for 14.0 = 8.5.
+		expect(expectedNineHoleDifferential(14)).toBe(8.5);
+		expect(
+			roundDifferential({
+				holes: nine,
+				strokes: nine.map(() => 5),
+				playingHandicap: 7,
+				handicapIndex: 14,
+				tee,
+			}),
+		).toBe(17.5);
+	});
+
+	it("9 holes on a 9-hole rating use it as is", () => {
+		expect(
+			roundDifferential({
+				holes: nine,
+				strokes: nine.map(() => 5),
+				playingHandicap: 7,
+				handicapIndex: 14,
+				tee: { courseRating: 36, slopeRating: 113 },
+			}),
+		).toBe(17.5);
+	});
+
+	it("is null with a missing stroke, an odd hole count or no index on 9", () => {
+		const base = { playingHandicap: 7, tee };
+		expect(
+			roundDifferential({
+				...base,
+				holes: nine,
+				strokes: [...nine.map(() => 5).slice(1), null],
+				handicapIndex: 14,
+			}),
+		).toBeNull();
+		expect(
+			roundDifferential({
+				...base,
+				holes: nine.slice(0, 6),
+				strokes: [5, 5, 5, 5, 5, 5],
+				handicapIndex: 14,
+			}),
+		).toBeNull();
+		expect(
+			roundDifferential({ ...base, holes: nine, strokes: nine.map(() => 5) }),
+		).toBeNull();
 	});
 });
 

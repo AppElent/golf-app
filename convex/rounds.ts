@@ -1,7 +1,6 @@
 import {
-	adjustedGrossScore,
+	roundDifferential,
 	roundPlayingHandicap,
-	scoreDifferential,
 } from "@fairway/core/handicap";
 import { stablefordTotal, totalStrokes, vsPar } from "@fairway/core/scoring";
 import { v } from "convex/values";
@@ -242,8 +241,8 @@ export const abandon = mutation({
 
 /**
  * Finish the round: stamp per-player totals (strokes + Stableford points) and
- * the owner's WHS score differential — only for complete 18-hole rounds with
- * no NR (spec §8); otherwise null.
+ * the owner's WHS score differential — only for complete 9- or 18-hole rounds
+ * with no NR; otherwise null. 9-hole rounds add the expected differential.
  */
 export const finish = mutation({
 	args: { roundId: v.id("rounds") },
@@ -286,24 +285,21 @@ export const finish = mutation({
 			return { strokes: totalStrokes(strokes), points };
 		});
 
-		// Owner differential: 18 holes, no NR, every stroke entered.
+		// Owner differential: 9 or 18 holes, no NR, every stroke entered.
 		const owner = round.players[0];
-		const ownerStrokes = holes.map((_, i) => scoreOf(i, 0));
-		const complete =
-			round.holeRefs.length === 18 &&
-			ownerStrokes.every((s) => s?.strokes !== undefined && !s.nr);
 		const differential =
-			complete && owner.playingHandicap !== undefined
-				? scoreDifferential(
-						adjustedGrossScore(
-							holes,
-							ownerStrokes.map((s) => s?.strokes ?? 0),
-							owner.playingHandicap,
-						),
-						tee.courseRating,
-						tee.slopeRating,
-					)
-				: null;
+			owner.playingHandicap === undefined
+				? null
+				: roundDifferential({
+						holes,
+						strokes: holes.map((_, i) => {
+							const s = scoreOf(i, 0);
+							return s && !s.nr && s.strokes !== undefined ? s.strokes : null;
+						}),
+						playingHandicap: owner.playingHandicap,
+						handicapIndex: owner.handicapIndex,
+						tee,
+					});
 
 		await ctx.db.patch(roundId, {
 			status: "finished",
