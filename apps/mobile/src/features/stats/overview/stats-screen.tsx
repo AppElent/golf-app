@@ -153,10 +153,7 @@ export function StatsScreen() {
 							secondary={
 								p.average === null
 									? undefined
-									: localizeDecimal(
-											formatVsPar(Number((p.average - p.par).toFixed(1))),
-											locale,
-										)
+									: localizeDecimal(oneDecimalVsPar(p.average - p.par), locale)
 							}
 							value={
 								p.average === null
@@ -245,6 +242,13 @@ export function StatsScreen() {
 			) : null}
 		</ScrollView>
 	);
+}
+
+/** "+0.7", "+1.0", "E": one decimal, so the rows line up. */
+function oneDecimalVsPar(diff: number): string {
+	const rounded = diff.toFixed(1);
+	if (Number(rounded) === 0) return "E";
+	return diff > 0 ? `+${rounded}` : rounded;
 }
 
 /** Lower index is better, so it draws higher. */
