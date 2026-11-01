@@ -1,0 +1,9 @@
+# From docs/standards/baseline/templates/lefthook.yml. Installed by lefthook's
+# postinstall (allowBuilds in pnpm-workspace.yaml); `--staged` relies on
+# biome.json's `vcs.enabled`. Bypass once with `git commit --no-verify` or
+# `LEFTHOOK=0 git commit`.
+pre-commit:
+  commands:
+    biome:
+      glob: "*.{js,jsx,ts,tsx,mjs,cjs,json,jsonc,css}"
+      run: pnpm exec biome check --staged --no-errors-on-unmatched

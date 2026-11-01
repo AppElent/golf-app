@@ -25,6 +25,7 @@ allowBuilds:
   sharp: true # wrangler/miniflare image binary, needed by the local dev server
   node-datachannel: true # Expo Device Hub's Android streaming binary
   "@sentry/cli": true # downloads sentry-cli for source-map and debug-symbol upload
+  lefthook: true # postinstall installs the git hooks
   "@clerk/shared": false # postinstall is a telemetry notice
   core-js: false # postinstall is a sponsorship notice
   browser-tabs-lock: false # postinstall prints a notice (via @clerk/expo)
