@@ -8,9 +8,10 @@
  * docs/standards/environments.md and docs/runbooks/mobile.md.
  *
  * Scope: the local files, Convex deployment env, EAS environments and the
- * mobile build's GitHub secret. The web CI secrets (`CONVEX_DEPLOY_KEY`,
- * `CLOUDFLARE_*`, `PREVIEW_CLERK_PUBLISHABLE_KEY`, `NODE_AUTH_TOKEN`) predate
- * the manifest and are still set by hand.
+ * repo-level CI secrets (`EXPO_TOKEN`, `CLOUDFLARE_*`). Still set by hand:
+ * the three `CONVEX_DEPLOY_KEY`s (repo = preview, `stg` and `production`
+ * GitHub environments) and `PREVIEW_CLERK_PUBLISHABLE_KEY` (Clerk test
+ * instance); Infisical holds no values for them yet.
  */
 
 export const ENV_CONFIG = {
@@ -248,6 +249,25 @@ export const ENTRIES = [
 		description: "Lets the Mobile Build workflow run `eas build --local` on the runner.",
 		secret: true,
 		lands: { workflow: { name: "EXPO_TOKEN", environments: ["production"] } },
+	},
+	{
+		key: "cloudflareApiToken",
+		infisicalKey: "cloudflare-account-token",
+		description:
+			"Cloudflare token CI uses to deploy and remove Workers and attach the custom domain.",
+		secret: true,
+		lands: {
+			workflow: { name: "CLOUDFLARE_API_TOKEN", environments: ["production"] },
+		},
+	},
+	{
+		key: "cloudflareAccountId",
+		infisicalKey: "cloudflare-account-id",
+		description: "Cloudflare account CI deploys Workers to.",
+		secret: true,
+		lands: {
+			workflow: { name: "CLOUDFLARE_ACCOUNT_ID", environments: ["production"] },
+		},
 	},
 ] as const satisfies readonly Entry[];
 
