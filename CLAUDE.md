@@ -90,6 +90,7 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   `CLERK_JWT_ISSUER_DOMAIN` **preview**-type default, since each preview deployment
   is a fresh backend that doesn't inherit dev/prod env vars. `.github/workflows/ci.yml`
   runs check/typecheck/test/build on every PR and as the first job of every deploy.
+  The `main` ruleset requires a pull request with a passing `check` job.
 - **Supply-chain hardening**: `pnpm-workspace.yaml` sets `onlyBuiltDependencies`
   (esbuild/lightningcss/workerd/sharp only — `@clerk/shared`'s postinstall is denied,
   it only prints a telemetry notice) and `minimumReleaseAge: 1440` (1 day, tuned down
