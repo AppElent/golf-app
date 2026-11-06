@@ -76,7 +76,7 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   workers.dev (`CLOUDFLARE_ENV=pr`). Labels `build:ios` and `build:android` build the
   mobile dev client (`mobile-build.yml`). See `docs/standards/previews.md`.
 - **Supply chain**: `pnpm-workspace.yaml` sets `allowBuilds` (default deny) and
-  `minimumReleaseAge: 1440` with `verifyDepsBeforeRun: warn`.
+  `minimumReleaseAge: 4320` with `verifyDepsBeforeRun: install`.
 
 ## Upgrading dependencies
 
