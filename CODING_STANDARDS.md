@@ -69,11 +69,6 @@ Project facts (identity, env, builds): [mobile runbook](docs/runbooks/mobile.md)
 
 ### Baseline and toolkit (recorded 2026-11-01)
 
-- **Exception — release age:** `minimumReleaseAge: 1440` (1 day), not the
-  template's 4320. Scope: `pnpm-workspace.yaml`. Reason: 3 days rejects six
-  lockfile entries published 2026-10-29..31 (`@expo/ui`, `expo-widgets`,
-  `convex-helpers`, …), so every install would fail. Raise it to 4320 once they
-  age out (from 2026-11-04). Dependabot's 7-day cooldown stays above either.
 - **Exception — CI triggers:** `ci.yml` runs on `pull_request` and
   `workflow_call` instead of `push: main`. `deploy.yml` calls it as its first job,
   so a merge is checked once and deploys only after it passes. Node is

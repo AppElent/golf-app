@@ -6,11 +6,9 @@ packages:
   - "apps/*"
   - "packages/*"
 
-# Supply-chain cooldown: refuse versions published less than a day ago.
-# Deviation (CODING_STANDARDS.md): the template's 3 days (4320) rejected six
-# lockfile entries published 2026-10-29..31; raise it once they age out.
+# Supply-chain cooldown: refuse versions published less than 3 days ago.
 # .github/dependabot.yml's cooldown (7 days) must stay at or above it.
-minimumReleaseAge: 1440
+minimumReleaseAge: 4320
 # Exempt a package only with a dated reason; remove it once the version ages out.
 # minimumReleaseAgeExclude:
 #   - some-package # 2026-11-01: security fix not yet 3 days old
