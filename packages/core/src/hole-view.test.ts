@@ -134,7 +134,7 @@ describe("hazardsInPlay", () => {
 			p(0.0008, 0.0002),
 			p(0.0008, -0.0002),
 		];
-		const [across] = hazardsInPlay(p(0), p(0.003), {
+		const [across, beside] = hazardsInPlay(p(0), p(0.003), {
 			holeLine: geo.holeLine,
 			bunkers: [],
 			water: [lake],
@@ -142,6 +142,8 @@ describe("hazardsInPlay", () => {
 		expect(across.side).toBe("center");
 		expect(Math.round(across.reach)).toBe(56);
 		expect(Math.round(across.carry)).toBe(89);
+		expect(beside.side).toBe("right");
+		expect(Math.round(beside.carry)).toBeGreaterThan(270);
 	});
 	it("lists each stretch when the line crosses the same water twice", () => {
 		const horseshoe = [
@@ -154,13 +156,13 @@ describe("hazardsInPlay", () => {
 			p(0.0004, 0.0001),
 			p(0.0004, -0.0002),
 		];
-		const hazards = hazardsInPlay(p(0), p(0.003), {
+		const across = hazardsInPlay(p(0), p(0.003), {
 			holeLine: geo.holeLine,
 			bunkers: [],
 			water: [horseshoe],
-		});
+		}).filter((h) => h.side === "center");
 		expect(
-			hazards.map((h) => [Math.round(h.reach), Math.round(h.carry)]),
+			across.map((h) => [Math.round(h.reach), Math.round(h.carry)]),
 		).toEqual([
 			[33, 44],
 			[89, 100],

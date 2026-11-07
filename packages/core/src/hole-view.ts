@@ -98,6 +98,8 @@ const MAX_OFFSET_M = 45;
 /** A hazard this close behind the green is still the green's. */
 const BEHIND_GREEN_M = 25;
 const WATER_EDGE_STEP_M = 10;
+/** Shorter than this, a bank is only the shore where the line enters the water. */
+const MIN_BANK_M = 10;
 
 /** The line of play from `position` on: the hole line past it, or straight. */
 export function lineOfPlay(
@@ -116,14 +118,19 @@ export function lineOfPlay(
 	return [position, ...rest, green];
 }
 
+/** An odd count means the line starts in the water: you are standing in it. */
+function crossingEdges(
+	position: LatLng,
+	crossings: ReadonlyArray<LatLng>,
+): ReadonlyArray<LatLng> {
+	return crossings.length % 2 === 1 ? [position, ...crossings] : crossings;
+}
+
 /** Each stretch of the line of play that runs through water. */
 function waterAcross(
 	position: LatLng,
-	crossings: ReadonlyArray<LatLng>,
+	edges: ReadonlyArray<LatLng>,
 ): HazardInPlay[] {
-	// An odd count means the line starts in the water: you are standing in it.
-	const edges =
-		crossings.length % 2 === 1 ? [position, ...crossings] : crossings;
 	return edges.flatMap((enter, i): HazardInPlay[] =>
 		i % 2 === 0
 			? [
@@ -137,6 +144,26 @@ function waterAcross(
 				]
 			: [],
 	);
+}
+
+/** A stretch of bank beside the line of play, as one hazard. */
+function bankHazard(
+	position: LatLng,
+	bank: ReadonlyArray<{ p: LatLng; fix: PolylineFix }>,
+): HazardInPlay[] {
+	if (bank.length === 0) return [];
+	const closest = bank.reduce((a, b) => (b.fix.offset < a.fix.offset ? b : a));
+	return [
+		{
+			kind: "water",
+			...carryDistances(
+				position,
+				bank.map(({ p }) => p),
+			),
+			at: closest.p,
+			side: closest.fix.side,
+		},
+	];
 }
 
 /** The shore every few meters: a straight bank has no vertices of its own. */
@@ -195,24 +222,25 @@ export function hazardsInPlay(
 		.filter((ring) => ring.length > 2)
 		.flatMap((ring): HazardInPlay[] => {
 			const crossings = polylineCrossings(line, ring);
-			if (crossings.length > 0) return waterAcross(position, crossings);
-			const near = edgeSamples(ring)
+			const bank = edgeSamples(ring)
 				.map((p) => ({ p, fix: locateOnPolyline(p, line) }))
 				.filter(({ fix }) => inPlay(fix));
-			if (near.length === 0) return [];
-			const closest = near.reduce((a, b) =>
-				b.fix.offset < a.fix.offset ? b : a,
-			);
+			if (crossings.length === 0) return bankHazard(position, bank);
+			// The same water can line the fairway before and after the crossing.
+			const edges = crossingEdges(position, crossings);
+			const alongs = edges.map((p) => locateOnPolyline(p, line).along);
+			const stretches = new Map<string, typeof bank>();
+			for (const sample of bank) {
+				const passed = alongs.filter((a) => a < sample.fix.along).length;
+				if (passed % 2 === 1) continue;
+				const key = `${passed} ${sample.fix.side}`;
+				stretches.set(key, [...(stretches.get(key) ?? []), sample]);
+			}
 			return [
-				{
-					kind: "water",
-					...carryDistances(
-						position,
-						near.map(({ p }) => p),
-					),
-					at: closest.p,
-					side: closest.fix.side,
-				},
+				...waterAcross(position, edges),
+				...[...stretches.values()]
+					.flatMap((stretch) => bankHazard(position, stretch))
+					.filter((h) => h.carry - h.reach >= MIN_BANK_M),
 			];
 		});
 	const bunkers = geo.bunkers
