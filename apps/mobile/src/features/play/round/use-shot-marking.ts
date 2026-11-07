@@ -1,6 +1,6 @@
 import type { LatLng } from "@fairway/core/geo";
 import { useMutation } from "convex/react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api, type Id } from "../../../convex/api";
 import { useQuery } from "../../../convex/query-cache";
 import { haptics } from "../../../feedback/haptics";
@@ -42,7 +42,12 @@ export function useShotMarking({
 		() => null,
 	);
 	const [marking, setMarking] = useState(false);
+	const holeInPlay = useRef(holeKey);
+	useEffect(() => {
+		holeInPlay.current = holeKey;
+	}, [holeKey]);
 
+	/** True if the shot was saved and play is still on its hole. */
 	async function onMarkShot() {
 		if (!fix) {
 			toast.error(t.play.markNeedsGps);
@@ -53,8 +58,10 @@ export function useShotMarking({
 			const shotId = await markShot({ roundId, holeIndex, position: fix });
 			haptics.saveConfirmed();
 			setPendingShot(shotId);
-			onMarked(fix);
-			return true;
+			// A slow ack can land after play moved on: this aim was for the old hole.
+			const stillOnHole = holeInPlay.current === holeKey;
+			if (stillOnHole) onMarked(fix);
+			return stillOnHole;
 		} catch {
 			toast.error(t.play.markError);
 			return false;

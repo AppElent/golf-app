@@ -653,6 +653,20 @@ describe("simulated rounds", () => {
 		expect(left).toEqual({ round: null, scores: [], shots: [] });
 	});
 
+	it("accepts a queued score for a deleted simulation, storing nothing", async () => {
+		const { t, alice, course } = await setup();
+		const roundId = await startSimulation(alice, course);
+		await alice.mutation(api.rounds.abandon, { roundId });
+		await alice.mutation(api.rounds.setScore, {
+			roundId,
+			holeIndex: 0,
+			playerIndex: 0,
+			strokes: 4,
+		});
+		const scores = await t.run((ctx) => ctx.db.query("holeScores").collect());
+		expect(scores).toEqual([]);
+	});
+
 	it("never reaches history, stats or the learned bag", async () => {
 		const { alice, course } = await setup();
 		const roundId = await startSimulation(alice, course);

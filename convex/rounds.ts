@@ -284,6 +284,10 @@ export const setScore = mutation({
 		...scoreUpdateFields,
 	},
 	handler: async (ctx, { roundId, holeIndex, playerIndex, ...args }) => {
+		await getUserId(ctx);
+		// A web queue can still hold scores for a round deleted since. They have
+		// nowhere to go, and failing would block the queue's other scores for good.
+		if (!(await ctx.db.get(roundId))) return;
 		// Values to store; a null clears the field (patch() drops undefined).
 		const set = Object.fromEntries(
 			Object.entries(args).filter(([, value]) => value != null),
