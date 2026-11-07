@@ -3,18 +3,11 @@
  * standard). Screens import query hooks from here, never from `convex/react`.
  */
 
-import { usePaginatedQuery } from "convex/react";
-import {
-	ConvexQueryCacheProvider,
-	useQueries,
-	useQuery,
-} from "convex-helpers/react/cache";
+import { ConvexQueryCacheProvider } from "convex-helpers/react/cache";
 import { type ReactNode, useEffect, useState } from "react";
 import { AppState } from "react-native";
 
-// Paginated queries pass through: the helper's page ids change on every
-// mount, so retaining them never produces a hit.
-export { usePaginatedQuery, useQueries, useQuery };
+export { useQuery } from "convex-helpers/react/cache";
 
 const EXPIRATION_MS = 5 * 60_000;
 const MAX_IDLE_ENTRIES = 20;

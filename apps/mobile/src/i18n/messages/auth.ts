@@ -8,10 +8,6 @@ export const signInEn = {
 	emailCode: "Email me a sign-in code",
 	emailFirst: "Enter your email first.",
 	devNote: "Dev build: test credentials pre-filled (EXPO_PUBLIC_TEST_USER_*).",
-	codeTitle: "Check your email",
-	codeSubtitle: "We sent a sign-in code to {email}.",
-	code: "Code",
-	codeSubmit: "Sign in",
 	social: {
 		or: "or",
 		apple: "Continue with Apple",
@@ -33,10 +29,6 @@ export const signInNl: typeof signInEn = {
 	emailFirst: "Vul eerst je e-mailadres in.",
 	devNote:
 		"Ontwikkelbuild: testgegevens vooraf ingevuld (EXPO_PUBLIC_TEST_USER_*).",
-	codeTitle: "Controleer je e-mail",
-	codeSubtitle: "We hebben een inlogcode gestuurd naar {email}.",
-	code: "Code",
-	codeSubmit: "Inloggen",
 	social: {
 		or: "of",
 		apple: "Doorgaan met Apple",

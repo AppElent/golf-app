@@ -1,59 +1,23 @@
-import {
-	clubRows,
-	distributionShares,
-	statInputs,
-	wouldBeTrend,
-} from "./stats-model";
-
-const owner = {
-	strokes: 90,
-	vsPar: 18,
-	putts: 34,
-	holesWithPutts: 18,
-	firMade: 6,
-	firEligible: 14,
-	girMade: 4,
-	girHoles: 18,
-};
-
-describe("statInputs", () => {
-	it("flattens the owner summary with the hole count", () => {
-		expect(statInputs([{ differential: 10, holeCount: 18, owner }])).toEqual([
-			{ holeCount: 18, ...owner },
-		]);
-	});
-});
-
-describe("wouldBeTrend", () => {
-	it("runs oldest first and starts at the third differential", () => {
-		const rounds = [30, 20, null, 10].map((differential) => ({
-			differential,
-			holeCount: 18,
-			owner,
-		}));
-		// Oldest first: 10, 20, 30 → best 1 of 3 minus 2 = 8.
-		expect(wouldBeTrend(rounds)).toEqual([8]);
-	});
-});
+import { clubRows, distributionShares } from "./stats-model";
 
 describe("distributionShares", () => {
 	it("gives each bucket its share of scored holes", () => {
 		const shares = distributionShares({
-			eagles: 0,
-			birdies: 1,
-			pars: 2,
-			bogeys: 1,
-			doubles: 0,
+			eagle: 0,
+			birdie: 1,
+			par: 2,
+			bogey: 1,
+			double: 0,
 		});
-		expect(shares.find((s) => s.key === "pars")?.share).toBe(0.5);
+		expect(shares.find((s) => s.key === "par")?.share).toBe(0.5);
 	});
 	it("is all zero without holes", () => {
 		const shares = distributionShares({
-			eagles: 0,
-			birdies: 0,
-			pars: 0,
-			bogeys: 0,
-			doubles: 0,
+			eagle: 0,
+			birdie: 0,
+			par: 0,
+			bogey: 0,
+			double: 0,
 		});
 		expect(shares.every((s) => s.share === 0)).toBe(true);
 	});

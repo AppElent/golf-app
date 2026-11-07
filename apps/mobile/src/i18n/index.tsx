@@ -4,18 +4,18 @@
  *
  * **Chosen beats detected.** A saved choice wins over the device's language
  * list, which wins over English. That order lives in `resolveLocale`, which
- * comes from `./core` — a copy of the DOM-free helpers the web app keeps in
- * `src/lib/i18n/runtime/core.ts`. The web runtime's provider reaches for
- * `document.cookie` and `navigator.language` and would throw on React Native.
- * `plural` already guards `Intl.PluralRules`, which Hermes has historically
- * lacked.
+ * comes from `./core` — a copy of the toolkit's DOM-free example helpers
+ * (`docs/standards/i18n/examples/core.ts`). The web runtime's provider reaches
+ * for `document.cookie` and `navigator.language` and would throw on React
+ * Native. `plural` already guards `Intl.PluralRules`, which Hermes has
+ * historically lacked.
  *
  * **Resolved before the first paint.** `useState(initialLocale)` takes the
  * *function*, so the store is read during the first render — synchronously,
  * once, before anything is drawn. An effect or an awaited read would paint one
- * frame in the wrong language, which is the specific defect #69 forbids. That
- * is also why persistence is `expo-sqlite/kv-store` and not `expo-secure-store`
- * (see `src/prefs/local-preference.ts`).
+ * frame in the wrong language. That is also why persistence is
+ * `expo-sqlite/kv-store` and not `expo-secure-store` (see
+ * `src/prefs/local-preference.ts`).
  *
  * **Mounted outside Clerk and Convex** (`app/_layout.tsx`). Language is a
  * property of this phone, not of the signed-in account: it has to apply to the
@@ -26,6 +26,8 @@
  * Profile → Preferences → Language, because a signed-out person has stated no
  * preference and the device decides for them.
  */
+import { formatHandicapIndex } from "@fairway/core/handicap";
+import { formatVsPar } from "@fairway/core/scoring";
 import { getLocales } from "expo-localization";
 import {
 	createContext,
@@ -45,9 +47,8 @@ import { en, type Messages } from "./messages/en";
 import { nl } from "./messages/nl";
 
 export { fmt, plural } from "./core";
-export type { Messages };
 
-export const SUPPORTED_LOCALES = ["en", "nl"] as const;
+const SUPPORTED_LOCALES = ["en", "nl"] as const;
 export type Locale = (typeof SUPPORTED_LOCALES)[number];
 
 const DICTIONARIES: Record<Locale, Messages> = { en, nl };
@@ -61,8 +62,19 @@ const DECIMAL_SEPARATOR: Record<Locale, "." | ","> = { en: ".", nl: "," };
 const DATE_LOCALE: Record<Locale, string> = { en: "en-GB", nl: "nl-NL" };
 
 /** Writes a typed or stored decimal with the locale's separator. */
-export function localizeDecimal(text: string, locale: Locale): string {
+function localizeDecimal(text: string, locale: Locale): string {
 	return text.replace(".", DECIMAL_SEPARATOR[locale]);
+}
+
+/** Numbers written the way this locale writes them. */
+function numberFormatters(locale: Locale) {
+	return {
+		decimal: (n: number, digits = 1) =>
+			localizeDecimal(n.toFixed(digits), locale),
+		handicap: (n: number) => localizeDecimal(formatHandicapIndex(n), locale),
+		vsPar: (n: number, digits?: number) =>
+			localizeDecimal(formatVsPar(n, digits), locale),
+	};
 }
 
 /** The BCP 47 tag used for date formatting (day-month order for English). */
@@ -90,6 +102,8 @@ interface I18nValue {
 	locale: Locale;
 	/** The message tree for the active locale. */
 	t: Messages;
+	/** Decimals, handicap indexes and to-par figures in the active locale. */
+	numbers: ReturnType<typeof numberFormatters>;
 	setLocale: (next: Locale) => void;
 }
 
@@ -104,7 +118,12 @@ export function LocaleProvider({ children }: { children: ReactNode }) {
 	}, []);
 
 	const value = useMemo(
-		() => ({ locale, t: DICTIONARIES[locale], setLocale }),
+		() => ({
+			locale,
+			t: DICTIONARIES[locale],
+			numbers: numberFormatters(locale),
+			setLocale,
+		}),
 		[locale, setLocale],
 	);
 

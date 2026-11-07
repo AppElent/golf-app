@@ -1,15 +1,11 @@
 /**
  * Placeholders shaped like the content they stand in for, so the layout does
- * not jump when data arrives. Deliberately still: nothing shimmers or loops,
- * which is how Reduce Motion is honoured without a branch (Foundry, "Motion").
- * A screen shows one `SkeletonGroup` per region with a spoken label, not a
- * "Loading…" string.
+ * not jump when data arrives. Still, so Reduce Motion needs no branch.
  */
-import type { ReactNode } from "react";
 import { type DimensionValue, StyleSheet, View } from "react-native";
 import { metrics, radius, spacing, useTokens } from "../theme";
 
-export function SkeletonBlock({
+function SkeletonBlock({
 	width = "100%",
 	height = 14,
 	style,
@@ -31,21 +27,6 @@ export function SkeletonBlock({
 				style,
 			]}
 		/>
-	);
-}
-
-export function SkeletonGroup({
-	label,
-	children,
-}: {
-	/** Spoken once for the whole region. */
-	label: string;
-	children: ReactNode;
-}) {
-	return (
-		<View accessible accessibilityLabel={label} style={styles.group}>
-			{children}
-		</View>
 	);
 }
 
@@ -114,7 +95,6 @@ export function SkeletonCard({ lines = 2 }: { lines?: number }) {
 }
 
 const styles = StyleSheet.create({
-	group: { gap: spacing.md },
 	list: {
 		borderRadius: radius.card,
 		borderCurve: "continuous",

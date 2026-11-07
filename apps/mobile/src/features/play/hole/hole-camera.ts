@@ -1,8 +1,4 @@
 /**
- * Camera for the satellite hole view: looking straight down, rotated so play
- * runs bottom → top, zoomed so the whole hole (or the green) fits the space
- * between the HUD bars. Pure, so it is unit-tested without a map.
- *
  * Google Maps honours `mapPadding` when it frames a camera; Apple Maps (via
  * react-native-maps) does not, so for Apple the centre is moved by hand to
  * where the padded area's centre would be.
@@ -13,8 +9,11 @@ import {
 	interpolate,
 	type LatLng,
 } from "@fairway/core/geo";
+import type { Camera } from "react-native-maps";
 
-export interface HoleCamera {
+export const toCoord = (p: LatLng) => ({ latitude: p.lat, longitude: p.lng });
+
+interface HoleCamera {
 	center: LatLng;
 	heading: number;
 	/** Google Maps zoom level. */
@@ -74,5 +73,16 @@ export function holeCamera({
 		heading,
 		zoom: Math.min(Math.max(zoom, 14), 21),
 		altitude: metersPerPoint * Math.max(height, 1) * APPLE_ALTITUDE_PER_METER,
+	};
+}
+
+/** The loupe: same heading as the hole view, about 4× closer. */
+export function loupeCamera(camera: Camera, at: LatLng): Partial<Camera> {
+	return {
+		center: toCoord(at),
+		heading: camera.heading,
+		pitch: 0,
+		zoom: camera.zoom === undefined ? undefined : camera.zoom + 2,
+		altitude: camera.altitude === undefined ? undefined : camera.altitude / 4,
 	};
 }

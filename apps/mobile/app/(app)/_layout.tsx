@@ -13,10 +13,11 @@ import { Redirect, Stack } from "expo-router";
 import { useMemo } from "react";
 import { Platform, View } from "react-native";
 import { ConvexSessionGate } from "../../src/auth/convex-session-gate";
+import { OfflineBanner } from "../../src/convex/offline-banner";
 import { AppQueryCacheProvider } from "../../src/convex/query-cache";
 import { useTokens } from "../../src/theme";
 import { ConfirmProvider } from "../../src/ui/confirm-dialog";
-import { OfflineBanner } from "../../src/ui/offline-banner";
+import { useBaseStackOptions } from "../../src/ui/stack-options";
 import { ToastProvider } from "../../src/ui/toast";
 
 export const unstable_settings = { anchor: "(tabs)" };
@@ -24,22 +25,10 @@ export const unstable_settings = { anchor: "(tabs)" };
 export default function AppLayout() {
 	const colors = useTokens();
 	const { isSignedIn, userId } = useAuth();
+	const baseOptions = useBaseStackOptions();
 	const screenOptions = useMemo(
-		() => ({
-			headerShown: true,
-			headerTintColor: colors.accent,
-			gestureEnabled: true,
-			contentStyle: { backgroundColor: colors.bg },
-			headerBackButtonDisplayMode: "minimal" as const,
-			...(Platform.OS === "android"
-				? {
-						headerStyle: { backgroundColor: colors.bg },
-						headerTitleStyle: { color: colors.text },
-						headerShadowVisible: false,
-					}
-				: {}),
-		}),
-		[colors],
+		() => ({ ...baseOptions, headerShown: true, gestureEnabled: true }),
+		[baseOptions],
 	);
 
 	if (!isSignedIn) return <Redirect href="/sign-in" />;
@@ -48,7 +37,7 @@ export default function AppLayout() {
 		<ToastProvider>
 			<ConfirmProvider>
 				<ConvexSessionGate>
-					<AppQueryCacheProvider scope={userId ?? "signed-out"}>
+					<AppQueryCacheProvider scope={userId}>
 						<View style={{ flex: 1, backgroundColor: colors.bg }}>
 							<OfflineBanner />
 							<Stack screenOptions={screenOptions}>

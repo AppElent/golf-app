@@ -1,12 +1,11 @@
-/** Pick the home course (or none). Saves on tap and goes back. */
 import { useMutation } from "convex/react";
 import { useRouter } from "expo-router";
 import { api, type Id } from "../../../convex/api";
 import { useQuery } from "../../../convex/query-cache";
+import { useSubmit } from "../../../convex/use-submit";
 import { useI18n } from "../../../i18n";
-import { convexErrorMessage } from "../../../ui/confirm-dialog";
 import { FormChoiceRow, FormScreen, FormSection } from "../../../ui/form";
-import { ScreenHeader } from "../../../ui/screen-header";
+import { NavHeader } from "../../../ui/nav-header";
 import { SkeletonList } from "../../../ui/skeleton";
 import { useToast } from "../../../ui/toast";
 
@@ -17,19 +16,19 @@ export function HomeCourseScreen() {
 	const settings = useQuery(api.settings.get);
 	const courses = useQuery(api.courses.list);
 	const update = useMutation(api.settings.update);
+	const submit = useSubmit();
 
-	async function choose(homeCourseId: Id<"courses"> | null) {
-		try {
-			await update({ homeCourseId });
-			router.back();
-		} catch (e) {
-			toast.error(convexErrorMessage(e, t.profile.saveError));
-		}
+	function choose(homeCourseId: Id<"courses"> | null) {
+		return submit.run(() => update({ homeCourseId }), {
+			errorFallback: t.profile.saveError,
+			onSuccess: () => router.back(),
+			onError: (message) => toast.error(message),
+		});
 	}
 
 	return (
 		<>
-			<ScreenHeader title={t.profile.homeCourse} />
+			<NavHeader title={t.profile.homeCourse} />
 			{settings === undefined || courses === undefined ? (
 				<SkeletonList rows={3} />
 			) : (

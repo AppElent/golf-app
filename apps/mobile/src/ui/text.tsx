@@ -1,12 +1,4 @@
-/**
- * The only component allowed to set a font size. Screens pass a `variant`
- * name from the type ramp; a screen that reaches for `fontSize` is drift.
- *
- * Colour comes from `useTokens()`, not from the ramp: the ramp's `color` is
- * the dark value for legacy static consumers, and this is where every piece
- * of text in the app becomes scheme-aware at once. A caller's `style` still
- * wins, so `color:` overrides keep working.
- */
+/** How screens set a font size: they pass a `variant` from the type ramp. */
 import { Text, type TextProps } from "react-native";
 import { type as typeRamp, useTokens } from "../theme";
 

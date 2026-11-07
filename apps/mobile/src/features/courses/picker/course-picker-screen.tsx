@@ -1,7 +1,3 @@
-/**
- * Course picker: the home course, then courses nearest first once we have a
- * position fix. Location is asked for from an inline prompt, not on open.
- */
 import { formatTravelDistance } from "@fairway/core/format";
 import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
@@ -17,6 +13,7 @@ import { InsetList, InsetRow } from "../../../ui/inset-list";
 import { SkeletonList } from "../../../ui/skeleton";
 import { AppText } from "../../../ui/text";
 import { useCurrentPosition } from "../../location/position/use-current-position";
+import { useUnits } from "../../profile/use-units";
 import { pickerCourses } from "./course-picker-model";
 
 export function CoursePickerScreen() {
@@ -28,7 +25,7 @@ export function CoursePickerScreen() {
 	const [query, setQuery] = useState("");
 
 	const position = state.status === "ready" ? state.position : null;
-	const units = settings?.units ?? "m";
+	const units = useUnits();
 	const homeCourseId = settings?.homeCourseId ?? null;
 	const rows = courses
 		? pickerCourses(courses, { query, position, homeCourseId })
@@ -43,11 +40,8 @@ export function CoursePickerScreen() {
 			<Stack.Screen options={{ title: t.courses.title }} />
 			<FormSearchField
 				label={t.courses.search}
-				placeholder={t.courses.search}
 				value={query}
 				onChangeText={setQuery}
-				autoCorrect={false}
-				returnKeyType="search"
 			/>
 
 			{state.status === "unknown" ||
@@ -84,11 +78,10 @@ export function CoursePickerScreen() {
 					body={fmt(t.courses.noMatch, { query })}
 				/>
 			) : (
-				<InsetList compact header={position ? t.courses.nearby : t.courses.all}>
+				<InsetList header={position ? t.courses.nearby : t.courses.all}>
 					{rows.map((course) => (
 						<InsetRow
 							key={course._id}
-							id={course._id}
 							leading={{
 								symbol:
 									course._id === homeCourseId ? "house.fill" : "flag.fill",

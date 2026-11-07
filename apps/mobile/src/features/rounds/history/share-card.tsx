@@ -1,14 +1,9 @@
-/**
- * The image "Share" sends: a round on one card, the same in either app
- * scheme (it is seen outside the app). Rendered off-screen and captured with
- * react-native-view-shot; the caller falls back to text if capture fails.
- */
 import type { ComponentRef, Ref } from "react";
 import { StyleSheet, View } from "react-native";
-import { colors, radius, spacing } from "../../../theme";
+import { darkColors as colors, radius, spacing } from "../../../theme";
 import { AppText } from "../../../ui/text";
 
-export type ShareCardProps = {
+type ShareCardProps = {
 	course: string;
 	/** "Sunday 1 November · Yellow". */
 	detail: string;
@@ -20,18 +15,18 @@ export type ShareCardProps = {
 	marks: { label: string; count: number }[];
 	/** "Out 44 · In 41", when there are two nines. */
 	nines: string | null;
-	brand: string;
 	ref?: Ref<ComponentRef<typeof View>>;
 };
 
-export const CARD_WIDTH = 360;
+const CARD_WIDTH = 360;
+const BRAND = "Fairway";
 
 export function ShareCard({ ref, ...props }: ShareCardProps) {
 	return (
 		<View ref={ref} collapsable={false} style={styles.card}>
 			<View style={styles.top}>
 				<AppText variant="label" style={styles.brand}>
-					⛳ {props.brand.toUpperCase()}
+					⛳ {BRAND.toUpperCase()}
 				</AppText>
 				<AppText variant="title" style={styles.text} numberOfLines={2}>
 					{props.course}

@@ -17,7 +17,7 @@ const enabled = !__DEV__ && Updates.isEnabled;
 
 export function useAppUpdate(): { ready: boolean; restart: () => void } {
 	const { isUpdatePending } = Updates.useUpdates();
-	const lastCheckedAt = useRef<number | null>(Date.now());
+	const lastCheckedAt = useRef<number>(Date.now());
 
 	useEffect(() => {
 		if (!enabled) return;

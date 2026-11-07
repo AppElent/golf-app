@@ -1,24 +1,15 @@
 /**
- * The inset grouped list as a real SwiftUI `List` — system corners, system
- * separators, system swipe actions and context menu, Dynamic Type. This is
- * the single change that most separates a native screen from a web page
- * (Foundry readme, "Lists over cards"), so the whole group is SwiftUI and
- * nothing in it is drawn by React Native unless a caller passes a React
- * element as `leading`.
+ * The inset grouped list as a real SwiftUI `List`: system corners, separators,
+ * swipe actions, context menu and Dynamic Type.
  *
- * Where SwiftUI draws it, the system's look wins: no `radius.card`, no
- * hairline colour, no row height — those are the RN fallback's business.
- * Only the accent and the copy come from us.
+ * A `List` has no intrinsic height and this one sits inside an RN `ScrollView`,
+ * so it is `scrollDisabled` and its height comes from the list's own scroll
+ * geometry (`contentHeight`, iOS 18+), with a row-count estimate until the first
+ * measurement. `.swipeActions` only exists inside a `List`, which is why the
+ * whole group is one.
  *
- * Sizing. A `List` has no intrinsic height, and this list sits inside an RN
- * `ScrollView` among RN content, so it is `scrollDisabled` and its height is
- * driven from the list's own scroll geometry (`contentHeight`, iOS 18+) with a
- * row-count estimate until the first measurement arrives. `.swipeActions`
- * only exists inside a `List`, which is why the group is one, and why the
- * earlier per-row `Host` + `SwipeActions` canary could never have swiped.
- *
- * The screen gutter is undone with a negative margin so the List's own
- * inset-grouped margins meet the screen edge at the system distance.
+ * The negative margin undoes the screen gutter so the List's own inset-grouped
+ * margins meet the screen edge at the system distance.
  */
 import {
 	Button,
@@ -45,7 +36,6 @@ import {
 	frame,
 	lineLimit,
 	listRowBackground,
-	listRowInsets,
 	listSectionMargins,
 	listStyle,
 	monospacedDigit,
@@ -57,41 +47,35 @@ import {
 	tint,
 	useScrollGeometryChange,
 } from "@expo/ui/swift-ui/modifiers";
-import { Children, Fragment, isValidElement, useState } from "react";
-import { StyleSheet, useWindowDimensions, View } from "react-native";
-import { metrics, useHostScheme, useTokens } from "../theme";
-import type {
-	InsetListProps,
-	InsetRowProps,
-	RowLeading,
-} from "./inset-list.types";
-
-export type { InsetListProps, InsetRowProps, RowLeading };
+import { Children, Fragment, useState } from "react";
+import { useWindowDimensions, View } from "react-native";
+import { metrics, useAppearance, useTokens } from "../theme";
+import {
+	type InsetListProps,
+	type InsetRowProps,
+	rowSpokenLabel,
+	swipeActions,
+} from "./inset-list.shared";
 
 /** Until the list reports its geometry: rows at the native default, plus chrome. */
 function estimateHeight(rows: number, header?: string, footer?: string) {
 	return rows * 52 + (header ? 44 : 20) + (footer ? 36 : 20);
 }
 
-export function InsetList({
-	compact = false,
-	header,
-	headerContent,
-	footer,
-	children,
-}: InsetListProps) {
+export function InsetList({ header, footer, children }: InsetListProps) {
 	const tokens = useTokens();
-	const rows = Children.count(children) + (headerContent ? 1 : 0);
+	const { scheme } = useAppearance();
 	const [measured, setMeasured] = useState<number | null>(null);
 	const geometry = useScrollGeometryChange((g) => {
 		if (g.contentHeight > 0) setMeasured(Math.ceil(g.contentHeight));
 	});
-	const height = measured ?? estimateHeight(rows, header, footer);
+	const height =
+		measured ?? estimateHeight(Children.count(children), header, footer);
 
 	return (
-		<View style={[styles.bleed, compact ? { marginHorizontal: -16 } : null]}>
+		<View style={{ marginHorizontal: -16 }}>
 			<Host
-				colorScheme={useHostScheme()}
+				colorScheme={scheme}
 				seedColor={tokens.accent}
 				style={{ width: "100%", height }}
 			>
@@ -104,26 +88,10 @@ export function InsetList({
 					]}
 				>
 					<Section
-						modifiers={
-							compact
-								? [listSectionMargins({ edges: "vertical", length: 0 })]
-								: []
-						}
+						modifiers={[listSectionMargins({ edges: "vertical", length: 0 })]}
 						title={header}
 						footer={footer ? <Text>{footer}</Text> : undefined}
 					>
-						{headerContent ? (
-							<HStack
-								spacing={0}
-								modifiers={[
-									frame({ minHeight: 64 }),
-									listRowInsets({ top: 0, bottom: 0, leading: 0, trailing: 0 }),
-									listRowBackground(tokens.surface),
-								]}
-							>
-								<RNHostView>{headerContent}</RNHostView>
-							</HStack>
-						) : null}
 						{children}
 					</Section>
 				</List>
@@ -132,24 +100,8 @@ export function InsetList({
 	);
 }
 
-function Leading({ leading }: { leading: RowLeading }) {
-	const tokens = useTokens();
-	if (isValidElement(leading)) {
-		return <RNHostView matchContents>{leading}</RNHostView>;
-	}
-	return (
-		<Image
-			systemName={leading.symbol}
-			size={20}
-			color={tokens.accentInk}
-			modifiers={[frame({ width: 28 })]}
-		/>
-	);
-}
-
 export function InsetRow({
 	leading,
-	selected,
 	title,
 	secondary,
 	value,
@@ -158,13 +110,11 @@ export function InsetRow({
 	destructive = false,
 	onPress,
 	actions,
-	// `menuTitle` is unused here: a SwiftUI context menu has no title row.
-	accessibilityLabel: label,
 }: InsetRowProps) {
 	const tokens = useTokens();
 	const { width } = useWindowDimensions();
-	const spoken = label ?? (secondary ? `${title}, ${secondary}` : title);
-	const swipe = (actions ?? []).filter((a) => a.swipe !== false);
+	const spoken = rowSpokenLabel({ title, secondary });
+	const swipe = swipeActions(actions ?? []);
 
 	const row = (
 		<HStack
@@ -173,21 +123,27 @@ export function InsetRow({
 				contentShape(shapes.rectangle()),
 				listRowBackground(tokens.surface),
 				...(trailing ? [] : [accessibilityElement("ignore")]),
-				...(selected ? [accessibilityAddTraits(["isSelected"])] : []),
 				...(trailing ? [] : [accessibilityLabel(spoken)]),
 				...(onPress && !trailing
 					? [onTapGesture(onPress), accessibilityAddTraits(["isButton"])]
 					: []),
 			]}
 		>
-			{leading ? <Leading leading={leading} /> : null}
+			{leading ? (
+				<Image
+					systemName={leading.symbol}
+					size={20}
+					color={tokens.accentInk}
+					modifiers={[frame({ width: 28 })]}
+				/>
+			) : null}
 			<VStack
 				alignment="leading"
 				spacing={1}
 				modifiers={
 					trailing
 						? [
-								frame({ minHeight: 48 }),
+								frame({ minHeight: metrics.rowMinHeight }),
 								contentShape(shapes.rectangle()),
 								accessibilityElement("ignore"),
 								accessibilityLabel(spoken),
@@ -249,9 +205,6 @@ export function InsetRow({
 
 	if (!actions || actions.length === 0) return row;
 
-	// Long press: the same actions as a system menu. Swipe: the ones that fit.
-	// A full swipe runs only an outermost action marked `fullSwipe`, which
-	// confirms or offers undo itself (the RowAction contract).
 	const withMenu = (
 		<ContextMenu>
 			<ContextMenu.Items>
@@ -259,7 +212,7 @@ export function InsetRow({
 					<Fragment key={action.key}>
 						<Button
 							key={action.key}
-							label={action.menuLabel ?? action.label}
+							label={action.label}
 							modifiers={[
 								tint(action.destructive ? tokens.danger : tokens.text),
 							]}
@@ -288,18 +241,14 @@ export function InsetRow({
 	return (
 		<SwipeActions>
 			{withMenu}
-			<SwipeActions.Actions
-				edge="trailing"
-				allowsFullSwipe={Boolean(swipe.at(-1)?.fullSwipe)}
-			>
+			{/* Off explicitly: Expo UI defaults to SwiftUI's full-swipe-runs-it. */}
+			<SwipeActions.Actions edge="trailing" allowsFullSwipe={false}>
 				{[...swipe].reverse().map((action) => (
 					<Button
 						key={action.key}
 						label={action.label}
 						role={action.destructive ? "destructive" : "default"}
-						systemImage={
-							action.systemImage ?? (action.destructive ? "trash" : "pencil")
-						}
+						systemImage={action.systemImage}
 						onPress={action.onPress}
 						modifiers={[
 							tint(action.destructive ? tokens.danger : tokens.swipeNeutral),
@@ -310,7 +259,3 @@ export function InsetRow({
 		</SwipeActions>
 	);
 }
-
-const styles = StyleSheet.create({
-	bleed: { marginHorizontal: -metrics.screenGutter },
-});

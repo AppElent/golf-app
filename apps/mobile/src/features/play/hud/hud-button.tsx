@@ -1,4 +1,3 @@
-/** A round glass button over the hole: an SF Symbol / Material icon or a glyph. */
 import { SymbolView } from "expo-symbols";
 import type { ComponentProps } from "react";
 import { Pressable, StyleSheet } from "react-native";

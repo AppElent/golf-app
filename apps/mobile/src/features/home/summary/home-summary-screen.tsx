@@ -1,14 +1,11 @@
-/**
- * Home: the resume card while a round is live, an "update ready" row, the
- * handicap hero, "Start round" and the recent finished rounds. Everything
- * here is a read of Convex; nothing is stored on the phone.
- */
 import { holeLabel } from "@fairway/core/format";
+import { wouldBeFromHistory } from "@fairway/core/handicap";
+import { playedHoles } from "@fairway/core/round";
 import { useRouter } from "expo-router";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { api } from "../../../convex/api";
 import { useQuery } from "../../../convex/query-cache";
-import { dateLocale, fmt, localizeDecimal, useI18n } from "../../../i18n";
+import { dateLocale, fmt, useI18n } from "../../../i18n";
 import {
 	metrics,
 	radius,
@@ -21,21 +18,21 @@ import { InsetList, InsetRow } from "../../../ui/inset-list";
 import { SkeletonCard } from "../../../ui/skeleton";
 import { AppText } from "../../../ui/text";
 import { useAppUpdate } from "../../../updates/use-app-update";
-import { vsParLabel, wouldBeFromHistory } from "./home-summary-model";
+import { RoundRow } from "../../rounds/components/round-row";
+import { useActiveRound } from "../../rounds/use-active-round";
 
-/** Finished rounds listed on Home; the Rounds tab has the rest. */
 const RECENT = 3;
 
 export function HomeSummaryScreen() {
 	const router = useRouter();
 	const styles = useThemedStyles(createStyles);
-	const { t, locale } = useI18n();
-	const active = useQuery(api.rounds.active);
+	const { t, locale, numbers } = useI18n();
+	const active = useActiveRound();
 	const settings = useQuery(api.settings.get);
-	const history = useQuery(api.rounds.history, { limit: 20 });
+	const history = useQuery(api.rounds.history, {});
 	const update = useAppUpdate();
 
-	const wouldBe = history ? wouldBeFromHistory(history) : null;
+	const wouldBe = wouldBeFromHistory(history ?? []);
 	const recent = history?.slice(0, RECENT) ?? [];
 	const index = settings?.handicapIndex ?? null;
 
@@ -61,9 +58,9 @@ export function HomeSummaryScreen() {
 						<AppText variant="footnote" style={styles.onAccent}>
 							{fmt(t.home.resumeDetail, {
 								hole: holeLabel(
-									active.holes[active.round.currentHoleIndex ?? 0]?.ref ?? "",
+									active.holes[active.round.currentHoleIndex]?.ref ?? "",
 								),
-								n: active.scores.filter((x) => x.playerIndex === 0).length,
+								n: playedHoles(active.holes.length, active.scores).length,
 								total: active.holes.length,
 							})}
 						</AppText>
@@ -75,7 +72,7 @@ export function HomeSummaryScreen() {
 			) : null}
 
 			{update.ready ? (
-				<InsetList compact>
+				<InsetList>
 					<InsetRow
 						leading={{ symbol: "arrow.down.circle.fill" }}
 						title={t.home.updateReady}
@@ -99,18 +96,16 @@ export function HomeSummaryScreen() {
 						variant={index === null ? "title" : "quantity"}
 						style={styles.heroValue}
 					>
-						{index === null
-							? t.home.handicapUnset
-							: localizeDecimal(index.toFixed(1), locale)}
+						{index === null ? t.home.handicapUnset : numbers.handicap(index)}
 					</AppText>
 				)}
-				{wouldBe ? (
+				{wouldBe.index !== null ? (
 					<AppText variant="footnote">
 						{fmt(t.home.wouldBe, {
-							value: localizeDecimal(wouldBe.value.toFixed(1), locale),
+							value: numbers.handicap(wouldBe.index),
 						})}
 						{" · "}
-						{fmt(t.home.wouldBeHint, { count: wouldBe.count })}
+						{fmt(t.home.wouldBeHint, { count: wouldBe.counted })}
 					</AppText>
 				) : index === null && settings !== undefined ? (
 					<AppText variant="footnote">{t.home.handicapUnsetHint}</AppText>
@@ -128,12 +123,11 @@ export function HomeSummaryScreen() {
 			{history === undefined ? (
 				<SkeletonCard lines={2} />
 			) : recent.length > 0 ? (
-				<InsetList compact header={t.home.recentRounds}>
+				<InsetList header={t.home.recentRounds}>
 					{recent.map((round) => (
-						<InsetRow
+						<RoundRow
 							key={round._id}
-							id={round._id}
-							title={round.courseName}
+							round={round}
 							secondary={[
 								new Date(round.startedAt).toLocaleDateString(
 									dateLocale(locale),
@@ -143,13 +137,6 @@ export function HomeSummaryScreen() {
 							]
 								.filter(Boolean)
 								.join(" · ")}
-							value={
-								round.owner.strokes > 0
-									? `${round.owner.strokes} (${vsParLabel(round.owner.vsPar)})`
-									: undefined
-							}
-							chevron
-							onPress={() => router.push(`/rounds/${round._id}`)}
 						/>
 					))}
 					{history.length > recent.length ? (
@@ -161,7 +148,7 @@ export function HomeSummaryScreen() {
 					) : null}
 				</InsetList>
 			) : (
-				<InsetList compact header={t.home.recentRounds}>
+				<InsetList header={t.home.recentRounds}>
 					<InsetRow title={t.home.noRounds} secondary={t.home.noRoundsHint} />
 				</InsetList>
 			)}

@@ -1,18 +1,10 @@
-/**
- * Two buttons, because V1 needs two: the accent-filled primary action and a
- * quiet bordered one. Both are capsules — the web's `--r-pill` on its primary
- * CTA, and the shape a thumb finds without looking.
- *
- * `Pressable`'s `pressed` state carries the feedback rather than an opacity
- * animation: on a phone held at arm's length mid-set, a colour change reads
- * and a fade does not.
- */
 import {
 	ActivityIndicator,
 	Pressable,
 	type PressableProps,
+	type StyleProp,
 	StyleSheet,
-	View,
+	type ViewStyle,
 } from "react-native";
 import {
 	radius,
@@ -23,23 +15,20 @@ import {
 } from "../theme";
 import { AppText } from "./text";
 
-type Props = Omit<PressableProps, "children"> & {
+type Props = Omit<PressableProps, "children" | "style"> & {
 	label: string;
-	/** Rendered to the left of the label — an icon, usually. */
-	icon?: React.ReactNode;
-	size?: "md" | "lg";
 	loading?: boolean;
+	style?: StyleProp<ViewStyle>;
 };
 
 export function PrimaryButton({
 	label,
-	icon,
 	size = "md",
 	loading = false,
 	style,
 	disabled,
 	...rest
-}: Props) {
+}: Props & { size?: "md" | "lg" }) {
 	const colors = useTokens();
 	const styles = useThemedStyles(createStyles);
 	return (
@@ -53,25 +42,21 @@ export function PrimaryButton({
 				busy: loading,
 				disabled: disabled || loading,
 			}}
-			style={(state) => [
+			style={({ pressed }) => [
 				styles.base,
 				size === "lg" && styles.lg,
 				{
 					backgroundColor:
 						disabled && !loading
 							? colors.surface2
-							: state.pressed
+							: pressed
 								? colors.accentPressed
 								: colors.accentFill,
 				},
-				typeof style === "function" ? style(state) : style,
+				style,
 			]}
 		>
-			{loading ? (
-				<ActivityIndicator color={colors.onAccent} />
-			) : icon ? (
-				<View style={styles.icon}>{icon}</View>
-			) : null}
+			{loading ? <ActivityIndicator color={colors.onAccent} /> : null}
 			<AppText
 				variant={size === "lg" ? "heading" : "body"}
 				style={{
@@ -89,8 +74,6 @@ export function PrimaryButton({
 
 export function GhostButton({
 	label,
-	icon,
-	size = "md",
 	loading = false,
 	tone = "neutral",
 	style,
@@ -113,21 +96,16 @@ export function GhostButton({
 				busy: loading,
 				disabled: disabled || loading,
 			}}
-			style={(state) => [
+			style={({ pressed }) => [
 				styles.base,
-				size === "lg" && styles.lg,
 				styles.ghost,
-				state.pressed && { backgroundColor: colors.surface2 },
-				typeof style === "function" ? style(state) : style,
+				pressed && { backgroundColor: colors.surface2 },
+				style,
 			]}
 		>
-			{loading ? (
-				<ActivityIndicator color={colors.text} />
-			) : icon ? (
-				<View style={styles.icon}>{icon}</View>
-			) : null}
+			{loading ? <ActivityIndicator color={colors.text} /> : null}
 			<AppText
-				variant={size === "lg" ? "heading" : "body"}
+				variant="body"
 				style={{
 					color:
 						disabled && !loading
@@ -164,9 +142,5 @@ const createStyles = (colors: Tokens) =>
 			backgroundColor: "transparent",
 			borderWidth: 1,
 			borderColor: colors.borderStrong,
-		},
-		icon: {
-			alignItems: "center",
-			justifyContent: "center",
 		},
 	});

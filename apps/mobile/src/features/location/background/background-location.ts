@@ -1,25 +1,15 @@
 /**
- * Opt-in "GPS while locked": during a round, keep location updates running
- * with the phone locked so the fix is already warm when the screen comes back
- * (no ten-second wait for the blue dot on every glance). Off by default; the
- * switch lives in Profile and needs the Always permission.
- *
- * The task stores nothing. Its positions keep the receiver awake, and feed
- * the Lock Screen's Live Activity (`live/live-hole`) while the phone is
- * locked; the Play screen's own foreground watch draws everything else. Updates stop when
- * Play unmounts, so nothing runs outside a round — and if the app was killed
- * with Play open, the first update after the OS relaunches it finds no Play
- * mounted and stops them.
+ * Opt-in "GPS while locked". The task's positions keep the receiver awake (so
+ * the fix is warm when the screen comes back) and feed the Lock Screen's Live
+ * Activity. If the app was killed with Play open, the first update after the OS
+ * relaunches it finds no Play mounted and stops them.
  */
 import * as Location from "expo-location";
 import * as TaskManager from "expo-task-manager";
 import { useEffect } from "react";
-import {
-	PREFERENCE_KEYS,
-	readPreference,
-	writePreference,
-} from "../../../prefs/local-preference";
-import { liveHolePosition } from "../../live/live-hole";
+import { liveHolePosition } from "../../live/hole/live-hole";
+import { fixReading } from "../location-fix";
+import { backgroundLocationPreferred } from "./background-location-preference";
 
 const TASK = "fairway-background-location";
 
@@ -32,66 +22,17 @@ if (!TaskManager.isTaskDefined(TASK)) {
 	TaskManager.defineTask<{ locations?: Location.LocationObject[] }>(
 		TASK,
 		async ({ data }) => {
-			// Don't outlive Play.
 			if (!playing) {
 				await stop();
 				return;
 			}
 			const last = data?.locations?.at(-1);
 			if (last) {
-				liveHolePosition(
-					{ lat: last.coords.latitude, lng: last.coords.longitude },
-					false,
-				);
+				liveHolePosition(fixReading(last).position, "background");
 			}
 		},
 	);
 }
-
-export function backgroundLocationPreferred(): boolean {
-	return readPreference(PREFERENCE_KEYS.backgroundLocation) === "on";
-}
-
-/**
- * Turn the preference on (asking for Always first) or off. Resolves to the
- * stored state, plus whether iOS would no longer show its prompt (the user has
- * to go to Settings).
- */
-export async function setBackgroundLocationPreferred(
-	on: boolean,
-): Promise<{ on: boolean; needsSettings: boolean }> {
-	if (!on) {
-		writePreference(PREFERENCE_KEYS.backgroundLocation, "off");
-		return { on: false, needsSettings: false };
-	}
-	try {
-		const fg = await Location.requestForegroundPermissionsAsync();
-		if (!fg.granted) return { on: false, needsSettings: !fg.canAskAgain };
-		const before = await Location.getBackgroundPermissionsAsync();
-		let bg = await Location.requestBackgroundPermissionsAsync();
-		// iOS resolves at once with "when in use" while its "Change to Always"
-		// prompt is still up, and sends no event when it closes: re-read for a
-		// while.
-		for (
-			let i = 0;
-			!bg.granted && before.canAskAgain && i < PROMPT_POLLS;
-			i++
-		) {
-			await new Promise((r) => setTimeout(r, 500));
-			bg = await Location.getBackgroundPermissionsAsync();
-		}
-		if (!bg.granted) return { on: false, needsSettings: !before.canAskAgain };
-	} catch {
-		return { on: false, needsSettings: false };
-	}
-	return {
-		on: writePreference(PREFERENCE_KEYS.backgroundLocation, "on"),
-		needsSettings: false,
-	};
-}
-
-/** Half-second reads while the iOS prompt may be up (15 s). */
-const PROMPT_POLLS = 30;
 
 /** Runs background updates while the calling screen (Play) is mounted. */
 export function useBackgroundLocationWhilePlaying(notification: {

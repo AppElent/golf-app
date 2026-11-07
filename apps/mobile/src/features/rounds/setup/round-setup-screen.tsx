@@ -1,19 +1,20 @@
-/**
- * Round setup: loops → tee → format → players, then "Tee off" starts the
- * round on the server and opens Play. Playing handicaps shown here are a
- * preview; `rounds.start` computes the stored ones.
- */
 import { useUser } from "@clerk/expo";
+import {
+	parseHandicapIndex,
+	playingHandicapPreview,
+} from "@fairway/core/handicap";
+import { detectLoops, selectLoops } from "@fairway/core/loops";
+import type { RoundFormat } from "@fairway/core/round";
 import { useMutation } from "convex/react";
 import { Stack, useRouter } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { api, type Id } from "../../../convex/api";
 import { useQuery } from "../../../convex/query-cache";
+import { useSubmit } from "../../../convex/use-submit";
 import { haptics } from "../../../feedback/haptics";
-import { fmt, localizeDecimal, useI18n } from "../../../i18n";
+import { fmt, useI18n } from "../../../i18n";
 import { spacing, useTokens } from "../../../theme";
-import { convexErrorMessage } from "../../../ui/confirm-dialog";
 import { EmptyState } from "../../../ui/empty-state";
 import {
 	AddRow,
@@ -27,16 +28,9 @@ import {
 } from "../../../ui/form";
 import { SkeletonList } from "../../../ui/skeleton";
 import { AppText } from "../../../ui/text";
-import {
-	courseLoops,
-	indexText,
-	parseIndex,
-	playingHandicapPreview,
-	selection,
-	toggleLoopPick,
-} from "./round-setup-model";
+import type { CourseDetail } from "../../courses/course-detail";
+import { toggleLoopPick } from "./round-setup-model";
 
-type Format = "stableford" | "stroke";
 interface GuestDraft {
 	key: number;
 	name: string;
@@ -44,53 +38,9 @@ interface GuestDraft {
 }
 
 export function RoundSetupScreen({ courseId }: { courseId: Id<"courses"> }) {
-	const router = useRouter();
-	const { t, locale } = useI18n();
-	const colors = useTokens();
-	const { user } = useUser();
+	const { t } = useI18n();
 	const detail = useQuery(api.courses.get, { courseId });
 	const settings = useQuery(api.settings.get);
-	const start = useMutation(api.rounds.start);
-
-	const [picks, setPicks] = useState<number[]>([]);
-	const [teeId, setTeeId] = useState<Id<"tees"> | null>(null);
-	const [format, setFormat] = useState<Format>("stableford");
-	const [ownerIndex, setOwnerIndex] = useState<string | null>(null);
-	const [guests, setGuests] = useState<GuestDraft[]>([]);
-	const [starting, setStarting] = useState(false);
-	const [error, setError] = useState<string | null>(null);
-	// A slow mutation can resolve after the user left this screen: Convex
-	// still applies it, but navigating then would pop an unrelated screen.
-	const open = useRef(true);
-	useEffect(
-		() => () => {
-			open.current = false;
-		},
-		[],
-	);
-
-	const loops = useMemo(
-		() => (detail ? courseLoops(detail.holes) : []),
-		[detail],
-	);
-	// Sensible defaults once data lands: front + back (18) when there are two
-	// loops, the first tee, the stored handicap index.
-	useEffect(() => {
-		if (loops.length > 0 && picks.length === 0)
-			setPicks(loops.length >= 2 ? [0, 1] : [0]);
-	}, [loops, picks.length]);
-	useEffect(() => {
-		if (detail && teeId === null && detail.tees[0])
-			setTeeId(detail.tees[0]._id);
-	}, [detail, teeId]);
-	useEffect(() => {
-		if (settings && ownerIndex === null)
-			setOwnerIndex(
-				settings.handicapIndex === null
-					? ""
-					: localizeDecimal(indexText(settings.handicapIndex), locale),
-			);
-	}, [settings, ownerIndex, locale]);
 
 	if (detail === undefined) {
 		return (
@@ -102,9 +52,50 @@ export function RoundSetupScreen({ courseId }: { courseId: Id<"courses"> }) {
 	if (detail === null) {
 		return <EmptyState body={t.setup.notFound} />;
 	}
+	return (
+		<RoundSetupForm courseId={courseId} detail={detail} settings={settings} />
+	);
+}
+
+function RoundSetupForm({
+	courseId,
+	detail,
+	settings,
+}: {
+	courseId: Id<"courses">;
+	detail: CourseDetail;
+	settings: ReturnType<typeof useQuery<typeof api.settings.get>>;
+}) {
+	const router = useRouter();
+	const { t, numbers } = useI18n();
+	const colors = useTokens();
+	const { user } = useUser();
+	const start = useMutation(api.rounds.start);
+
+	const loops = useMemo(() => detectLoops(detail.holes), [detail]);
+	const [picks, setPicks] = useState<number[]>([]);
+	const [teeId, setTeeId] = useState<Id<"tees"> | null>(null);
+	const [format, setFormat] = useState<RoundFormat>("stableford");
+	const [ownerIndex, setOwnerIndex] = useState<string | null>(null);
+	const [guests, setGuests] = useState<GuestDraft[]>([]);
+	const submit = useSubmit();
+
+	// Seeded during render, so the form never paints unseeded; the query results
+	// can still fill in later, and an edit is never overwritten.
+	if (loops.length > 0 && picks.length === 0) {
+		setPicks(loops.length >= 2 ? [0, 1] : [0]);
+	}
+	if (teeId === null && detail.tees[0]) setTeeId(detail.tees[0]._id);
+	if (settings && ownerIndex === null) {
+		setOwnerIndex(
+			settings.handicapIndex === null
+				? ""
+				: numbers.handicap(settings.handicapIndex),
+		);
+	}
 
 	const tee = detail.tees.find((x) => x._id === teeId);
-	const { holeRefs, incomplete, par, label } = selection(
+	const { holeRefs, incomplete, par, label } = selectLoops(
 		detail.holes,
 		loops,
 		picks,
@@ -117,34 +108,38 @@ export function RoundSetupScreen({ courseId }: { courseId: Id<"courses"> }) {
 			index: g.index,
 		})),
 	];
+	const invalidIndex = players.some((p) => !parseHandicapIndex(p.index).valid);
 	const canStart =
-		!!tee && holeRefs.length > 0 && incomplete.length === 0 && !starting;
+		!!tee &&
+		holeRefs.length > 0 &&
+		incomplete.length === 0 &&
+		!invalidIndex &&
+		!submit.pending;
 
 	async function onStart() {
 		if (!tee) return;
-		setError(null);
-		setStarting(true);
-		try {
-			await start({
-				courseId,
-				teeId: tee._id,
-				holeRefs,
-				loopLabel: label,
-				format,
-				players: players.map((p) => ({
-					name: p.name,
-					handicapIndex: parseIndex(p.index),
-				})),
-			});
-			if (!open.current) return;
-			haptics.entryLogged();
-			router.dismissAll();
-			router.push("/play");
-		} catch (e) {
-			if (!open.current) return;
-			setError(convexErrorMessage(e, t.setup.startError));
-			setStarting(false);
-		}
+		await submit.run(
+			() =>
+				start({
+					courseId,
+					teeId: tee._id,
+					holeRefs,
+					loopLabel: label,
+					format,
+					players: players.map((p) => ({
+						name: p.name,
+						handicapIndex: parseHandicapIndex(p.index).value ?? undefined,
+					})),
+				}),
+			{
+				errorFallback: t.setup.startError,
+				onSuccess: () => {
+					haptics.saveConfirmed();
+					router.dismissAll();
+					router.push("/play");
+				},
+			},
+		);
 	}
 
 	const phLabel = (raw: string) => {
@@ -157,7 +152,7 @@ export function RoundSetupScreen({ courseId }: { courseId: Id<"courses"> }) {
 			primaryAction={{
 				label: t.setup.start,
 				onPress: onStart,
-				loading: starting,
+				loading: submit.pending,
 				disabled: !canStart,
 			}}
 		>
@@ -181,7 +176,7 @@ export function RoundSetupScreen({ courseId }: { courseId: Id<"courses"> }) {
 							label={count === 2 ? `${loop.label}  ×2` : loop.label}
 							secondary={fmt(t.setup.holeCount, {
 								count: loop.refs.length,
-								par: selection(detail.holes, loops, [i]).par,
+								par: selectLoops(detail.holes, loops, [i]).par,
 							})}
 							selected={count > 0}
 							onPress={() => {
@@ -210,7 +205,7 @@ export function RoundSetupScreen({ courseId }: { courseId: Id<"courses"> }) {
 								) : undefined
 							}
 							secondary={fmt(t.setup.teeDetail, {
-								cr: localizeDecimal(x.courseRating.toFixed(1), locale),
+								cr: numbers.decimal(x.courseRating),
 								slope: x.slopeRating,
 							})}
 							selected={x._id === teeId}
@@ -307,12 +302,12 @@ export function RoundSetupScreen({ courseId }: { courseId: Id<"courses"> }) {
 				) : null}
 			</FormSection>
 
-			{error ? (
+			{invalidIndex || submit.error ? (
 				<AppText
 					variant="footnote"
 					style={[styles.inset, { color: colors.danger }]}
 				>
-					{error}
+					{invalidIndex ? t.profile.handicapInvalid : submit.error}
 				</AppText>
 			) : null}
 
@@ -320,7 +315,6 @@ export function RoundSetupScreen({ courseId }: { courseId: Id<"courses"> }) {
 				<FormSection>
 					<TextAction
 						label={t.setup.suggest}
-						tone="neutral"
 						onPress={() => router.push(`/suggest/${courseId}`)}
 					/>
 				</FormSection>

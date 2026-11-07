@@ -1,10 +1,8 @@
 /**
- * Vector hole view: the hole's own OSM geometry drawn tee → green, with the
- * same overlays as the satellite view. Used where there is no imagery — an
- * Android build without a Google Maps key — and as a fallback that never
- * needs the network. Tap or drag anywhere to move the target.
+ * The hole's own OSM geometry, where there is no imagery: an Android build
+ * without a Google Maps key.
  */
-import { haversineMeters, type LatLng, labelSpot } from "@fairway/core/geo";
+import { haversineMeters, type LatLng } from "@fairway/core/geo";
 import { buildProjector } from "@fairway/core/hole-projection";
 import { useMemo, useState } from "react";
 import { StyleSheet, View } from "react-native";
@@ -19,6 +17,7 @@ import Svg, {
 } from "react-native-svg";
 import { course, type as typeRamp } from "../../../theme";
 import type { HoleCanvasProps } from "./hole-canvas-props";
+import { holeOverlays } from "./hole-overlays";
 
 type Ring = ReadonlyArray<LatLng>;
 
@@ -29,7 +28,6 @@ const ringKey = (ring: Ring) =>
 export function HoleSchematic(props: HoleCanvasProps) {
 	const {
 		geometry,
-		tee,
 		green,
 		player,
 		located,
@@ -44,11 +42,14 @@ export function HoleSchematic(props: HoleCanvasProps) {
 		shots,
 	} = props;
 	const [size, setSize] = useState({ width: 0, height: 0 });
-	const from = located ? player : tee;
-	// Shot to shot, then on to the ball when there is a fix.
-	const trail = located ? [...shots, player] : shots;
-	// Distance labels step aside for the hazard callouts.
-	const hazardSpots = hazards.map((h) => h.at);
+	const { trail, toTargetSpot, toGreenSpot } = holeOverlays({
+		shots,
+		player,
+		located,
+		hazards,
+		target,
+		green,
+	});
 	const innerHeight = size.height - insets.top - insets.bottom;
 	const innerWidth = size.width - insets.left - insets.right;
 
@@ -58,9 +59,9 @@ export function HoleSchematic(props: HoleCanvasProps) {
 			ring.some((p) => haversineMeters(p, green) < 25);
 		const features: Ring[] = greenView
 			? [...geometry.greens, ...geometry.bunkers.filter(nearGreen)]
-			: [...geometry.fairways, ...geometry.greens, ...geometry.tees, [from]];
+			: [...geometry.fairways, ...geometry.greens, ...geometry.tees, [player]];
 		return buildProjector({
-			tee: from,
+			tee: player,
 			green,
 			features: features.length > 0 ? features : [[green]],
 			width: innerWidth,
@@ -68,7 +69,7 @@ export function HoleSchematic(props: HoleCanvasProps) {
 			padding: greenView ? 48 : 28,
 			includeTee: !greenView,
 		});
-	}, [innerWidth, innerHeight, geometry, green, from, greenView]);
+	}, [innerWidth, innerHeight, geometry, green, player, greenView]);
 
 	const moveTarget = (x: number, y: number) => {
 		if (projector)
@@ -97,10 +98,9 @@ export function HoleSchematic(props: HoleCanvasProps) {
 						return `${i === 0 ? "M" : "L"}${s.x.toFixed(1)} ${s.y.toFixed(1)}`;
 					})
 					.join(" ")} Z`;
-	const at = (p: LatLng) => project(p);
-	const f = at(from);
-	const tg = at(target);
-	const gr = at(green);
+	const f = project(player);
+	const tg = project(target);
+	const gr = project(green);
 
 	return (
 		<GestureDetector gesture={gesture}>
@@ -141,8 +141,8 @@ export function HoleSchematic(props: HoleCanvasProps) {
 								/>
 							))}
 							{trail.slice(1).map((p, i) => {
-								const a = at(trail[i]);
-								const b = at(p);
+								const a = project(trail[i]);
+								const b = project(p);
 								return (
 									<Line
 										key={`trail-${trail[i].lat},${trail[i].lng}`}
@@ -157,7 +157,7 @@ export function HoleSchematic(props: HoleCanvasProps) {
 								);
 							})}
 							{shots.map((shot, i) => {
-								const s = at(shot);
+								const s = project(shot);
 								return (
 									<G key={`shot-${shot.lat},${shot.lng}`} x={s.x} y={s.y}>
 										<Circle
@@ -230,22 +230,16 @@ export function HoleSchematic(props: HoleCanvasProps) {
 							{hazards.map((h) => (
 								<Label
 									key={`${h.at.lat},${h.at.lng}`}
-									p={at(h.at)}
+									p={project(h.at)}
 									text={hazardLabel(h)}
 									small
 									// Beside the hazard, away from the line of play.
-									side={at(h.at).x >= f.x ? "right" : "left"}
+									side={project(h.at).x >= f.x ? "right" : "left"}
 								/>
 							))}
-							<Label
-								p={at(labelSpot(from, target, hazardSpots))}
-								text={toTargetLabel}
-							/>
+							<Label p={project(toTargetSpot)} text={toTargetLabel} />
 							{targetToGreenLabel ? (
-								<Label
-									p={at(labelSpot(target, green, hazardSpots))}
-									text={targetToGreenLabel}
-								/>
+								<Label p={project(toGreenSpot)} text={targetToGreenLabel} />
 							) : null}
 						</G>
 					</Svg>

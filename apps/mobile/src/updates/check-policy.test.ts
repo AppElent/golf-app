@@ -1,12 +1,13 @@
-import { CHECK_INTERVAL_MS, shouldCheckOnResume } from "./check-policy";
+import { shouldCheckOnResume } from "./check-policy";
+
+const MINUTE_MS = 60 * 1000;
+const DAY_MS = 24 * 60 * MINUTE_MS;
 
 describe("shouldCheckOnResume", () => {
-	it("checks when it never has", () => {
-		expect(shouldCheckOnResume(null, 1_000)).toBe(true);
+	it("skips a quick return to the app", () => {
+		expect(shouldCheckOnResume(0, MINUTE_MS)).toBe(false);
 	});
-
-	it("waits out the interval", () => {
-		expect(shouldCheckOnResume(0, CHECK_INTERVAL_MS - 1)).toBe(false);
-		expect(shouldCheckOnResume(0, CHECK_INTERVAL_MS)).toBe(true);
+	it("checks after a day in the background", () => {
+		expect(shouldCheckOnResume(0, DAY_MS)).toBe(true);
 	});
 });
