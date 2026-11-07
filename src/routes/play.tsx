@@ -9,7 +9,7 @@ import {
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useRef, useState } from "react";
+import { useState } from "react";
 import { api } from "../../convex/_generated/api";
 import { CTA } from "../components/classes";
 import { HoleMap, type MapVariant } from "../play/HoleMap";
@@ -74,17 +74,19 @@ function PlayInner({
 	);
 	const { setSimulating } = useSimulationMode();
 	const markShot = useMutation(api.shots.mark);
-	const aim = useRef<LatLng | null>(null);
+	const [aimed, setAimed] = useState<{ ref: string; at: LatLng } | null>(null);
 	const [variant, setVariant] = useState<MapVariant>("map");
 
 	const idx = active.round.currentHoleIndex;
 	const ref = active.round.holeRefs[idx];
+	if (aimed && aimed.ref !== ref) setAimed(null);
 	const holeMeta = active.holes[idx];
 	const geo = geometry?.geometry.find((g) => g.ref === ref);
 
 	// A hole with only a hole line has anchors too, but no green polygon to map.
 	const anchors = geo ? holeAnchors(geo, active.tee.marker) : null;
 	const mapAnchors = anchors?.greenRing ? anchors : null;
+	const aim = aimed?.ref === ref ? aimed.at : anchors?.green;
 	const sim = useSimulatedPosition(ref, anchors, geo?.holeLine);
 	const gps = simulated ? sim.position : watched;
 	const accuracyM = simulated ? null : watchedAccuracy;
@@ -94,15 +96,15 @@ function PlayInner({
 
 	/** The shot goes exactly where it was aimed (the green by default). */
 	async function hitShot() {
-		if (!position || !anchors) return;
+		if (!position || !aim) return;
 		sim.setWalking(false);
 		await markShot({
 			roundId: active.round._id,
 			holeIndex: idx,
 			position,
 		});
-		sim.moveTo(aim.current ?? anchors.green);
-		aim.current = null;
+		sim.moveTo(aim);
+		setAimed(null);
 	}
 
 	return (
@@ -172,20 +174,19 @@ function PlayInner({
 			</div>
 
 			<div className="mt-3">
-				{geo && mapAnchors && numbers && position ? (
+				{geo && mapAnchors && numbers && position && aim ? (
 					<HoleMap
 						key={ref}
 						geometry={geo}
 						anchors={mapAnchors}
 						numbers={numbers}
 						position={position}
+						aim={aim}
 						bag={bag}
 						variant={variant}
 						accuracyM={accuracyM}
 						onStandAt={simulated && sim.moving ? sim.moveTo : undefined}
-						onAim={(next) => {
-							aim.current = next;
-						}}
+						onAimChange={(at) => setAimed({ ref, at })}
 					/>
 				) : (
 					<SchematicFallback

@@ -15,31 +15,32 @@ export type MapVariant = "map" | "rings" | "bignumbers";
 
 const PADDING = 28;
 
-/** Mount one per hole (`key`): the aim and the measured point belong to a hole. */
+/** Mount one per hole (`key`): the measured point belongs to a hole. */
 export function HoleMap({
 	geometry,
 	anchors,
 	numbers,
 	position,
+	aim,
 	bag,
 	variant,
 	accuracyM,
 	onStandAt,
-	onAim,
+	onAimChange,
 }: {
 	geometry: HoleGeometry;
 	anchors: HoleAnchors;
 	numbers: HoleNumbers;
 	position: LatLng;
+	aim: LatLng;
 	bag: ReadonlyArray<Club>;
 	variant: MapVariant;
 	accuracyM: number | null;
 	/** Simulation mode: a tap puts the player there instead of measuring. */
 	onStandAt?: (position: LatLng) => void;
-	onAim?: (aim: LatLng) => void;
+	onAimChange: (aim: LatLng) => void;
 }) {
 	const svgRef = useRef<SVGSVGElement>(null);
-	const [aim, setAim] = useState<LatLng>(anchors.green);
 	const [measure, setMeasure] = useState<LatLng | null>(null);
 	const dragging = useRef(false);
 
@@ -85,9 +86,7 @@ export function HoleMap({
 	}
 	function onPointerMove(e: React.PointerEvent) {
 		if (!dragging.current) return;
-		const next = proj.unproject(svgPointFromEvent(e));
-		setAim(next);
-		onAim?.(next);
+		onAimChange(proj.unproject(svgPointFromEvent(e)));
 	}
 	function onPointerUp() {
 		dragging.current = false;

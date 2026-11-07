@@ -29,14 +29,6 @@ export const Route = createFileRoute("/card")({ component: CardScreen });
 
 function CardScreen() {
 	const data = useActiveRound();
-	const { setSimulating } = useSimulationMode();
-	const navigate = useNavigate();
-	const { submit, scoreOf, pendingCount, syncing, online } = useScoreSync();
-	const finish = useMutation(api.rounds.finish);
-	const abandon = useMutation(api.rounds.abandon);
-	const [selected, setSelected] = useState(0);
-	const [playerIndex, setPlayerIndex] = useState(OWNER_INDEX);
-	const [confirmFinish, setConfirmFinish] = useState(false);
 
 	if (data === undefined) {
 		return <PageNote>Loading…</PageNote>;
@@ -55,6 +47,25 @@ function CardScreen() {
 			</Page>
 		);
 	}
+
+	// Leaving a simulation swaps the round under this page: the chosen hole and
+	// player belong to the round, and may not exist in the next one.
+	return <RoundCard key={data.round._id} data={data} />;
+}
+
+function RoundCard({
+	data,
+}: {
+	data: NonNullable<ReturnType<typeof useActiveRound>>;
+}) {
+	const { setSimulating } = useSimulationMode();
+	const navigate = useNavigate();
+	const { submit, scoreOf, pendingCount, syncing, online } = useScoreSync();
+	const finish = useMutation(api.rounds.finish);
+	const abandon = useMutation(api.rounds.abandon);
+	const [selected, setSelected] = useState(0);
+	const [playerIndex, setPlayerIndex] = useState(OWNER_INDEX);
+	const [confirmFinish, setConfirmFinish] = useState(false);
 
 	const { round, course, holes, scores } = data;
 	const player = round.players[playerIndex];
