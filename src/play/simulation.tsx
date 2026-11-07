@@ -68,13 +68,18 @@ export function useSimulationMode() {
 
 /** The round being played: in simulation mode, the simulated one. */
 export function useActiveRound() {
-	const { simulating } = useSimulationMode();
+	const { simulating, setSimulating } = useSimulationMode();
 	const real = useQuery(api.rounds.active, simulating ? "skip" : {});
 	const simulated = useQuery(
 		api.rounds.activeSimulation,
 		simulating ? {} : "skip",
 	);
-	return simulating ? simulated : real;
+	// Finished elsewhere, or its course is gone: back to the real round.
+	const gone = simulating && simulated === null;
+	useEffect(() => {
+		if (gone) setSimulating(false);
+	}, [gone, setSimulating]);
+	return simulating ? (simulated ?? undefined) : real;
 }
 
 /** Where simulation mode stands the player: on this hole's tee to begin with. */

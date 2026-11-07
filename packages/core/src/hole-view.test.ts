@@ -124,6 +124,65 @@ describe("hazardsInPlay", () => {
 		expect(hazards).toHaveLength(1);
 		expect(hazards[0].carry).toBeGreaterThan(0.0015 * 111195);
 	});
+	it("measures water across the line where the line crosses it", () => {
+		// 33 m of the line is in this lake; its shore runs on 200 m beside the line.
+		const lake = [
+			p(0.0005, -0.0002),
+			p(0.0005, 0.0005),
+			p(0.0025, 0.0005),
+			p(0.0025, 0.0002),
+			p(0.0008, 0.0002),
+			p(0.0008, -0.0002),
+		];
+		const [across] = hazardsInPlay(p(0), p(0.003), {
+			holeLine: geo.holeLine,
+			bunkers: [],
+			water: [lake],
+		});
+		expect(across.side).toBe("center");
+		expect(Math.round(across.reach)).toBe(56);
+		expect(Math.round(across.carry)).toBe(89);
+	});
+	it("lists each stretch when the line crosses the same water twice", () => {
+		const horseshoe = [
+			p(0.0003, -0.0002),
+			p(0.0003, 0.0002),
+			p(0.0009, 0.0002),
+			p(0.0009, -0.0002),
+			p(0.0008, -0.0002),
+			p(0.0008, 0.0001),
+			p(0.0004, 0.0001),
+			p(0.0004, -0.0002),
+		];
+		const hazards = hazardsInPlay(p(0), p(0.003), {
+			holeLine: geo.holeLine,
+			bunkers: [],
+			water: [horseshoe],
+		});
+		expect(
+			hazards.map((h) => [Math.round(h.reach), Math.round(h.carry)]),
+		).toEqual([
+			[33, 44],
+			[89, 100],
+		]);
+	});
+	it("measures water beside the line along its bank, not its far shore", () => {
+		// The near bank runs 22 m off the line, the far shore 300 m away.
+		const bank = [
+			p(0.001, 0.0003),
+			p(0.0015, 0.0003),
+			p(0.0015, 0.005),
+			p(0.001, 0.005),
+		];
+		const [beside] = hazardsInPlay(p(0), p(0.003), {
+			holeLine: geo.holeLine,
+			bunkers: [],
+			water: [bank],
+		});
+		expect(beside.side).toBe("right");
+		expect(beside.reach).toBeGreaterThan(110);
+		expect(beside.carry).toBeLessThan(175);
+	});
 	it("drops hazards out of range", () => {
 		expect(hazardsInPlay(p(0), p(0.003), geo, { maxMeters: 150 })).toEqual([]);
 	});

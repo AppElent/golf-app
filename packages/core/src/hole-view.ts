@@ -7,10 +7,12 @@ import {
 	carryDistances,
 	distancesToGreen,
 	haversineMeters,
+	interpolate,
 	type LatLng,
 	locateOnPolyline,
+	type PolylineFix,
 	polygonCentroid,
-	polylineCrossesRing,
+	polylineCrossings,
 } from "./geo";
 
 /** One tee position: where the listed tee colors (`tee.marker`) play from. */
@@ -80,9 +82,10 @@ export type HazardSide = "left" | "right" | "center";
 
 export interface HazardInPlay {
 	kind: HazardKind;
-	/** Distance to its nearest edge — what it takes to reach it. */
+	/** Distance to where it starts — what it takes to reach it. Water counts
+	 *  only the part in play: where the line crosses it, or the bank beside it. */
 	reach: number;
-	/** Distance to its farthest edge — what it takes to carry it. */
+	/** Distance to where it ends — what it takes to carry it. */
 	carry: number;
 	/** Label anchor: the bunker's centroid, the water's edge nearest the line
 	 *  of play (a pond or ditch can run far beyond this hole). */
@@ -94,6 +97,7 @@ export interface HazardInPlay {
 const MAX_OFFSET_M = 45;
 /** A hazard this close behind the green is still the green's. */
 const BEHIND_GREEN_M = 25;
+const WATER_EDGE_STEP_M = 10;
 
 /** The line of play from `position` on: the hole line past it, or straight. */
 export function lineOfPlay(
@@ -110,6 +114,43 @@ export function lineOfPlay(
 		if (walked > from) rest.push(holeLine[i]);
 	}
 	return [position, ...rest, green];
+}
+
+/** Each stretch of the line of play that runs through water. */
+function waterAcross(
+	position: LatLng,
+	crossings: ReadonlyArray<LatLng>,
+): HazardInPlay[] {
+	// An odd count means the line starts in the water: you are standing in it.
+	const edges =
+		crossings.length % 2 === 1 ? [position, ...crossings] : crossings;
+	return edges.flatMap((enter, i): HazardInPlay[] =>
+		i % 2 === 0
+			? [
+					{
+						kind: "water",
+						reach: haversineMeters(position, enter),
+						carry: haversineMeters(position, edges[i + 1]),
+						at: enter,
+						side: "center",
+					},
+				]
+			: [],
+	);
+}
+
+/** The shore every few meters: a straight bank has no vertices of its own. */
+function edgeSamples(ring: ReadonlyArray<LatLng>): LatLng[] {
+	return ring.flatMap((a, i) => {
+		const b = ring[(i + 1) % ring.length];
+		const steps = Math.max(
+			1,
+			Math.ceil(haversineMeters(a, b) / WATER_EDGE_STEP_M),
+		);
+		return Array.from({ length: steps }, (_, s) =>
+			interpolate(a, b, s / steps),
+		);
+	});
 }
 
 /** Ditches are mapped in pieces: read touching pieces as the one hazard. */
@@ -145,29 +186,53 @@ export function hazardsInPlay(
 ): HazardInPlay[] {
 	const line = lineOfPlay(position, green, geo.holeLine);
 	const toGreen = locateOnPolyline(green, line).along;
-	const rings: Array<[HazardKind, LatLng[]]> = [
-		...geo.water.map((r): [HazardKind, LatLng[]] => ["water", r]),
-		...geo.bunkers.map((r): [HazardKind, LatLng[]] => ["bunker", r]),
-	];
-	const found = rings
-		.filter(([, ring]) => ring.length > 2)
-		.flatMap(([kind, ring]): HazardInPlay[] => {
-			const fixes = ring.map((p) => ({ p, fix: locateOnPolyline(p, line) }));
-			const { p: closest, fix } = fixes.reduce((a, b) =>
+	const inPlay = (fix: PolylineFix) =>
+		fix.along > 0 &&
+		fix.offset <= MAX_OFFSET_M &&
+		(fix.along < toGreen || fix.offset <= BEHIND_GREEN_M);
+
+	const water = geo.water
+		.filter((ring) => ring.length > 2)
+		.flatMap((ring): HazardInPlay[] => {
+			const crossings = polylineCrossings(line, ring);
+			if (crossings.length > 0) return waterAcross(position, crossings);
+			const near = edgeSamples(ring)
+				.map((p) => ({ p, fix: locateOnPolyline(p, line) }))
+				.filter(({ fix }) => inPlay(fix));
+			if (near.length === 0) return [];
+			const closest = near.reduce((a, b) =>
 				b.fix.offset < a.fix.offset ? b : a,
 			);
-			const behindYou = fixes.every((f) => f.fix.along === 0);
+			return [
+				{
+					kind: "water",
+					...carryDistances(
+						position,
+						near.map(({ p }) => p),
+					),
+					at: closest.p,
+					side: closest.fix.side,
+				},
+			];
+		});
+	const bunkers = geo.bunkers
+		.filter((ring) => ring.length > 2)
+		.flatMap((ring): HazardInPlay[] => {
+			const fixes = ring.map((p) => locateOnPolyline(p, line));
+			const fix = fixes.reduce((a, b) => (b.offset < a.offset ? b : a));
+			const behindYou = fixes.every((f) => f.along === 0);
 			const pastGreen = fix.along >= toGreen && fix.offset > BEHIND_GREEN_M;
 			if (behindYou || pastGreen || fix.offset > MAX_OFFSET_M) return [];
 			return [
 				{
-					kind,
+					kind: "bunker",
 					...carryDistances(position, ring),
-					at: kind === "water" ? closest : polygonCentroid(ring),
-					side: polylineCrossesRing(line, ring) ? "center" : fix.side,
+					at: polygonCentroid(ring),
+					side: polylineCrossings(line, ring).length > 0 ? "center" : fix.side,
 				},
 			];
-		})
+		});
+	const found = [...water, ...bunkers]
 		.filter((h) => h.reach <= maxMeters)
 		.sort((a, b) => a.reach - b.reach);
 	return mergeWater(found).slice(0, limit);

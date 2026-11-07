@@ -1,5 +1,29 @@
 {
-	"method": "Traced by eye from PDOK 8 cm aerial photos (Actueel_orthoHR) against the 2025 official course maps, with each colour placed on the visible tee nearest its scorecard distance from the green.",
+	"method": "Traced by eye from PDOK 8 cm aerial photos (Actueel_orthoHR) against the 2025 official course maps. Each colour sits on the visible tee nearest its scorecard distance from the green, or where no pad is visible, on its card position or an OSM tee polygon in shade.",
+	"inferred": {
+		"boxesPerHole": {
+			"3": 1,
+			"4": 1,
+			"5": 1,
+			"8": 1,
+			"9": 2,
+			"10": 2,
+			"11": 1,
+			"12": 2,
+			"13": 1,
+			"16": 3,
+			"17": 2,
+			"18": 2
+		},
+		"checkOnCourse": [
+			"8 blue/red: card position is in the pond, box on the nearest dry ground",
+			"10 white/yellow: on the only back tee visible, a fenced lawn",
+			"16: all three boxes, the tee area is in shade",
+			"17 white: card position is in a copse",
+			"18 red and orange: on their card positions",
+			"4 and 5: four colours share one pad, no separate pads visible"
+		]
+	},
 	"holes": {
 		"1": {
 			"holeLine": [

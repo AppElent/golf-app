@@ -79,6 +79,7 @@ export function PlayScreen() {
 	}
 	return (
 		<PlayHole
+			key={active.round._id}
 			active={active}
 			detail={detail}
 			bag={learnedBag(

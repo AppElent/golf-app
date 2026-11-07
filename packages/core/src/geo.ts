@@ -235,31 +235,41 @@ export function pointAlongPolyline(
 
 type Point2 = { x: number; y: number };
 
-/** Whether a line passes through a closed ring's edge anywhere. */
-export function polylineCrossesRing(
+/** Where a line passes through a closed ring's edge, in order along the line. */
+export function polylineCrossings(
 	line: ReadonlyArray<LatLng>,
 	ring: ReadonlyArray<LatLng>,
-): boolean {
-	if (line.length < 2 || ring.length < 2) return false;
+): LatLng[] {
+	if (line.length < 2 || ring.length < 2) return [];
 	const origin = line[0];
 	const local = (p: LatLng) => projectToLocal(origin, p);
 	const turn = (a: Point2, b: Point2, c: Point2) =>
 		(b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
 	const path = line.map(local);
 	const edge = ring.map(local);
+	const found: Array<{ along: number; point: LatLng }> = [];
+	let walked = 0;
 	for (let i = 1; i < path.length; i++) {
+		const a = path[i - 1];
+		const b = path[i];
 		for (let j = 0; j < edge.length; j++) {
 			const c = edge[j];
 			const d = edge[(j + 1) % edge.length];
-			if (
-				turn(path[i - 1], path[i], c) * turn(path[i - 1], path[i], d) < 0 &&
-				turn(c, d, path[i - 1]) * turn(c, d, path[i]) < 0
-			) {
-				return true;
+			const fromC = turn(a, b, c);
+			const fromD = turn(a, b, d);
+			const fromA = turn(c, d, a);
+			const fromB = turn(c, d, b);
+			if (fromC * fromD < 0 && fromA * fromB < 0) {
+				const t = fromA / (fromA - fromB);
+				found.push({
+					along: walked + t * Math.hypot(b.x - a.x, b.y - a.y),
+					point: interpolate(line[i - 1], line[i], t),
+				});
 			}
 		}
+		walked += Math.hypot(b.x - a.x, b.y - a.y);
 	}
-	return false;
+	return found.sort((x, y) => x.along - y.along).map((x) => x.point);
 }
 
 /** A bend smaller than this is a mapper's wobble, not a dogleg. */
