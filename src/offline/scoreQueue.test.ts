@@ -4,7 +4,7 @@ import {
 	keyFor,
 	keyOf,
 	readQueue,
-	removeEntry,
+	removeSent,
 	type ScoreEntry,
 	type StorageLike,
 } from "./scoreQueue";
@@ -74,8 +74,16 @@ describe("scoreQueue", () => {
 	it("removes only the entry with that key", () => {
 		enqueueScore(storage, entry());
 		enqueueScore(storage, entry({ holeIndex: 1 }));
-		removeEntry(storage, keyOf(entry()));
+		removeSent(storage, entry());
 		expect(readQueue(storage).map((e) => e.holeIndex)).toEqual([1]);
+	});
+
+	it("keeps an entry edited while it was being sent", () => {
+		enqueueScore(storage, entry());
+		const [sent] = readQueue(storage);
+		enqueueScore(storage, entry({ fields: { strokes: 9 } }));
+		removeSent(storage, sent);
+		expect(readQueue(storage).map((e) => e.fields.strokes)).toEqual([9]);
 	});
 
 	it("finds an entry under the key built from its parts", () => {

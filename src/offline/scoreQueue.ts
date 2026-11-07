@@ -53,9 +53,13 @@ export function enqueueScore(storage: StorageLike, entry: ScoreEntry): void {
 	writeQueue(storage, queue);
 }
 
-export function removeEntry(storage: StorageLike, key: string): void {
+/** Drop a sent entry, unless it was edited while on its way to the server. */
+export function removeSent(storage: StorageLike, sent: ScoreEntry): void {
+	const fields = JSON.stringify(sent.fields);
 	writeQueue(
 		storage,
-		readQueue(storage).filter((e) => keyOf(e) !== key),
+		readQueue(storage).filter(
+			(e) => keyOf(e) !== keyOf(sent) || JSON.stringify(e.fields) !== fields,
+		),
 	);
 }

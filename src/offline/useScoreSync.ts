@@ -8,7 +8,7 @@ import {
 	keyFor,
 	keyOf,
 	readQueue,
-	removeEntry,
+	removeSent,
 	type ScoreEntry,
 	type StorageLike,
 } from "./scoreQueue";
@@ -36,32 +36,40 @@ export function useScoreSync() {
 	);
 	const [syncing, setSyncing] = useState(false);
 	const flushing = useRef(false);
+	const flushAgain = useRef(false);
 
 	const refresh = useCallback(() => setPending(overlayFrom(storage())), []);
 
 	const flush = useCallback(async () => {
 		const store = storage();
-		if (!store || flushing.current) return;
+		if (!store) return;
+		if (flushing.current) {
+			flushAgain.current = true;
+			return;
+		}
 		if (!navigator.onLine) return;
 		flushing.current = true;
 		setSyncing(true);
 		try {
-			for (const entry of readQueue(store)) {
-				try {
-					await setScore({
-						roundId: entry.roundId as Id<"rounds">,
-						holeIndex: entry.holeIndex,
-						playerIndex: entry.playerIndex,
-						queued: true,
-						...entry.fields,
-					});
-					removeEntry(store, keyOf(entry));
-					refresh();
-				} catch {
-					// Stays queued for the retry. Entries are per hole and player, so
-					// the ones behind it can still go.
+			do {
+				flushAgain.current = false;
+				for (const entry of readQueue(store)) {
+					try {
+						await setScore({
+							roundId: entry.roundId as Id<"rounds">,
+							holeIndex: entry.holeIndex,
+							playerIndex: entry.playerIndex,
+							queued: true,
+							...entry.fields,
+						});
+						removeSent(store, entry);
+						refresh();
+					} catch {
+						// Stays queued for the retry. Entries are per hole and player, so
+						// the ones behind it can still go.
+					}
 				}
-			}
+			} while (flushAgain.current);
 		} finally {
 			refresh();
 			flushing.current = false;
