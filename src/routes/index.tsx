@@ -1,34 +1,33 @@
-import { formatDistance } from "@fairway/core/format";
-import { wouldBeIndexHistory } from "@fairway/core/handicap";
+import { DEFAULT_UNITS, formatDistance } from "@fairway/core/format";
+import {
+	formatHandicapIndex,
+	wouldBeFromHistory,
+} from "@fairway/core/handicap";
 import { formatVsPar } from "@fairway/core/scoring";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { SURFACE } from "../components/classes";
+import { Page, Section } from "../components/Page";
 import { Sparkline } from "../components/Sparkline";
 
 export const Route = createFileRoute("/")({ component: HomeScreen });
 
 function HomeScreen() {
 	const settings = useQuery(api.settings.get);
-	const history = useQuery(api.rounds.history, { limit: 20 });
+	const history = useQuery(api.rounds.history, {});
 	const clubs = useQuery(api.clubs.list);
 
-	const units = settings?.units ?? "m";
+	const units = settings?.units ?? DEFAULT_UNITS;
 	const rounds = history ?? [];
 	const last = rounds[0] ?? null;
 
-	// Would-be trend from differentials, chronological (oldest first).
-	const differentials = [...rounds]
-		.reverse()
-		.map((r) => r.differential)
-		.filter((d): d is number => d !== null);
-	const trend = wouldBeIndexHistory(differentials);
+	const { trend } = wouldBeFromHistory(rounds);
 	const delta =
 		trend.length >= 2
 			? trend[trend.length - 1] - trend[trend.length - 2]
 			: null;
 
-	// Most-played course for the CTA subtitle.
 	const counts = new Map<string, number>();
 	for (const r of rounds)
 		counts.set(r.courseName, (counts.get(r.courseName) ?? 0) + 1);
@@ -40,7 +39,7 @@ function HomeScreen() {
 		(trend.length > 0 ? trend[trend.length - 1] : null);
 
 	return (
-		<main className="px-5 pt-16 pb-[110px]">
+		<Page>
 			<div className="mb-6 flex items-center justify-between">
 				<div>
 					<p className="text-[13px] font-medium text-moss">Welcome back</p>
@@ -56,7 +55,6 @@ function HomeScreen() {
 				</Link>
 			</div>
 
-			{/* Handicap hero */}
 			<section className="relative overflow-hidden rounded-[26px] bg-gradient-to-br from-pine-light to-pine p-6 text-[#eaf2e9] shadow-[0_18px_40px_-22px_rgba(15,61,42,0.9)]">
 				<div className="pointer-events-none absolute -top-8 -right-8 h-36 w-36 rounded-full bg-live/15" />
 				<div className="flex items-start justify-between">
@@ -65,7 +63,7 @@ function HomeScreen() {
 							Handicap Index
 						</p>
 						<p className="mt-1 font-display text-[56px] leading-none font-bold tracking-tight">
-							{heroIndex !== null ? heroIndex.toFixed(1) : "—"}
+							{heroIndex !== null ? formatHandicapIndex(heroIndex) : "—"}
 						</p>
 						<p className="mt-2 text-[12.5px] opacity-65">
 							{delta !== null
@@ -79,7 +77,6 @@ function HomeScreen() {
 				</div>
 			</section>
 
-			{/* Start a round */}
 			<Link
 				to="/rounds/new"
 				className="mt-4 flex items-center justify-between rounded-[22px] bg-flag px-6 py-4 shadow-[0_14px_30px_-16px_rgba(224,83,47,0.9)]"
@@ -99,13 +96,9 @@ function HomeScreen() {
 				</span>
 			</Link>
 
-			{/* Last round */}
 			{last ? (
-				<section className="mt-6">
-					<h2 className="font-display text-sm font-semibold uppercase tracking-wide text-moss">
-						Last round
-					</h2>
-					<div className="mt-3 rounded-2xl border border-card-line bg-white/60 p-4">
+				<Section title="Last round">
+					<div className={`rounded-2xl border ${SURFACE} p-4`}>
 						<div className="flex items-baseline justify-between">
 							<p className="font-display text-[15px] font-semibold text-ink">
 								{last.courseName}
@@ -142,20 +135,16 @@ function HomeScreen() {
 							/>
 						</div>
 					</div>
-				</section>
+				</Section>
 			) : null}
 
-			{/* Club yardages */}
 			{clubs && clubs.length > 0 ? (
-				<section className="mt-6">
-					<h2 className="font-display text-sm font-semibold uppercase tracking-wide text-moss">
-						Your clubs
-					</h2>
-					<div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+				<Section title="Your clubs">
+					<div className="flex gap-2 overflow-x-auto pb-1">
 						{clubs.map((club) => (
 							<div
 								key={club._id}
-								className="flex shrink-0 flex-col items-center rounded-xl border border-card-line bg-white/60 px-3 py-2"
+								className={`flex shrink-0 flex-col items-center rounded-xl border ${SURFACE} px-3 py-2`}
 							>
 								<span className="font-display text-[13px] font-bold text-ink">
 									{club.name}
@@ -166,9 +155,9 @@ function HomeScreen() {
 							</div>
 						))}
 					</div>
-				</section>
+				</Section>
 			) : null}
-		</main>
+		</Page>
 	);
 }
 

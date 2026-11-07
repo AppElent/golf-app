@@ -15,11 +15,11 @@ Do not rely on remembered APIs.
 - `app/` — Expo Router routes only (`(auth)`, `(app)` with NativeTabs, modal
   sheets). Routes import a screen from `src/features`.
 - `src/features/<feature>/<subject>/` — screens, models (`*-model.ts`, pure and
-  unit-tested) and hooks. Feature folders: courses, home, location, play,
-  profile, rounds, stats.
+  unit-tested) and hooks. Feature folders: auth, courses, home, live,
+  location, play, profile, rounds, stats.
 - `src/ui/` — domain-free controls; never imports features.
 - `src/theme`, `src/i18n`, `src/convex`, `src/prefs`, `src/auth`, `src/feedback`
-  (haptics), `src/monitoring`.
+  (haptics, reduced motion), `src/monitoring`, `src/updates`.
 - `pnpm check:mobile-structure` (part of `pnpm check`) enforces the layout.
 
 ## Commands

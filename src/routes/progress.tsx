@@ -1,65 +1,51 @@
-import { formatDistance } from "@fairway/core/format";
-import { wouldBeIndex, wouldBeIndexHistory } from "@fairway/core/handicap";
-import { aggregateStats, type RoundStatInput } from "@fairway/core/stats";
+import { DEFAULT_UNITS, formatDistance } from "@fairway/core/format";
+import {
+	formatHandicapIndex,
+	wouldBeFromHistory,
+} from "@fairway/core/handicap";
+import { formatVsPar } from "@fairway/core/scoring";
+import { aggregateStats } from "@fairway/core/stats";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import { SURFACE } from "../components/classes";
+import { Page, PageTitle, Section } from "../components/Page";
 import { Sparkline } from "../components/Sparkline";
+import { StatCard } from "../components/StatCard";
 
 export const Route = createFileRoute("/progress")({
 	component: ProgressScreen,
 });
 
 function ProgressScreen() {
-	const settings = useQuery(api.settings.get);
-	const history = useQuery(api.rounds.history, { limit: 20 });
+	const history = useQuery(api.rounds.history, {});
 	const clubs = useQuery(api.clubs.list);
 
-	const units = settings?.units ?? "m";
+	const units = useQuery(api.settings.get)?.units ?? DEFAULT_UNITS;
 	const rounds = history ?? [];
 
-	const differentials = [...rounds]
-		.reverse()
-		.map((r) => r.differential)
-		.filter((d): d is number => d !== null);
-	const trend = wouldBeIndexHistory(differentials);
-	const index = wouldBeIndex(differentials);
-
-	const statInputs: RoundStatInput[] = rounds.map((r) => ({
-		holeCount: r.holeCount,
-		strokes: r.owner.strokes,
-		vsPar: r.owner.vsPar,
-		putts: r.owner.putts,
-		holesWithPutts: r.owner.holesWithPutts,
-		firMade: r.owner.firMade,
-		firEligible: r.owner.firEligible,
-		girMade: r.owner.girMade,
-		girHoles: r.owner.girHoles,
-	}));
-	const stats = aggregateStats(statInputs);
+	const { index, trend } = wouldBeFromHistory(rounds);
+	const stats = aggregateStats(rounds);
 
 	const pct = (v: number | null) =>
 		v !== null ? `${Math.round(v * 100)}%` : "—";
 	const num = (v: number | null) => (v !== null ? String(v) : "—");
 
 	return (
-		<main className="px-5 pt-16 pb-[110px]">
-			<h1 className="font-display text-2xl font-bold tracking-tight text-ink">
-				Progress
-			</h1>
+		<Page>
+			<PageTitle>Progress</PageTitle>
 			<p className="mt-1 text-[13px] text-moss">
-				Would-be index from your last {Math.min(rounds.length, 20)} rounds.
+				Would-be index from your last {rounds.length} rounds.
 			</p>
 
-			{/* Would-be index headline */}
-			<section className="mt-5 rounded-[22px] border border-card-line bg-white/60 p-5">
+			<section className={`mt-5 rounded-[22px] border ${SURFACE} p-5`}>
 				<div className="flex items-end justify-between">
 					<div>
 						<p className="text-[11px] font-semibold uppercase tracking-wide text-stone">
 							Would-be index
 						</p>
 						<p className="mt-1 font-display text-[44px] leading-none font-bold text-ink">
-							{index !== null ? index.toFixed(1) : "—"}
+							{index !== null ? formatHandicapIndex(index) : "—"}
 						</p>
 					</div>
 					<Sparkline values={trend} stroke="var(--color-live)" />
@@ -71,18 +57,11 @@ function ProgressScreen() {
 				) : null}
 			</section>
 
-			{/* Stats grid */}
 			<section className="mt-4 grid grid-cols-2 gap-3">
 				<StatCard label="Avg score" value={num(stats.avgScore)} />
 				<StatCard
 					label="Avg vs par"
-					value={
-						stats.avgVsPar !== null
-							? stats.avgVsPar > 0
-								? `+${stats.avgVsPar}`
-								: String(stats.avgVsPar)
-							: "—"
-					}
+					value={stats.avgVsPar !== null ? formatVsPar(stats.avgVsPar) : "—"}
 				/>
 				<StatCard label="Putts / 18" value={num(stats.puttsPer18)} />
 				<StatCard label="Rounds" value={String(stats.rounds)} />
@@ -90,13 +69,11 @@ function ProgressScreen() {
 				<StatCard label="Greens" value={pct(stats.girPct)} />
 			</section>
 
-			{/* Club distances */}
 			{clubs && clubs.length > 0 ? (
-				<section className="mt-6">
-					<h2 className="font-display text-sm font-semibold uppercase tracking-wide text-moss">
-						Club distances
-					</h2>
-					<div className="mt-3 divide-y divide-card-line rounded-2xl border border-card-line bg-white/60">
+				<Section title="Club distances">
+					<div
+						className={`divide-y divide-card-line rounded-2xl border ${SURFACE}`}
+					>
 						{clubs.map((club) => (
 							<div
 								key={club._id}
@@ -111,19 +88,8 @@ function ProgressScreen() {
 							</div>
 						))}
 					</div>
-				</section>
+				</Section>
 			) : null}
-		</main>
-	);
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-	return (
-		<div className="rounded-2xl border border-card-line bg-white/60 px-4 py-3">
-			<p className="text-[11px] font-semibold uppercase tracking-wide text-stone">
-				{label}
-			</p>
-			<p className="mt-1 font-display text-2xl font-bold text-ink">{value}</p>
-		</div>
+		</Page>
 	);
 }

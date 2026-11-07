@@ -47,7 +47,6 @@ async function upsertCourse(
 		osmRelationId: entry.osmRelationId,
 		catalogKey: entry.key,
 		location: courseLocation(geometryFor(entry)) ?? undefined,
-		importStatus: "imported" as const,
 	};
 	let existing = await ctx.db
 		.query("courses")
@@ -161,7 +160,7 @@ async function syncGeometry(
 }
 
 /** The course's "where": the centroid of its greens (for nearby sorting). */
-export function courseLocation(
+function courseLocation(
 	geometry: ReadonlyArray<{ greens: ReadonlyArray<ReadonlyArray<LatLng>> }>,
 ): LatLng | null {
 	const greens = geometry.flatMap((g) =>

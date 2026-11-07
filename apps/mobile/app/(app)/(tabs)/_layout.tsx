@@ -1,7 +1,7 @@
 /**
  * The tab bar: real UITabBar (Liquid Glass on iOS 26) / BottomNavigationView.
  * Play is not a tab — it is a full-screen route over the tabs, reached from
- * Home or from the resume accessory while a round is active.
+ * Home.
  *
  * Colours are `chrome` (UIKit-resolved dynamic colours) on iOS: the glass
  * picks its own trait from the content under it, so a static colour can end

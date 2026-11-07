@@ -37,10 +37,16 @@ describe("scoreQueue", () => {
 		expect(readQueue(storage)).toEqual([]);
 	});
 
-	it("reads an empty queue when the stored value is corrupt", () => {
-		storage.setItem("fairway.scoreQueue", "{not json");
-		expect(readQueue(storage)).toEqual([]);
-	});
+	it.each(["{not json", '{"not":"a list"}'])(
+		"reads an empty queue when the stored value is %s",
+		(stored) => {
+			const unreadable: StorageLike = {
+				getItem: () => stored,
+				setItem: () => {},
+			};
+			expect(readQueue(unreadable)).toEqual([]);
+		},
+	);
 
 	it("appends a new entry", () => {
 		enqueueScore(storage, entry());
@@ -57,20 +63,24 @@ describe("scoreQueue", () => {
 		expect(q[0].fields).toEqual({ strokes: 4, putts: 2 });
 	});
 
-	it("keeps distinct keys separate", () => {
-		enqueueScore(storage, entry({ holeIndex: 0 }));
-		enqueueScore(storage, entry({ holeIndex: 1 }));
-		expect(readQueue(storage)).toHaveLength(2);
-	});
-
-	it("removes an entry by key", () => {
+	it("keeps other rounds, holes and players separate", () => {
 		enqueueScore(storage, entry());
-		removeEntry(storage, keyOf(entry()));
-		expect(readQueue(storage)).toEqual([]);
+		enqueueScore(storage, entry({ roundId: "r2" }));
+		enqueueScore(storage, entry({ holeIndex: 1 }));
+		enqueueScore(storage, entry({ playerIndex: 1 }));
+		expect(readQueue(storage)).toHaveLength(4);
 	});
 
-	it("builds a stable composite key", () => {
-		expect(keyFor("r1", 3, 2)).toBe("r1:3:2");
-		expect(keyOf(entry({ holeIndex: 3, playerIndex: 2 }))).toBe("r1:3:2");
+	it("removes only the entry with that key", () => {
+		enqueueScore(storage, entry());
+		enqueueScore(storage, entry({ holeIndex: 1 }));
+		removeEntry(storage, keyOf(entry()));
+		expect(readQueue(storage).map((e) => e.holeIndex)).toEqual([1]);
+	});
+
+	it("finds an entry under the key built from its parts", () => {
+		const queued = entry({ holeIndex: 3, playerIndex: 2 });
+		expect(keyFor("r1", 3, 2)).toBe(keyOf(queued));
+		expect(keyFor("r1", 2, 3)).not.toBe(keyOf(queued));
 	});
 });

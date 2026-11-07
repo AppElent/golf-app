@@ -1,17 +1,8 @@
 /**
- * `useConfirm()` — the phone's counterpart to the web's `useConfirm` in
- * `src/components/ui/confirm-dialog.tsx`, and the only way a destructive action
- * is allowed to ask.
+ * `useConfirm()`: the only way a destructive action asks. A system alert on iOS,
+ * a themed modal elsewhere. A promise, so a caller reads top to bottom:
  *
- * iOS uses a system alert; the shared promise API keeps destructive actions
- * consistent across screens. Other platforms retain their existing presentation.
- *
- * The API is a promise, so a caller reads top to bottom:
- *
- *     if (!(await confirm({ title: "Cancel this workout?", confirmLabel: "Cancel workout" }))) return;
- *
- * Confirm labels are verbs, never "OK" — a button that says what it does is the
- * difference between a considered answer and a reflex.
+ *     if (!(await confirm({ title, confirmLabel: t.rounds.delete }))) return;
  */
 import {
 	createContext,
@@ -34,6 +25,7 @@ import { haptics } from "../feedback/haptics";
 import { modalAnimation, useReduceMotion } from "../feedback/reduce-motion";
 import { useI18n } from "../i18n";
 import {
+	metrics,
 	radius,
 	spacing,
 	type Tokens,
@@ -42,13 +34,12 @@ import {
 } from "../theme";
 import { AppText } from "./text";
 
-export type ConfirmOptions = {
+type ConfirmOptions = {
 	title: string;
 	/** One line of consequence. Say what happens, not "Are you sure?". */
 	message?: string;
-	/** A verb: "Delete workout", "Cancel workout". Never "OK". */
+	/** A verb that says what it does. Never "OK". */
 	confirmLabel: string;
-	cancelLabel?: string;
 	/** Paints the confirm button red. On for anything that destroys data. */
 	destructive?: boolean;
 };
@@ -63,16 +54,10 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 	const styles = useThemedStyles(createStyles);
 	const [options, setOptions] = useState<ConfirmOptions | null>(null);
 	const reduceMotion = useReduceMotion();
-	// Held across renders so the promise opened in `confirm` is the one settled
-	// by the buttons. State would re-create it and strand the caller.
 	const resolveRef = useRef<((answer: boolean) => void) | null>(null);
 
 	const confirm = useCallback<ConfirmFn>(
 		(next) => {
-			// The one place a destructive warning is played. Putting it here rather
-			// than at each delete button is what keeps the vocabulary restrained:
-			// every destructive confirmation warns exactly once, and no ordinary
-			// confirmation can acquire a buzz by being copied from a destructive one.
 			if (resolveRef.current) return Promise.resolve(false);
 			if (next.destructive) haptics.destructiveWarning();
 			return new Promise<boolean>((resolve) => {
@@ -88,7 +73,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 						next.message,
 						[
 							{
-								text: next.cancelLabel ?? t.common.keep,
+								text: t.common.keep,
 								style: "cancel",
 								onPress: () => finish(false),
 							},
@@ -128,9 +113,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 			<Modal
 				visible={options !== null}
 				transparent
-				animationType={modalAnimation(reduceMotion, "fade")}
-				// Android's back button must answer "no", not leave the promise
-				// pending forever behind a dismissed dialog.
+				animationType={modalAnimation(reduceMotion)}
+				// Android's back button must answer "no", or the promise stays
+				// pending behind a dismissed dialog.
 				onRequestClose={() => settle(false)}
 			>
 				<Pressable style={styles.backdrop} onPress={() => settle(false)}>
@@ -151,9 +136,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 									pressed && { backgroundColor: colors.surface2 },
 								]}
 							>
-								<AppText variant="body">
-									{options?.cancelLabel ?? t.common.keep}
-								</AppText>
+								<AppText variant="body">{t.common.keep}</AppText>
 							</Pressable>
 
 							<Pressable
@@ -197,18 +180,6 @@ export function useConfirm() {
 	return confirm;
 }
 
-/**
- * Convex throws `Error: <message>\n    at handler ...` — the server's message
- * with a stack welded on. Screens surface the first line, which is the part a
- * human wrote (e.g. "A session is already active.").
- */
-export function convexErrorMessage(error: unknown, fallback: string) {
-	if (!(error instanceof Error)) return fallback;
-	const [firstLine] = error.message.split("\n");
-	const cleaned = firstLine.replace(/^\[.*?\]\s*/, "").trim();
-	return cleaned.length > 0 ? cleaned : fallback;
-}
-
 const createStyles = (colors: Tokens) =>
 	StyleSheet.create({
 		backdrop: {
@@ -235,7 +206,7 @@ const createStyles = (colors: Tokens) =>
 		},
 		button: {
 			flex: 1,
-			minHeight: 44,
+			minHeight: metrics.hitTarget,
 			alignItems: "center",
 			justifyContent: "center",
 			borderRadius: radius.pill,

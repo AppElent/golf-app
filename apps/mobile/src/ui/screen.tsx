@@ -4,20 +4,14 @@
  */
 import type { ReactNode } from "react";
 import { StyleSheet, View } from "react-native";
-import { type Edge, SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { type Tokens, useThemedStyles } from "../theme";
 
-export function Screen({
-	children,
-	edges = ["bottom"],
-}: {
-	children: ReactNode;
-	edges?: readonly Edge[];
-}) {
+export function Screen({ children }: { children: ReactNode }) {
 	const styles = useThemedStyles(createStyles);
 	return (
 		<View style={styles.root}>
-			<SafeAreaView style={styles.root} edges={edges}>
+			<SafeAreaView style={styles.root} edges={["bottom"]}>
 				{children}
 			</SafeAreaView>
 		</View>

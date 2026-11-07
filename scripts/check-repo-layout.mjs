@@ -1,6 +1,6 @@
 // The automatable Verify items of docs/standards/repo-layout.md.
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 
 const API_MODULE = "apps/mobile/src/convex/api.ts";
 const issues = [];
@@ -10,7 +10,12 @@ const tracked = execFileSync("git", ["ls-files", "-z", "apps/mobile"], {
 	encoding: "utf8",
 })
 	.split("\0")
-	.filter((file) => /\.(?:[cm]?[jt]sx?)$/.test(file) && file !== API_MODULE);
+	.filter(
+		(file) =>
+			/\.(?:[cm]?[jt]sx?)$/.test(file) &&
+			file !== API_MODULE &&
+			existsSync(file),
+	);
 for (const file of tracked) {
 	if (/from\s+["'][^"']*convex\/_generated/.test(readFileSync(file, "utf8")))
 		issues.push(`${file}: import convex/_generated through ${API_MODULE}`);

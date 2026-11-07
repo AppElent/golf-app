@@ -19,6 +19,7 @@ import type * as seed from "../seed.js";
 import type * as seedPreview from "../seedPreview.js";
 import type * as settings from "../settings.js";
 import type * as shots from "../shots.js";
+import type * as validators from "../validators.js";
 
 import type {
   ApiFromModules,
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   seedPreview: typeof seedPreview;
   settings: typeof settings;
   shots: typeof shots;
+  validators: typeof validators;
 }>;
 
 /**

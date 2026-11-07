@@ -22,9 +22,8 @@ rounds) while a round still uses it, so that round keeps its par and stroke
 index. This covers pre-catalog Welderen and Oosterhoutse rows, whose par-3
 loop holes `(1)`–`(9)` moved to their own catalog courses.
 
-It runs from `seedPreview` on every PR preview, from `pnpm deploy:dev` and
-`pnpm deploy:prod`, and by hand with `pnpm courses:sync` (add `-- --prod` for
-production). Nothing calls Overpass at deploy time.
+It runs from `seedPreview` on every PR preview, from `deploy-web.yml` on staging
+and production, and by hand with `pnpm courses:sync` (add `--prod` for production). Nothing calls Overpass at deploy time.
 
 ## Users
 
@@ -43,7 +42,7 @@ production). Nothing calls Overpass at deploy time.
 2. Check the claim against the club's current scorecard or the NGF rating
    table. Never apply a value you can't source.
 3. Edit `convex/catalog/courses/<key>.json`, add the source to `sources`, open
-   a PR. The preview syncs it; merging and deploying syncs dev and production.
+   a PR. The preview syncs it; merging syncs staging, then production.
 4. Set the suggestion's status to `applied` or `dismissed`.
 
 ## Add a course

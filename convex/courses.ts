@@ -1,3 +1,4 @@
+import { MAX_SUGGESTION_LENGTH } from "@fairway/core/course-suggestion";
 import { ConvexError, v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import {
@@ -17,6 +18,9 @@ import { getUserId } from "./lib";
 async function viewerId(ctx: QueryCtx): Promise<string | null> {
 	return (await ctx.auth.getUserIdentity())?.subject ?? null;
 }
+
+/** The tables whose rows belong to one course: copied and deleted with it. */
+const COURSE_CHILD_TABLES = ["tees", "holes", "holeGeometry"] as const;
 
 /** Catalog courses are visible to all; a copy only to its owner. */
 export function canSee(course: Doc<"courses">, userId: string | null) {
@@ -65,7 +69,7 @@ export async function deleteCourseData(
 	ctx: MutationCtx,
 	courseId: Id<"courses">,
 ) {
-	for (const table of ["tees", "holes", "holeGeometry"] as const) {
+	for (const table of COURSE_CHILD_TABLES) {
 		const docs = await ctx.db
 			.query(table)
 			.withIndex("by_course", (q) => q.eq("courseId", courseId))
@@ -140,11 +144,10 @@ export const fork = mutation({
 			city: source.city,
 			location: source.location,
 			osmRelationId: source.osmRelationId,
-			importStatus: source.importStatus,
 			ownerId: userId,
 			forkedFrom: source._id,
 		});
-		for (const table of ["tees", "holes", "holeGeometry"] as const) {
+		for (const table of COURSE_CHILD_TABLES) {
 			const docs = await ctx.db
 				.query(table)
 				.withIndex("by_course", (q) => q.eq("courseId", courseId))
@@ -196,18 +199,26 @@ export const upsertTee = mutation({
 	},
 });
 
-/** Set par + stroke index for a hole of the user's own copy. */
+/**
+ * Set par and stroke index for a hole of the user's own copy. Omitted fields
+ * keep their value; `null` clears.
+ */
 export const upsertHole = mutation({
 	args: {
 		holeId: v.id("holes"),
-		par: v.optional(v.number()),
-		strokeIndex: v.optional(v.number()),
+		par: v.optional(v.union(v.number(), v.null())),
+		strokeIndex: v.optional(v.union(v.number(), v.null())),
 	},
 	handler: async (ctx, { holeId, par, strokeIndex }) => {
 		const hole = await ctx.db.get(holeId);
 		if (!hole) throw new Error("Hole not found.");
 		await requireOwnCourse(ctx, hole.courseId);
-		await ctx.db.patch(holeId, { par, strokeIndex });
+		await ctx.db.patch(holeId, {
+			...(par !== undefined && { par: par ?? undefined }),
+			...(strokeIndex !== undefined && {
+				strokeIndex: strokeIndex ?? undefined,
+			}),
+		});
 	},
 });
 
@@ -230,46 +241,39 @@ export const remove = mutation({
 	},
 });
 
-const MAX_SUGGESTION_LENGTH = 2000;
-
 /**
  * Suggest a correction to a catalog course ("hole 7 is par 4", "the yellow
- * tee's slope is 129"). A copy may be attached as the worked-out fix.
+ * tee's slope is 129"). One sent from a copy attaches it as the worked-out fix.
  * Maintainers review open suggestions and edit convex/catalog.
  */
 export const suggest = mutation({
 	args: {
 		courseId: v.id("courses"),
 		message: v.string(),
-		forkId: v.optional(v.id("courses")),
 	},
-	handler: async (ctx, { courseId, message, forkId }) => {
+	handler: async (ctx, { courseId, message }) => {
 		const userId = await getUserId(ctx);
 		const course = await ctx.db.get(courseId);
 		if (!course || !canSee(course, userId))
 			throw new Error("Course not found.");
 		// Suggestions on a copy are about the catalog course it came from.
-		const target = course.ownerId === undefined ? course : null;
-		const catalogId = target?._id ?? course.forkedFrom;
+		const isCopy = course.ownerId !== undefined;
+		const catalogId = isCopy ? course.forkedFrom : course._id;
 		if (!catalogId) {
 			throw new Error("Only catalog courses take suggestions.");
 		}
 		const text = message.trim();
 		if (text.length === 0) throw new Error("Describe what is wrong.");
 		if (text.length > MAX_SUGGESTION_LENGTH) {
-			throw new Error("Keep the suggestion under 2000 characters.");
-		}
-		const attached =
-			forkId ?? (course.ownerId === userId ? course._id : undefined);
-		if (attached) {
-			const copy = await ctx.db.get(attached);
-			if (!copy || copy.ownerId !== userId) throw new Error("Copy not found.");
+			throw new Error(
+				`Keep the suggestion under ${MAX_SUGGESTION_LENGTH} characters.`,
+			);
 		}
 		return await ctx.db.insert("courseSuggestions", {
 			courseId: catalogId,
 			userId,
 			message: text,
-			forkId: attached,
+			forkId: isCopy ? course._id : undefined,
 			status: "open",
 			createdAt: Date.now(),
 		});

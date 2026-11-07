@@ -1,7 +1,12 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
+import {
+	holeScoreFields,
+	latLng,
+	roundFormat,
+	unitPreference,
+} from "./validators";
 
-const latLng = v.object({ lat: v.number(), lng: v.number() });
 const polygon = v.array(latLng);
 
 export default defineSchema({
@@ -18,13 +23,10 @@ export default defineSchema({
 		city: v.optional(v.string()),
 		location: v.optional(latLng),
 		osmRelationId: v.optional(v.number()),
+		// Existing rows may hold these two; nothing writes or reads them any more.
 		externalRef: v.optional(v.object({ source: v.string(), id: v.string() })),
-		// "manual" = hand-entered, "imported" = OSM import complete,
-		// "partial" = imported but some holes lack par/SI/geometry.
-		importStatus: v.union(
-			v.literal("manual"),
-			v.literal("imported"),
-			v.literal("partial"),
+		importStatus: v.optional(
+			v.union(v.literal("manual"), v.literal("imported"), v.literal("partial")),
 		),
 	})
 		.index("by_catalog_key", ["catalogKey"])
@@ -65,13 +67,11 @@ export default defineSchema({
 		bunkers: v.array(polygon),
 		tees: v.array(polygon),
 		water: v.array(polygon),
-	})
-		.index("by_course", ["courseId"])
-		.index("by_course_hole", ["courseId", "holeNumber"]),
+	}).index("by_course", ["courseId"]),
 
 	userSettings: defineTable({
 		userId: v.string(),
-		units: v.union(v.literal("m"), v.literal("yd")),
+		units: unitPreference,
 		homeCourseId: v.optional(v.id("courses")),
 		handicapIndex: v.optional(v.number()),
 	}).index("by_user", ["userId"]),
@@ -90,7 +90,7 @@ export default defineSchema({
 		loopLabel: v.optional(v.string()),
 		holeRefs: v.array(v.string()),
 		startedAt: v.number(),
-		format: v.union(v.literal("stroke"), v.literal("stableford")),
+		format: roundFormat,
 		status: v.union(v.literal("active"), v.literal("finished")),
 		players: v.array(
 			v.object({
@@ -100,6 +100,7 @@ export default defineSchema({
 			}),
 		),
 		currentHoleIndex: v.optional(v.number()),
+		// Rounds finished earlier still hold this; nothing writes or reads it.
 		totals: v.optional(
 			v.array(
 				v.object({
@@ -115,15 +116,10 @@ export default defineSchema({
 
 	holeScores: defineTable({
 		roundId: v.id("rounds"),
-		// 0-based position in the round's holeRefs (display number = index + 1).
+		// 0-based position in the round's holeRefs.
 		holeIndex: v.number(),
 		playerIndex: v.number(),
-		strokes: v.optional(v.number()),
-		putts: v.optional(v.number()),
-		fir: v.optional(v.boolean()),
-		gir: v.optional(v.boolean()),
-		penalties: v.optional(v.number()),
-		nr: v.optional(v.boolean()),
+		...holeScoreFields,
 	})
 		.index("by_round", ["roundId"])
 		.index("by_round_hole_player", ["roundId", "holeIndex", "playerIndex"]),
@@ -142,10 +138,7 @@ export default defineSchema({
 			v.literal("dismissed"),
 		),
 		createdAt: v.number(),
-	})
-		.index("by_course", ["courseId"])
-		.index("by_status", ["status"])
-		.index("by_user", ["userId"]),
+	}).index("by_user", ["userId"]),
 
 	// Marked ball positions (owner only). Consecutive shots on one hole give
 	// the distance hit with the earlier shot's club.

@@ -12,7 +12,7 @@ export interface HoleInfo {
 export function strokesReceived(
 	strokeIndex: number,
 	playingHandicap: number,
-	holeCount = 18,
+	holeCount: number,
 ): number {
 	if (playingHandicap >= 0) {
 		const base = Math.floor(playingHandicap / holeCount);
@@ -84,35 +84,60 @@ export function vsPar(
 	}, 0);
 }
 
-export function formatVsPar(diff: number): string {
-	if (diff === 0) return "E";
-	return diff > 0 ? `+${diff}` : `${diff}`;
+/**
+ * "+3", "E", "−2" with a real minus sign. `decimals` fixes the precision so
+ * rows of averages line up ("+1.0"); a value that rounds to zero reads "E".
+ */
+export function formatVsPar(diff: number, decimals?: number): string {
+	const magnitude =
+		decimals === undefined
+			? String(Math.abs(diff))
+			: Math.abs(diff).toFixed(decimals);
+	if (Number(magnitude) === 0) return "E";
+	return `${diff > 0 ? "+" : "−"}${magnitude}`;
 }
 
-export type ScoreMark = "eagle" | "birdie" | "par" | "bogey" | "double";
+export const SCORE_MARKS = [
+	"eagle",
+	"birdie",
+	"par",
+	"bogey",
+	"double",
+] as const;
 
-/** Classic scorecard notation class for a hole result (spec §3). */
+export type ScoreMark = (typeof SCORE_MARKS)[number];
+
+export function markForToPar(toPar: number): ScoreMark {
+	if (toPar <= -2) return "eagle";
+	if (toPar === -1) return "birdie";
+	if (toPar === 0) return "par";
+	if (toPar === 1) return "bogey";
+	return "double";
+}
+
+/** Classic scorecard notation class for a hole result. */
 export function scoreMark(
 	par: number,
 	strokes: number | null,
 ): ScoreMark | null {
-	if (strokes === null) return null;
-	const diff = strokes - par;
-	if (diff <= -2) return "eagle";
-	if (diff === -1) return "birdie";
-	if (diff === 0) return "par";
-	if (diff === 1) return "bogey";
-	return "double";
+	return strokes === null ? null : markForToPar(strokes - par);
 }
 
-/** Chunk stroke totals (Out/In nines). Nulls count 0; trailing partial chunk kept. */
-export function splitTotals(
-	strokes: ReadonlyArray<number | null>,
-	size: number,
-): number[] {
-	const totals: number[] = [];
-	for (let i = 0; i < strokes.length; i += size) {
-		totals.push(totalStrokes(strokes.slice(i, i + size)));
-	}
-	return totals;
+const NINE = 9;
+
+/** The holes of each nine: Out and In, or a single range up to nine holes. */
+export function nineRanges(holeCount: number): { from: number; to: number }[] {
+	return holeCount > NINE
+		? [
+				{ from: 0, to: NINE },
+				{ from: NINE, to: holeCount },
+			]
+		: [{ from: 0, to: holeCount }];
+}
+
+/** Stroke total per nine. Nulls count 0. */
+export function nineTotals(strokes: ReadonlyArray<number | null>): number[] {
+	return nineRanges(strokes.length).map(({ from, to }) =>
+		totalStrokes(strokes.slice(from, to)),
+	);
 }

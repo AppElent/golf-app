@@ -35,14 +35,7 @@ jobs:
       CLOUDFLARE_ENV: pr
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-
-
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
 
       # Convex provisions/refreshes preview backend pr-<N>, exposes its URL as
       # $CONVEX_URL inside --cmd, runs the build (bridging CONVEX_URL ->
@@ -59,7 +52,7 @@ jobs:
           pnpm exec convex deploy \
             --preview-create pr-${{ github.event.pull_request.number }} \
             --cmd-url-env-var-name CONVEX_URL \
-            --cmd 'VITE_CONVEX_URL=$CONVEX_URL VITE_CLERK_PUBLISHABLE_KEY=$VITE_CLERK_PUBLISHABLE_KEY pnpm build' \
+            --cmd 'VITE_CONVEX_URL=$CONVEX_URL pnpm build' \
             --preview-run seedPreview:seedPreview
 
       - name: Deploy Worker (per-PR)
@@ -69,12 +62,9 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           set -o pipefail
-          # --var overrides the runtime bindings so the per-PR Worker matches
-          # the per-PR bundle - otherwise wrangler.jsonc's top-level `vars`
-          # (if any) would bake production values onto the preview Worker.
+          # src/server.ts reads environment_name at runtime for Sentry.
           pnpm exec wrangler deploy \
             --name "$WORKER_NAME" \
-            --var "VITE_CLERK_PUBLISHABLE_KEY:$VITE_CLERK_PUBLISHABLE_KEY" \
             --var "environment_name:preview" \
             2>&1 | tee /tmp/wrangler-deploy.log
           if grep -q 'custom domain' /tmp/wrangler-deploy.log; then
@@ -117,12 +107,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: pnpm
-      - run: pnpm install --frozen-lockfile
+      - uses: ./.github/actions/setup
       - name: Delete Worker
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}

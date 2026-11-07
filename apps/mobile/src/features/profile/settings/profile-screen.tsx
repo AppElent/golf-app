@@ -1,23 +1,14 @@
-/**
- * Profile: golf settings that live on the account (handicap, distances, home
- * course, the bag), phone settings that live on the phone (appearance,
- * language, GPS while locked), and the account itself (report a problem, sign out, delete).
- */
 import { useAuth, useUser } from "@clerk/expo";
+import type { Units } from "@fairway/core/format";
 import { useMutation } from "convex/react";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, ScrollView, StyleSheet, Switch, View } from "react-native";
 import { api } from "../../../convex/api";
+import { convexErrorMessage } from "../../../convex/error-message";
 import { useQuery } from "../../../convex/query-cache";
-import {
-	fmt,
-	type Locale,
-	localizeDecimal,
-	plural,
-	useI18n,
-} from "../../../i18n";
+import { fmt, type Locale, plural, useI18n } from "../../../i18n";
 import { openProblemReport } from "../../../monitoring/report-problem";
 import {
 	type AppearancePreference,
@@ -28,7 +19,7 @@ import {
 	useAppearance,
 	useThemedStyles,
 } from "../../../theme";
-import { convexErrorMessage, useConfirm } from "../../../ui/confirm-dialog";
+import { useConfirm } from "../../../ui/confirm-dialog";
 import { FormSegmentedRow } from "../../../ui/form";
 import { InsetList, InsetRow } from "../../../ui/inset-list";
 import { AppText } from "../../../ui/text";
@@ -36,8 +27,8 @@ import { useToast } from "../../../ui/toast";
 import {
 	backgroundLocationPreferred,
 	setBackgroundLocationPreferred,
-} from "../../location/background/background-location";
-import { handicapText } from "./profile-model";
+} from "../../location/background/background-location-preference";
+import { useUnits } from "../use-units";
 
 /** Language names are written in their own language. */
 const LANGUAGES: { value: Locale; label: string }[] = [
@@ -46,7 +37,7 @@ const LANGUAGES: { value: Locale; label: string }[] = [
 ];
 
 export function ProfileScreen() {
-	const { t, locale, setLocale } = useI18n();
+	const { t, locale, numbers, setLocale } = useI18n();
 	const router = useRouter();
 	const styles = useThemedStyles(createStyles);
 	const toast = useToast();
@@ -55,6 +46,7 @@ export function ProfileScreen() {
 	const { signOut } = useAuth();
 	const { user } = useUser();
 	const settings = useQuery(api.settings.get);
+	const units = useUnits();
 	const courses = useQuery(api.courses.list);
 	const clubs = useQuery(api.clubs.list);
 	const updateSettings = useMutation(api.settings.update);
@@ -76,7 +68,7 @@ export function ProfileScreen() {
 			? courses.find((c) => c._id === settings.homeCourseId)?.name
 			: undefined;
 
-	async function setUnits(units: "m" | "yd") {
+	async function setUnits(units: Units) {
 		try {
 			await updateSettings({ units });
 		} catch (e) {
@@ -108,21 +100,19 @@ export function ProfileScreen() {
 			contentInsetAdjustmentBehavior="automatic"
 			contentContainerStyle={styles.content}
 		>
-			<InsetList compact header={t.profile.golf}>
+			<InsetList header={t.profile.golf}>
 				<InsetRow
-					id="handicap"
 					leading={{ symbol: "figure.golf" }}
 					title={t.profile.handicap}
 					value={
 						settings?.handicapIndex == null
 							? t.profile.handicapUnset
-							: localizeDecimal(handicapText(settings.handicapIndex), locale)
+							: numbers.handicap(settings.handicapIndex)
 					}
 					chevron
 					onPress={() => router.push("/profile/handicap")}
 				/>
 				<InsetRow
-					id="home-course"
 					leading={{ symbol: "house" }}
 					title={t.profile.homeCourse}
 					value={homeCourse ?? t.profile.homeCourseNone}
@@ -130,7 +120,6 @@ export function ProfileScreen() {
 					onPress={() => router.push("/profile/home-course")}
 				/>
 				<InsetRow
-					id="clubs"
 					leading={{ symbol: "bag" }}
 					title={t.profile.clubs}
 					value={
@@ -154,8 +143,8 @@ export function ProfileScreen() {
 							{ value: "m", label: t.profile.meters },
 							{ value: "yd", label: t.profile.yards },
 						]}
-						value={settings?.units ?? "m"}
-						onChange={(units) => void setUnits(units)}
+						value={units}
+						onChange={(next) => void setUnits(next)}
 					/>
 					<FormSegmentedRow<AppearancePreference>
 						label={t.profile.appearance}
@@ -178,9 +167,8 @@ export function ProfileScreen() {
 				</View>
 			</View>
 
-			<InsetList compact footer={t.profile.locationLockedHint}>
+			<InsetList footer={t.profile.locationLockedHint}>
 				<InsetRow
-					id="locked-gps"
 					leading={{ symbol: "location" }}
 					title={t.profile.locationLocked}
 					trailing={
@@ -194,7 +182,6 @@ export function ProfileScreen() {
 			</InsetList>
 
 			<InsetList
-				compact
 				header={t.profile.account}
 				footer={fmt(t.profile.version, {
 					v: Constants.expoConfig?.version ?? "–",
@@ -202,13 +189,11 @@ export function ProfileScreen() {
 			>
 				{user?.primaryEmailAddress ? (
 					<InsetRow
-						id="email"
 						leading={{ symbol: "person.crop.circle" }}
 						title={user.primaryEmailAddress.emailAddress}
 					/>
 				) : null}
 				<InsetRow
-					id="report"
 					leading={{ symbol: "exclamationmark.bubble" }}
 					title={t.profile.report}
 					onPress={() => {
@@ -218,13 +203,11 @@ export function ProfileScreen() {
 					}}
 				/>
 				<InsetRow
-					id="sign-out"
 					title={t.profile.signOut}
 					destructive
 					onPress={() => void signOut()}
 				/>
 				<InsetRow
-					id="delete"
 					title={
 						deleting ? `${t.profile.deleteAccount}…` : t.profile.deleteAccount
 					}
@@ -244,7 +227,6 @@ const createStyles = (colors: Tokens) =>
 			gap: spacing.lg,
 		},
 		section: { gap: spacing.sm },
-		// Lines up with the inset lists' own section headers.
 		sectionHeader: { paddingHorizontal: spacing.md, color: colors.textMuted },
 		card: { backgroundColor: colors.surface, borderRadius: radius.lg },
 	});

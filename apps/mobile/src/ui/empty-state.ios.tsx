@@ -1,24 +1,19 @@
 /**
- * iOS: the "search" appearance is the system `ContentUnavailableView` — the
- * same view Mail, Files and Settings show for "No results", with the
- * magnifier, title and description laid out by the OS. The inline appearance
- * (a sentence inside a card or a meal slot) has no system counterpart and
- * stays the RN drawing.
+ * iOS: the "search" appearance is the system `ContentUnavailableView`, the view
+ * Mail, Files and Settings show for "No results". The inline appearance has no
+ * system counterpart and stays the RN drawing.
  */
 import { ContentUnavailableView, Host } from "@expo/ui/swift-ui";
 import { StyleSheet, View } from "react-native";
-import { spacing, useHostScheme, useTokens } from "../theme";
-import { GhostButton } from "./button";
+import { spacing, useAppearance, useTokens } from "../theme";
 import {
 	type EmptyStateProps,
 	EmptyState as FallbackEmptyState,
 } from "./empty-state-fallback";
 
-export type { EmptyStateProps };
-
 export function EmptyState(props: EmptyStateProps) {
 	const tokens = useTokens();
-	const scheme = useHostScheme();
+	const { scheme } = useAppearance();
 	if (props.appearance !== "search") return <FallbackEmptyState {...props} />;
 	return (
 		<View style={styles.search}>
@@ -35,12 +30,6 @@ export function EmptyState(props: EmptyStateProps) {
 					description={props.body}
 				/>
 			</Host>
-			{props.action ? (
-				<GhostButton
-					label={props.action.label}
-					onPress={props.action.onPress}
-				/>
-			) : null}
 		</View>
 	);
 }

@@ -1,14 +1,10 @@
 import { haversineMeters, type LatLng } from "./geo";
+import type { HoleAnchors } from "./hole-view";
 
-export interface HoleAnchor {
-	/** Tee position (start of the hole line). */
-	tee: LatLng;
-	/** Green center. */
-	green: LatLng;
-}
+type TeeAndGreen = Pick<HoleAnchors, "tee" | "green">;
 
 /** You count as "on the next tee" within this radius of it. */
-export const TEE_RADIUS_M = 30;
+const TEE_RADIUS_M = 30;
 /** …and only once you have left the current green behind by this much. */
 const LEFT_GREEN_M = 15;
 
@@ -19,8 +15,8 @@ const LEFT_GREEN_M = 15;
  */
 export function shouldAdvance(
 	position: LatLng,
-	current: HoleAnchor,
-	next: HoleAnchor | undefined,
+	current: TeeAndGreen,
+	next: TeeAndGreen | undefined,
 	accuracyMeters = 0,
 ): boolean {
 	if (!next) return false;

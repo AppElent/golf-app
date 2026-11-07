@@ -1,18 +1,13 @@
-/**
- * Stats: the would-be index and its trend, pooled averages over the last 20
- * rounds, scoring by par, the scoring distribution and club distances (the
- * bag's carry next to what marked shots say).
- */
-import { formatDistance } from "@fairway/core/format";
+import { distanceValue, formatDistance } from "@fairway/core/format";
+import { wouldBeFromHistory } from "@fairway/core/handicap";
 import { parTypeAverages, scoringDistribution } from "@fairway/core/par-stats";
-import { formatVsPar } from "@fairway/core/scoring";
+import type { ScoreMark } from "@fairway/core/scoring";
 import { aggregateStats } from "@fairway/core/stats";
 import { useRouter } from "expo-router";
 import { ScrollView, StyleSheet, View } from "react-native";
-import Svg, { Circle, Path } from "react-native-svg";
 import { api } from "../../../convex/api";
 import { useQuery } from "../../../convex/query-cache";
-import { fmt, localizeDecimal, plural, useI18n } from "../../../i18n";
+import { fmt, plural, useI18n } from "../../../i18n";
 import {
 	course,
 	metrics,
@@ -26,26 +21,20 @@ import { EmptyState } from "../../../ui/empty-state";
 import { InsetList, InsetRow } from "../../../ui/inset-list";
 import { SkeletonCard } from "../../../ui/skeleton";
 import { AppText } from "../../../ui/text";
-import { wouldBeFromHistory } from "../../home/summary/home-summary-model";
-import {
-	clubRows,
-	type DistributionKey,
-	distributionShares,
-	statInputs,
-	wouldBeTrend,
-} from "./stats-model";
+import { useUnits } from "../../profile/use-units";
+import { Sparkline } from "./sparkline";
+import { clubRows, distributionShares } from "./stats-model";
 
 export function StatsScreen() {
 	const router = useRouter();
-	const { t, locale } = useI18n();
+	const { t, locale, numbers } = useI18n();
 	const colors = useTokens();
 	const styles = useThemedStyles(createStyles);
-	const history = useQuery(api.rounds.history, { limit: 20 });
-	const results = useQuery(api.rounds.holeResults, { limit: 20 });
+	const history = useQuery(api.rounds.history, {});
+	const results = useQuery(api.rounds.holeResults, {});
 	const clubs = useQuery(api.clubs.list);
 	const shots = useQuery(api.shots.mine);
-	const settings = useQuery(api.settings.get);
-	const units = settings?.units ?? "m";
+	const units = useUnits();
 
 	if (history === undefined) {
 		return (
@@ -62,25 +51,22 @@ export function StatsScreen() {
 		return <EmptyState title={t.stats.empty} body={t.stats.emptyHint} />;
 	}
 
-	const decimal = (n: number) => localizeDecimal(n.toFixed(1), locale);
-	const toPar = (v: number | null) =>
-		v === null ? "—" : localizeDecimal(formatVsPar(v), locale);
+	const toPar = (v: number | null) => (v === null ? "—" : numbers.vsPar(v));
 	const pct = (v: number | null) =>
 		v === null ? "—" : `${Math.round(v * 100)}%`;
-	const wouldBe = wouldBeFromHistory(history);
-	const trend = wouldBeTrend(history);
-	const stats = aggregateStats(statInputs(history));
+	const { index: wouldBe, counted, trend } = wouldBeFromHistory(history);
+	const stats = aggregateStats(history);
 	const parTypes = results ? parTypeAverages(results) : null;
 	const distribution = results
 		? distributionShares(scoringDistribution(results))
 		: null;
 	const bag = clubs && shots ? clubRows(clubs, shots) : null;
-	const bucketColor: Record<DistributionKey, string> = {
-		eagles: colors.tileOrange,
-		birdies: course.birdie,
-		pars: colors.accentFill,
-		bogeys: colors.textMuted,
-		doubles: colors.text,
+	const bucketColor: Record<ScoreMark, string> = {
+		eagle: colors.eagle,
+		birdie: course.birdie,
+		par: colors.accentFill,
+		bogey: colors.textMuted,
+		double: colors.text,
 	};
 
 	return (
@@ -92,14 +78,14 @@ export function StatsScreen() {
 				<View style={styles.heroText}>
 					<AppText variant="label">{t.stats.wouldBe}</AppText>
 					<AppText
-						variant={wouldBe ? "quantity" : "title"}
+						variant={wouldBe !== null ? "quantity" : "title"}
 						style={styles.heroValue}
 					>
-						{wouldBe ? decimal(wouldBe.value) : "—"}
+						{wouldBe !== null ? numbers.handicap(wouldBe) : "—"}
 					</AppText>
 					<AppText variant="footnote">
-						{wouldBe
-							? fmt(t.stats.wouldBeHint, { count: wouldBe.count })
+						{wouldBe !== null
+							? fmt(t.stats.wouldBeHint, { count: counted })
 							: t.stats.wouldBeNeeds}
 					</AppText>
 				</View>
@@ -112,13 +98,15 @@ export function StatsScreen() {
 				) : null}
 			</View>
 
-			<InsetList compact header={t.stats.averages}>
+			<InsetList header={t.stats.averages}>
 				<InsetRow title={t.stats.rounds} value={String(stats.rounds)} />
 				{stats.avgScore !== null || stats.avgScore9 === null ? (
 					<>
 						<InsetRow
 							title={t.stats.avgScore}
-							value={stats.avgScore === null ? "—" : decimal(stats.avgScore)}
+							value={
+								stats.avgScore === null ? "—" : numbers.decimal(stats.avgScore)
+							}
 						/>
 						<InsetRow title={t.stats.avgToPar} value={toPar(stats.avgVsPar)} />
 					</>
@@ -127,7 +115,7 @@ export function StatsScreen() {
 					<>
 						<InsetRow
 							title={t.stats.avgScore9}
-							value={decimal(stats.avgScore9)}
+							value={numbers.decimal(stats.avgScore9)}
 						/>
 						<InsetRow
 							title={t.stats.avgToPar9}
@@ -137,29 +125,26 @@ export function StatsScreen() {
 				) : null}
 				<InsetRow
 					title={t.stats.puttsPer18}
-					value={stats.puttsPer18 === null ? "—" : decimal(stats.puttsPer18)}
+					value={
+						stats.puttsPer18 === null ? "—" : numbers.decimal(stats.puttsPer18)
+					}
 				/>
 				<InsetRow title={t.stats.fairways} value={pct(stats.firPct)} />
 				<InsetRow title={t.stats.greens} value={pct(stats.girPct)} />
 			</InsetList>
 
 			{parTypes ? (
-				<InsetList compact header={t.stats.parTypes}>
+				<InsetList header={t.stats.parTypes}>
 					{parTypes.map((p) => (
 						<InsetRow
 							key={p.par}
-							id={`par-${p.par}`}
 							title={fmt(t.stats.parN, { n: p.par })}
 							secondary={
 								p.average === null
 									? undefined
-									: localizeDecimal(oneDecimalVsPar(p.average - p.par), locale)
+									: numbers.vsPar(p.average - p.par, 1)
 							}
-							value={
-								p.average === null
-									? "—"
-									: localizeDecimal(p.average.toFixed(2), locale)
-							}
+							value={p.average === null ? "—" : numbers.decimal(p.average, 2)}
 						/>
 					))}
 				</InsetList>
@@ -200,21 +185,16 @@ export function StatsScreen() {
 			) : null}
 
 			{bag && bag.length > 0 ? (
-				<InsetList compact header={t.stats.clubs} footer={t.stats.clubsHint}>
+				<InsetList header={t.stats.clubs} footer={t.stats.clubsHint}>
 					{bag.map((club) => (
 						<InsetRow
 							key={club.name}
-							id={club.name}
 							title={club.name}
 							secondary={
 								club.learned
 									? [
 											fmt(t.stats.typical, {
-												// "142–156 m": the unit once.
-												low: formatDistance(
-													club.learned.lowMeters,
-													units,
-												).split(" ")[0],
+												low: distanceValue(club.learned.lowMeters, units),
 												high: formatDistance(club.learned.highMeters, units),
 											}),
 											plural(locale, club.learned.shots, t.stats.clubShots),
@@ -231,7 +211,7 @@ export function StatsScreen() {
 					))}
 				</InsetList>
 			) : bag ? (
-				<InsetList compact header={t.stats.clubs}>
+				<InsetList header={t.stats.clubs}>
 					<InsetRow
 						title={t.stats.noBag}
 						secondary={t.stats.noBagHint}
@@ -241,59 +221,6 @@ export function StatsScreen() {
 				</InsetList>
 			) : null}
 		</ScrollView>
-	);
-}
-
-/** "+0.7", "+1.0", "E": one decimal, so the rows line up. */
-function oneDecimalVsPar(diff: number): string {
-	const rounded = diff.toFixed(1);
-	if (Number(rounded) === 0) return "E";
-	return diff > 0 ? `+${rounded}` : rounded;
-}
-
-/** Lower index is better, so it draws higher. */
-function Sparkline({
-	values,
-	color,
-	label,
-	width = 120,
-	height = 44,
-}: {
-	values: readonly number[];
-	color: string;
-	label: string;
-	width?: number;
-	height?: number;
-}) {
-	const min = Math.min(...values);
-	const span = Math.max(...values) - min || 1;
-	const pad = 4;
-	const step = (width - pad * 2) / (values.length - 1);
-	const points = values.map((v, i) => ({
-		x: pad + i * step,
-		y: pad + (height - pad * 2) * ((v - min) / span),
-	}));
-	const d = points
-		.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)} ${p.y.toFixed(1)}`)
-		.join(" ");
-	const last = points[points.length - 1];
-	return (
-		<Svg
-			width={width}
-			height={height}
-			accessibilityRole="image"
-			accessibilityLabel={label}
-		>
-			<Path
-				d={d}
-				stroke={color}
-				strokeWidth={2.5}
-				strokeLinecap="round"
-				strokeLinejoin="round"
-				fill="none"
-			/>
-			<Circle cx={last.x} cy={last.y} r={3.5} fill={color} />
-		</Svg>
 	);
 }
 
@@ -315,7 +242,6 @@ const createStyles = (colors: Tokens) =>
 		heroText: { flex: 1, gap: spacing.xs },
 		heroValue: { fontVariant: ["tabular-nums"] },
 		section: { gap: spacing.sm },
-		// Lines up with the inset lists' own section headers.
 		sectionHeader: { paddingHorizontal: spacing.md, color: colors.textMuted },
 		card: {
 			padding: spacing.md,

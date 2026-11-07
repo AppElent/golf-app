@@ -1,23 +1,16 @@
-import { DEFAULT_BAG, suggestClub } from "@fairway/core/club-suggest";
-import { distancesToGreen, type LatLng } from "@fairway/core/geo";
-import type { HoleShapes } from "@fairway/core/hole-projection";
+import { type Club, DEFAULT_BAG } from "@fairway/core/club-suggest";
+import { GPS_WEAK_ACCURACY_M } from "@fairway/core/geo";
+import { greenNumbers, holeAnchors } from "@fairway/core/hole-view";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { api } from "../../convex/_generated/api";
-import { HoleMap, type MapVariant } from "../components/hole-map/HoleMap";
-import { useGeolocation } from "../hooks/useGeolocation";
+import { CTA } from "../components/classes";
+import { HoleMap, type MapVariant } from "../play/HoleMap";
+import { useGeolocation } from "../play/useGeolocation";
 
 export const Route = createFileRoute("/play")({ component: PlayScreen });
-
-const centroid = (ring: ReadonlyArray<LatLng>): LatLng => {
-	const n = ring.length || 1;
-	return {
-		lat: ring.reduce((t, p) => t + p.lat, 0) / n,
-		lng: ring.reduce((t, p) => t + p.lng, 0) / n,
-	};
-};
 
 function PlayScreen() {
 	const active = useQuery(api.rounds.active);
@@ -61,54 +54,27 @@ function PlayInner({
 }: {
 	active: NonNullable<ReturnType<typeof useQuery<typeof api.rounds.active>>>;
 	geometry: ReturnType<typeof useQuery<typeof api.courses.get>> | null;
-	bag: ReadonlyArray<{ name: string; carryMeters: number }>;
+	bag: ReadonlyArray<Club>;
 	onSetHole: (holeIndex: number) => void;
 }) {
 	const navigate = useNavigate();
-	const { position: gps, accuracyM } = useGeolocation(true);
+	const { position: gps, accuracyM } = useGeolocation();
 	const [variant, setVariant] = useState<MapVariant>("map");
 
-	const idx = active.round.currentHoleIndex ?? 0;
+	const idx = active.round.currentHoleIndex;
 	const ref = active.round.holeRefs[idx];
 	const holeMeta = active.holes[idx];
 	const geo = geometry?.geometry.find((g) => g.ref === ref);
 
-	const shapes: HoleShapes | null = geo
-		? {
-				holeLine: geo.holeLine ?? [],
-				fairways: geo.fairways,
-				greens: geo.greens,
-				bunkers: geo.bunkers,
-				water: geo.water,
-				tees: geo.tees,
-			}
-		: null;
-
-	const teePos: LatLng | null = shapes
-		? shapes.tees[0]
-			? centroid(shapes.tees[0])
-			: (shapes.holeLine[0] ?? null)
-		: null;
-	const position = gps ?? teePos;
-	const greenCenter = shapes?.greens[0] ? centroid(shapes.greens[0]) : null;
-
-	const [aim, setAim] = useState<LatLng | null>(null);
-	// Reset aim to green center when the hole changes, or once geometry finishes
-	// loading and a green center first becomes available (courses.get resolves
-	// after this component mounts, so ref alone doesn't cover that transition).
-	// biome-ignore lint/correctness/useExhaustiveDependencies: only re-run on hole change or green center arriving
-	useEffect(() => {
-		if (greenCenter) setAim(greenCenter);
-	}, [ref, greenCenter?.lat, greenCenter?.lng]);
-
-	const distances =
-		position && shapes?.greens[0]
-			? distancesToGreen(position, shapes.greens[0])
-			: null;
+	// A hole with only a hole line has anchors too, but no green polygon to map.
+	const anchors = geo ? holeAnchors(geo) : null;
+	const mapAnchors = anchors?.greenRing ? anchors : null;
+	const position = gps ?? mapAnchors?.tee ?? null;
+	const numbers =
+		position && mapAnchors ? greenNumbers(position, mapAnchors) : null;
 
 	return (
 		<main className="min-h-dvh bg-pine px-4 pt-14 pb-[110px]">
-			{/* Header */}
 			<header className="flex items-center justify-between">
 				<button
 					type="button"
@@ -141,7 +107,6 @@ function PlayInner({
 				</button>
 			</header>
 
-			{/* Variant toggle */}
 			<div className="mt-3 flex justify-center gap-1.5">
 				{(["map", "rings", "bignumbers"] as const).map((v) => (
 					<button
@@ -159,15 +124,15 @@ function PlayInner({
 				))}
 			</div>
 
-			{/* Map */}
 			<div className="mt-3">
-				{shapes && position && greenCenter && aim ? (
+				{geo && mapAnchors && numbers && position ? (
 					<HoleMap
-						shapes={shapes}
+						key={ref}
+						geometry={geo}
+						anchors={mapAnchors}
+						numbers={numbers}
 						position={position}
-						aim={aim}
-						onAimChange={setAim}
-						clubFor={(d) => suggestClub(bag, d)?.name ?? null}
+						bag={bag}
 						variant={variant}
 						accuracyM={accuracyM}
 					/>
@@ -179,29 +144,26 @@ function PlayInner({
 				)}
 			</div>
 
-			{/* F/C/B chips */}
-			{distances ? (
+			{numbers ? (
 				<div className="mt-3 grid grid-cols-3 gap-2">
-					<Chip label="Front" value={Math.round(distances.front)} />
-					<Chip label="Center" value={Math.round(distances.center)} accent />
-					<Chip label="Back" value={Math.round(distances.back)} />
+					<Chip label="Front" value={Math.round(numbers.front)} />
+					<Chip label="Center" value={Math.round(numbers.center)} accent />
+					<Chip label="Back" value={Math.round(numbers.back)} />
 				</div>
 			) : null}
 
-			{/* GPS status */}
 			<p className="mt-2 text-center text-[11px] text-mint-soft">
 				{gps
-					? accuracyM && accuracyM > 15
+					? accuracyM && accuracyM > GPS_WEAK_ACCURACY_M
 						? `GPS ±${Math.round(accuracyM)} m`
 						: "GPS locked"
 					: "No GPS — distances from the tee"}
 			</p>
 
-			{/* Enter score CTA */}
 			<button
 				type="button"
 				onClick={() => navigate({ to: "/card" })}
-				className="mt-5 w-full rounded-full bg-flag px-6 py-4 font-display text-[15px] font-bold text-white shadow-lg shadow-flag/25"
+				className={`mt-5 ${CTA} text-[15px]`}
 			>
 				Enter score for hole {idx + 1}
 			</button>

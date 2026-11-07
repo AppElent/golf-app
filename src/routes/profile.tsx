@@ -1,26 +1,32 @@
 import { formatDistance, type Units } from "@fairway/core/format";
+import { GPS_WEAK_ACCURACY_M } from "@fairway/core/geo";
+import {
+	formatHandicapIndex,
+	parseHandicapIndex,
+} from "@fairway/core/handicap";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
+import { FIELD, SURFACE } from "../components/classes";
+import { INVALID_INDEX_MESSAGE } from "../components/copy";
+import { Page, PageNote, PageTitle, Section } from "../components/Page";
+import { PillToggle } from "../components/PillToggle";
+import { StatCard } from "../components/StatCard";
 
 export const Route = createFileRoute("/profile")({ component: ProfileScreen });
 
 function ProfileScreen() {
 	const settings = useQuery(api.settings.get);
 	const courses = useQuery(api.courses.list);
-	const history = useQuery(api.rounds.history, { limit: 20 });
+	const history = useQuery(api.rounds.history, {});
 	const clubs = useQuery(api.clubs.list);
 	const updateSettings = useMutation(api.settings.update);
 
 	if (settings === undefined) {
-		return (
-			<main className="px-5 pt-16 pb-[110px]">
-				<p className="text-[13px] text-stone">Loading…</p>
-			</main>
-		);
+		return <PageNote>Loading…</PageNote>;
 	}
 
 	const units = settings.units;
@@ -35,29 +41,27 @@ function ProfileScreen() {
 		);
 
 	return (
-		<main className="px-5 pt-16 pb-[110px]">
-			<h1 className="font-display text-2xl font-bold tracking-tight text-ink">
-				Profile
-			</h1>
+		<Page>
+			<PageTitle>Profile</PageTitle>
 
-			{/* Summary */}
 			<section className="mt-4 grid grid-cols-3 gap-3">
 				<StatCard
+					compact
 					label="Handicap"
 					value={
 						settings.handicapIndex !== null
-							? settings.handicapIndex.toFixed(1)
+							? formatHandicapIndex(settings.handicapIndex)
 							: "—"
 					}
 				/>
-				<StatCard label="Rounds" value={String(roundsCount)} />
+				<StatCard compact label="Rounds" value={String(roundsCount)} />
 				<StatCard
+					compact
 					label="Best"
 					value={bestScore !== null ? String(bestScore) : "—"}
 				/>
 			</section>
 
-			{/* Handicap index entry */}
 			<Section title="Handicap index">
 				<HandicapEditor
 					value={settings.handicapIndex}
@@ -65,27 +69,20 @@ function ProfileScreen() {
 				/>
 			</Section>
 
-			{/* Units */}
 			<Section title="Units">
 				<div className="flex gap-2">
 					{(["m", "yd"] as const).map((u) => (
-						<button
-							type="button"
+						<PillToggle
 							key={u}
+							selected={units === u}
 							onClick={() => updateSettings({ units: u })}
-							className={`rounded-full border px-4 py-2 font-display text-[13px] font-semibold ${
-								units === u
-									? "border-pine bg-pine text-cream"
-									: "border-card-line bg-white/60 text-ink"
-							}`}
 						>
 							{u === "m" ? "Meters" : "Yards"}
-						</button>
+						</PillToggle>
 					))}
 				</div>
 			</Section>
 
-			{/* Home course */}
 			<Section title="Home course">
 				<div className="flex flex-col gap-2">
 					{(courses ?? []).map((c) => (
@@ -100,7 +97,7 @@ function ProfileScreen() {
 							className={`rounded-xl border px-4 py-2.5 text-left font-display text-[14px] font-semibold ${
 								settings.homeCourseId === c._id
 									? "border-live bg-live/10 text-ink"
-									: "border-card-line bg-white/60 text-ink"
+									: `${SURFACE} text-ink`
 							}`}
 						>
 							{c.name}
@@ -109,20 +106,20 @@ function ProfileScreen() {
 				</div>
 			</Section>
 
-			{/* GPS accuracy (informational — spec §8) */}
 			<Section title="GPS accuracy">
-				<p className="rounded-xl border border-card-line bg-white/60 px-4 py-3 text-[12.5px] text-moss">
+				<p
+					className={`rounded-xl border ${SURFACE} px-4 py-3 text-[12.5px] text-moss`}
+				>
 					On the Play screen your position shows a live dot. When accuracy is
-					worse than 15 m a soft halo appears around it — the distance number is
-					always shown.
+					worse than {GPS_WEAK_ACCURACY_M} m a soft halo appears around it — the
+					distance number is always shown.
 				</p>
 			</Section>
 
-			{/* Club bag */}
 			<Section title="Club bag">
 				<ClubBag clubs={clubs ?? []} units={units} />
 			</Section>
-		</main>
+		</Page>
 	);
 }
 
@@ -133,26 +130,40 @@ function HandicapEditor({
 	value: number | null;
 	onSave: (v: number | null) => void;
 }) {
-	const [draft, setDraft] = useState(value !== null ? String(value) : "");
+	const [draft, setDraft] = useState(
+		value !== null ? formatHandicapIndex(value) : "",
+	);
+	const [invalid, setInvalid] = useState(false);
+
+	function save() {
+		const parsed = parseHandicapIndex(draft);
+		setInvalid(!parsed.valid);
+		if (parsed.valid) onSave(parsed.value);
+	}
+
 	return (
-		<div className="flex items-center gap-2">
-			<input
-				value={draft}
-				placeholder="e.g. 18.4"
-				inputMode="decimal"
-				onChange={(e) => setDraft(e.target.value)}
-				className="w-28 rounded-lg border border-card-line bg-cream px-3 py-2 text-center text-[15px] text-ink"
-			/>
-			<button
-				type="button"
-				onClick={() => {
-					const n = Number.parseFloat(draft);
-					onSave(draft.trim() === "" || Number.isNaN(n) ? null : n);
-				}}
-				className="rounded-full bg-pine px-5 py-2 font-display text-[13px] font-semibold text-cream"
-			>
-				Save
-			</button>
+		<div>
+			<div className="flex items-center gap-2">
+				<input
+					value={draft}
+					placeholder="e.g. 18.4"
+					inputMode="decimal"
+					onChange={(e) => setDraft(e.target.value)}
+					className={`${FIELD} w-28 px-3 py-2 text-center text-[15px]`}
+				/>
+				<button
+					type="button"
+					onClick={save}
+					className="rounded-full bg-pine px-5 py-2 font-display text-[13px] font-semibold text-cream"
+				>
+					Save
+				</button>
+			</div>
+			{invalid ? (
+				<p className="mt-2 text-[13px] font-semibold text-flag">
+					{INVALID_INDEX_MESSAGE}
+				</p>
+			) : null}
 		</div>
 	);
 }
@@ -182,7 +193,9 @@ function ClubBag({
 
 	return (
 		<div>
-			<div className="divide-y divide-card-line rounded-2xl border border-card-line bg-white/60">
+			<div
+				className={`divide-y divide-card-line rounded-2xl border ${SURFACE}`}
+			>
 				{clubs.map((club, i) => (
 					<div key={club._id} className="flex items-center gap-2 px-3 py-2">
 						<div className="flex flex-col">
@@ -211,7 +224,7 @@ function ClubBag({
 								const v = e.target.value.trim();
 								if (v && v !== club.name) update({ clubId: club._id, name: v });
 							}}
-							className="w-16 rounded-lg border border-card-line bg-cream px-2 py-1.5 font-display text-[14px] font-semibold text-ink"
+							className={`${FIELD} w-16 px-2 py-1.5 font-display text-[14px] font-semibold`}
 						/>
 						<input
 							defaultValue={String(club.carryMeters)}
@@ -221,7 +234,7 @@ function ClubBag({
 								if (!Number.isNaN(n) && n !== club.carryMeters)
 									update({ clubId: club._id, carryMeters: n });
 							}}
-							className="w-16 rounded-lg border border-card-line bg-cream px-2 py-1.5 text-center text-[14px] text-ink"
+							className={`${FIELD} w-16 px-2 py-1.5 text-center text-[14px]`}
 						/>
 						<span className="min-w-[52px] text-[12px] text-moss">
 							{formatDistance(club.carryMeters, units)}
@@ -243,20 +256,19 @@ function ClubBag({
 				) : null}
 			</div>
 
-			{/* Add club */}
 			<div className="mt-3 flex items-center gap-2">
 				<input
 					value={name}
 					placeholder="Club (7i)"
 					onChange={(e) => setName(e.target.value)}
-					className="w-24 rounded-lg border border-card-line bg-cream px-3 py-2 text-[14px] text-ink"
+					className={`${FIELD} w-24 px-3 py-2 text-[14px]`}
 				/>
 				<input
 					value={carry}
 					placeholder="Carry m"
 					inputMode="numeric"
 					onChange={(e) => setCarry(e.target.value)}
-					className="w-24 rounded-lg border border-card-line bg-cream px-3 py-2 text-center text-[14px] text-ink"
+					className={`${FIELD} w-24 px-3 py-2 text-center text-[14px]`}
 				/>
 				<button
 					type="button"
@@ -276,34 +288,6 @@ function ClubBag({
 					<Plus className="size-4" /> Add
 				</button>
 			</div>
-		</div>
-	);
-}
-
-function Section({
-	title,
-	children,
-}: {
-	title: string;
-	children: React.ReactNode;
-}) {
-	return (
-		<section className="mt-6">
-			<h2 className="font-display text-sm font-semibold uppercase tracking-wide text-moss">
-				{title}
-			</h2>
-			<div className="mt-3">{children}</div>
-		</section>
-	);
-}
-
-function StatCard({ label, value }: { label: string; value: string }) {
-	return (
-		<div className="rounded-2xl border border-card-line bg-white/60 px-3 py-3 text-center">
-			<p className="text-[10px] font-semibold uppercase tracking-wide text-stone">
-				{label}
-			</p>
-			<p className="mt-1 font-display text-xl font-bold text-ink">{value}</p>
 		</div>
 	);
 }

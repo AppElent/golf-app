@@ -204,10 +204,8 @@ export const ENTRIES = [
 		secret: false,
 		lands: {
 			"expo-build": { name: "EXPO_PUBLIC_SENTRY_DSN", environments: RELEASES },
-			// Laptop deploys (`pnpm deploy:*`) build from .env.local; localhost
-			// itself never reports.
-			"vite-build": { name: "VITE_SENTRY_DSN", environments: ["local"] },
-			// GitHub variable for the PR-preview build (preview.yml).
+			// GitHub variable for the deploy and PR-preview builds (deploy-web.yml,
+			// preview.yml).
 			workflow: { name: "VITE_SENTRY_DSN", environments: ["production"] },
 		},
 	},
@@ -236,9 +234,8 @@ export const ENTRIES = [
 		secret: true,
 		lands: {
 			"eas-tooling": { name: "SENTRY_AUTH_TOKEN", environments: RELEASES },
-			// GitHub secret for preview.yml; laptop deploys get it through
-			// `pnpm env exec production --only github -- pnpm deploy:prod`.
-			// ci.yml's check build never sees it.
+			// GitHub secret for deploy-web.yml and preview.yml. ci.yml's check build
+			// never sees it.
 			workflow: { name: "SENTRY_AUTH_TOKEN", environments: ["production"] },
 		},
 	},

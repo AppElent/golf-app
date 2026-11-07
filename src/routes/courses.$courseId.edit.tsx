@@ -1,9 +1,12 @@
+import { MAX_SUGGESTION_LENGTH } from "@fairway/core/course-suggestion";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { ConvexError } from "convex/values";
 import { useEffect, useState } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
+import { FIELD, SURFACE } from "../components/classes";
+import { Page, PageNote, PageTitle, SectionTitle } from "../components/Page";
 
 export const Route = createFileRoute("/courses/$courseId/edit")({
 	component: CourseEditor,
@@ -22,18 +25,10 @@ function CourseEditor() {
 	const navigate = useNavigate();
 
 	if (data === undefined) {
-		return (
-			<main className="px-5 pt-16 pb-[110px]">
-				<p className="text-[13px] text-stone">Loading…</p>
-			</main>
-		);
+		return <PageNote>Loading…</PageNote>;
 	}
 	if (data === null) {
-		return (
-			<main className="px-5 pt-16 pb-[110px]">
-				<p className="text-[13px] text-stone">Course not found.</p>
-			</main>
-		);
+		return <PageNote>Course not found.</PageNote>;
 	}
 
 	const { course, tees, holes, geometry } = data;
@@ -51,10 +46,8 @@ function CourseEditor() {
 
 	if (isCatalog) {
 		return (
-			<main className="px-5 pt-16 pb-[110px]">
-				<h1 className="font-display text-2xl font-bold tracking-tight text-ink">
-					{course.name}
-				</h1>
+			<Page>
+				<PageTitle>{course.name}</PageTitle>
 				<p className="mt-1 text-[13px] text-moss">
 					Catalog course — checked against the club's scorecard and kept the
 					same for everyone. Spot a mistake? Suggest a correction, or make your
@@ -72,14 +65,12 @@ function CourseEditor() {
 				<SuggestSection courseId={course._id} />
 				<TeeList tees={tees} />
 				<section className="mt-8">
-					<h2 className="font-display text-sm font-semibold uppercase tracking-wide text-moss">
-						Holes
-					</h2>
+					<SectionTitle>Holes</SectionTitle>
 					<ul className="mt-3 grid grid-cols-3 gap-2">
 						{holes.map((hole) => (
 							<li
 								key={hole._id}
-								className="rounded-xl border border-card-line bg-white/60 px-3 py-2 text-[13px] text-ink"
+								className={`rounded-xl border ${SURFACE} px-3 py-2 text-[13px] text-ink`}
 							>
 								<span className="font-display font-semibold">
 									{hole.number}
@@ -94,15 +85,13 @@ function CourseEditor() {
 						))}
 					</ul>
 				</section>
-			</main>
+			</Page>
 		);
 	}
 
 	return (
-		<main className="px-5 pt-16 pb-[110px]">
-			<h1 className="font-display text-2xl font-bold tracking-tight text-ink">
-				Edit my copy
-			</h1>
+		<Page>
+			<PageTitle>Edit my copy</PageTitle>
 			<p className="mt-1 text-[13px] text-moss">
 				Only you see this copy. Changes here don't touch the catalog — suggest
 				them below if everyone should have them.
@@ -130,9 +119,7 @@ function CourseEditor() {
 			/>
 
 			<section className="mt-8">
-				<h2 className="font-display text-sm font-semibold uppercase tracking-wide text-moss">
-					Holes
-				</h2>
+				<SectionTitle>Holes</SectionTitle>
 				<ul className="mt-3 flex flex-col gap-2">
 					{holes.map((hole) => (
 						<HoleRow
@@ -178,7 +165,7 @@ function CourseEditor() {
 			>
 				Delete my copy
 			</button>
-		</main>
+		</Page>
 	);
 }
 
@@ -194,10 +181,8 @@ function TeeList({
 	}>;
 }) {
 	return (
-		<section className="mt-6 rounded-2xl border border-card-line bg-white/60 p-4">
-			<h2 className="font-display text-sm font-semibold uppercase tracking-wide text-moss">
-				Tees
-			</h2>
+		<section className={`mt-6 rounded-2xl border ${SURFACE} p-4`}>
+			<SectionTitle>Tees</SectionTitle>
 			<ul className="mt-2 flex flex-col gap-1.5">
 				{tees.map((t) => (
 					<li key={t._id} className="flex items-center gap-2 text-[14px]">
@@ -221,10 +206,8 @@ function SuggestSection({ courseId }: { courseId: Id<"courses"> }) {
 	const [message, setMessage] = useState("");
 	const [state, setState] = useState<"idle" | "sent" | "error">("idle");
 	return (
-		<section className="mt-6 rounded-2xl border border-card-line bg-white/60 p-4">
-			<h2 className="font-display text-sm font-semibold uppercase tracking-wide text-moss">
-				Suggest a correction
-			</h2>
+		<section className={`mt-6 rounded-2xl border ${SURFACE} p-4`}>
+			<SectionTitle>Suggest a correction</SectionTitle>
 			<textarea
 				value={message}
 				onChange={(e) => {
@@ -232,9 +215,9 @@ function SuggestSection({ courseId }: { courseId: Id<"courses"> }) {
 					setState("idle");
 				}}
 				rows={3}
-				maxLength={2000}
+				maxLength={MAX_SUGGESTION_LENGTH}
 				placeholder="For example: hole 7 is par 4 since the 2025 card."
-				className="mt-2 w-full rounded-lg border border-card-line bg-cream px-3 py-2 font-sans text-[15px] text-ink"
+				className={`${FIELD} mt-2 w-full px-3 py-2 font-sans text-[15px]`}
 			/>
 			<div className="mt-2 flex items-center gap-3">
 				<button
@@ -279,13 +262,13 @@ function MetaSection({
 	const [n, setN] = useState(name);
 	const [c, setC] = useState(city);
 	return (
-		<section className="mt-6 rounded-2xl border border-card-line bg-white/60 p-4">
+		<section className={`mt-6 rounded-2xl border ${SURFACE} p-4`}>
 			<label className="block text-[11px] font-semibold uppercase tracking-wide text-moss">
 				Name
 				<input
 					value={n}
 					onChange={(e) => setN(e.target.value)}
-					className="mt-1 w-full rounded-lg border border-card-line bg-cream px-3 py-2 font-sans text-[15px] text-ink"
+					className={`${FIELD} mt-1 w-full px-3 py-2 font-sans text-[15px]`}
 				/>
 			</label>
 			<label className="mt-3 block text-[11px] font-semibold uppercase tracking-wide text-moss">
@@ -293,7 +276,7 @@ function MetaSection({
 				<input
 					value={c}
 					onChange={(e) => setC(e.target.value)}
-					className="mt-1 w-full rounded-lg border border-card-line bg-cream px-3 py-2 font-sans text-[15px] text-ink"
+					className={`${FIELD} mt-1 w-full px-3 py-2 font-sans text-[15px]`}
 				/>
 			</label>
 			<button
@@ -318,10 +301,8 @@ function TeeSection({
 	const [cr, setCr] = useState(String(tee?.courseRating ?? 72));
 	const [slope, setSlope] = useState(String(tee?.slopeRating ?? 113));
 	return (
-		<section className="mt-4 rounded-2xl border border-card-line bg-white/60 p-4">
-			<h2 className="font-display text-sm font-semibold uppercase tracking-wide text-moss">
-				Tee
-			</h2>
+		<section className={`mt-4 rounded-2xl border ${SURFACE} p-4`}>
+			<SectionTitle>Tee</SectionTitle>
 			<div className="mt-3 grid grid-cols-3 gap-3">
 				<Field label="Name" value={name} onChange={setName} />
 				<Field label="CR" value={cr} onChange={setCr} inputMode="decimal" />
@@ -361,7 +342,7 @@ function Field({
 				value={value}
 				inputMode={inputMode}
 				onChange={(e) => onChange(e.target.value)}
-				className="mt-1 w-full rounded-lg border border-card-line bg-cream px-3 py-2 font-sans text-[15px] text-ink"
+				className={`${FIELD} mt-1 w-full px-3 py-2 font-sans text-[15px]`}
 			/>
 		</label>
 	);
@@ -380,7 +361,7 @@ function HoleRow({
 	par?: number;
 	strokeIndex?: number;
 	hasGeometry: boolean;
-	onSave: (par: number | undefined, strokeIndex: number | undefined) => void;
+	onSave: (par: number | null, strokeIndex: number | null) => void;
 }) {
 	const [p, setP] = useState(par?.toString() ?? "");
 	const [si, setSi] = useState(strokeIndex?.toString() ?? "");
@@ -392,7 +373,9 @@ function HoleRow({
 		p !== (par?.toString() ?? "") || si !== (strokeIndex?.toString() ?? "");
 
 	return (
-		<li className="flex items-center gap-3 rounded-xl border border-card-line bg-white/60 px-3 py-2">
+		<li
+			className={`flex items-center gap-3 rounded-xl border ${SURFACE} px-3 py-2`}
+		>
 			<span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-pine font-display text-[13px] font-semibold text-cream">
 				{refLabel || number}
 			</span>
@@ -402,7 +385,7 @@ function HoleRow({
 					value={p}
 					inputMode="numeric"
 					onChange={(e) => setP(e.target.value)}
-					className="mt-0.5 w-14 rounded-lg border border-card-line bg-cream px-2 py-1.5 font-sans text-[15px] text-ink"
+					className={`${FIELD} mt-0.5 w-14 px-2 py-1.5 font-sans text-[15px]`}
 				/>
 			</label>
 			<label className="text-[11px] font-semibold uppercase tracking-wide text-moss">
@@ -411,7 +394,7 @@ function HoleRow({
 					value={si}
 					inputMode="numeric"
 					onChange={(e) => setSi(e.target.value)}
-					className="mt-0.5 w-14 rounded-lg border border-card-line bg-cream px-2 py-1.5 font-sans text-[15px] text-ink"
+					className={`${FIELD} mt-0.5 w-14 px-2 py-1.5 font-sans text-[15px]`}
 				/>
 			</label>
 			{!hasGeometry ? (
@@ -423,10 +406,7 @@ function HoleRow({
 				type="button"
 				disabled={!dirty}
 				onClick={() =>
-					onSave(
-						p === "" ? undefined : Number(p),
-						si === "" ? undefined : Number(si),
-					)
+					onSave(p === "" ? null : Number(p), si === "" ? null : Number(si))
 				}
 				className="ml-auto rounded-full bg-live px-3 py-1.5 font-display text-[12px] font-semibold text-white disabled:opacity-40"
 			>

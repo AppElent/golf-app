@@ -1,17 +1,16 @@
-/** Add a club, or edit one (`clubId` param): name and carry in metres. */
 import { clubDistances } from "@fairway/core/shots";
 import { useMutation } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { api, type Doc, type Id } from "../../../convex/api";
 import { useQuery } from "../../../convex/query-cache";
+import { useSubmit } from "../../../convex/use-submit";
 import { fmt, useI18n } from "../../../i18n";
 import { GhostButton } from "../../../ui/button";
-import { convexErrorMessage } from "../../../ui/confirm-dialog";
 import { FormScreen, FormSection, FormTextField } from "../../../ui/form";
-import { ScreenHeader } from "../../../ui/screen-header";
+import { NavHeader } from "../../../ui/nav-header";
 import { SkeletonList } from "../../../ui/skeleton";
-import { parseCarry } from "../settings/profile-model";
+import { parseCarry } from "./club-model";
 
 export function ClubEditorScreen() {
 	const { clubId } = useLocalSearchParams<{ clubId?: string }>();
@@ -33,7 +32,7 @@ function ClubForm({ club }: { club?: Doc<"clubs"> }) {
 		carry?: string;
 		save?: string;
 	}>({});
-	const [saving, setSaving] = useState(false);
+	const submit = useSubmit();
 	const shots = useQuery(api.shots.mine);
 	const learned = club
 		? clubDistances(shots ?? []).find((d) => d.club === club.name)
@@ -47,32 +46,31 @@ function ClubForm({ club }: { club?: Doc<"clubs"> }) {
 		};
 		setErrors(next);
 		if (next.name || next.carry || !parsed.ok) return;
-		setSaving(true);
-		try {
-			if (club) {
-				await update({
-					clubId: club._id as Id<"clubs">,
-					name: name.trim(),
-					carryMeters: parsed.value,
-				});
-			} else {
-				await create({ name: name.trim(), carryMeters: parsed.value });
-			}
-			router.back();
-		} catch (e) {
-			setErrors({ save: convexErrorMessage(e, t.clubs.saveError) });
-			setSaving(false);
-		}
+		await submit.run(
+			() =>
+				club
+					? update({
+							clubId: club._id as Id<"clubs">,
+							name: name.trim(),
+							carryMeters: parsed.value,
+						})
+					: create({ name: name.trim(), carryMeters: parsed.value }),
+			{
+				errorFallback: t.clubs.saveError,
+				onSuccess: () => router.back(),
+				onError: (save) => setErrors({ save }),
+			},
+		);
 	}
 
 	return (
 		<>
-			<ScreenHeader
+			<NavHeader
 				title={club ? t.clubs.edit : t.clubs.add}
-				action={{
+				right={{
 					label: t.common.save,
 					onPress: () => void onSave(),
-					disabled: saving,
+					disabled: submit.pending,
 				}}
 			/>
 			<FormScreen>

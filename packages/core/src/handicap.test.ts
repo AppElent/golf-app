@@ -3,11 +3,15 @@ import {
 	adjustedGrossScore,
 	courseHandicap,
 	expectedNineHoleDifferential,
+	formatHandicapIndex,
+	parseHandicapIndex,
 	playingHandicap,
+	playingHandicapPreview,
 	ratedHoles,
 	roundDifferential,
 	roundPlayingHandicap,
 	scoreDifferential,
+	wouldBeFromHistory,
 	wouldBeIndex,
 	wouldBeIndexHistory,
 } from "./handicap";
@@ -19,10 +23,6 @@ describe("courseHandicap / playingHandicap", () => {
 
 	it("rounds playing handicap to the nearest integer", () => {
 		expect(playingHandicap(11.5, 132, 72.1, 72)).toBe(14);
-	});
-
-	it("supports an allowance factor", () => {
-		expect(playingHandicap(11.5, 132, 72.1, 72, 0.95)).toBe(13);
 	});
 });
 
@@ -186,5 +186,65 @@ describe("wouldBeIndexHistory", () => {
 		// Each entry matches wouldBeIndex over that prefix.
 		expect(history[0]).toBe(wouldBeIndex([20, 18, 22]));
 		expect(history[1]).toBe(wouldBeIndex([20, 18, 22, 16]));
+	});
+});
+
+describe("parseHandicapIndex", () => {
+	it.each([
+		["18.4", 18.4],
+		["18,4", 18.4],
+		[" 7 ", 7],
+		["+1.2", -1.2],
+		["-1.5", -1.5],
+		["54", 54],
+		["18,", 18],
+		[".5", 0.5],
+	])("reads %s", (text, value) => {
+		expect(parseHandicapIndex(text)).toEqual({ valid: true, value });
+	});
+	it("takes blank text as no index", () => {
+		expect(parseHandicapIndex("  ")).toEqual({ valid: true, value: null });
+	});
+	it.each(["55", "18.45", "abc", "+11", "1.2.3", "."])("refuses %s", (text) => {
+		expect(parseHandicapIndex(text)).toEqual({ valid: false, value: null });
+	});
+});
+
+describe("formatHandicapIndex", () => {
+	it("writes plus handicaps with a plus", () => {
+		expect(formatHandicapIndex(-1.2)).toBe("+1.2");
+		expect(formatHandicapIndex(18.4)).toBe("18.4");
+	});
+});
+
+describe("playingHandicapPreview", () => {
+	const tee = { slopeRating: 130, courseRating: 72.1 };
+	it("needs a valid index, a tee and a par", () => {
+		expect(playingHandicapPreview("18", tee, 72, 18)).toBe(21);
+		expect(playingHandicapPreview("abc", tee, 72, 18)).toBeUndefined();
+		expect(playingHandicapPreview("18", undefined, 72, 18)).toBeUndefined();
+		expect(playingHandicapPreview("18", tee, 0, 0)).toBeUndefined();
+		expect(playingHandicapPreview("18", tee, 0, 18)).toBeUndefined();
+	});
+	it("plays a 9-hole loop off half the index and half the rating", () => {
+		// 9 × 130/113 + (36.05 − 36) = 10.4 → 10
+		expect(playingHandicapPreview("18", tee, 36, 9)).toBe(10);
+	});
+});
+
+describe("wouldBeFromHistory", () => {
+	it("needs three differentials, skipping rounds that don't count", () => {
+		expect(
+			wouldBeFromHistory([{ differential: 20 }, { differential: null }]),
+		).toEqual({ index: null, counted: 1, trend: [] });
+	});
+	it("reads history newest first", () => {
+		const rounds = [30, 20, null, 10].map((differential) => ({ differential }));
+		// Oldest first: 10, 20, 30 → best 1 of 3 minus 2 = 8.
+		expect(wouldBeFromHistory(rounds)).toEqual({
+			index: 8,
+			counted: 3,
+			trend: [8],
+		});
 	});
 });

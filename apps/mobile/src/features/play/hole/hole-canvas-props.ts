@@ -4,13 +4,11 @@ import type { HazardInPlay, HoleGeometry } from "@fairway/core/hole-view";
 /** Everything a hole canvas draws. Distances are precomputed by the screen. */
 export interface HoleCanvasProps {
 	geometry: HoleGeometry;
-	tee: LatLng;
 	green: LatLng;
 	/** Where distances are measured from: GPS, or the tee without a fix. */
 	player: LatLng;
 	/** True when `player` is a real GPS fix (draws the blue dot). */
 	located: boolean;
-	accuracyMeters: number | null;
 	target: LatLng;
 	onTargetChange: (target: LatLng) => void;
 	/** Formatted labels for the two legs of the target line. */

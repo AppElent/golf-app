@@ -1,20 +1,12 @@
-export interface ScoreFields {
-	strokes?: number;
-	putts?: number;
-	fir?: boolean;
-	gir?: boolean;
-	penalties?: number;
-	nr?: boolean;
-}
+import type { ScoreUpdate } from "@fairway/core/round";
 
 export interface ScoreEntry {
 	roundId: string;
 	holeIndex: number;
 	playerIndex: number;
-	fields: ScoreFields;
+	fields: ScoreUpdate;
 }
 
-/** Minimal storage surface — real `localStorage` or a test fake. */
 export interface StorageLike {
 	getItem(key: string): string | null;
 	setItem(key: string, value: string): void;
@@ -49,11 +41,7 @@ function writeQueue(storage: StorageLike, entries: ScoreEntry[]): void {
 	storage.setItem(QUEUE_KEY, JSON.stringify(entries));
 }
 
-/** Add or merge an entry; merged fields accumulate for the same key. */
-export function enqueueScore(
-	storage: StorageLike,
-	entry: ScoreEntry,
-): ScoreEntry[] {
+export function enqueueScore(storage: StorageLike, entry: ScoreEntry): void {
 	const queue = readQueue(storage);
 	const key = keyOf(entry);
 	const existing = queue.find((e) => keyOf(e) === key);
@@ -63,11 +51,11 @@ export function enqueueScore(
 		queue.push(entry);
 	}
 	writeQueue(storage, queue);
-	return queue;
 }
 
-export function removeEntry(storage: StorageLike, key: string): ScoreEntry[] {
-	const queue = readQueue(storage).filter((e) => keyOf(e) !== key);
-	writeQueue(storage, queue);
-	return queue;
+export function removeEntry(storage: StorageLike, key: string): void {
+	writeQueue(
+		storage,
+		readQueue(storage).filter((e) => keyOf(e) !== key),
+	);
 }

@@ -16,6 +16,7 @@ describe("suggestClub", () => {
 
 	it("prefers the longer club on an exact tie", () => {
 		expect(suggestClub(bag, 160)?.name).toBe("5i");
+		expect(suggestClub([...bag].reverse(), 160)?.name).toBe("5i");
 	});
 
 	it("returns null for an empty bag", () => {

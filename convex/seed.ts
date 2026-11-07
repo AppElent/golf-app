@@ -1,22 +1,8 @@
 import { detectLoops } from "@fairway/core/loops";
-import { api, internal } from "./_generated/api";
+import { hasFairway, OWNER_INDEX } from "@fairway/core/round";
+import { api } from "./_generated/api";
 import type { Id } from "./_generated/dataModel";
 import { type ActionCtx, internalAction } from "./_generated/server";
-
-/**
- * Write the course catalog (convex/catalog) into this deployment — the
- * shared course data every other seed builds on. Idempotent. Internal:
- * only an admin key (`convex run`, `--preview-run`) can start it.
- *
- * Run with: pnpm exec convex run seed:seedData
- */
-export const seedData = internalAction({
-	args: {},
-	handler: async (ctx): Promise<{ key: string; created: boolean }[]> => {
-		const results = await ctx.runMutation(internal.courseCatalog.sync, {});
-		return results.map(({ key, created }) => ({ key, created }));
-	},
-});
 
 // ─── Dummy round data (demo content for PR previews / empty dev backends) ────
 
@@ -86,8 +72,6 @@ interface CourseHoles {
 	pars: number[];
 }
 
-const DEFAULT_PAR = 4;
-
 async function loadCourseHoles(
 	ctx: ActionCtx,
 	catalogKey: string,
@@ -96,7 +80,7 @@ async function loadCourseHoles(
 	const course = courses.find((c) => c.catalogKey === catalogKey);
 	if (!course) {
 		throw new Error(
-			`Catalog course "${catalogKey}" not found — run seed:seedData first.`,
+			`Catalog course "${catalogKey}" not found — run courseCatalog:sync first.`,
 		);
 	}
 	const detail = await ctx.runQuery(api.courses.get, { courseId: course._id });
@@ -105,14 +89,7 @@ async function loadCourseHoles(
 		throw new Error(`Course "${catalogKey}" has no tee — fix the catalog.`);
 	}
 
-	// A course can carry multiple 9-hole loops (spec §8) — take exactly one
-	// clean 18-hole combination (front + back) rather than every hole the
-	// course has, which would mix loops into a non-loop, duplicate-numbered
-	// "round". detectLoops is the same logic the real round-setup flow uses.
-	const withRefs = detail.holes.flatMap((h) =>
-		h.ref !== undefined ? [{ ref: h.ref, number: h.number }] : [],
-	);
-	const loops = detectLoops(withRefs);
+	const loops = detectLoops(detail.holes);
 	if (loops.length < 2) {
 		throw new Error(
 			`Course "${catalogKey}" doesn't have a front+back 18-hole combination.`,
@@ -120,14 +97,20 @@ async function loadCourseHoles(
 	}
 	const holeRefs = [...loops[0].refs, ...loops[1].refs];
 
-	const parByRef = new Map(
-		detail.holes.map((h) => [h.ref, h.par ?? DEFAULT_PAR]),
-	);
+	const parByRef = new Map(detail.holes.map((h) => [h.ref, h.par]));
 	return {
 		courseId: course._id,
 		teeId: tee._id,
 		holeRefs,
-		pars: holeRefs.map((ref) => parByRef.get(ref) ?? DEFAULT_PAR),
+		pars: holeRefs.map((ref) => {
+			const par = parByRef.get(ref);
+			if (par === undefined) {
+				throw new Error(
+					`Course "${catalogKey}" hole ${ref} has no par — fix the catalog.`,
+				);
+			}
+			return par;
+		}),
 	};
 }
 
@@ -149,10 +132,10 @@ async function seedFinishedRound(
 		await ctx.runMutation(api.rounds.setScore, {
 			roundId,
 			holeIndex: i,
-			playerIndex: 0,
+			playerIndex: OWNER_INDEX,
 			strokes,
 			putts: PUTTS_PATTERN[i % PUTTS_PATTERN.length],
-			fir: par > 3 ? FIR_PATTERN[i % FIR_PATTERN.length] : undefined,
+			fir: hasFairway(par) ? FIR_PATTERN[i % FIR_PATTERN.length] : undefined,
 			gir: GIR_PATTERN[i % GIR_PATTERN.length],
 		});
 	}
@@ -176,10 +159,10 @@ async function seedActiveRound(
 		await ctx.runMutation(api.rounds.setScore, {
 			roundId,
 			holeIndex: i,
-			playerIndex: 0,
+			playerIndex: OWNER_INDEX,
 			strokes: par + OFFSET_PATTERNS[0][i % OFFSET_PATTERNS[0].length],
 			putts: PUTTS_PATTERN[i % PUTTS_PATTERN.length],
-			fir: par > 3 ? FIR_PATTERN[i % FIR_PATTERN.length] : undefined,
+			fir: hasFairway(par) ? FIR_PATTERN[i % FIR_PATTERN.length] : undefined,
 			gir: GIR_PATTERN[i % GIR_PATTERN.length],
 		});
 	}
@@ -193,9 +176,8 @@ async function seedActiveRound(
  * Demo content for one signed-in user so an empty account isn't blank: a handicap + club bag,
  * three finished rounds (so Home/Progress show a trend and stats), and one
  * active in-progress round on holes 1–4 (so Play/Card have something to show).
- * Requires `seedData` to have already run. Idempotent — skips entirely if any
- * round already exists for the seeding user, so re-running on every PR-preview
- * redeploy is a safe no-op after the first run.
+ * Requires the course catalog to be synced. Idempotent — skips entirely if any
+ * round already exists for the seeding user.
  *
  * Run with: pnpm exec convex run seed:seedDummyData --identity '{"subject":"user_…"}'
  */

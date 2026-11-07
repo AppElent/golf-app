@@ -1,21 +1,19 @@
-/**
- * The bag: clubs in play order with their carry. Tap to edit; swipe or
- * long-press to move or delete. Carry drives club suggestions on the course.
- */
 import { formatDistance } from "@fairway/core/format";
 import { useMutation } from "convex/react";
 import { useRouter } from "expo-router";
 import { ScrollView, StyleSheet } from "react-native";
 import { api, type Doc, type Id } from "../../../convex/api";
+import { convexErrorMessage } from "../../../convex/error-message";
 import { useQuery } from "../../../convex/query-cache";
 import { fmt, useI18n } from "../../../i18n";
 import { metrics, spacing } from "../../../theme";
-import { convexErrorMessage, useConfirm } from "../../../ui/confirm-dialog";
+import { useConfirm } from "../../../ui/confirm-dialog";
 import { EmptyState } from "../../../ui/empty-state";
 import { InsetList, InsetRow } from "../../../ui/inset-list";
-import { ScreenHeader } from "../../../ui/screen-header";
+import { NavHeader } from "../../../ui/nav-header";
 import { SkeletonList } from "../../../ui/skeleton";
 import { useToast } from "../../../ui/toast";
+import { useUnits } from "../use-units";
 
 export function ClubsScreen() {
 	const { t } = useI18n();
@@ -23,15 +21,14 @@ export function ClubsScreen() {
 	const confirm = useConfirm();
 	const toast = useToast();
 	const clubs = useQuery(api.clubs.list);
-	const settings = useQuery(api.settings.get);
 	const remove = useMutation(api.clubs.remove);
 	const reorder = useMutation(api.clubs.reorder);
-	const units = settings?.units ?? "m";
+	const units = useUnits();
 	const add = () => router.push("/profile/club");
 	const header = (
-		<ScreenHeader
+		<NavHeader
 			title={t.clubs.title}
-			action={{ label: t.clubs.add, onPress: add }}
+			right={{ label: t.clubs.add, onPress: add }}
 		/>
 	);
 
@@ -87,11 +84,10 @@ export function ClubsScreen() {
 				contentInsetAdjustmentBehavior="automatic"
 				contentContainerStyle={styles.content}
 			>
-				<InsetList compact footer={t.clubs.emptyHint}>
+				<InsetList footer={t.clubs.emptyHint}>
 					{clubs.map((club, i) => (
 						<InsetRow
 							key={club._id}
-							id={club._id}
 							title={club.name}
 							value={formatDistance(club.carryMeters, units)}
 							chevron

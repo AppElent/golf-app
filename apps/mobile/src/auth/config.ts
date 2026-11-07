@@ -10,10 +10,9 @@
  *
  * **The dev-login gate is the key's prefix, not `__DEV__`.** A release build
  * pointed at the test instance (e.g. a PR preview) should offer the
- * shortcut; a dev build someone has pointed at production must not. This
- * mirrors the web app's rule (`src/lib/auth`'s dev test-login button),
- * where the credentials are inlined into the client bundle either way — so
- * the account they name must never be one that exists on the live instance.
+ * shortcut; a dev build someone has pointed at production must not. The
+ * credentials are inlined into the client bundle either way, so the account
+ * they name must never be one that exists on the live instance.
  */
 const PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
 const TEST_USER_EMAIL = process.env.EXPO_PUBLIC_TEST_USER_EMAIL;

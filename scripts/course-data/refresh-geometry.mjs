@@ -5,7 +5,7 @@
  *
  * Reads the OSM relations named by convex/catalog/courses/*.json (or the ids
  * given), fetches their golf ways from Overpass, normalizes them with
- * @fairway/core/osm and writes convex/catalog/geometry/<id>.json. Only
+ * packages/core/src/osm.ts and writes convex/catalog/geometry/<id>.json. Only
  * geometry comes from OSM: par, stroke index, lengths and tees are curated by
  * hand in the course files. Commit the result, then sync the catalog
  * (docs/runbooks/course-catalog.md). Runs on a developer machine — never from

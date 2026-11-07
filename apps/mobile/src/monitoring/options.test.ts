@@ -2,7 +2,6 @@ import type { ErrorEvent } from "@sentry/react-native";
 import {
 	buildSentryOptions,
 	environmentFromChannel,
-	routeName,
 	sanitizeBreadcrumb,
 	sanitizeEvent,
 	shouldInitSentry,
@@ -26,6 +25,7 @@ describe("shouldInitSentry", () => {
 describe("environmentFromChannel", () => {
 	it("maps EAS channels to environments", () => {
 		expect(environmentFromChannel("preview", false)).toBe("preview");
+		expect(environmentFromChannel("development", false)).toBe("development");
 		expect(environmentFromChannel("production", false)).toBe("production");
 		expect(environmentFromChannel(null, true)).toBe("development");
 	});
@@ -37,6 +37,21 @@ describe("privacy", () => {
 		expect(options.sendDefaultPii).toBe(false);
 		expect(options.enableAutoPerformanceTracing).toBe(false);
 		expect(options.attachScreenshot).toBe(false);
+	});
+
+	it("scrubs everything the SDK is about to send", () => {
+		const options = buildSentryOptions({ dsn: "x", environment: "production" });
+		const event = options.beforeSend({
+			type: undefined,
+			user: { id: "u1" },
+		} as ErrorEvent);
+		expect(event.user).toBeUndefined();
+		expect(
+			options.beforeBreadcrumb({
+				category: "console",
+				data: { arguments: ["Ann"] },
+			}),
+		).toEqual({ category: "console" });
 	});
 
 	it("drops the user and query strings from events", () => {
@@ -63,11 +78,5 @@ describe("privacy", () => {
 				data: { url: "https://x.dev/a?code=ABC" },
 			})?.data,
 		).toEqual({ url: "https://x.dev/a" });
-	});
-
-	it("names routes by pattern", () => {
-		expect(routeName(["(app)", "play", "[roundId]"])).toBe(
-			"/(app)/play/[roundId]",
-		);
 	});
 });

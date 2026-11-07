@@ -1,13 +1,7 @@
 /**
- * What a region says when it holds nothing yet — the React Native drawing.
- * `empty-state.tsx` re-exports it; `empty-state.ios.tsx` uses it for the
- * inline appearance and the system `ContentUnavailableView` for "search".
- *
- * An empty list is not a blank rectangle: it is a place where something can be
- * put, and the fastest way to explain that is to say so and offer the action.
- * The `action` is optional because some empty regions genuinely have no next
- * step of their own — a meal slot's plus control sits in its header, so the
- * slot only needs the sentence.
+ * What a region says when it holds nothing yet, drawn in React Native.
+ * `empty-state.tsx` re-exports it; `empty-state.ios.tsx` uses it for the inline
+ * appearance and the system view for "search".
  */
 import { SymbolView } from "expo-symbols";
 import { StyleSheet, View } from "react-native";
@@ -19,7 +13,6 @@ export interface EmptyStateProps {
 	title?: string;
 	/** One sentence saying what goes here. Never just "No data". */
 	body: string;
-	/** Omit when the region's add control lives in its header. */
 	action?: { label: string; onPress: () => void };
 	/** "search" centres the state in a tall region with a magnifier. */
 	appearance?: "default" | "search";

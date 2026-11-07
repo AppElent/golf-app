@@ -1,3 +1,5 @@
+import { type ScoreMark, scoreMark } from "./scoring";
+
 export interface HoleResult {
 	par: number;
 	strokes: number | null;
@@ -31,23 +33,20 @@ export function parTypeAverages(
 	});
 }
 
-/** Count of results per score-to-par bucket, for a scoring distribution. */
-export function scoringDistribution(results: ReadonlyArray<HoleResult>): {
-	eagles: number;
-	birdies: number;
-	pars: number;
-	bogeys: number;
-	doubles: number;
-} {
-	const out = { eagles: 0, birdies: 0, pars: 0, bogeys: 0, doubles: 0 };
+/** Count of results per score-to-par mark, for a scoring distribution. */
+export function scoringDistribution(
+	results: ReadonlyArray<HoleResult>,
+): Record<ScoreMark, number> {
+	const counts: Record<ScoreMark, number> = {
+		eagle: 0,
+		birdie: 0,
+		par: 0,
+		bogey: 0,
+		double: 0,
+	};
 	for (const r of results) {
-		if (r.strokes === null || r.par === 0) continue;
-		const diff = r.strokes - r.par;
-		if (diff <= -2) out.eagles += 1;
-		else if (diff === -1) out.birdies += 1;
-		else if (diff === 0) out.pars += 1;
-		else if (diff === 1) out.bogeys += 1;
-		else out.doubles += 1;
+		const mark = r.par === 0 ? null : scoreMark(r.par, r.strokes);
+		if (mark) counts[mark] += 1;
 	}
-	return out;
+	return counts;
 }

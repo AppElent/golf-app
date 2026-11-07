@@ -1,17 +1,12 @@
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
-import type { QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { getUserId } from "./lib";
-
-const latLng = v.object({ lat: v.number(), lng: v.number() });
-
-async function requireOwnRound(ctx: QueryCtx, roundId: Id<"rounds">) {
-	const userId = await getUserId(ctx);
-	const round = await ctx.db.get(roundId);
-	if (!round || round.userId !== userId) throw new Error("Round not found.");
-	return { userId, round };
-}
+import {
+	assertHoleOfRound,
+	requireActiveRound,
+	requireOwnRound,
+} from "./rounds";
+import { latLng } from "./validators";
 
 /** Shots of one round, in marking order. */
 export const forRound = query({
@@ -47,13 +42,10 @@ export const mark = mutation({
 		club: v.optional(v.string()),
 	},
 	handler: async (ctx, { roundId, holeIndex, position, club }) => {
-		const { userId, round } = await requireOwnRound(ctx, roundId);
-		if (round.status !== "active") throw new Error("Round is not active.");
-		if (holeIndex < 0 || holeIndex >= round.holeRefs.length) {
-			throw new Error("holeIndex out of range.");
-		}
+		const round = await requireActiveRound(ctx, roundId);
+		assertHoleOfRound(round, holeIndex);
 		return await ctx.db.insert("shots", {
-			userId,
+			userId: round.userId,
 			roundId,
 			holeIndex,
 			position,
@@ -71,15 +63,5 @@ export const setClub = mutation({
 		const shot = await ctx.db.get(shotId);
 		if (!shot || shot.userId !== userId) throw new Error("Shot not found.");
 		await ctx.db.patch(shotId, { club });
-	},
-});
-
-export const remove = mutation({
-	args: { shotId: v.id("shots") },
-	handler: async (ctx, { shotId }) => {
-		const userId = await getUserId(ctx);
-		const shot = await ctx.db.get(shotId);
-		if (!shot || shot.userId !== userId) throw new Error("Shot not found.");
-		await ctx.db.delete(shotId);
 	},
 });

@@ -16,7 +16,7 @@ import {
 import { darkColors, lightColors, type Tokens } from "./tokens";
 
 export type AppearancePreference = "system" | "light" | "dark";
-export type ColorScheme = "light" | "dark";
+type ColorScheme = "light" | "dark";
 
 function readAppearance(): AppearancePreference {
 	const saved = readPreference(PREFERENCE_KEYS.appearance);
@@ -32,7 +32,6 @@ type AppearanceValue = {
 
 const AppearanceContext = createContext<AppearanceValue | null>(null);
 
-/** Phone-local preference, available before auth and before the first frame. */
 /** React Native Web has no native appearance to override. */
 function overrideNativeScheme(preference: AppearancePreference) {
 	if (Platform.OS === "web") return;
@@ -92,12 +91,4 @@ export function useTokens(): Tokens {
 export function useThemedStyles<T>(createStyles: (colors: Tokens) => T): T {
 	const colors = useTokens();
 	return useMemo(() => createStyles(colors), [createStyles, colors]);
-}
-
-/** Native hosts and React content must use the same persisted appearance. */
-export function useScheme(): ColorScheme {
-	return useAppearance().scheme;
-}
-export function useHostScheme(): ColorScheme {
-	return useScheme();
 }

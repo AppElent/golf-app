@@ -1,11 +1,12 @@
 import { useAuth } from "@clerk/react";
-import { ConvexQueryClient } from "@convex-dev/react-query";
+import { ConvexReactClient } from "convex/react";
 import { ConvexProviderWithClerk } from "convex/react-clerk";
-import { env } from "#/env";
-import { instrumentConvexClient } from "#/lib/observability/convex";
+import { env } from "../../env";
+import { instrumentConvexClient } from "../../lib/observability/convex";
 
-const convexQueryClient = new ConvexQueryClient(env.VITE_CONVEX_URL);
-instrumentConvexClient(convexQueryClient.convexClient);
+const convexClient = instrumentConvexClient(
+	new ConvexReactClient(env.VITE_CONVEX_URL),
+);
 
 export default function AppConvexProvider({
 	children,
@@ -13,10 +14,7 @@ export default function AppConvexProvider({
 	children: React.ReactNode;
 }) {
 	return (
-		<ConvexProviderWithClerk
-			client={convexQueryClient.convexClient}
-			useAuth={useAuth}
-		>
+		<ConvexProviderWithClerk client={convexClient} useAuth={useAuth}>
 			{children}
 		</ConvexProviderWithClerk>
 	);

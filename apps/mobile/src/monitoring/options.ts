@@ -5,7 +5,7 @@
  */
 import type { Breadcrumb, ErrorEvent } from "@sentry/react-native";
 
-export type SentryEnvironment = "development" | "preview" | "production";
+type SentryEnvironment = "development" | "preview" | "production";
 
 /**
  * A DSN is required, and a development bundle stays silent unless

@@ -3,7 +3,13 @@
  * how many birdies and pars, the net score against the playing handicap, the
  * best and the toughest hole, and the two nines.
  */
-import { type ScoreMark, scoreMark, strokesPerHole } from "./scoring";
+import {
+	nineRanges,
+	type ScoreMark,
+	scoreMark,
+	strokesPerHole,
+	totalStrokes,
+} from "./scoring";
 
 export interface RecapHole {
 	par: number;
@@ -56,7 +62,7 @@ export function roundRecap(
 		if (net > 0 && (!toughest || net > toughest.net))
 			toughest = { holeIndex: i, toPar, net };
 	});
-	const gross = strokes.reduce<number>((t, s) => t + (s ?? 0), 0);
+	const gross = totalStrokes(strokes);
 	const par = holes.reduce((t, h) => t + h.par, 0);
 	const complete =
 		holes.length > 0 &&
@@ -64,8 +70,7 @@ export function roundRecap(
 		scored === holes.length;
 	const net =
 		complete && playingHandicap !== undefined ? gross - playingHandicap : null;
-	const nines = (holes.length > 9 ? [0, 9] : [0]).map((from) => {
-		const to = Math.min(from + 9, holes.length);
+	const nines = nineRanges(holes.length).map(({ from, to }) => {
 		let sum = 0;
 		let toPar = 0;
 		let done = 0;

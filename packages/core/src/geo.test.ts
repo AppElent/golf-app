@@ -138,9 +138,10 @@ describe("labelSpot", () => {
 		).toBeGreaterThanOrEqual(30);
 	});
 	it("keeps the clearest spot when nothing clears", () => {
-		const crowd = [0.26, 0.34, 0.42, 0.5, 0.58, 0.66, 0.74].map((t) =>
+		// Every spot but the last sits on a label; that one is ~18 m from its neighbour.
+		const crowd = [0.26, 0.34, 0.42, 0.5, 0.58, 0.66].map((t) =>
 			interpolate(a, b, t),
 		);
-		expect(labelSpot(a, b, crowd)).toBeDefined();
+		expect(labelSpot(a, b, crowd)).toEqual(interpolate(a, b, 0.74));
 	});
 });

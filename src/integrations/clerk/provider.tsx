@@ -1,6 +1,6 @@
 import { ClerkProvider } from "@clerk/react";
-import { env } from "#/env";
-import { SentryUser } from "#/lib/observability/user";
+import { env } from "../../env";
+import { SentryUser } from "../../lib/observability/user";
 
 export default function AppClerkProvider({
 	children,

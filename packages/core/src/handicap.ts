@@ -1,5 +1,35 @@
 import { strokesPerHole } from "./scoring";
 
+/** WHS counts a player's most recent 20 rounds. */
+export const WHS_WINDOW = 20;
+
+/** `value` is null for blank text, which is valid: it means "no index". */
+export type ParsedHandicapIndex =
+	| { valid: true; value: number | null }
+	| { valid: false; value: null };
+
+/**
+ * A WHS index as it is printed on a card: "18,4", "18.4", or "+1.2" for a plus
+ * handicap, stored negative as WHS does. A separator with no digit after it
+ * ("18,") is an index still being typed.
+ */
+export function parseHandicapIndex(text: string): ParsedHandicapIndex {
+	const trimmed = text.trim().replace(",", ".");
+	if (trimmed === "") return { valid: true, value: null };
+	if (!/^[+-]?(\d{1,2}(\.\d?)?|\.\d)$/.test(trimmed)) {
+		return { valid: false, value: null };
+	}
+	const magnitude = Number(trimmed.replace(/^[+-]/, ""));
+	const value = trimmed.startsWith("+") ? -magnitude : Number(trimmed);
+	if (value < -10 || value > 54) return { valid: false, value: null };
+	return { valid: true, value: value === 0 ? 0 : value };
+}
+
+/** An index as a golfer writes it: "18.4", or "+1.2" for a plus handicap. */
+export function formatHandicapIndex(value: number): string {
+	return value < 0 ? `+${Math.abs(value).toFixed(1)}` : value.toFixed(1);
+}
+
 export function courseHandicap(
 	handicapIndex: number,
 	slopeRating: number,
@@ -14,10 +44,9 @@ export function playingHandicap(
 	slopeRating: number,
 	courseRating: number,
 	par: number,
-	allowance = 1,
 ): number {
 	return Math.round(
-		courseHandicap(handicapIndex, slopeRating, courseRating, par) * allowance,
+		courseHandicap(handicapIndex, slopeRating, courseRating, par),
 	);
 }
 
@@ -33,10 +62,7 @@ export function ratedHoles(courseRating: number): 9 | 18 {
  * The course rating for a round of `holeCount` holes on a tee: half the
  * tee's 18-hole rating for 9 holes, double a 9-hole rating for 18 holes.
  */
-export function roundCourseRating(
-	courseRating: number,
-	holeCount: number,
-): number {
+function roundCourseRating(courseRating: number, holeCount: number): number {
 	const nine = holeCount <= 9;
 	const rated = ratedHoles(courseRating);
 	if (nine && rated === 18) return courseRating / 2;
@@ -54,15 +80,29 @@ export function roundPlayingHandicap(
 	tee: { slopeRating: number; courseRating: number },
 	par: number,
 	holeCount: number,
-	allowance = 1,
 ): number {
 	return playingHandicap(
 		holeCount <= 9 ? handicapIndex / 2 : handicapIndex,
 		tee.slopeRating,
 		roundCourseRating(tee.courseRating, holeCount),
 		par,
-		allowance,
 	);
+}
+
+/**
+ * The playing handicap a typed index would give on a tee, for display while
+ * setting up a round; `rounds.start` computes the real one. Undefined until
+ * there is a valid index, a tee and a par to compare against.
+ */
+export function playingHandicapPreview(
+	indexText: string,
+	tee: { slopeRating: number; courseRating: number } | undefined,
+	par: number,
+	holeCount: number,
+): number | undefined {
+	const index = parseHandicapIndex(indexText).value;
+	if (index === null || !tee || par === 0) return undefined;
+	return roundPlayingHandicap(index, tee, par, holeCount);
 }
 
 /**
@@ -165,9 +205,9 @@ export function wouldBeIndex(
 	differentials: ReadonlyArray<number>,
 ): number | null {
 	if (differentials.length < 3) return null;
-	const recent = differentials.slice(-20);
+	const recent = differentials.slice(-WHS_WINDOW);
 	const { count, adjustment } =
-		recent.length >= 20
+		recent.length >= WHS_WINDOW
 			? { count: 8, adjustment: 0 }
 			: SMALL_SAMPLE[recent.length];
 	const best = [...recent].sort((a, b) => a - b).slice(0, count);
@@ -189,4 +229,22 @@ export function wouldBeIndexHistory(
 		if (index !== null) history.push(index);
 	}
 	return history;
+}
+
+/**
+ * The would-be index from `rounds.history` rows (newest first): its current
+ * value, how many differentials count towards it, and the running trend.
+ */
+export function wouldBeFromHistory(
+	rounds: ReadonlyArray<{ differential: number | null }>,
+): { index: number | null; counted: number; trend: number[] } {
+	const differentials = rounds
+		.map((r) => r.differential)
+		.filter((d): d is number => d !== null)
+		.reverse();
+	return {
+		index: wouldBeIndex(differentials),
+		counted: Math.min(differentials.length, WHS_WINDOW),
+		trend: wouldBeIndexHistory(differentials),
+	};
 }

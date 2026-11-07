@@ -9,7 +9,7 @@
  */
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
-export type AppVariant = "development" | "preview" | "production";
+type AppVariant = "development" | "preview" | "production";
 
 const VARIANTS = {
 	production: { suffix: "", name: "Fairway", scheme: "fairway", icon: "" },
@@ -27,7 +27,8 @@ const VARIANTS = {
 	},
 } as const satisfies Record<AppVariant, object>;
 
-export function appVariant(value = process.env.APP_VARIANT): AppVariant {
+function appVariant(): AppVariant {
+	const value = process.env.APP_VARIANT;
 	if (!value) return "development";
 	if (value in VARIANTS) return value as AppVariant;
 	throw new Error(`Unknown APP_VARIANT "${value}"`);

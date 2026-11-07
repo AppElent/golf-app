@@ -8,11 +8,9 @@ import * as Sentry from "@sentry/cloudflare";
 import handler from "@tanstack/react-start/server-entry";
 import {
 	isLocalReportingUrl,
-	sentryDataCollection,
 	sentryEnvironment,
-	tracesSampleRate,
+	sharedSentryOptions,
 } from "./lib/observability/config";
-import { sanitizeBreadcrumb, sanitizeEvent } from "./lib/observability/privacy";
 
 type SentryEnv = {
 	/** Runtime override of the build-time DSN. */
@@ -29,19 +27,10 @@ const instrumentedHandler = Sentry.withSentry(
 			env.environment_name || import.meta.env.VITE_SENTRY_ENVIRONMENT,
 		);
 		return {
+			...sharedSentryOptions(environment),
 			dsn,
 			enabled: Boolean(dsn) && !import.meta.env.DEV,
-			environment,
-			release: import.meta.env.VITE_SENTRY_RELEASE,
-			dataCollection: sentryDataCollection(),
-			tracesSampleRate: tracesSampleRate(environment),
-			traceLifecycle: "static",
 			initialScope: { tags: { app: "fairway-web-server" } },
-			integrations: (defaults) =>
-				defaults.filter((integration) => integration.name !== "Console"),
-			beforeSend: sanitizeEvent,
-			beforeSendTransaction: sanitizeEvent,
-			beforeBreadcrumb: sanitizeBreadcrumb,
 		};
 	},
 	{

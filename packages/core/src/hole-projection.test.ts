@@ -41,10 +41,6 @@ describe("buildProjector", () => {
 		expect(round.lng).toBeCloseTo(green.lng, 5);
 	});
 
-	it("scale is positive pixels-per-meter", () => {
-		expect(buildProjector(opts).scale).toBeGreaterThan(0);
-	});
-
 	it("frames only the features when the tee is left out", () => {
 		const ring = [
 			{ lat: green.lat + 0.0001, lng: green.lng },

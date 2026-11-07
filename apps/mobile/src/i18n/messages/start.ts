@@ -16,7 +16,6 @@ export const homeEn = {
 	nineHoles: "9 holes",
 	noRounds: "No rounds yet",
 	noRoundsHint: "Your finished rounds show up here.",
-	loadError: "Could not load your rounds.",
 	updateReady: "Update ready",
 	updateReadyHint: "Tap to restart Fairway with the new version.",
 };
@@ -38,7 +37,6 @@ export const homeNl: typeof homeEn = {
 	nineHoles: "9 holes",
 	noRounds: "Nog geen rondes",
 	noRoundsHint: "Je afgeronde rondes verschijnen hier.",
-	loadError: "Je rondes konden niet worden geladen.",
 	updateReady: "Update klaar",
 	updateReadyHint: "Tik om Fairway met de nieuwe versie te herstarten.",
 };
@@ -74,12 +72,10 @@ export const coursesNl: typeof coursesEn = {
 };
 
 export const setupEn = {
-	title: "New round",
 	holes: "Holes",
 	holesHint:
 		"Pick one loop for 9 holes, two for 18. The same loop twice is fine.",
 	holeCount: "{count} holes · par {par}",
-	clearHoles: "Clear",
 	incomplete:
 		"Holes {holes} are missing par or stroke index. Complete them on the web first.",
 	tee: "Tee",
@@ -115,12 +111,10 @@ export const suggestEn = {
 };
 
 export const setupNl: typeof setupEn = {
-	title: "Nieuwe ronde",
 	holes: "Holes",
 	holesHint:
 		"Kies één lus voor 9 holes, twee voor 18. Twee keer dezelfde lus mag.",
 	holeCount: "{count} holes · par {par}",
-	clearHoles: "Wissen",
 	incomplete:
 		"Bij holes {holes} ontbreekt par of strokeindex. Vul ze eerst aan op het web.",
 	tee: "Tee",

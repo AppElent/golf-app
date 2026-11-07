@@ -1,14 +1,10 @@
-/**
- * The live scorecard (from Play): every hole and player so far, totals per
- * player, tap a hole to correct it, and the two ways a round ends — finish
- * (stores totals and the handicap differential) or abandon (deletes it).
- */
+import { playedHoles } from "@fairway/core/round";
 import { useMutation } from "convex/react";
-import { Stack, useRouter } from "expo-router";
-import { useEffect, useRef, useState } from "react";
-import { Button, Platform, StyleSheet, View } from "react-native";
+import { useRouter } from "expo-router";
+import { useState } from "react";
+import { StyleSheet, View } from "react-native";
 import { api } from "../../../convex/api";
-import { useQuery } from "../../../convex/query-cache";
+import { useSubmit } from "../../../convex/use-submit";
 import { haptics } from "../../../feedback/haptics";
 import { fmt, plural, useI18n } from "../../../i18n";
 import {
@@ -19,13 +15,15 @@ import {
 	useTokens,
 } from "../../../theme";
 import { GhostButton } from "../../../ui/button";
-import { convexErrorMessage, useConfirm } from "../../../ui/confirm-dialog";
-import { EmptyState } from "../../../ui/empty-state";
+import { useConfirm } from "../../../ui/confirm-dialog";
 import { FormScreen } from "../../../ui/form";
+import { NavHeader } from "../../../ui/nav-header";
 import { SkeletonList } from "../../../ui/skeleton";
 import { AppText } from "../../../ui/text";
-import { cardRows, unscoredHoles } from "./score-model";
-import { ScorecardGrid } from "./scorecard-grid";
+import { NoActiveRound } from "../components/no-active-round";
+import { ScorecardGrid } from "../components/scorecard-grid";
+import { cardRows } from "../components/scorecard-model";
+import { useActiveRound } from "../use-active-round";
 
 export function ScorecardScreen() {
 	const { t, locale } = useI18n();
@@ -33,47 +31,17 @@ export function ScorecardScreen() {
 	const colors = useTokens();
 	const styles = useThemedStyles(createStyles);
 	const confirm = useConfirm();
-	const active = useQuery(api.rounds.active, {});
+	const active = useActiveRound();
 	const finish = useMutation(api.rounds.finish);
 	const abandon = useMutation(api.rounds.abandon);
-	const [busy, setBusy] = useState<"finish" | "abandon" | null>(null);
-	const [error, setError] = useState<string | null>(null);
-	// A slow mutation can resolve after the user left this screen: Convex
-	// still applies it, but navigating then would pop an unrelated screen.
-	const open = useRef(true);
-	useEffect(
-		() => () => {
-			open.current = false;
-		},
-		[],
-	);
+	const submit = useSubmit();
+	const [action, setAction] = useState<"finish" | "abandon">("finish");
 
 	const header = (
-		<>
-			<Stack.Screen
-				options={{
-					title: t.scorecard.title,
-					...(Platform.OS !== "ios"
-						? {
-								headerLeft: () => (
-									<Button
-										title={t.common.done}
-										onPress={() => router.back()}
-										color={colors.accent}
-									/>
-								),
-							}
-						: {}),
-				}}
-			/>
-			{Platform.OS === "ios" ? (
-				<Stack.Toolbar placement="left">
-					<Stack.Toolbar.Button onPress={() => router.back()}>
-						{t.common.done}
-					</Stack.Toolbar.Button>
-				</Stack.Toolbar>
-			) : null}
-		</>
+		<NavHeader
+			title={t.scorecard.title}
+			left={{ label: t.common.done, onPress: () => router.back() }}
+		/>
 	);
 	if (active === undefined) {
 		return (
@@ -87,18 +55,14 @@ export function ScorecardScreen() {
 		return (
 			<>
 				{header}
-				<EmptyState
-					title={t.play.noRound}
-					body={t.play.noRoundHint}
-					action={{ label: t.common.done, onPress: () => router.back() }}
-				/>
+				<NoActiveRound title={t.play.noRound} closeLabel={t.common.done} />
 			</>
 		);
 	}
 
 	const { round, holes, scores, course } = active;
 	const rows = cardRows(holes, scores, round.players);
-	const missing = unscoredHoles(holes.length, scores).length;
+	const missing = holes.length - playedHoles(holes.length, scores).length;
 	const roundId = round._id;
 
 	async function onFinish() {
@@ -111,22 +75,18 @@ export function ScorecardScreen() {
 			confirmLabel: t.scorecard.finish,
 		});
 		if (!ok) return;
-		setBusy("finish");
-		setError(null);
-		try {
-			await finish({ roundId });
-			if (!open.current) return;
-			haptics.entryLogged();
-			router.dismissAll();
-			router.push({
-				pathname: "/rounds/[roundId]",
-				params: { roundId },
-			});
-		} catch (e) {
-			if (!open.current) return;
-			setError(convexErrorMessage(e, t.scorecard.finishError));
-			setBusy(null);
-		}
+		setAction("finish");
+		await submit.run(() => finish({ roundId }), {
+			errorFallback: t.scorecard.finishError,
+			onSuccess: () => {
+				haptics.saveConfirmed();
+				router.dismissAll();
+				router.push({
+					pathname: "/rounds/[roundId]",
+					params: { roundId },
+				});
+			},
+		});
 	}
 
 	async function onAbandon() {
@@ -137,16 +97,11 @@ export function ScorecardScreen() {
 			destructive: true,
 		});
 		if (!ok) return;
-		setBusy("abandon");
-		setError(null);
-		try {
-			await abandon({ roundId });
-			if (open.current) router.dismissAll();
-		} catch (e) {
-			if (!open.current) return;
-			setError(convexErrorMessage(e, t.scorecard.abandonError));
-			setBusy(null);
-		}
+		setAction("abandon");
+		await submit.run(() => abandon({ roundId }), {
+			errorFallback: t.scorecard.abandonError,
+			onSuccess: () => router.dismissAll(),
+		});
 	}
 
 	return (
@@ -157,8 +112,8 @@ export function ScorecardScreen() {
 				primaryAction={{
 					label: t.scorecard.finish,
 					onPress: onFinish,
-					loading: busy === "finish",
-					disabled: busy !== null,
+					loading: submit.pending && action === "finish",
+					disabled: submit.pending,
 				}}
 			>
 				<View style={styles.heading}>
@@ -194,7 +149,7 @@ export function ScorecardScreen() {
 					holes={holes}
 					players={round.players}
 					rows={rows}
-					currentHole={round.currentHoleIndex ?? 0}
+					currentHole={round.currentHoleIndex}
 					onHolePress={(hole) =>
 						router.push({
 							pathname: "/score",
@@ -202,20 +157,20 @@ export function ScorecardScreen() {
 						})
 					}
 				/>
-				{error ? (
+				{submit.error ? (
 					<AppText
 						selectable
 						accessibilityRole="alert"
 						style={{ color: colors.danger }}
 					>
-						{error}
+						{submit.error}
 					</AppText>
 				) : null}
 				<GhostButton
 					label={t.scorecard.abandon}
 					onPress={onAbandon}
-					loading={busy === "abandon"}
-					disabled={busy !== null}
+					loading={submit.pending && action === "abandon"}
+					disabled={submit.pending}
 					tone="danger"
 				/>
 			</FormScreen>

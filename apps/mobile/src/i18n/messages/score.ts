@@ -13,7 +13,6 @@ export const scoreEn = {
 	save: "Save",
 	saving: "Saving…",
 	saveError: "Score not saved. Check your connection and try again.",
-	saved: "Hole {n} saved",
 	strokesFor: "Strokes for {name}",
 	noRound: "This round has finished.",
 };
@@ -39,7 +38,6 @@ export const scorecardEn = {
 	abandonMessage: "The round and all its scores are deleted.",
 	abandonError: "Could not abandon the round. Check your connection.",
 	editHole: "Edit hole {n}",
-	toPar: "{value} to par",
 };
 
 export const scoreNl: typeof scoreEn = {
@@ -57,7 +55,6 @@ export const scoreNl: typeof scoreEn = {
 	saving: "Opslaan…",
 	saveError:
 		"Score niet opgeslagen. Controleer je verbinding en probeer opnieuw.",
-	saved: "Hole {n} opgeslagen",
 	strokesFor: "Slagen voor {name}",
 	noRound: "Deze ronde is afgelopen.",
 };
@@ -84,5 +81,4 @@ export const scorecardNl: typeof scorecardEn = {
 	abandonMessage: "De ronde en alle scores worden verwijderd.",
 	abandonError: "Ronde stoppen mislukt. Controleer je verbinding.",
 	editHole: "Hole {n} bewerken",
-	toPar: "{value} t.o.v. par",
 };

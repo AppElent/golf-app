@@ -1,59 +1,19 @@
-/**
- * Stats from Convex reads: the would-be trend, pooled averages, per-par
- * averages, the scoring distribution and learned club distances. Pure, so the
- * screen only lays numbers out.
- */
-import { wouldBeIndexHistory } from "@fairway/core/handicap";
+import { SCORE_MARKS, type ScoreMark } from "@fairway/core/scoring";
 import { type ClubDistance, clubDistances } from "@fairway/core/shots";
-import type { RoundStatInput } from "@fairway/core/stats";
-
-export interface HistoryRow {
-	differential: number | null;
-	holeCount: number;
-	owner: Omit<RoundStatInput, "holeCount">;
-}
-
-/** History rows (newest first) as `aggregateStats` input. */
-export function statInputs(rounds: readonly HistoryRow[]): RoundStatInput[] {
-	return rounds.map((r) => ({ holeCount: r.holeCount, ...r.owner }));
-}
-
-/** Would-be index after each round, oldest first (for the sparkline). */
-export function wouldBeTrend(rounds: readonly HistoryRow[]): number[] {
-	const differentials = rounds
-		.map((r) => r.differential)
-		.filter((d): d is number => d !== null)
-		.reverse();
-	return wouldBeIndexHistory(differentials);
-}
-
-export type DistributionKey =
-	| "eagles"
-	| "birdies"
-	| "pars"
-	| "bogeys"
-	| "doubles";
 
 /** Each bucket's count and its share of all scored holes (0–1). */
 export function distributionShares(
-	counts: Record<DistributionKey, number>,
-): { key: DistributionKey; count: number; share: number }[] {
-	const keys: DistributionKey[] = [
-		"eagles",
-		"birdies",
-		"pars",
-		"bogeys",
-		"doubles",
-	];
-	const total = keys.reduce((t, k) => t + counts[k], 0);
-	return keys.map((key) => ({
+	counts: Record<ScoreMark, number>,
+): { key: ScoreMark; count: number; share: number }[] {
+	const total = SCORE_MARKS.reduce((t, k) => t + counts[k], 0);
+	return SCORE_MARKS.map((key) => ({
 		key,
 		count: counts[key],
 		share: total > 0 ? counts[key] / total : 0,
 	}));
 }
 
-export interface ClubRow {
+interface ClubRow {
 	name: string;
 	/** Carry from the bag, if the club is in it. */
 	carryMeters: number | null;

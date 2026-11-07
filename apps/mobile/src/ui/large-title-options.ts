@@ -1,23 +1,16 @@
-import type { Stack } from "expo-router";
-import type { ComponentProps } from "react";
 import { useMemo } from "react";
 import { Platform } from "react-native";
 import { useTokens } from "../theme";
+import { type StackScreenOptions, useBaseStackOptions } from "./stack-options";
 
 /** Tab-root stack options: iOS large titles over a transparent (glass-ready)
  *  header; Android keeps a flat themed app bar. Memoized per palette. */
-type StackScreenOptions = Exclude<
-	ComponentProps<typeof Stack>["screenOptions"],
-	((...args: never[]) => unknown) | undefined
->;
-
 export function useLargeTitleOptions(): StackScreenOptions {
 	const colors = useTokens();
+	const baseOptions = useBaseStackOptions();
 	return useMemo(
 		() => ({
-			headerTintColor: colors.accent,
-			contentStyle: { backgroundColor: colors.bg },
-			headerBackButtonDisplayMode: "minimal",
+			...baseOptions,
 			...(Platform.OS === "ios"
 				? {
 						headerLargeTitle: true,
@@ -27,12 +20,8 @@ export function useLargeTitleOptions(): StackScreenOptions {
 						headerTitleStyle: { color: colors.text },
 						headerLargeTitleStyle: { color: colors.text },
 					}
-				: {
-						headerStyle: { backgroundColor: colors.bg },
-						headerTitleStyle: { color: colors.text },
-						headerShadowVisible: false,
-					}),
+				: {}),
 		}),
-		[colors],
+		[baseOptions, colors],
 	);
 }

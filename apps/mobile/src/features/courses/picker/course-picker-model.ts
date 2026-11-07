@@ -1,17 +1,12 @@
 import { type LatLng, sortByDistance } from "@fairway/core/geo";
 
-export interface PickerCourse {
+interface PickerCourse {
 	_id: string;
 	name: string;
 	city?: string;
 	location?: LatLng;
 }
 
-/**
- * The picker's order: the home course first, then nearest first when we
- * have a fix (unlocated courses last), otherwise alphabetical as delivered.
- * Search matches name or city, case- and accent-insensitively.
- */
 export function pickerCourses<C extends PickerCourse>(
 	courses: readonly C[],
 	{

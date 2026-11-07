@@ -4,6 +4,7 @@
  * F/C/B numbers. Pure; both the satellite and the schematic canvas use it.
  */
 import {
+	carryDistances,
 	distancesToGreen,
 	haversineMeters,
 	type LatLng,
@@ -11,6 +12,7 @@ import {
 	projectToLocal,
 } from "./geo";
 
+/** A hole's renderable geometry in WGS84 (consumers project via a Projector). */
 export interface HoleGeometry {
 	holeLine?: LatLng[];
 	fairways: LatLng[][];
@@ -76,16 +78,12 @@ export function hazardsInPlay(
 	];
 	return rings
 		.filter(([, ring]) => ring.length > 2)
-		.map(([kind, ring]) => {
-			const distances = ring.map((p) => haversineMeters(position, p));
-			return {
-				kind,
-				reach: Math.min(...distances),
-				carry: Math.max(...distances),
-				at: polygonCentroid(ring),
-				ahead: along(polygonCentroid(ring)),
-			};
-		})
+		.map(([kind, ring]) => ({
+			kind,
+			...carryDistances(position, ring),
+			at: polygonCentroid(ring),
+			ahead: along(polygonCentroid(ring)),
+		}))
 		.filter((h) => h.ahead > 0 && h.ahead <= length + 5 && h.reach <= maxMeters)
 		.sort((a, b) => a.reach - b.reach)
 		.slice(0, limit)

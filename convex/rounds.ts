@@ -1,19 +1,131 @@
 import {
 	roundDifferential,
 	roundPlayingHandicap,
+	WHS_WINDOW,
 } from "@fairway/core/handicap";
-import { stablefordTotal, totalStrokes, vsPar } from "@fairway/core/scoring";
+import { checkHoleRefs } from "@fairway/core/loops";
+import {
+	countedStrokes,
+	OWNER_INDEX,
+	ownerRoundStats,
+	playerStrokes,
+	scoreAt,
+} from "@fairway/core/round";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
-import type { MutationCtx } from "./_generated/server";
+import type { Doc, Id } from "./_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { canSee } from "./courses";
 import { getUserId } from "./lib";
+import { upsertSettings } from "./settings";
+import { roundFormat, scoreUpdateFields } from "./validators";
 
 const playerInput = v.object({
 	name: v.string(),
 	handicapIndex: v.optional(v.number()),
 });
+
+function findActiveRound(ctx: QueryCtx, userId: string) {
+	return ctx.db
+		.query("rounds")
+		.withIndex("by_user", (q) => q.eq("userId", userId))
+		.filter((q) => q.eq(q.field("status"), "active"))
+		.first();
+}
+
+/** The user's finished rounds, newest first. */
+async function finishedRounds(
+	ctx: QueryCtx,
+	userId: string,
+	limit = WHS_WINDOW,
+) {
+	const rounds = await ctx.db
+		.query("rounds")
+		.withIndex("by_user", (q) => q.eq("userId", userId))
+		.filter((q) => q.eq(q.field("status"), "finished"))
+		.collect();
+	rounds.sort((a, b) => b.startedAt - a.startedAt);
+	return rounds.slice(0, limit);
+}
+
+function courseHoles(ctx: QueryCtx, courseId: Id<"courses">) {
+	return ctx.db
+		.query("holes")
+		.withIndex("by_course", (q) => q.eq("courseId", courseId))
+		.collect();
+}
+
+function roundScores(ctx: QueryCtx, roundId: Id<"rounds">) {
+	return ctx.db
+		.query("holeScores")
+		.withIndex("by_round", (q) => q.eq("roundId", roundId))
+		.collect();
+}
+
+/** The round's own holes in play order. `start` guarantees each has par and
+ *  stroke index, and a catalog sync retires holes rounds use rather than
+ *  deleting them; a value since cleared on a user's copy reads as 0. */
+function holesOfRound(round: Doc<"rounds">, holes: Doc<"holes">[]) {
+	const byRef = new Map(holes.map((h) => [h.ref, h]));
+	return round.holeRefs.map((ref) => {
+		const hole = byRef.get(ref);
+		return {
+			ref,
+			par: hole?.par ?? 0,
+			strokeIndex: hole?.strokeIndex ?? 0,
+			lengthMeters: hole?.lengthMeters,
+		};
+	});
+}
+
+/** A round with everything the round screens show. */
+async function assembleRound(ctx: QueryCtx, round: Doc<"rounds">) {
+	const [course, tee, holes, scores] = await Promise.all([
+		ctx.db.get(round.courseId),
+		ctx.db.get(round.teeId),
+		courseHoles(ctx, round.courseId),
+		roundScores(ctx, round._id),
+	]);
+	if (!course || !tee) return null;
+	return {
+		round: { ...round, currentHoleIndex: round.currentHoleIndex ?? 0 },
+		course,
+		tee,
+		holes: holesOfRound(round, holes),
+		scores,
+	};
+}
+
+/** Load once per course within one query: a golfer's rounds share few courses. */
+function perCourse<T>(load: (courseId: Id<"courses">) => Promise<T>) {
+	const loaded = new Map<Id<"courses">, Promise<T>>();
+	return (courseId: Id<"courses">) => {
+		const value = loaded.get(courseId) ?? load(courseId);
+		loaded.set(courseId, value);
+		return value;
+	};
+}
+
+/** The round, if it is the signed-in user's. */
+export async function requireOwnRound(ctx: QueryCtx, roundId: Id<"rounds">) {
+	const userId = await getUserId(ctx);
+	const round = await ctx.db.get(roundId);
+	if (!round || round.userId !== userId) throw new Error("Round not found.");
+	return round;
+}
+
+/** The round, if it is the signed-in user's and being played. */
+export async function requireActiveRound(ctx: QueryCtx, roundId: Id<"rounds">) {
+	const round = await requireOwnRound(ctx, roundId);
+	if (round.status !== "active") throw new Error("Round is not active.");
+	return round;
+}
+
+export function assertHoleOfRound(round: Doc<"rounds">, holeIndex: number) {
+	if (holeIndex < 0 || holeIndex >= round.holeRefs.length) {
+		throw new Error("holeIndex out of range.");
+	}
+}
 
 /**
  * Start a round. Validates every selected hole has par + stroke index
@@ -26,17 +138,13 @@ export const start = mutation({
 		teeId: v.id("tees"),
 		holeRefs: v.array(v.string()),
 		loopLabel: v.optional(v.string()),
-		format: v.union(v.literal("stroke"), v.literal("stableford")),
+		format: roundFormat,
 		players: v.array(playerInput),
 	},
 	handler: async (ctx, args) => {
 		const userId = await getUserId(ctx);
 
-		const existing = await ctx.db
-			.query("rounds")
-			.withIndex("by_user", (q) => q.eq("userId", userId))
-			.filter((q) => q.eq(q.field("status"), "active"))
-			.first();
+		const existing = await findActiveRound(ctx, userId);
 		if (existing) {
 			throw new Error(
 				"An active round already exists — finish or abandon it first.",
@@ -58,24 +166,10 @@ export const start = mutation({
 			throw new Error("Tee does not belong to this course.");
 		}
 
-		const courseHoles = await ctx.db
-			.query("holes")
-			.withIndex("by_course", (q) => q.eq("courseId", args.courseId))
-			.collect();
-		const byRef = new Map(
-			courseHoles.filter((h) => !h.retired).map((h) => [h.ref, h]),
+		const { par, incomplete } = checkHoleRefs(
+			args.holeRefs,
+			(await courseHoles(ctx, args.courseId)).filter((h) => !h.retired),
 		);
-
-		const incomplete: string[] = [];
-		let parTotal = 0;
-		for (const ref of args.holeRefs) {
-			const hole = byRef.get(ref);
-			if (!hole || hole.par === undefined || hole.strokeIndex === undefined) {
-				incomplete.push(ref);
-			} else {
-				parTotal += hole.par;
-			}
-		}
 		if (incomplete.length > 0) {
 			throw new Error(
 				`Holes missing par/stroke index: ${incomplete.join(", ")}. Complete them in the course editor first.`,
@@ -91,28 +185,15 @@ export const start = mutation({
 					: roundPlayingHandicap(
 							p.handicapIndex,
 							tee,
-							parTotal,
+							par,
 							args.holeRefs.length,
 						),
 		}));
 
-		// The index you tee off with is your current one: keep the profile
-		// in step so Home and the next setup show it.
-		const ownerIndex = args.players[0].handicapIndex;
+		// The index you tee off with is your current one: keep the profile in step.
+		const ownerIndex = args.players[OWNER_INDEX].handicapIndex;
 		if (ownerIndex !== undefined) {
-			const settings = await ctx.db
-				.query("userSettings")
-				.withIndex("by_user", (q) => q.eq("userId", userId))
-				.unique();
-			if (!settings) {
-				await ctx.db.insert("userSettings", {
-					userId,
-					units: "m",
-					handicapIndex: ownerIndex,
-				});
-			} else if (settings.handicapIndex !== ownerIndex) {
-				await ctx.db.patch(settings._id, { handicapIndex: ownerIndex });
-			}
+			await upsertSettings(ctx, userId, { handicapIndex: ownerIndex });
 		}
 
 		return await ctx.db.insert("rounds", {
@@ -135,59 +216,14 @@ export const active = query({
 	args: {},
 	handler: async (ctx) => {
 		const userId = await getUserId(ctx);
-		const round = await ctx.db
-			.query("rounds")
-			.withIndex("by_user", (q) => q.eq("userId", userId))
-			.filter((q) => q.eq(q.field("status"), "active"))
-			.first();
-		if (!round) return null;
-
-		const [course, tee, courseHoles, scores] = await Promise.all([
-			ctx.db.get(round.courseId),
-			ctx.db.get(round.teeId),
-			ctx.db
-				.query("holes")
-				.withIndex("by_course", (q) => q.eq("courseId", round.courseId))
-				.collect(),
-			ctx.db
-				.query("holeScores")
-				.withIndex("by_round", (q) => q.eq("roundId", round._id))
-				.collect(),
-		]);
-		if (!course || !tee) return null;
-
-		const byRef = new Map(courseHoles.map((h) => [h.ref, h]));
-		const holes = round.holeRefs.map((ref) => {
-			const hole = byRef.get(ref);
-			return {
-				ref,
-				// start() guarantees these exist for every round hole
-				par: hole?.par ?? 0,
-				strokeIndex: hole?.strokeIndex ?? 0,
-				lengthMeters: hole?.lengthMeters,
-			};
-		});
-
-		return { round, course, tee, holes, scores };
+		const round = await findActiveRound(ctx, userId);
+		return round ? assembleRound(ctx, round) : null;
 	},
 });
 
-/** Guard: the round exists, belongs to the caller, and is active. */
-async function requireActiveRound(ctx: MutationCtx, roundId: Id<"rounds">) {
-	const userId = await getUserId(ctx);
-	const round = await ctx.db.get(roundId);
-	if (!round || round.userId !== userId) throw new Error("Round not found.");
-	if (round.status !== "active") throw new Error("Round is not active.");
-	return round;
-}
-
-/** Delete a round with its scores and shots. */
 export async function deleteRoundData(ctx: MutationCtx, roundId: Id<"rounds">) {
 	const [scores, shots] = await Promise.all([
-		ctx.db
-			.query("holeScores")
-			.withIndex("by_round", (q) => q.eq("roundId", roundId))
-			.collect(),
+		roundScores(ctx, roundId),
 		ctx.db
 			.query("shots")
 			.withIndex("by_round", (q) => q.eq("roundId", roundId))
@@ -206,12 +242,7 @@ export const setScore = mutation({
 		roundId: v.id("rounds"),
 		holeIndex: v.number(),
 		playerIndex: v.number(),
-		strokes: v.optional(v.number()),
-		putts: v.optional(v.union(v.number(), v.null())),
-		fir: v.optional(v.union(v.boolean(), v.null())),
-		gir: v.optional(v.union(v.boolean(), v.null())),
-		penalties: v.optional(v.number()),
-		nr: v.optional(v.boolean()),
+		...scoreUpdateFields,
 	},
 	handler: async (ctx, { roundId, holeIndex, playerIndex, ...args }) => {
 		// Values to store; a null clears the field (patch() drops undefined).
@@ -224,9 +255,7 @@ export const setScore = mutation({
 				.map(([key]) => [key, undefined]),
 		);
 		const round = await requireActiveRound(ctx, roundId);
-		if (holeIndex < 0 || holeIndex >= round.holeRefs.length) {
-			throw new Error("holeIndex out of range.");
-		}
+		assertHoleOfRound(round, holeIndex);
 		if (playerIndex < 0 || playerIndex >= round.players.length) {
 			throw new Error("playerIndex out of range.");
 		}
@@ -256,14 +285,12 @@ export const setCurrentHole = mutation({
 	args: { roundId: v.id("rounds"), holeIndex: v.number() },
 	handler: async (ctx, { roundId, holeIndex }) => {
 		const round = await requireActiveRound(ctx, roundId);
-		if (holeIndex < 0 || holeIndex >= round.holeRefs.length) {
-			throw new Error("holeIndex out of range.");
-		}
+		assertHoleOfRound(round, holeIndex);
 		await ctx.db.patch(roundId, { currentHoleIndex: holeIndex });
 	},
 });
 
-/** Delete the active round and its scores. */
+/** Delete the active round with its scores and shots. */
 export const abandon = mutation({
 	args: { roundId: v.id("rounds") },
 	handler: async (ctx, { roundId }) => {
@@ -273,62 +300,28 @@ export const abandon = mutation({
 });
 
 /**
- * Finish the round: stamp per-player totals (strokes + Stableford points) and
- * the owner's WHS score differential — only for complete 9- or 18-hole rounds
- * with no NR; otherwise null. 9-hole rounds add the expected differential.
+ * Finish the round: stamp the owner's WHS score differential, where the round
+ * can count for one. Totals are computed from holeScores when read.
  */
 export const finish = mutation({
 	args: { roundId: v.id("rounds") },
 	handler: async (ctx, { roundId }) => {
 		const round = await requireActiveRound(ctx, roundId);
-		const [tee, courseHoles, scores] = await Promise.all([
+		const [tee, allHoles, scores] = await Promise.all([
 			ctx.db.get(round.teeId),
-			ctx.db
-				.query("holes")
-				.withIndex("by_course", (q) => q.eq("courseId", round.courseId))
-				.collect(),
-			ctx.db
-				.query("holeScores")
-				.withIndex("by_round", (q) => q.eq("roundId", round._id))
-				.collect(),
+			courseHoles(ctx, round.courseId),
+			roundScores(ctx, round._id),
 		]);
 		if (!tee) throw new Error("Tee not found.");
 
-		const byRef = new Map(courseHoles.map((h) => [h.ref, h]));
-		const holes = round.holeRefs.map((ref) => {
-			const hole = byRef.get(ref);
-			return { par: hole?.par ?? 0, strokeIndex: hole?.strokeIndex ?? 0 };
-		});
-
-		const scoreOf = (holeIndex: number, playerIndex: number) =>
-			scores.find(
-				(s) => s.holeIndex === holeIndex && s.playerIndex === playerIndex,
-			);
-
-		const totals = round.players.map((player, playerIndex) => {
-			const strokes = holes.map((_, holeIndex) => {
-				const s = scoreOf(holeIndex, playerIndex);
-				return s?.nr ? null : (s?.strokes ?? null);
-			});
-			const points = stablefordTotal(
-				holes,
-				strokes,
-				player.playingHandicap ?? 0,
-			);
-			return { strokes: totalStrokes(strokes), points };
-		});
-
-		// Owner differential: 9 or 18 holes, no NR, every stroke entered.
-		const owner = round.players[0];
+		const holes = holesOfRound(round, allHoles);
+		const owner = round.players[OWNER_INDEX];
 		const differential =
 			owner.playingHandicap === undefined
 				? null
 				: roundDifferential({
 						holes,
-						strokes: holes.map((_, i) => {
-							const s = scoreOf(i, 0);
-							return s && !s.nr && s.strokes !== undefined ? s.strokes : null;
-						}),
+						strokes: playerStrokes(holes.length, scores, OWNER_INDEX),
 						playingHandicap: owner.playingHandicap,
 						handicapIndex: owner.handicapIndex,
 						tee,
@@ -336,89 +329,33 @@ export const finish = mutation({
 
 		await ctx.db.patch(roundId, {
 			status: "finished",
-			totals,
 			scoreDifferential: differential,
 		});
-		return { totals, scoreDifferential: differential };
 	},
 });
 
 /**
- * Finished rounds, newest first, with a computed owner (playerIndex 0) summary.
- * `limit` defaults to 20 (spec §5 window). Distances/scoring recomputed from
- * holeScores so rounds finished before this query still get full stats.
+ * Finished rounds, newest first, with the owner's summary, recomputed from
+ * holeScores so rounds finished before a stat existed still have it.
  */
 export const history = query({
 	args: { limit: v.optional(v.number()) },
 	handler: async (ctx, { limit }) => {
 		const userId = await getUserId(ctx);
-		const rounds = await ctx.db
-			.query("rounds")
-			.withIndex("by_user", (q) => q.eq("userId", userId))
-			.filter((q) => q.eq(q.field("status"), "finished"))
-			.collect();
-		rounds.sort((a, b) => b.startedAt - a.startedAt);
-		const recent = rounds.slice(0, limit ?? 20);
+		const rounds = await finishedRounds(ctx, userId, limit);
+		const holesOf = perCourse((courseId) => courseHoles(ctx, courseId));
+		const nameOf = perCourse(
+			async (courseId) =>
+				(await ctx.db.get(courseId))?.name ?? "Unknown course",
+		);
 
-		const courseNames = new Map<string, string>();
-
-		const summaries = await Promise.all(
-			recent.map(async (round) => {
-				let courseName = courseNames.get(round.courseId);
-				if (courseName === undefined) {
-					const course = await ctx.db.get(round.courseId);
-					courseName = course?.name ?? "Unknown course";
-					courseNames.set(round.courseId, courseName);
-				}
-
-				const courseHoles = await ctx.db
-					.query("holes")
-					.withIndex("by_course", (q) => q.eq("courseId", round.courseId))
-					.collect();
-				const byRef = new Map(courseHoles.map((h) => [h.ref, h]));
-				const holes = round.holeRefs.map((ref) => {
-					const hole = byRef.get(ref);
-					return {
-						par: hole?.par ?? 0,
-						strokeIndex: hole?.strokeIndex ?? 0,
-						isPar3: (hole?.par ?? 0) === 3,
-					};
-				});
-
-				const scores = await ctx.db
-					.query("holeScores")
-					.withIndex("by_round", (q) => q.eq("roundId", round._id))
-					.collect();
-				const ownerScore = (holeIndex: number) =>
-					scores.find((s) => s.holeIndex === holeIndex && s.playerIndex === 0);
-
-				const strokes = holes.map((_, i) => {
-					const s = ownerScore(i);
-					return s?.nr ? null : (s?.strokes ?? null);
-				});
-
-				let putts = 0;
-				let holesWithPutts = 0;
-				let firMade = 0;
-				let firEligible = 0;
-				let girMade = 0;
-				let girHoles = 0;
-				holes.forEach((hole, i) => {
-					const s = ownerScore(i);
-					if (s?.putts !== undefined) {
-						putts += s.putts;
-						holesWithPutts += 1;
-					}
-					if (!hole.isPar3 && s?.fir !== undefined) {
-						firEligible += 1;
-						if (s.fir) firMade += 1;
-					}
-					if (s?.gir !== undefined) {
-						girHoles += 1;
-						if (s.gir) girMade += 1;
-					}
-				});
-
+		return await Promise.all(
+			rounds.map(async (round) => {
+				const [courseName, holes, scores] = await Promise.all([
+					nameOf(round.courseId),
+					holesOf(round.courseId),
+					roundScores(ctx, round._id),
+				]);
 				return {
 					_id: round._id,
 					startedAt: round.startedAt,
@@ -427,21 +364,10 @@ export const history = query({
 					format: round.format,
 					holeCount: round.holeRefs.length,
 					differential: round.scoreDifferential ?? null,
-					owner: {
-						strokes: totalStrokes(strokes),
-						vsPar: vsPar(holes, strokes),
-						putts: holesWithPutts > 0 ? putts : null,
-						holesWithPutts,
-						firMade,
-						firEligible,
-						girMade,
-						girHoles,
-					},
+					owner: ownerRoundStats(holesOfRound(round, holes), scores),
 				};
 			}),
 		);
-
-		return summaries;
 	},
 });
 
@@ -452,40 +378,15 @@ export const detail = query({
 		const userId = await getUserId(ctx);
 		const round = await ctx.db.get(roundId);
 		if (!round || round.userId !== userId) return null;
-		const [course, tee, courseHoles, scores] = await Promise.all([
-			ctx.db.get(round.courseId),
-			ctx.db.get(round.teeId),
-			ctx.db
-				.query("holes")
-				.withIndex("by_course", (q) => q.eq("courseId", round.courseId))
-				.collect(),
-			ctx.db
-				.query("holeScores")
-				.withIndex("by_round", (q) => q.eq("roundId", round._id))
-				.collect(),
-		]);
-		if (!course || !tee) return null;
-		const byRef = new Map(courseHoles.map((h) => [h.ref, h]));
-		const holes = round.holeRefs.map((ref) => {
-			const hole = byRef.get(ref);
-			return {
-				ref,
-				par: hole?.par ?? 0,
-				strokeIndex: hole?.strokeIndex ?? 0,
-				lengthMeters: hole?.lengthMeters,
-			};
-		});
-		return { round, course, tee, holes, scores };
+		return assembleRound(ctx, round);
 	},
 });
 
-/** Delete one of the user's finished rounds. */
+/** Delete one of the user's rounds, whatever its status. */
 export const remove = mutation({
 	args: { roundId: v.id("rounds") },
 	handler: async (ctx, { roundId }) => {
-		const userId = await getUserId(ctx);
-		const round = await ctx.db.get(roundId);
-		if (!round || round.userId !== userId) throw new Error("Round not found.");
+		await requireOwnRound(ctx, roundId);
 		await deleteRoundData(ctx, roundId);
 	},
 });
@@ -498,40 +399,15 @@ export const holeResults = query({
 	args: { limit: v.optional(v.number()) },
 	handler: async (ctx, { limit }) => {
 		const userId = await getUserId(ctx);
-		const rounds = await ctx.db
-			.query("rounds")
-			.withIndex("by_user", (q) => q.eq("userId", userId))
-			.filter((q) => q.eq(q.field("status"), "finished"))
-			.collect();
-		rounds.sort((a, b) => b.startedAt - a.startedAt);
-		const parsByCourse = new Map<string, Map<string, number>>();
+		const rounds = await finishedRounds(ctx, userId, limit);
+		const holesOf = perCourse((courseId) => courseHoles(ctx, courseId));
 		const results: Array<{ par: number; strokes: number | null }> = [];
-		for (const round of rounds.slice(0, limit ?? 20)) {
-			let pars = parsByCourse.get(round.courseId);
-			if (pars === undefined) {
-				const holes = await ctx.db
-					.query("holes")
-					.withIndex("by_course", (q) => q.eq("courseId", round.courseId))
-					.collect();
-				const map = new Map<string, number>();
-				for (const h of holes) if (h.ref && h.par) map.set(h.ref, h.par);
-				parsByCourse.set(round.courseId, map);
-				pars = map;
-			}
-			const coursePars = pars;
-			const scores = await ctx.db
-				.query("holeScores")
-				.withIndex("by_round", (q) => q.eq("roundId", round._id))
-				.collect();
-			round.holeRefs.forEach((ref, holeIndex) => {
-				const s = scores.find(
-					(x) => x.holeIndex === holeIndex && x.playerIndex === 0,
-				);
-				if (!s) return;
-				results.push({
-					par: coursePars.get(ref) ?? 0,
-					strokes: s.nr ? null : (s.strokes ?? null),
-				});
+		for (const round of rounds) {
+			const holes = holesOfRound(round, await holesOf(round.courseId));
+			const scores = await roundScores(ctx, round._id);
+			holes.forEach((hole, holeIndex) => {
+				const s = scoreAt(scores, holeIndex, OWNER_INDEX);
+				if (s) results.push({ par: hole.par, strokes: countedStrokes(s) });
 			});
 		}
 		return results;

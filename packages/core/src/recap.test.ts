@@ -31,6 +31,9 @@ describe("roundRecap", () => {
 		expect(r.net).toBeNull();
 		expect(r.scored).toBe(3);
 		expect(r.nines[0]).toEqual({ strokes: 12, toPar: 0, complete: false });
+		const pickedUp = roundRecap(nine, [null, 4, 3, 4, 4, 4, 4, 4, 4], 5);
+		expect(pickedUp.net).toBeNull();
+		expect(pickedUp.netToPar).toBeNull();
 	});
 
 	it("has no toughest hole when every hole is net par or better", () => {

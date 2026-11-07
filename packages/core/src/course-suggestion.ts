@@ -1,0 +1,1 @@
+export const MAX_SUGGESTION_LENGTH = 2000;

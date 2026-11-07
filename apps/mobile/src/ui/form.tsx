@@ -1,21 +1,13 @@
 import { HeaderHeightContext } from "expo-router/react-navigation";
 import { SymbolView } from "expo-symbols";
-import {
-	Children,
-	type ComponentProps,
-	type ReactNode,
-	type Ref,
-	useContext,
-} from "react";
+import { Children, type ReactNode, useContext } from "react";
 import {
 	KeyboardAvoidingView,
 	Platform,
 	Pressable,
 	ScrollView,
-	type ScrollViewInstance,
 	StyleSheet,
 	TextInput,
-	type TextInputInstance,
 	type TextInputProps,
 	View,
 	type ViewStyle,
@@ -31,12 +23,12 @@ import {
 	useTokens,
 } from "../theme";
 import { PrimaryButton } from "./button";
-import { Segmented, type SegmentedOption } from "./segmented";
+import { Segmented } from "./segmented";
+import type { SegmentedOption } from "./segmented.shared";
 import { AppText } from "./text";
 
 type PrimaryAction = {
 	label: string;
-	accessibilityLabel?: string;
 	onPress: () => void;
 	loading?: boolean;
 	disabled?: boolean;
@@ -45,36 +37,24 @@ type PrimaryAction = {
 /**
  * Owns the mechanics every long mobile form otherwise reimplements: keyboard
  * avoidance, safe-area footer, one scrolling content column and one primary
- * action. Route-backed screens leave `title` undefined and use the navigator.
+ * action. Route-backed screens use the navigator's header; a screen presented
+ * without one passes its own as `header`, above the scrolling content.
  */
 export function FormScreen({
 	children,
-	title,
-	showHeader = title !== undefined,
-	cancelLabel = "Cancel",
-	onCancel,
+	header,
 	primaryAction,
-	primaryActionPlacement = "fixed",
-	contentStyle,
-	scrollRef,
 	nativeSheet = false,
 	avoidKeyboard = true,
 }: {
 	children: ReactNode;
-	title?: string;
-	showHeader?: boolean;
-	cancelLabel?: string;
-	onCancel?: () => void;
+	header?: ReactNode;
 	primaryAction?: PrimaryAction;
-	primaryActionPlacement?: "fixed" | "header";
-	contentStyle?: ViewStyle;
-	scrollRef?: Ref<ScrollViewInstance>;
 	/** Keep the scroll view at the native sheet root so UIKit owns its gestures. */
 	nativeSheet?: boolean;
 	/**
-	 * Wrap the content in a `KeyboardAvoidingView`. Tab-root screens with no
-	 * inputs turn this off so the `ScrollView` is the screen's first native
-	 * child, which is what lets UIKit collapse the large title on scroll.
+	 * Wrap the content in a `KeyboardAvoidingView`. A screen with no inputs can
+	 * turn this off: there is nothing for the keyboard to cover.
 	 */
 	avoidKeyboard?: boolean;
 }) {
@@ -84,53 +64,8 @@ export function FormScreen({
 
 	const content = (
 		<>
-			{showHeader ? (
-				<View style={styles.modalHeader}>
-					{onCancel ? (
-						<Pressable
-							onPress={onCancel}
-							accessibilityRole="button"
-							style={styles.headerAction}
-						>
-							<AppText style={styles.headerCancelText}>{cancelLabel}</AppText>
-						</Pressable>
-					) : (
-						<View style={styles.headerAction} />
-					)}
-					{title ? (
-						<AppText
-							variant="heading"
-							numberOfLines={2}
-							style={styles.modalTitle}
-						>
-							{title}
-						</AppText>
-					) : (
-						<View style={styles.modalTitle} />
-					)}
-					{primaryAction && primaryActionPlacement === "header" ? (
-						<Pressable
-							onPress={primaryAction.onPress}
-							disabled={primaryAction.disabled || primaryAction.loading}
-							accessibilityRole="button"
-							accessibilityLabel={primaryAction.accessibilityLabel}
-							accessibilityState={{
-								disabled: primaryAction.disabled || primaryAction.loading,
-								busy: primaryAction.loading,
-							}}
-							style={[styles.headerAction, styles.headerActionTrailing]}
-						>
-							<AppText style={styles.headerActionText}>
-								{primaryAction.label}
-							</AppText>
-						</Pressable>
-					) : (
-						<View style={styles.headerAction} />
-					)}
-				</View>
-			) : null}
+			{header}
 			<ScrollView
-				ref={scrollRef}
 				style={nativeSheet ? styles.screen : undefined}
 				automaticallyAdjustKeyboardInsets={nativeSheet}
 				scrollToOverflowEnabled={nativeSheet}
@@ -138,11 +73,11 @@ export function FormScreen({
 				keyboardDismissMode="interactive"
 				keyboardShouldPersistTaps="handled"
 				showsVerticalScrollIndicator={false}
-				contentContainerStyle={[styles.content, contentStyle]}
+				contentContainerStyle={styles.content}
 			>
 				{children}
 			</ScrollView>
-			{primaryAction && primaryActionPlacement === "fixed" ? (
+			{primaryAction ? (
 				<View
 					style={[
 						styles.footer,
@@ -151,7 +86,6 @@ export function FormScreen({
 				>
 					<PrimaryButton
 						label={primaryAction.label}
-						accessibilityLabel={primaryAction.accessibilityLabel}
 						onPress={primaryAction.onPress}
 						loading={primaryAction.loading}
 						disabled={primaryAction.disabled}
@@ -165,7 +99,7 @@ export function FormScreen({
 	return (
 		<KeyboardAvoidingView
 			behavior={Platform.OS === "ios" ? "padding" : "height"}
-			keyboardVerticalOffset={showHeader ? 0 : headerHeight}
+			keyboardVerticalOffset={header ? 0 : headerHeight}
 			style={styles.screen}
 		>
 			{content}
@@ -175,35 +109,22 @@ export function FormScreen({
 
 /** A grouped mobile section with a title outside and row separators inside. */
 export function FormSection({
-	separatorInset,
 	title,
 	footer,
 	children,
-	style,
 }: {
 	title?: string;
 	footer?: string;
 	children: ReactNode;
-	style?: ViewStyle;
-	separatorInset?: number;
 }) {
 	const styles = useThemedStyles(createStyles);
 	return (
-		<View style={[styles.section, style]}>
+		<View style={styles.section}>
 			{title ? <AppText variant="label">{title}</AppText> : null}
 			<View style={styles.group}>
 				{Children.map(children, (row, index) => (
 					<>
-						{index > 0 ? (
-							<View
-								style={[
-									styles.separator,
-									separatorInset === undefined
-										? undefined
-										: { marginLeft: separatorInset },
-								]}
-							/>
-						) : null}
+						{index > 0 ? <View style={styles.separator} /> : null}
 						{row}
 					</>
 				))}
@@ -237,7 +158,6 @@ export function FormTextField({
 	label: string;
 	error?: string;
 	appearance?: "inset" | "plain";
-	style?: TextInputProps["style"];
 }) {
 	const colors = useTokens();
 	const styles = useThemedStyles(createStyles);
@@ -249,7 +169,7 @@ export function FormTextField({
 			<TextInput
 				{...props}
 				accessibilityLabel={props.accessibilityLabel ?? label}
-				placeholderTextColor={props.placeholderTextColor ?? colors.textFaint}
+				placeholderTextColor={colors.textFaint}
 				style={[
 					styles.textInput,
 					appearance === "plain" && styles.plainInput,
@@ -295,16 +215,10 @@ export function FormSegmentedRow<Value extends string>({
 export function InlineNumberFieldRow({
 	label,
 	suffix,
-	accessory,
-	inputStyle,
-	inputRef,
 	...props
 }: TextInputProps & {
 	label: string;
 	suffix: string;
-	accessory?: ReactNode;
-	inputStyle?: TextInputProps["style"];
-	inputRef?: Ref<TextInputInstance>;
 }) {
 	const colors = useTokens();
 	const styles = useThemedStyles(createStyles);
@@ -313,103 +227,16 @@ export function InlineNumberFieldRow({
 			<AppText style={styles.rowLabel}>{label}</AppText>
 			<View style={styles.inlineControls}>
 				<TextInput
-					ref={inputRef}
 					{...props}
 					accessibilityLabel={props.accessibilityLabel ?? label}
-					placeholderTextColor={props.placeholderTextColor ?? colors.textFaint}
-					style={[styles.numberInput, inputStyle]}
+					placeholderTextColor={colors.textFaint}
+					style={styles.numberInput}
 				/>
 				<AppText variant="caption" style={styles.suffix}>
 					{suffix}
 				</AppText>
-				{accessory}
 			</View>
 		</View>
-	);
-}
-
-const TILE_COLORS = {
-	indigo: "tileIndigo",
-	blue: "tileBlue",
-	orange: "tileOrange",
-	green: "tileGreen",
-	purple: "tilePurple",
-	teal: "tileTeal",
-} as const;
-
-export function DisclosureRow({
-	label,
-	value,
-	expanded,
-	accessibilityLabel,
-	onPress,
-	icon,
-	disabled = false,
-	destructive = false,
-}: {
-	label: string;
-	value?: string;
-	expanded?: boolean;
-	accessibilityLabel?: string;
-	onPress?: () => void;
-	/** iOS draws a settings tile; Android shows the plain icon, as Material does. */
-	icon?: {
-		name: ComponentProps<typeof SymbolView>["name"];
-		tile: "indigo" | "blue" | "orange" | "green" | "purple" | "teal";
-	};
-	disabled?: boolean;
-	destructive?: boolean;
-}) {
-	const styles = useThemedStyles(createStyles);
-	const colors = useTokens();
-	return (
-		<Pressable
-			onPress={onPress}
-			disabled={disabled}
-			accessibilityRole="button"
-			accessibilityLabel={accessibilityLabel ?? label}
-			accessibilityValue={value ? { text: value } : undefined}
-			accessibilityState={{
-				disabled,
-				...(expanded === undefined ? {} : { expanded }),
-			}}
-			style={({ pressed }) => [styles.actionRow, pressed && styles.pressedRow]}
-		>
-			{icon ? (
-				<View
-					style={{
-						width: 30,
-						height: 30,
-						borderRadius: 7,
-						borderCurve: "continuous",
-						backgroundColor:
-							Platform.OS === "ios"
-								? colors[TILE_COLORS[icon.tile]]
-								: undefined,
-						alignItems: "center",
-						justifyContent: "center",
-					}}
-				>
-					<SymbolView
-						name={icon.name}
-						tintColor={Platform.OS === "ios" ? "#ffffff" : colors.textMuted}
-						size={Platform.OS === "ios" ? 18 : 22}
-					/>
-				</View>
-			) : null}
-			<AppText
-				style={[
-					styles.rowLabel,
-					destructive ? { color: colors.danger } : undefined,
-				]}
-			>
-				{label}
-			</AppText>
-			{value ? <AppText variant="caption">{value}</AppText> : null}
-			<AppText style={styles.disclosureGlyph}>
-				{expanded === undefined ? "›" : expanded ? "−" : "+"}
-			</AppText>
-		</Pressable>
 	);
 }
 
@@ -436,35 +263,19 @@ export function AddRow({
 
 export function TextAction({
 	label,
-	tone = "accent",
 	onPress,
-	disabled,
 }: {
 	label: string;
-	tone?: "accent" | "destructive" | "neutral";
 	onPress: () => void;
-	disabled?: boolean;
 }) {
-	const colors = useTokens();
 	const styles = useThemedStyles(createStyles);
-	const color =
-		tone === "destructive"
-			? colors.danger
-			: tone === "neutral"
-				? colors.text
-				: colors.accent;
 	return (
 		<Pressable
 			onPress={onPress}
-			disabled={disabled}
 			accessibilityRole="button"
-			style={({ pressed }) => [
-				styles.textAction,
-				pressed && styles.pressedRow,
-				disabled && styles.disabled,
-			]}
+			style={({ pressed }) => [styles.textAction, pressed && styles.pressedRow]}
 		>
-			<AppText style={[styles.textActionLabel, { color }]}>{label}</AppText>
+			<AppText style={styles.textActionLabel}>{label}</AppText>
 		</Pressable>
 	);
 }
@@ -472,7 +283,6 @@ export function TextAction({
 export function StepperField({
 	label,
 	value,
-	step = 1,
 	min = 0,
 	startAt = min,
 	onChange,
@@ -480,24 +290,16 @@ export function StepperField({
 	label: string;
 	/** null: not entered yet, shown as "–"; the first tap lands on `startAt`. */
 	value: number | null;
-	step?: number;
 	min?: number;
 	startAt?: number;
 	onChange: (value: number) => void;
 }) {
 	const styles = useThemedStyles(createStyles);
 	const { t } = useI18n();
-	const round = (number: number) => Math.round(number * 10) / 10;
 	return (
 		<View style={styles.stepperField}>
 			<Pressable
-				onPress={() =>
-					onChange(
-						value === null
-							? Math.max(min, startAt - step)
-							: round(Math.max(min, value - step)),
-					)
-				}
+				onPress={() => onChange(Math.max(min, (value ?? startAt) - 1))}
 				accessibilityRole="button"
 				accessibilityLabel={fmt(t.common.decrease, { label })}
 				style={styles.stepperButton}
@@ -509,7 +311,7 @@ export function StepperField({
 				<AppText variant="caption">{label}</AppText>
 			</View>
 			<Pressable
-				onPress={() => onChange(value === null ? startAt : round(value + step))}
+				onPress={() => onChange(value === null ? startAt : value + 1)}
 				accessibilityRole="button"
 				accessibilityLabel={fmt(t.common.increase, { label })}
 				style={styles.stepperButton}
@@ -532,23 +334,6 @@ const createStyles = (colors: Tokens) =>
 			paddingBottom: spacing.xl,
 			gap: metrics.sectionGap,
 		},
-		modalHeader: {
-			minHeight: 52,
-			paddingHorizontal: spacing.sm,
-			flexDirection: "row",
-			alignItems: "center",
-		},
-		headerAction: {
-			minWidth: 76,
-			minHeight: metrics.hitTarget,
-			paddingHorizontal: spacing.sm,
-			alignItems: "flex-start",
-			justifyContent: "center",
-		},
-		headerCancelText: { color: colors.textMuted, fontWeight: "500" },
-		headerActionText: { color: colors.accent, fontWeight: "700" },
-		headerActionTrailing: { alignItems: "flex-end" },
-		modalTitle: { flex: 1, textAlign: "center" },
 		footer: {
 			paddingTop: spacing.sm,
 			paddingHorizontal: metrics.screenGutter,
@@ -623,13 +408,6 @@ const createStyles = (colors: Tokens) =>
 			gap: spacing.sm,
 		},
 		pressedRow: { backgroundColor: colors.surface2 },
-		disclosureGlyph: {
-			minWidth: 20,
-			textAlign: "center",
-			color: colors.accent,
-			fontSize: 22,
-			fontWeight: "700",
-		},
 		addGlyph: { color: colors.accent, fontSize: 20, fontWeight: "700" },
 		actionLabel: { flex: 1, color: colors.accent, fontWeight: "700" },
 		textAction: {
@@ -640,8 +418,7 @@ const createStyles = (colors: Tokens) =>
 			borderRadius: radius.md,
 			borderCurve: "continuous",
 		},
-		textActionLabel: { fontWeight: "700" },
-		disabled: { opacity: 0.5 },
+		textActionLabel: { color: colors.text, fontWeight: "700" },
 		stepperField: {
 			flex: 1,
 			minWidth: 96,
@@ -664,14 +441,13 @@ const createStyles = (colors: Tokens) =>
 		tabularValue: { fontWeight: "800", fontVariant: ["tabular-nums"] },
 	});
 
-/** A multi-select choice inside a grouped form section. */
+/** A checkbox or radio choice inside a grouped form section. */
 export function FormChoiceRow({
 	label,
 	selected,
 	onPress,
 	leading,
 	secondary,
-	disabled = false,
 	role = "checkbox",
 }: {
 	label: string;
@@ -679,17 +455,15 @@ export function FormChoiceRow({
 	onPress: () => void;
 	leading?: ReactNode;
 	secondary?: string;
-	disabled?: boolean;
 	role?: "checkbox" | "radio";
 }) {
 	const colors = useTokens();
 	return (
 		<Pressable
 			onPress={onPress}
-			disabled={disabled}
 			accessibilityRole={role}
 			accessibilityLabel={label}
-			accessibilityState={{ checked: selected, disabled }}
+			accessibilityState={{ checked: selected }}
 			style={({ pressed }) => ({
 				minHeight: 52,
 				paddingHorizontal: spacing.md,
@@ -727,11 +501,15 @@ export function FormChoiceRow({
 	);
 }
 
-/** Compact search field with a persistent accessible name and native clear control. */
 export function FormSearchField({
 	label,
-	...props
-}: TextInputProps & { label: string }) {
+	value,
+	onChangeText,
+}: {
+	label: string;
+	value: string;
+	onChangeText: (text: string) => void;
+}) {
 	const colors = useTokens();
 	const styles = useThemedStyles(createStyles);
 	return (
@@ -741,7 +519,7 @@ export function FormSearchField({
 				alignItems: "center",
 				paddingHorizontal: spacing.sm,
 				gap: spacing.sm,
-				minHeight: 44,
+				minHeight: metrics.fieldMinHeight,
 			}}
 		>
 			<SymbolView
@@ -750,11 +528,12 @@ export function FormSearchField({
 				tintColor={colors.textMuted}
 			/>
 			<TextInput
-				{...props}
+				value={value}
+				onChangeText={onChangeText}
 				accessibilityLabel={label}
 				placeholder={label}
 				placeholderTextColor={colors.textFaint}
-				style={[styles.textInput, { flex: 1, minHeight: 44 }]}
+				style={[styles.textInput, { flex: 1 }]}
 				autoCorrect={false}
 				clearButtonMode="while-editing"
 				returnKeyType="search"
