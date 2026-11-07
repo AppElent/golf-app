@@ -82,6 +82,23 @@ describe("hazardsInPlay", () => {
 		});
 		expect(hazards.map((h) => h.side)).toEqual(["right"]);
 	});
+	it("keeps the nearest bunker on a list full of water, over a bank", () => {
+		const hazards = hazardsInPlay(
+			p(0),
+			p(0.003),
+			{
+				holeLine: [p(0), p(0.003)],
+				bunkers: [square(0.0025, 0.0003)],
+				water: [square(0.0005, 0.0003), square(0.001, 0), square(0.0015, 0)],
+			},
+			{ limit: 3 },
+		);
+		expect(hazards.map((h) => [h.kind, h.side])).toEqual([
+			["water", "center"],
+			["water", "center"],
+			["bunker", "right"],
+		]);
+	});
 	it("follows a dogleg instead of the straight line to the green", () => {
 		// Up 330 m, then 137 m east. The bunker sits on the corner, far off the
 		// direct tee-to-green line.

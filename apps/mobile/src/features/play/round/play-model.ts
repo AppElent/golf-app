@@ -54,14 +54,18 @@ export function isOnHole(
 
 /**
  * Where distances are measured from. GPS counts as a `fix` only on (or near)
- * this hole; without one, the tee.
+ * this hole; without one, the tee. A `chosen` spot (simulation mode) counts
+ * wherever it is.
  */
 export function playerPosition(
 	position: LatLng | null,
 	anchors: { tee: LatLng; green: LatLng } | null,
+	chosen = false,
 ): { fix: LatLng | null; player: LatLng | null } {
 	const fix =
-		position && anchors && isOnHole(position, anchors) ? position : null;
+		position && anchors && (chosen || isOnHole(position, anchors))
+			? position
+			: null;
 	return { fix, player: anchors ? (fix ?? anchors.tee) : null };
 }
 

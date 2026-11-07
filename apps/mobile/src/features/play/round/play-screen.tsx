@@ -127,7 +127,7 @@ function PlayHole({
 	const gps = simulated
 		? { position: sim.position, accuracyMeters: SIMULATED_ACCURACY_M }
 		: watched;
-	const { fix, player } = playerPosition(gps.position, anchors);
+	const { fix, player } = playerPosition(gps.position, anchors, simulated);
 
 	const holeNumber = meta ? holeLabel(meta.ref) : holeIndex + 1;
 	const holeTitle = fmt(t.play.hole, { n: holeNumber });

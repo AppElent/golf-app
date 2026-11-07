@@ -200,6 +200,20 @@ function mergeWater(hazards: readonly HazardInPlay[]): HazardInPlay[] {
 	return merged;
 }
 
+/** A bank can line a whole hole: the nearest bunker keeps a place over one. */
+function capHazards(
+	hazards: ReadonlyArray<HazardInPlay>,
+	limit: number,
+): HazardInPlay[] {
+	const kept = hazards.slice(0, limit);
+	const bunker = hazards.find((h) => h.kind === "bunker");
+	const lastBank = kept
+		.map((h) => h.kind === "water" && h.side !== "center")
+		.lastIndexOf(true);
+	if (!bunker || kept.includes(bunker) || lastBank < 0) return kept;
+	return [...kept.slice(0, lastBank), ...kept.slice(lastBank + 1), bunker];
+}
+
 /**
  * Hazards ahead of you on the line of play, up to just behind the green,
  * reachable within `maxMeters`. Nearest first. Follows the hole line, so the
@@ -263,7 +277,7 @@ export function hazardsInPlay(
 	const found = [...water, ...bunkers]
 		.filter((h) => h.reach <= maxMeters)
 		.sort((a, b) => a.reach - b.reach);
-	return mergeWater(found).slice(0, limit);
+	return capHazards(mergeWater(found), limit);
 }
 
 export interface HoleNumbers {

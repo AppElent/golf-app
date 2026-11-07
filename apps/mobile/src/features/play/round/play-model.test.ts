@@ -63,6 +63,13 @@ describe("playerPosition", () => {
 		expect(playerPosition(null, anchors)).toEqual(tee);
 		expect(playerPosition({ lat: 51.9, lng: 5 }, anchors)).toEqual(tee);
 	});
+	it("stands a chosen spot where it was chosen, on the hole or not", () => {
+		const offHole = { lat: 51.9, lng: 5 };
+		expect(playerPosition(offHole, anchors, true)).toEqual({
+			fix: offHole,
+			player: offHole,
+		});
+	});
 	it("has nothing to measure from without anchors", () => {
 		expect(playerPosition({ lat: 52, lng: 5 }, null)).toEqual({
 			fix: null,
