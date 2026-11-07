@@ -15,6 +15,7 @@ import { Platform, View } from "react-native";
 import { ConvexSessionGate } from "../../src/auth/convex-session-gate";
 import { OfflineBanner } from "../../src/convex/offline-banner";
 import { AppQueryCacheProvider } from "../../src/convex/query-cache";
+import { SimulationModeProvider } from "../../src/features/simulation/mode/simulation-mode-provider";
 import { useTokens } from "../../src/theme";
 import { ConfirmProvider } from "../../src/ui/confirm-dialog";
 import { useBaseStackOptions } from "../../src/ui/stack-options";
@@ -38,39 +39,44 @@ export default function AppLayout() {
 			<ConfirmProvider>
 				<ConvexSessionGate>
 					<AppQueryCacheProvider scope={userId}>
-						<View style={{ flex: 1, backgroundColor: colors.bg }}>
-							<OfflineBanner />
-							<Stack screenOptions={screenOptions}>
-								<Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-								<Stack.Screen
-									name="play"
-									options={{
-										headerShown: false,
-										presentation: "fullScreenModal",
-										gestureEnabled: false,
-									}}
-								/>
-								<Stack.Screen
-									name="score"
-									options={{
-										// iOS titles the sheet natively (see score-sheet-screen).
-										headerShown: Platform.OS === "ios",
-										presentation: "formSheet",
-										sheetAllowedDetents: [0.62, 1],
-										sheetGrabberVisible: true,
-										sheetCornerRadius: 28,
-									}}
-								/>
-								<Stack.Screen
-									name="scorecard"
-									options={{ presentation: "modal" }}
-								/>
-								<Stack.Screen
-									name="suggest/[courseId]"
-									options={{ presentation: "modal" }}
-								/>
-							</Stack>
-						</View>
+						<SimulationModeProvider>
+							<View style={{ flex: 1, backgroundColor: colors.bg }}>
+								<OfflineBanner />
+								<Stack screenOptions={screenOptions}>
+									<Stack.Screen
+										name="(tabs)"
+										options={{ headerShown: false }}
+									/>
+									<Stack.Screen
+										name="play"
+										options={{
+											headerShown: false,
+											presentation: "fullScreenModal",
+											gestureEnabled: false,
+										}}
+									/>
+									<Stack.Screen
+										name="score"
+										options={{
+											// iOS titles the sheet natively (see score-sheet-screen).
+											headerShown: Platform.OS === "ios",
+											presentation: "formSheet",
+											sheetAllowedDetents: [0.62, 1],
+											sheetGrabberVisible: true,
+											sheetCornerRadius: 28,
+										}}
+									/>
+									<Stack.Screen
+										name="scorecard"
+										options={{ presentation: "modal" }}
+									/>
+									<Stack.Screen
+										name="suggest/[courseId]"
+										options={{ presentation: "modal" }}
+									/>
+								</Stack>
+							</View>
+						</SimulationModeProvider>
 					</AppQueryCacheProvider>
 				</ConvexSessionGate>
 			</ConfirmProvider>

@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when adding a course, correcting course data, or handling a user's course suggestion.
-version: 1.0.0
+version: 2.0.0
 ---
 
 # Course catalog
@@ -67,11 +67,31 @@ first. A line drawn green-to-tee is flipped. A hole whose green polygon was
 never mapped but whose line ends on a `golf=pin` node gets a 12 m circle
 around the pin. A hole with neither uses its line's end as the green.
 
-Hole lines are rough: they may start at another tee or cut a dogleg, so their
-length can differ from the card. The app shows the card length and measures
-from GPS, so only the hole view's framing uses the line.
+Tees, water and bunkers are assigned by where the feature lies along the hole, not by which vertex happens to be closest. Each tee box carries its colours (from `tee=` tags or overrides), and a round starts from the box of its tee's `marker` colour, falling back to the farthest known tee, then to the line's start. The card's length per colour lives on each hole as `lengths`.
 
-Fix bad geometry in OpenStreetMap itself (PDOK aerial imagery is
-CC BY 4.0 and fine to trace from), then run `pnpm courses:geometry` again.
-Known gaps: Welderen par-3 hole (6) has no green mapped (its line end is on
-the green, so the fallback is right).
+## Corrections on top of OpenStreetMap
+
+`scripts/course-data/overrides/<osmRelationId>.json` holds per-hole corrections
+that `pnpm courses:geometry` applies after OSM: `holeLine`, `teeBoxes`, `green`,
+`water` and `bunkers`. Trace them from PDOK aerial imagery (CC BY 4.0), and state
+what you saw and what you inferred in the file. Corrected `teeBoxes` also drop OSM
+tee rings more than 30 m from every box. Prefer fixing OSM itself when the
+error is OSM's and you intend to contribute there.
+
+```sh
+# Draw a hole over the aerial; rings mark where each tee should be per the card.
+node scripts/course-data/inspect-hole.mjs <osmRelationId> <ref> out.png [--tees]
+# Compare each tee's route to the green with the card, per colour.
+node scripts/course-data/check-lengths.mjs
+```
+
+`--raw <dir>` on `refresh-geometry.mjs` caches the Overpass answer while iterating.
+
+`convex/catalog/catalog.test.ts` fails when a tee colour's route is further from
+the card than max(12 m, 5%), so a wrong tee cannot be merged by accident.
+
+## Try a course without playing it
+
+Profile → Course simulator starts a simulated round: you set where you stand and
+play the holes. It is one server row per user, kept out of history, statistics and
+handicap, and deleted when finished.

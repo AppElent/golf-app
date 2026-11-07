@@ -1,25 +1,35 @@
 /**
  * Refresh the catalog's hole geometry from OpenStreetMap.
  *
- *   node scripts/course-data/refresh-geometry.mjs [osmRelationId…]
+ *   node scripts/course-data/refresh-geometry.mjs [osmRelationId…] [--raw <dir>]
  *
  * Reads the OSM relations named by convex/catalog/courses/*.json (or the ids
- * given), fetches their golf ways from Overpass, normalizes them with
- * packages/core/src/osm.ts and writes convex/catalog/geometry/<id>.json. Only
- * geometry comes from OSM: par, stroke index, lengths and tees are curated by
- * hand in the course files. Commit the result, then sync the catalog
- * (docs/runbooks/course-catalog.md). Runs on a developer machine — never from
- * Convex, whose deploy-time network can't be relied on to reach Overpass.
+ * given), fetches their golf features and water from Overpass, normalizes them
+ * with packages/core/src/osm.ts, applies scripts/course-data/overrides/<id>.json
+ * and writes convex/catalog/geometry/<id>.json. Only geometry comes from OSM:
+ * par, stroke index, lengths and tees are curated by hand in the course files.
+ * Commit the result, then sync the catalog (docs/runbooks/course-catalog.md).
+ * Runs on a developer machine — never from Convex, whose deploy-time network
+ * can't be relied on to reach Overpass. `--raw <dir>` saves each Overpass answer
+ * as <dir>/osm-<id>.json and reuses it on later runs, to iterate on overrides
+ * without hitting Overpass.
  */
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { normalizeCourse } from "../../packages/core/src/osm.ts";
 
 const root = join(import.meta.dirname, "../..");
 const coursesDir = join(root, "convex/catalog/courses");
 const geometryDir = join(root, "convex/catalog/geometry");
+const overridesDir = join(root, "scripts/course-data/overrides");
 
-const fromArgs = process.argv.slice(2).map(Number).filter(Number.isFinite);
+const args = process.argv.slice(2);
+const rawFlag = args.indexOf("--raw");
+const rawDir = rawFlag >= 0 ? args[rawFlag + 1] : null;
+const fromArgs = args
+	.filter((_, i) => rawFlag < 0 || (i !== rawFlag && i !== rawFlag + 1))
+	.map(Number)
+	.filter(Number.isFinite);
 const ids =
 	fromArgs.length > 0
 		? fromArgs
@@ -68,10 +78,25 @@ async function overpass(query, attempt = 1) {
 	return overpass(query, attempt + 1);
 }
 
+/** Plain `out geom`: `out geom tags` would drop the members of multipolygons. */
+async function fetchElements(id) {
+	const rawFile = rawDir ? join(rawDir, `osm-${id}.json`) : null;
+	if (rawFile && existsSync(rawFile)) {
+		return JSON.parse(readFileSync(rawFile, "utf8")).elements;
+	}
+	const query = `[out:json][timeout:90];rel(${id});map_to_area->.a;(way(area.a)[golf];rel(area.a)[golf];node(area.a)[golf=pin];node(area.a)[golf=tee];way(area.a)[natural=water];rel(area.a)[natural=water];way(area.a)[waterway];);out geom;`;
+	const answer = await overpass(query);
+	if (rawFile) writeFileSync(rawFile, JSON.stringify(answer));
+	return answer.elements;
+}
+
 for (const id of ids) {
-	const query = `[out:json][timeout:90];rel(${id});map_to_area->.a;(way(area.a)[golf];node(area.a)[golf=pin];);out geom tags;`;
-	const { elements } = await overpass(query);
-	const { geometry } = normalizeCourse(elements);
+	const elements = await fetchElements(id);
+	const overridesFile = join(overridesDir, `${id}.json`);
+	const overrides = existsSync(overridesFile)
+		? JSON.parse(readFileSync(overridesFile, "utf8")).holes
+		: {};
+	const { geometry } = normalizeCourse(elements, overrides);
 	const sorted = round(
 		[...geometry].sort((a, b) => a.ref.localeCompare(b.ref, "en", { numeric: true })),
 	);

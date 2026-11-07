@@ -32,7 +32,7 @@ describe("play model", () => {
 	});
 
 	it("labels a hazard by kind, with reach and carry in units", () => {
-		const hazard = { reach: 100, carry: 150, at: tee };
+		const hazard = { reach: 100, carry: 150, at: tee, side: "left" as const };
 		expect(hazardLabel({ ...hazard, kind: "water" }, "m")).toBe("W 100/150");
 		expect(hazardLabel({ ...hazard, kind: "bunker" }, "yd")).toBe("B 109/164");
 	});
@@ -62,6 +62,13 @@ describe("playerPosition", () => {
 		const tee = { fix: null, player: anchors.tee };
 		expect(playerPosition(null, anchors)).toEqual(tee);
 		expect(playerPosition({ lat: 51.9, lng: 5 }, anchors)).toEqual(tee);
+	});
+	it("stands a chosen spot where it was chosen, on the hole or not", () => {
+		const offHole = { lat: 51.9, lng: 5 };
+		expect(playerPosition(offHole, anchors, true)).toEqual({
+			fix: offHole,
+			player: offHole,
+		});
 	});
 	it("has nothing to measure from without anchors", () => {
 		expect(playerPosition({ lat: 52, lng: 5 }, null)).toEqual({

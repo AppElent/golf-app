@@ -4,19 +4,51 @@ import {
 	formatHandicapIndex,
 	parseHandicapIndex,
 } from "@fairway/core/handicap";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import { FIELD, SURFACE } from "../components/classes";
+import { CTA, FIELD, SURFACE } from "../components/classes";
 import { INVALID_INDEX_MESSAGE } from "../components/copy";
 import { Page, PageNote, PageTitle, Section } from "../components/Page";
 import { PillToggle } from "../components/PillToggle";
 import { StatCard } from "../components/StatCard";
+import { useSimulationMode } from "../play/simulation";
 
 export const Route = createFileRoute("/profile")({ component: ProfileScreen });
+
+function SimulatorEntry() {
+	const running = useQuery(api.rounds.activeSimulation);
+	const { setSimulating } = useSimulationMode();
+	return running ? (
+		<div className="flex flex-col gap-2">
+			<Link
+				to="/play"
+				onClick={() => setSimulating(true)}
+				className={`${CTA} block text-center text-[15px]`}
+			>
+				Resume simulation
+			</Link>
+			<Link
+				to="/rounds/new"
+				search={{ simulate: true }}
+				className="text-center text-[13px] text-moss underline"
+			>
+				Start over on another course
+			</Link>
+		</div>
+	) : (
+		<Link
+			to="/rounds/new"
+			search={{ simulate: true }}
+			className={`${CTA} block text-center text-[15px]`}
+		>
+			Start a simulation
+		</Link>
+	);
+}
 
 function ProfileScreen() {
 	const settings = useQuery(api.settings.get);
@@ -61,6 +93,13 @@ function ProfileScreen() {
 					value={bestScore !== null ? String(bestScore) : "—"}
 				/>
 			</section>
+
+			<Section
+				title="Course simulator"
+				hint="Walk a course from anywhere. Nothing counts for your history or handicap."
+			>
+				<SimulatorEntry />
+			</Section>
 
 			<Section title="Handicap index">
 				<HandicapEditor

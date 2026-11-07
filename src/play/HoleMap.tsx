@@ -15,26 +15,32 @@ export type MapVariant = "map" | "rings" | "bignumbers";
 
 const PADDING = 28;
 
-/** Mount one per hole (`key`): the aim and the measured point belong to a hole. */
+/** Mount one per hole (`key`): the measured point belongs to a hole. */
 export function HoleMap({
 	geometry,
 	anchors,
 	numbers,
 	position,
+	aim,
 	bag,
 	variant,
 	accuracyM,
+	onStandAt,
+	onAimChange,
 }: {
 	geometry: HoleGeometry;
 	anchors: HoleAnchors;
 	numbers: HoleNumbers;
 	position: LatLng;
+	aim: LatLng;
 	bag: ReadonlyArray<Club>;
 	variant: MapVariant;
 	accuracyM: number | null;
+	/** Simulation mode: a tap puts the player there instead of measuring. */
+	onStandAt?: (position: LatLng) => void;
+	onAimChange: (aim: LatLng) => void;
 }) {
 	const svgRef = useRef<SVGSVGElement>(null);
-	const [aim, setAim] = useState<LatLng>(anchors.green);
 	const [measure, setMeasure] = useState<LatLng | null>(null);
 	const dragging = useRef(false);
 
@@ -48,6 +54,7 @@ export function HoleMap({
 			...geometry.bunkers,
 			...geometry.water,
 			...geometry.tees,
+			(geometry.teeBoxes ?? []).map((box) => box.position),
 			[position, aim],
 		],
 		width: MAP_WIDTH,
@@ -66,6 +73,10 @@ export function HoleMap({
 
 	function onPointerDown(e: React.PointerEvent) {
 		const pt = svgPointFromEvent(e);
+		if (onStandAt) {
+			onStandAt(proj.unproject(pt));
+			return;
+		}
 		const aimPt = proj.project(aim);
 		if (Math.hypot(pt.x - aimPt.x, pt.y - aimPt.y) < 22) {
 			dragging.current = true;
@@ -76,7 +87,7 @@ export function HoleMap({
 	}
 	function onPointerMove(e: React.PointerEvent) {
 		if (!dragging.current) return;
-		setAim(proj.unproject(svgPointFromEvent(e)));
+		onAimChange(proj.unproject(svgPointFromEvent(e)));
 	}
 	function onPointerUp() {
 		dragging.current = false;

@@ -15,7 +15,7 @@ import {
 	vsPar,
 } from "@fairway/core/scoring";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
 import { api } from "../../convex/_generated/api";
@@ -23,18 +23,12 @@ import { CTA, SURFACE } from "../components/classes";
 import { Page, PageNote, PageTitle } from "../components/Page";
 import { SyncPill } from "../offline/SyncPill";
 import { useScoreSync } from "../offline/useScoreSync";
+import { useActiveRound, useSimulationMode } from "../play/simulation";
 
 export const Route = createFileRoute("/card")({ component: CardScreen });
 
 function CardScreen() {
-	const data = useQuery(api.rounds.active);
-	const navigate = useNavigate();
-	const { submit, scoreOf, pendingCount, syncing, online } = useScoreSync();
-	const finish = useMutation(api.rounds.finish);
-	const abandon = useMutation(api.rounds.abandon);
-	const [selected, setSelected] = useState(0);
-	const [playerIndex, setPlayerIndex] = useState(OWNER_INDEX);
-	const [confirmFinish, setConfirmFinish] = useState(false);
+	const data = useActiveRound();
 
 	if (data === undefined) {
 		return <PageNote>Loading…</PageNote>;
@@ -53,6 +47,25 @@ function CardScreen() {
 			</Page>
 		);
 	}
+
+	// Leaving a simulation swaps the round under this page: the chosen hole and
+	// player belong to the round, and may not exist in the next one.
+	return <RoundCard key={data.round._id} data={data} />;
+}
+
+function RoundCard({
+	data,
+}: {
+	data: NonNullable<ReturnType<typeof useActiveRound>>;
+}) {
+	const { setSimulating } = useSimulationMode();
+	const navigate = useNavigate();
+	const { submit, scoreOf, pendingCount, syncing, online } = useScoreSync();
+	const finish = useMutation(api.rounds.finish);
+	const abandon = useMutation(api.rounds.abandon);
+	const [selected, setSelected] = useState(0);
+	const [playerIndex, setPlayerIndex] = useState(OWNER_INDEX);
+	const [confirmFinish, setConfirmFinish] = useState(false);
 
 	const { round, course, holes, scores } = data;
 	const player = round.players[playerIndex];
@@ -91,6 +104,7 @@ function CardScreen() {
 
 	async function onFinish() {
 		await finish({ roundId: round._id });
+		if (round.simulated) setSimulating(false);
 		setConfirmFinish(false);
 		navigate({ to: "/" });
 	}
@@ -108,6 +122,11 @@ function CardScreen() {
 					/>
 				</div>
 			</header>
+			{round.simulated ? (
+				<p className="mt-1 text-[12px] font-semibold text-flag">
+					Simulation — not saved
+				</p>
+			) : null}
 
 			{round.players.length > 1 ? (
 				<div className="mt-3 flex flex-wrap gap-2">
@@ -245,8 +264,9 @@ function CardScreen() {
 			{confirmFinish ? (
 				<div className="mt-6 rounded-2xl border border-flag/40 bg-flag/5 p-4">
 					<p className="text-[13px] font-semibold text-ink">
-						Finish this round? Your differential is saved if the card is
-						complete and you have a handicap.
+						{round.simulated
+							? "End this simulation? It is deleted: nothing counts for your history or handicap."
+							: "Finish this round? Your differential is saved if the card is complete and you have a handicap."}
 					</p>
 					<div className="mt-3 flex gap-2">
 						<button
@@ -278,6 +298,7 @@ function CardScreen() {
 						type="button"
 						onClick={async () => {
 							await abandon({ roundId: round._id });
+							if (round.simulated) setSimulating(false);
 						}}
 						className="rounded-full border border-card-line px-4 py-3 font-display text-[13px] font-semibold text-moss"
 					>

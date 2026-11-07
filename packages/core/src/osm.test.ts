@@ -142,3 +142,222 @@ describe("normalizeCourse — lone pins", () => {
 		expect(course.geometry[0].greens).toHaveLength(0);
 	});
 });
+
+describe("normalizeCourse — features", () => {
+	const at = (dLat: number, dLng = 0) => ({
+		lat: 52 + dLat,
+		lon: 5.9 + dLng,
+	});
+	const box = (dLat: number, dLng: number, r = 0.0001) => [
+		at(dLat - r, dLng - r),
+		at(dLat - r, dLng + r),
+		at(dLat + r, dLng + r),
+		at(dLat + r, dLng - r),
+		at(dLat - r, dLng - r),
+	];
+	// Two parallel holes running north, about 130 m apart.
+	const holes = [
+		{
+			type: "way",
+			id: 1,
+			tags: { golf: "hole", ref: "1" },
+			geometry: [at(0), at(0.003)],
+		},
+		{
+			type: "way",
+			id: 2,
+			tags: { golf: "hole", ref: "2" },
+			geometry: [at(0, 0.002), at(0.003, 0.002)],
+		},
+		{ type: "way", id: 3, tags: { golf: "green" }, geometry: box(0.003, 0) },
+		{
+			type: "way",
+			id: 4,
+			tags: { golf: "green" },
+			geometry: box(0.003, 0.002),
+		},
+	];
+	const hole = (
+		extra: Parameters<typeof normalizeCourse>[0],
+		ref: string,
+		overrides?: Parameters<typeof normalizeCourse>[1],
+	) => {
+		const { geometry } = normalizeCourse([...holes, ...extra], overrides);
+		const found = geometry.find((g) => g.ref === ref);
+		if (!found) throw new Error(`no hole ${ref}`);
+		return found;
+	};
+
+	it("reads multipolygon fairways, stitching their outer ways", () => {
+		const ring = box(0.0015, 0.0001, 0.0005);
+		const g = hole(
+			[
+				{
+					type: "relation",
+					id: 10,
+					tags: { golf: "fairway" },
+					members: [
+						{ type: "way", role: "outer", geometry: ring.slice(0, 3) },
+						{ type: "way", role: "outer", geometry: ring.slice(2) },
+						{ type: "way", role: "inner", geometry: box(0.0015, 0.0001) },
+					],
+				},
+			],
+			"1",
+		);
+		expect(g.fairways).toHaveLength(1);
+		expect(g.fairways[0]).toHaveLength(ring.length);
+	});
+
+	it("gives a tee to the hole starting nearest, with its colors", () => {
+		const onRing = hole(
+			[
+				{
+					type: "way",
+					id: 20,
+					tags: { golf: "tee", tee: "white;yellow" },
+					geometry: box(-0.0002, 0.0018, 0.00003),
+				},
+			],
+			"2",
+		);
+		expect(onRing.teeBoxes.map((b) => b.colors)).toEqual([["white", "yellow"]]);
+		expect(onRing.tees).toHaveLength(1);
+	});
+
+	it("reads a tee mapped only as a node", () => {
+		const node = hole(
+			[
+				{
+					type: "node",
+					id: 21,
+					tags: { golf: "tee", tee: "red" },
+					...at(0.0001),
+				},
+			],
+			"1",
+		);
+		expect(node.teeBoxes).toEqual([
+			{
+				position: { lat: 52.0001, lng: 5.9 },
+				colors: ["red"],
+			},
+		]);
+	});
+
+	it("doesn't count a node on a mapped tee as a second tee", () => {
+		const g = hole(
+			[
+				{
+					type: "way",
+					id: 22,
+					tags: { golf: "tee", tee: "red" },
+					geometry: box(0, 0, 0.00003),
+				},
+				{ type: "node", id: 23, tags: { golf: "tee" }, ...at(0) },
+			],
+			"1",
+		);
+		expect(g.teeBoxes).toHaveLength(1);
+	});
+
+	it("puts water on every hole it is in play on", () => {
+		const between = [
+			{
+				type: "way",
+				id: 30,
+				tags: { natural: "water" },
+				geometry: box(0.0015, 0.001, 0.0006),
+			},
+		];
+		expect(hole(between, "1").water).toHaveLength(1);
+		expect(hole(between, "2").water).toHaveLength(1);
+		const offside = [
+			{
+				type: "way",
+				id: 31,
+				tags: { natural: "water" },
+				geometry: box(0.0015, -0.002, 0.0002),
+			},
+		];
+		expect(hole(offside, "1").water).toEqual([]);
+	});
+
+	it("draws an open ditch as thin water, and skips a culvert", () => {
+		const ditch = {
+			type: "way",
+			id: 32,
+			tags: { waterway: "ditch" },
+			geometry: [at(0.001, -0.0003), at(0.001, 0.0003)],
+		};
+		const [strip] = hole([ditch], "1").water;
+		expect(strip).toHaveLength(4);
+		expect(
+			hole([{ ...ditch, tags: { waterway: "ditch", tunnel: "culvert" } }], "1")
+				.water,
+		).toEqual([]);
+	});
+
+	it("assigns a bunker by its nearest point on the line, not its vertices", () => {
+		// Mid-hole, nearer hole 1's line than either hole's end points.
+		const g = hole(
+			[
+				{
+					type: "way",
+					id: 40,
+					tags: { golf: "bunker" },
+					geometry: box(0.0015, 0.0003),
+				},
+			],
+			"1",
+		);
+		expect(g.bunkers).toHaveLength(1);
+	});
+
+	it("applies overrides: line, tee boxes, green and added hazards", () => {
+		const back = { lat: 51.9995, lng: 5.9 };
+		const ring = [
+			back,
+			{ lat: 51.9996, lng: 5.9 },
+			{ lat: 51.9996, lng: 5.9001 },
+		];
+		const g = hole([], "1", {
+			"1": {
+				holeLine: [back, { lat: 52, lng: 5.9 }, { lat: 52.003, lng: 5.9 }],
+				teeBoxes: [{ position: back, colors: ["white"] }],
+				green: ring,
+				water: [ring],
+				bunkers: [ring],
+			},
+		});
+		expect(g.holeLine[0]).toEqual(back);
+		expect(g.teeBoxes).toEqual([{ position: back, colors: ["white"] }]);
+		expect(g.greens).toEqual([ring]);
+		expect(g.water).toEqual([ring]);
+		expect(g.bunkers).toEqual([ring]);
+	});
+
+	it("drops an OSM tee ring no corrected tee box stands on", () => {
+		const at = (lat: number) => [
+			{ lat, lon: 5.9 },
+			{ lat: lat + 0.00002, lon: 5.9 },
+			{ lat, lon: 5.90002 },
+		];
+		const onBox = at(52);
+		const stale = at(52.001);
+		const g = hole(
+			[
+				{ type: "way", id: 90, tags: { golf: "tee" }, geometry: onBox },
+				{ type: "way", id: 91, tags: { golf: "tee" }, geometry: stale },
+			],
+			"1",
+			{
+				"1": {
+					teeBoxes: [{ position: { lat: 52, lng: 5.9 }, colors: ["white"] }],
+				},
+			},
+		);
+		expect(g.tees).toHaveLength(1);
+		expect(g.tees[0][0].lat).toBe(52);
+	});
+});

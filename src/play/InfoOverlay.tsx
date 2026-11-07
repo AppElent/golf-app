@@ -1,12 +1,16 @@
 import { type Club, suggestClub } from "@fairway/core/club-suggest";
 import {
-	carryDistances,
 	GPS_WEAK_ACCURACY_M,
 	haversineMeters,
 	type LatLng,
 } from "@fairway/core/geo";
 import type { Point, Projector } from "@fairway/core/hole-projection";
-import type { HoleGeometry, HoleNumbers } from "@fairway/core/hole-view";
+import {
+	type HazardInPlay,
+	type HoleGeometry,
+	type HoleNumbers,
+	hazardsInPlay,
+} from "@fairway/core/hole-view";
 import { MAP_HEIGHT, MAP_WIDTH } from "./defs";
 
 export function InfoOverlay({
@@ -45,7 +49,7 @@ export function InfoOverlay({
 			/>
 			<DistanceLadder
 				numbers={numbers}
-				hazards={hazardChips(position, geometry, numbers.back)}
+				hazards={hazardsInPlay(position, green, geometry, { limit: 3 })}
 			/>
 			{measure ? (
 				<MeasureMarker
@@ -80,32 +84,6 @@ export function InfoOverlay({
 			/>
 		</g>
 	);
-}
-
-interface HazardChip {
-	label: string;
-	reach: number;
-	carry: number;
-}
-
-/** Not core's `hazardsInPlay`, which also drops hazards behind you or past the
- *  green and caps at 330 m; merging the two would change what this ladder lists. */
-function hazardChips(
-	position: LatLng,
-	geometry: HoleGeometry,
-	back: number,
-): HazardChip[] {
-	return [
-		...geometry.water.map((ring) => ({ ring, label: "Water" })),
-		...geometry.bunkers.map((ring) => ({ ring, label: "Bunker" })),
-	]
-		.map(({ ring, label }) => ({
-			label,
-			...carryDistances(position, ring),
-		}))
-		.filter((h) => h.carry > 30 && h.reach < back)
-		.sort((a, b) => a.reach - b.reach)
-		.slice(0, 3);
 }
 
 function DistanceArcs({ center, scale }: { center: Point; scale: number }) {
@@ -230,7 +208,7 @@ function DistanceLadder({
 	hazards,
 }: {
 	numbers: HoleNumbers;
-	hazards: HazardChip[];
+	hazards: HazardInPlay[];
 }) {
 	return (
 		<g transform="translate(12, 14)">
@@ -244,11 +222,12 @@ function DistanceLadder({
 			<LadderRow y={52} label="FRONT" value={Math.round(numbers.front)} />
 			{hazards.map((h, i) => (
 				<g
-					key={`hz-${h.label}-${h.reach}-${h.carry}`}
+					key={`hz-${h.kind}-${h.at.lat},${h.at.lng}`}
 					transform={`translate(0, ${84 + i * 20})`}
 				>
 					<text fontSize={9} fill="#fff" opacity={0.8}>
-						{h.label} {Math.round(h.reach)}–{Math.round(h.carry)} m
+						{h.kind === "water" ? "Water" : "Bunker"} {Math.round(h.reach)}–
+						{Math.round(h.carry)} m
 					</text>
 				</g>
 			))}

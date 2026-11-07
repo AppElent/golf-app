@@ -2,10 +2,12 @@ import {
 	EARTH_RADIUS_M,
 	haversineMeters,
 	type LatLng,
+	locateOnPolyline,
 	polygonCentroid,
+	projectToLocal,
 	toRad,
 } from "./geo.ts";
-import type { HoleGeometry } from "./hole-view.ts";
+import type { HoleGeometry, TeeBox } from "./hole-view.ts";
 
 export interface NormalizedHole {
 	number: number;
@@ -17,11 +19,32 @@ export interface OsmHoleGeometry extends HoleGeometry {
 	ref: string;
 	holeNumber: number;
 	holeLine: LatLng[];
+	teeBoxes: TeeBox[];
 }
 
 export interface NormalizedCourse {
 	holes: NormalizedHole[];
 	geometry: OsmHoleGeometry[];
+}
+
+/**
+ * A reviewed correction to one hole, for what OpenStreetMap lacks: positions
+ * read off the aerial photo and checked against the club's scorecard.
+ */
+/** A tee ring further than this from every corrected tee box is another tee. */
+const TEE_RING_MATCH_M = 30;
+
+export interface HoleOverride {
+	/** The real line of play, tee to green, with its doglegs. */
+	holeLine?: LatLng[];
+	/** Replaces every tee box OSM has for the hole. */
+	teeBoxes?: TeeBox[];
+	/** The green's outline, for a hole OSM has none for. */
+	green?: LatLng[];
+	/** Water OSM lacks, added to the hole's. */
+	water?: LatLng[][];
+	/** Bunkers OSM lacks, added to the hole's. */
+	bunkers?: LatLng[][];
 }
 
 // OSM tag lookups are effectively optional; JSON imports also infer `undefined`
@@ -44,12 +67,19 @@ interface OverpassGeom {
 	lat: number;
 	lon: number;
 }
+interface OverpassMember {
+	type: string;
+	role?: string;
+	geometry?: OverpassGeom[];
+}
 interface OverpassElement {
 	type: string;
 	id: number;
 	tags?: Tags;
 	geometry?: OverpassGeom[];
-	/** Nodes (`golf=pin`) carry a position instead of a geometry. */
+	/** Relations (multipolygons) carry their ways as members. */
+	members?: OverpassMember[];
+	/** Nodes (`golf=pin`, `golf=tee`) carry a position instead of a geometry. */
 	lat?: number;
 	lon?: number;
 }
@@ -58,27 +88,58 @@ const toLatLng = (g: OverpassGeom): LatLng => ({ lat: g.lat, lng: g.lon });
 const geomOf = (el: OverpassElement): LatLng[] =>
 	(el.geometry ?? []).map(toLatLng);
 
-/** Nearest hole ref to a feature centroid, by distance to hole-line vertices. */
-function nearestHoleRef(
-	point: LatLng,
-	holeLines: ReadonlyArray<{ ref: string; line: LatLng[] }>,
-): string {
-	let bestRef = holeLines[0]?.ref ?? "";
-	let bestDist = Number.POSITIVE_INFINITY;
-	for (const hole of holeLines) {
-		for (const vertex of hole.line) {
-			const d = haversineMeters(point, vertex);
-			if (d < bestDist) {
-				bestDist = d;
-				bestRef = hole.ref;
+const samePoint = (a: LatLng, b: LatLng) => a.lat === b.lat && a.lng === b.lng;
+
+/** Join a multipolygon's outer ways into closed rings. */
+function outerRings(el: OverpassElement): LatLng[][] {
+	const open = (el.members ?? [])
+		.filter((m) => m.type === "way" && m.role !== "inner" && m.geometry)
+		.map((m) => (m.geometry as OverpassGeom[]).map(toLatLng));
+	const rings: LatLng[][] = [];
+	while (open.length > 0) {
+		let ring = open.shift() as LatLng[];
+		for (
+			let found = true;
+			found && !samePoint(ring[0], ring.at(-1) as LatLng);
+		) {
+			found = false;
+			const end = ring.at(-1) as LatLng;
+			const next = open.findIndex(
+				(way) => samePoint(way[0], end) || samePoint(way.at(-1) as LatLng, end),
+			);
+			if (next >= 0) {
+				const [way] = open.splice(next, 1);
+				const forward = samePoint(way[0], end) ? way : [...way].reverse();
+				ring = [...ring, ...forward.slice(1)];
+				found = true;
 			}
 		}
+		rings.push(ring);
 	}
-	return bestRef;
+	return rings;
 }
 
-/** A green further than this from every hole's end is a practice green. */
-const GREEN_MATCH_METERS = 60;
+const polygonsOf = (el: OverpassElement): LatLng[][] =>
+	el.type === "relation" ? outerRings(el) : [geomOf(el)];
+
+/** A long, thin polygon around a line: how a ditch (mapped as a line) is drawn
+ *  and measured alongside the ponds. */
+function stripAround(line: ReadonlyArray<LatLng>, widthM: number): LatLng[] {
+	const origin = line[0];
+	const dLat = (widthM / 2 / EARTH_RADIUS_M) * (180 / Math.PI);
+	const dLng = dLat / Math.cos(toRad(origin.lat));
+	const offsets = line.map((p, i) => {
+		const a = projectToLocal(origin, line[Math.max(0, i - 1)]);
+		const b = projectToLocal(origin, line[Math.min(line.length - 1, i + 1)]);
+		const len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+		return { p, nx: -(b.y - a.y) / len, ny: (b.x - a.x) / len };
+	});
+	const side = (sign: number) => (o: (typeof offsets)[number]) => ({
+		lat: o.p.lat + sign * o.ny * dLat,
+		lng: o.p.lng + sign * o.nx * dLng,
+	});
+	return [...offsets.map(side(1)), ...[...offsets].reverse().map(side(-1))];
+}
 
 function pointInPolygon(point: LatLng, ring: ReadonlyArray<LatLng>): boolean {
 	let inside = false;
@@ -101,6 +162,32 @@ function distanceToRing(point: LatLng, ring: ReadonlyArray<LatLng>): number {
 	if (pointInPolygon(point, ring)) return 0;
 	return Math.min(...ring.map((v) => haversineMeters(point, v)));
 }
+
+/** Shortest distance from a hole line to a feature: 0 when the line runs over
+ *  it. Rough for a sparse ring, which golf features are not. */
+function lineToRing(
+	line: ReadonlyArray<LatLng>,
+	ring: ReadonlyArray<LatLng>,
+): number {
+	return Math.min(
+		...ring.map((p) => locateOnPolyline(p, line).offset),
+		...line.map((p) => distanceToRing(p, ring)),
+	);
+}
+
+/** Pairs a feature with the hole it lies along: its mean distance to the line. */
+function meanOffset(
+	line: ReadonlyArray<LatLng>,
+	ring: ReadonlyArray<LatLng>,
+): number {
+	return (
+		ring.reduce((sum, p) => sum + locateOnPolyline(p, line).offset, 0) /
+		ring.length
+	);
+}
+
+/** A green further than this from every hole's end is a practice green. */
+const GREEN_MATCH_METERS = 60;
 
 /**
  * Pair holes with candidates (greens, pins) by the distance from a hole's end:
@@ -172,21 +259,62 @@ function circleAround(center: LatLng, radiusM: number): LatLng[] {
 	});
 }
 
-const isWater = (tags: Tags | undefined): boolean =>
+const isWaterArea = (tags: Tags | undefined): boolean =>
 	tags !== undefined &&
 	(tags.golf === "water_hazard" ||
 		tags.golf === "lateral_water_hazard" ||
 		tags.natural === "water");
 
+/** Open water mapped as a line; a culvert under a fairway is not in play. */
+const isDitch = (el: OverpassElement): boolean =>
+	el.type === "way" &&
+	(el.tags?.waterway === "ditch" ||
+		el.tags?.waterway === "stream" ||
+		el.tags?.waterway === "drain") &&
+	el.tags?.tunnel === undefined;
+
+const DITCH_WIDTH_M = 3;
+/** Hazards this close to a hole's line are in play on it, whichever hole they
+ *  are nearest: a pond between two fairways belongs to both. */
+const WATER_CORRIDOR_M = 40;
+const BUNKER_CORRIDOR_M = 30;
+/** A tee further than this from every hole's start is not a tee of this course. */
+const TEE_MATCH_METERS = 130;
+/** A tee node on a mapped tee polygon marks the same box. */
+const TEE_NODE_ON_BOX_M = 8;
+
+/** The holes a hazard is in play on, or the single nearest when it's on none. */
+function holesAlong(
+	ring: ReadonlyArray<LatLng>,
+	holeLines: ReadonlyArray<{ ref: string; line: LatLng[] }>,
+	corridor: number,
+): string[] {
+	const distances = holeLines
+		.filter((h) => h.line.length > 1)
+		.map((h) => ({ ref: h.ref, d: lineToRing(h.line, ring) }));
+	const along = distances.filter((h) => h.d <= corridor).map((h) => h.ref);
+	if (along.length > 0) return along;
+	const nearest = distances.reduce((a, b) => (b.d < a.d ? b : a), distances[0]);
+	return nearest ? [nearest.ref] : [];
+}
+
+const teeColors = (tags: Tags | undefined): string[] =>
+	(tags?.tee ?? "")
+		.split(";")
+		.map((color) => color.trim())
+		.filter(Boolean);
+
 /**
  * Turn raw Overpass elements (from `out geom tags` over a course area) into
- * normalized holes + per-hole geometry. Area features (green/fairway/bunker/
- * tee/water) are bucketed onto the nearest `golf=hole` line, keyed by ref.
- * `rough`, paths, and driving ranges are intentionally dropped. Only geometry
- * comes from OSM: par, stroke index and lengths are curated in convex/catalog.
+ * normalized holes + per-hole geometry, keyed by ref. Fairways go to the hole
+ * they lie along, tees to the hole starting nearest, water and bunkers to every
+ * hole they are in play on. `rough`, paths, and driving ranges are intentionally
+ * dropped. Only geometry comes from OSM: par, stroke index and lengths are
+ * curated in convex/catalog; `overrides` replace what OSM has wrong or lacks.
  */
 export function normalizeCourse(
 	elements: ReadonlyArray<OverpassElement>,
+	overrides: Readonly<Record<string, HoleOverride>> = {},
 ): NormalizedCourse {
 	const holeElements = elements.filter((e) => e.tags?.golf === "hole");
 
@@ -194,7 +322,8 @@ export function normalizeCourse(
 	// not scorecard holes — drop them so they neither appear nor attract features.
 	const holes: NormalizedHole[] = holeElements
 		.map((el) => ({ ...parseHoleRef(el.tags?.ref), line: geomOf(el) }))
-		.filter((h) => h.number >= 1);
+		.filter((h) => h.number >= 1)
+		.map((h) => ({ ...h, line: overrides[h.ref]?.holeLine ?? h.line }));
 
 	// Bucket geometry by ref (unique per physical hole across loops).
 	const geometry = new Map<string, OsmHoleGeometry>();
@@ -208,6 +337,7 @@ export function normalizeCourse(
 				greens: [],
 				bunkers: [],
 				tees: [],
+				teeBoxes: [],
 				water: [],
 			});
 		}
@@ -216,11 +346,13 @@ export function normalizeCourse(
 	const holeLines = holes.map((h) => ({ ref: h.ref, line: h.line }));
 
 	// Greens are matched to the hole line that ends on them, one green per
-	// hole: the nearest-vertex rule below hands practice greens and the green
-	// of a hole running past to the wrong hole.
+	// hole: anything looser hands practice greens and the green of a hole running
+	// past to the wrong hole.
 	const greens = elements.filter(
 		(el) =>
-			el.tags?.golf === "green" && !isWater(el.tags) && geomOf(el).length > 2,
+			el.tags?.golf === "green" &&
+			!isWaterArea(el.tags) &&
+			geomOf(el).length > 2,
 	);
 	const greenRings = greens.map(geomOf);
 	const matchedGreens = pairClosest(
@@ -265,20 +397,105 @@ export function normalizeCourse(
 		if (reversed) target.holeLine = [...target.holeLine].reverse();
 	}
 
+	// Everything below reads the lines tee → green.
+	const directed = [...geometry.values()].map((g) => ({
+		ref: g.ref,
+		line: g.holeLine,
+	}));
+
+	const assignTee = (position: LatLng, ring: LatLng[] | null, tags?: Tags) => {
+		let best: { ref: string; d: number } | null = null;
+		for (const { ref, line } of directed) {
+			const d = haversineMeters(position, line[0]);
+			if (d <= TEE_MATCH_METERS && (!best || d < best.d)) best = { ref, d };
+		}
+		if (!best) return;
+		const target = geometry.get(best.ref);
+		if (!target) return;
+		if (ring) target.tees.push(ring);
+		target.teeBoxes.push({ position, colors: teeColors(tags) });
+	};
+
+	const teeRings = elements.filter(
+		(el) => el.tags?.golf === "tee" && el.type !== "node",
+	);
+	const ringList = teeRings.flatMap(polygonsOf).filter((r) => r.length > 2);
+	teeRings.forEach((el) => {
+		for (const ring of polygonsOf(el)) {
+			if (ring.length > 2) assignTee(polygonCentroid(ring), ring, el.tags);
+		}
+	});
+	for (const el of elements) {
+		if (el.type !== "node" || el.tags?.golf !== "tee") continue;
+		if (el.lat === undefined || el.lon === undefined) continue;
+		const position = { lat: el.lat, lng: el.lon };
+		const onBox = ringList.some(
+			(ring) => distanceToRing(position, ring) <= TEE_NODE_ON_BOX_M,
+		);
+		if (!onBox) assignTee(position, null, el.tags);
+	}
+
 	for (const el of elements) {
 		const golf = el.tags?.golf;
-		if (!golf || golf === "hole" || golf === "green") continue;
-		const poly = geomOf(el);
-		if (poly.length < 2) continue;
-		const target = geometry.get(
-			nearestHoleRef(polygonCentroid(poly), holeLines),
-		);
-		if (!target) continue;
-		if (isWater(el.tags ?? {})) target.water.push(poly);
-		else if (golf === "fairway") target.fairways.push(poly);
-		else if (golf === "bunker") target.bunkers.push(poly);
-		else if (golf === "tee") target.tees.push(poly);
+		if (isDitch(el)) {
+			const line = geomOf(el);
+			if (line.length < 2) continue;
+			const strip = stripAround(line, DITCH_WIDTH_M);
+			const along = directed
+				.filter((h) => lineToRing(h.line, strip) <= WATER_CORRIDOR_M)
+				.map((h) => h.ref);
+			for (const ref of along) geometry.get(ref)?.water.push(strip);
+			continue;
+		}
+		if (isWaterArea(el.tags) && el.tags?.tunnel === undefined) {
+			for (const ring of polygonsOf(el)) {
+				if (ring.length < 3) continue;
+				const along = directed
+					.filter((h) => lineToRing(h.line, ring) <= WATER_CORRIDOR_M)
+					.map((h) => h.ref);
+				for (const ref of along) geometry.get(ref)?.water.push(ring);
+			}
+			continue;
+		}
+		if (golf === "bunker") {
+			for (const ring of polygonsOf(el)) {
+				if (ring.length < 3) continue;
+				for (const ref of holesAlong(ring, directed, BUNKER_CORRIDOR_M)) {
+					geometry.get(ref)?.bunkers.push(ring);
+				}
+			}
+			continue;
+		}
+		if (golf === "fairway") {
+			for (const ring of polygonsOf(el)) {
+				if (ring.length < 3 || directed.length === 0) continue;
+				const nearest = directed.reduce((a, b) =>
+					meanOffset(b.line, ring) < meanOffset(a.line, ring) ? b : a,
+				);
+				geometry.get(nearest.ref)?.fairways.push(ring);
+			}
+		}
 		// rough / path / cartpath / driving_range: dropped by design.
+	}
+
+	for (const [ref, override] of Object.entries(overrides)) {
+		const target = geometry.get(ref);
+		if (!target) continue;
+		const boxes = override.teeBoxes;
+		if (boxes) {
+			target.teeBoxes = boxes;
+			// A ring no corrected box stands on is OSM's wrong tee: don't draw it.
+			target.tees = target.tees.filter((ring) =>
+				boxes.some(
+					(box) =>
+						haversineMeters(box.position, polygonCentroid(ring)) <=
+						TEE_RING_MATCH_M,
+				),
+			);
+		}
+		if (override.green) target.greens = [override.green];
+		target.water.push(...(override.water ?? []));
+		target.bunkers.push(...(override.bunkers ?? []));
 	}
 
 	return { holes, geometry: [...geometry.values()] };

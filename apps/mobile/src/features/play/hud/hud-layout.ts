@@ -9,6 +9,10 @@ export const hudLayout = {
 	distancesTop: 104,
 	/** The club tray and next-tee offer, just above the bottom bar. */
 	trayBottom: 64,
+	/** Below the simulation banner, which takes the GPS pill's place. */
+	gpsPillBelowBanner: 36,
+	/** The simulation controls' two rows, above the bottom bar. */
+	simulationPanel: 104,
 	noMapTop: 80,
 	canvasTop: 64,
 	canvasBottom: 72,

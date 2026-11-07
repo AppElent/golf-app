@@ -28,6 +28,7 @@ export const scorecardEn = {
 	finish: "Finish round",
 	finishTitle: "Finish this round?",
 	finishMessage: "Totals and your handicap differential are stored.",
+	finishSimulationMessage: "This ends the simulation. Nothing is saved.",
 	finishMissing: {
 		one: "{count} hole has no score for you. It counts as not played.",
 		other: "{count} holes have no score for you. They count as not played.",
@@ -70,6 +71,8 @@ export const scorecardNl: typeof scorecardEn = {
 	finish: "Ronde afronden",
 	finishTitle: "Deze ronde afronden?",
 	finishMessage: "Totalen en je handicapdifferential worden opgeslagen.",
+	finishSimulationMessage:
+		"Hiermee stopt de simulatie. Er wordt niets opgeslagen.",
 	finishMissing: {
 		one: "{count} hole heeft geen score van jou. Die telt als niet gespeeld.",
 		other:

@@ -418,6 +418,26 @@ describe("course copies", () => {
 		expect(await alice.query(api.rounds.active, {})).not.toBeNull();
 	});
 
+	it("deletes a copy with only a simulation on it, simulation included", async () => {
+		const { t, alice, course } = await setup();
+		const copyId = await alice.mutation(api.courses.fork, {
+			courseId: course.course._id,
+		});
+		const copy = await alice.query(api.courses.get, { courseId: copyId });
+		if (!copy) throw new Error("copy missing");
+		await alice.mutation(api.rounds.start, {
+			courseId: copy.course._id,
+			teeId: copy.tees[0]._id,
+			holeRefs: copy.holes.flatMap((h) => (h.ref ? [h.ref] : [])),
+			format: "stroke",
+			players: [{ name: "Alice" }],
+			simulated: true,
+		});
+		await alice.mutation(api.courses.remove, { courseId: copyId });
+		expect(await alice.query(api.rounds.activeSimulation, {})).toBeNull();
+		expect(await t.run((ctx) => ctx.db.get(copyId))).toBeNull();
+	});
+
 	it("retires a copy finished rounds were played on", async () => {
 		const { alice, course, copyId, roundId } = await playOnCopy();
 		await alice.mutation(api.rounds.finish, { roundId });
@@ -568,5 +588,136 @@ describe("account", () => {
 		expect(await alice.query(api.courses.get, { courseId: catalogId })).toEqual(
 			course,
 		);
+	});
+});
+
+describe("simulated rounds", () => {
+	async function startSimulation(
+		who: Awaited<ReturnType<typeof setup>>["alice"],
+		course: NonNullable<Awaited<ReturnType<typeof setup>>["course"]>,
+	) {
+		return await who.mutation(api.rounds.start, {
+			courseId: course.course._id,
+			teeId: course.tees[0]._id,
+			holeRefs: course.holes.slice(0, 9).flatMap((h) => (h.ref ? [h.ref] : [])),
+			format: "stroke",
+			players: [{ name: "Alice", handicapIndex: 3 }],
+			simulated: true,
+		});
+	}
+
+	it("runs alongside a real round without touching it", async () => {
+		const { alice, course } = await setup();
+		const real = await startRound(alice, course);
+		const sim = await startSimulation(alice, course);
+		expect((await alice.query(api.rounds.active, {}))?.round._id).toBe(real);
+		expect(
+			(await alice.query(api.rounds.activeSimulation, {}))?.round._id,
+		).toBe(sim);
+	});
+
+	it("keeps out of the active round, and a real round can still start", async () => {
+		const { alice, course } = await setup();
+		await startSimulation(alice, course);
+		expect(await alice.query(api.rounds.active, {})).toBeNull();
+		await expect(startRound(alice, course)).resolves.toBeTruthy();
+	});
+
+	it("leaves the profile's handicap alone", async () => {
+		const { alice, course } = await setup();
+		await startSimulation(alice, course);
+		expect((await alice.query(api.settings.get, {})).handicapIndex).toBeNull();
+	});
+
+	it("replaces the previous simulation, deleting its scores and shots", async () => {
+		const { t, alice, course } = await setup();
+		const first = await startSimulation(alice, course);
+		await alice.mutation(api.rounds.setScore, {
+			roundId: first,
+			holeIndex: 0,
+			playerIndex: 0,
+			strokes: 4,
+		});
+		await alice.mutation(api.shots.mark, {
+			roundId: first,
+			holeIndex: 0,
+			position: { lat: 52, lng: 5.9 },
+		});
+		const second = await startSimulation(alice, course);
+		expect(second).not.toBe(first);
+		const left = await t.run(async (ctx) => ({
+			round: await ctx.db.get(first),
+			scores: await ctx.db.query("holeScores").collect(),
+			shots: await ctx.db.query("shots").collect(),
+		}));
+		expect(left).toEqual({ round: null, scores: [], shots: [] });
+	});
+
+	it("accepts a queued score for a deleted simulation, storing nothing", async () => {
+		const { t, alice, course } = await setup();
+		const roundId = await startSimulation(alice, course);
+		await alice.mutation(api.rounds.abandon, { roundId });
+		await alice.mutation(api.rounds.setScore, {
+			roundId,
+			holeIndex: 0,
+			playerIndex: 0,
+			strokes: 4,
+		});
+		const scores = await t.run((ctx) => ctx.db.query("holeScores").collect());
+		expect(scores).toEqual([]);
+	});
+
+	it("never reaches history, stats or the learned bag", async () => {
+		const { alice, course } = await setup();
+		const roundId = await startSimulation(alice, course);
+		await alice.mutation(api.rounds.setScore, {
+			roundId,
+			holeIndex: 0,
+			playerIndex: 0,
+			strokes: 4,
+		});
+		await alice.mutation(api.shots.mark, {
+			roundId,
+			holeIndex: 0,
+			position: { lat: 52, lng: 5.9 },
+			club: "7i",
+		});
+		expect(await alice.query(api.shots.mine, {})).toEqual([]);
+		expect(await alice.query(api.shots.forRound, { roundId })).toHaveLength(1);
+
+		await alice.mutation(api.rounds.finish, { roundId });
+		expect(await alice.query(api.rounds.activeSimulation, {})).toBeNull();
+		expect(await alice.query(api.rounds.detail, { roundId })).toBeNull();
+		expect(await alice.query(api.rounds.history, {})).toEqual([]);
+		expect(await alice.query(api.rounds.holeResults, {})).toEqual([]);
+	});
+
+	it("is private to its owner, and needs a session", async () => {
+		const { t, alice, bob, course } = await setup();
+		const roundId = await startSimulation(alice, course);
+		expect(await bob.query(api.rounds.activeSimulation, {})).toBeNull();
+		await expect(bob.mutation(api.rounds.finish, { roundId })).rejects.toThrow(
+			"Round not found.",
+		);
+		await expect(t.query(api.rounds.activeSimulation, {})).rejects.toThrow(
+			"Not signed in.",
+		);
+	});
+
+	it("shows the card length of the round's tee", async () => {
+		const { alice, course } = await setup();
+		const white = course.tees.find((tee) => tee.marker === "white");
+		if (!white) throw new Error("no white tee");
+		await alice.mutation(api.rounds.start, {
+			courseId: course.course._id,
+			teeId: white._id,
+			holeRefs: ["1"],
+			format: "stroke",
+			players: [{ name: "Alice" }],
+		});
+		const active = await alice.query(api.rounds.active, {});
+		const hole = course.holes.find((h) => h.ref === "1");
+		expect(active?.holes[0].lengthMeters).toBe(hole?.lengths?.white);
+		expect(active?.holes[0].lengthMeters).not.toBe(hole?.lengthMeters);
 	});
 });

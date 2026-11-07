@@ -10,6 +10,14 @@ function ringKey(ring: ReadonlyArray<LatLng>): string {
 	return `${first.lat.toFixed(6)},${first.lng.toFixed(6)}`;
 }
 
+const TEE_FILL: Readonly<Record<string, string>> = {
+	white: "#ffffff",
+	yellow: "#ffd400",
+	blue: "#2f8fff",
+	red: "#ff3b30",
+	orange: "#ff9500",
+};
+
 function toPath(ring: ReadonlyArray<LatLng>, proj: Projector): string {
 	if (ring.length === 0) return "";
 	return `${ring
@@ -71,6 +79,22 @@ export function GroundLayer({
 					strokeLinejoin="round"
 				/>
 			))}
+
+			{(geometry.teeBoxes ?? []).map((box) => {
+				const at = proj.project(box.position);
+				return (
+					<circle
+						key={`tee-${box.position.lat},${box.position.lng}`}
+						data-tee={box.colors.join(" ")}
+						cx={at.x}
+						cy={at.y}
+						r={4.5}
+						fill={TEE_FILL[box.colors[0]] ?? "#ffffff"}
+						stroke="var(--color-ink)"
+						strokeWidth={1}
+					/>
+				);
+			})}
 
 			{geometry.greens.map((ring) => {
 				const d = toPath(ring, proj);

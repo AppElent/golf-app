@@ -3,7 +3,7 @@
 	"name": "Golfbaan Landgoed Welderen · Par 3-4 baan",
 	"city": "Elst",
 	"osmRelationId": 901850,
-	"notes": "9 holes. Stroke index: the first-loop value from the card (pairs like 17/18). Ratings are 9-hole values (2023). Hole data from the 2016 card.",
+	"notes": "9 holes. Stroke index: the first-loop value from the card (pairs like 17/18). Ratings are 9-hole values (2023). Hole data from the 2016 card, its M and L columns as the geel and rood tees.",
 	"sources": [
 		"https://welderen.nl/wp-content/uploads/2017/01/3721-welderen-scorepar3-4.pdf",
 		"https://welderen.nl/wp-content/uploads/2023/10/Welderen-Par-3-4-Baan-Dames-Heren.pdf"
@@ -13,25 +13,29 @@
 			"name": "Geel · heren",
 			"color": "#f2c94c",
 			"courseRating": 26.7,
-			"slopeRating": 84
+			"slopeRating": 84,
+			"marker": "yellow"
 		},
 		{
 			"name": "Rood · dames",
 			"color": "#d64545",
 			"courseRating": 27.5,
-			"slopeRating": 84
+			"slopeRating": 84,
+			"marker": "red"
 		},
 		{
 			"name": "Geel · dames",
 			"color": "#f2c94c",
 			"courseRating": 27.8,
-			"slopeRating": 85
+			"slopeRating": 85,
+			"marker": "yellow"
 		},
 		{
 			"name": "Rood · heren",
 			"color": "#d64545",
 			"courseRating": 26.3,
-			"slopeRating": 83
+			"slopeRating": 83,
+			"marker": "red"
 		}
 	],
 	"holes": [
@@ -40,63 +44,99 @@
 			"ref": "(1)",
 			"par": 3,
 			"strokeIndex": 17,
-			"lengthMeters": 101
+			"lengthMeters": 101,
+			"lengths": {
+				"yellow": 101,
+				"red": 95
+			}
 		},
 		{
 			"number": 2,
 			"ref": "(2)",
 			"par": 4,
 			"strokeIndex": 7,
-			"lengthMeters": 237
+			"lengthMeters": 237,
+			"lengths": {
+				"yellow": 237,
+				"red": 230
+			}
 		},
 		{
 			"number": 3,
 			"ref": "(3)",
 			"par": 3,
 			"strokeIndex": 11,
-			"lengthMeters": 130
+			"lengthMeters": 130,
+			"lengths": {
+				"yellow": 130,
+				"red": 120
+			}
 		},
 		{
 			"number": 4,
 			"ref": "(4)",
 			"par": 3,
 			"strokeIndex": 13,
-			"lengthMeters": 110
+			"lengthMeters": 110,
+			"lengths": {
+				"yellow": 110,
+				"red": 102
+			}
 		},
 		{
 			"number": 5,
 			"ref": "(5)",
 			"par": 3,
 			"strokeIndex": 15,
-			"lengthMeters": 71
+			"lengthMeters": 71,
+			"lengths": {
+				"yellow": 71,
+				"red": 67
+			}
 		},
 		{
 			"number": 6,
 			"ref": "(6)",
 			"par": 3,
 			"strokeIndex": 1,
-			"lengthMeters": 158
+			"lengthMeters": 158,
+			"lengths": {
+				"yellow": 158,
+				"red": 154
+			}
 		},
 		{
 			"number": 7,
 			"ref": "(7)",
 			"par": 4,
 			"strokeIndex": 3,
-			"lengthMeters": 230
+			"lengthMeters": 230,
+			"lengths": {
+				"yellow": 230,
+				"red": 226
+			}
 		},
 		{
 			"number": 8,
 			"ref": "(8)",
 			"par": 3,
 			"strokeIndex": 5,
-			"lengthMeters": 80
+			"lengthMeters": 80,
+			"lengths": {
+				"yellow": 80,
+				"red": 76
+			}
 		},
 		{
 			"number": 9,
 			"ref": "(9)",
 			"par": 3,
 			"strokeIndex": 9,
-			"lengthMeters": 100
+			"lengthMeters": 100,
+			"lengths": {
+				"yellow": 100,
+				"red": 93
+			}
 		}
 	]
 }

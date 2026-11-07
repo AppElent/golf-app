@@ -6,6 +6,7 @@ import { ServiceWorker } from "../components/ServiceWorker";
 import { AuthGate } from "../integrations/clerk/auth-gate";
 import ClerkProvider from "../integrations/clerk/provider";
 import ConvexProvider from "../integrations/convex/provider";
+import { SimulationModeProvider } from "../play/simulation";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -37,9 +38,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			<body>
 				<ClerkProvider>
 					<ConvexProvider>
-						<div className="relative mx-auto min-h-dvh w-full max-w-[430px] bg-cream shadow-2xl">
-							<AuthGate>{children}</AuthGate>
-						</div>
+						<SimulationModeProvider>
+							<div className="relative mx-auto min-h-dvh w-full max-w-[430px] bg-cream shadow-2xl">
+								<AuthGate>{children}</AuthGate>
+							</div>
+						</SimulationModeProvider>
 						<BottomNav />
 						<ServiceWorker />
 						<TanStackDevtools

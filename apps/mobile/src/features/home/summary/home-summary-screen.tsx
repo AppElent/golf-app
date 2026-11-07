@@ -50,7 +50,9 @@ export function HomeSummaryScreen() {
 				>
 					<View style={styles.resumeText}>
 						<AppText variant="label" style={styles.resumeEyebrow}>
-							{t.home.resumeTitle}
+							{active.round.simulated
+								? t.home.resumeSimulation
+								: t.home.resumeTitle}
 						</AppText>
 						<AppText variant="heading" style={styles.onAccent}>
 							{active.course.name}

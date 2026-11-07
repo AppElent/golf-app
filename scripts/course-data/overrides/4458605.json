@@ -1,0 +1,1103 @@
+{
+	"method": "Tee boxes re-assigned to the mown pads visible on PDOK 8 cm aerial photos and checked against the 2025 scorecards; orange tees with no visible pad are placed at their card length along the line; hole lines keep the OSM corners but end on the green centre where OSM stops more than 5 m short; hole (5) has its corner moved to the fairway centre south of the lake.",
+	"inferred": {
+		"boxesPerHole": {
+			"1": 1,
+			"2": 1,
+			"4": 1,
+			"5": 1,
+			"6": 1,
+			"7": 1,
+			"8": 1,
+			"9": 1,
+			"11": 1,
+			"12": 1,
+			"13": 1,
+			"14": 1,
+			"16": 1,
+			"18": 1
+		},
+		"checkOnCourse": [
+			"The inferred box on each of these holes is orange: no pad visible, placed at its card length along the line, so its length check proves nothing",
+			"(7): both colours are on a pad in deep shade"
+		]
+	},
+	"holes": {
+		"1": {
+			"holeLine": [
+				{
+					"lat": 51.620865,
+					"lng": 4.869812
+				},
+				{
+					"lat": 51.618986,
+					"lng": 4.86856
+				},
+				{
+					"lat": 51.6177,
+					"lng": 4.868522
+				}
+			],
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.62083,
+						"lng": 4.8698
+					},
+					"colors": [
+						"white",
+						"yellow"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.62049,
+						"lng": 4.86912
+					},
+					"colors": [
+						"blue",
+						"red"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.619964,
+						"lng": 4.869212
+					},
+					"colors": [
+						"orange"
+					]
+				}
+			]
+		},
+		"2": {
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.61706,
+						"lng": 4.86821
+					},
+					"colors": [
+						"white"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61707,
+						"lng": 4.86849
+					},
+					"colors": [
+						"yellow"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61715,
+						"lng": 4.86882
+					},
+					"colors": [
+						"blue"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.6173,
+						"lng": 4.86913
+					},
+					"colors": [
+						"red"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.617364,
+						"lng": 4.869844
+					},
+					"colors": [
+						"orange"
+					]
+				}
+			],
+			"bunkers": [
+				[
+					{
+						"lat": 51.61739,
+						"lng": 4.87133
+					},
+					{
+						"lat": 51.61741,
+						"lng": 4.871313
+					},
+					{
+						"lat": 51.617425,
+						"lng": 4.871268
+					},
+					{
+						"lat": 51.61743,
+						"lng": 4.871205
+					},
+					{
+						"lat": 51.617425,
+						"lng": 4.871142
+					},
+					{
+						"lat": 51.61741,
+						"lng": 4.871097
+					},
+					{
+						"lat": 51.61739,
+						"lng": 4.87108
+					},
+					{
+						"lat": 51.61737,
+						"lng": 4.871097
+					},
+					{
+						"lat": 51.617355,
+						"lng": 4.871142
+					},
+					{
+						"lat": 51.61735,
+						"lng": 4.871205
+					},
+					{
+						"lat": 51.617355,
+						"lng": 4.871268
+					},
+					{
+						"lat": 51.61737,
+						"lng": 4.871313
+					},
+					{
+						"lat": 51.61739,
+						"lng": 4.87133
+					}
+				]
+			]
+		},
+		"3": {
+			"holeLine": [
+				{
+					"lat": 51.616954,
+					"lng": 4.873289
+				},
+				{
+					"lat": 51.615915,
+					"lng": 4.872927
+				}
+			]
+		},
+		"4": {
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.6161,
+						"lng": 4.87157
+					},
+					"colors": [
+						"white"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61591,
+						"lng": 4.87158
+					},
+					"colors": [
+						"yellow"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61569,
+						"lng": 4.87166
+					},
+					"colors": [
+						"blue"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61543,
+						"lng": 4.87209
+					},
+					"colors": [
+						"red"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.615092,
+						"lng": 4.872572
+					},
+					"colors": [
+						"orange"
+					]
+				}
+			]
+		},
+		"5": {
+			"holeLine": [
+				{
+					"lat": 51.613677,
+					"lng": 4.875631
+				},
+				{
+					"lat": 51.613422,
+					"lng": 4.873399
+				},
+				{
+					"lat": 51.613014,
+					"lng": 4.872396
+				}
+			],
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.61366,
+						"lng": 4.87556
+					},
+					"colors": [
+						"white",
+						"yellow"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61358,
+						"lng": 4.87525
+					},
+					"colors": [
+						"blue",
+						"red"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.613529,
+						"lng": 4.87434
+					},
+					"colors": [
+						"orange"
+					]
+				}
+			]
+		},
+		"6": {
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.61266,
+						"lng": 4.87197
+					},
+					"colors": [
+						"white"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.6131,
+						"lng": 4.87174
+					},
+					"colors": [
+						"yellow"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61344,
+						"lng": 4.87183
+					},
+					"colors": [
+						"blue"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61379,
+						"lng": 4.87148
+					},
+					"colors": [
+						"red"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.614087,
+						"lng": 4.871512
+					},
+					"colors": [
+						"orange"
+					]
+				}
+			]
+		},
+		"7": {
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.61735,
+						"lng": 4.87205
+					},
+					"colors": [
+						"white"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61721,
+						"lng": 4.87142
+					},
+					"colors": [
+						"yellow"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.6171,
+						"lng": 4.87099
+					},
+					"colors": [
+						"blue"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61696,
+						"lng": 4.87056
+					},
+					"colors": [
+						"red"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.616862,
+						"lng": 4.870011
+					},
+					"colors": [
+						"orange"
+					]
+				}
+			]
+		},
+		"8": {
+			"holeLine": [
+				{
+					"lat": 51.615353,
+					"lng": 4.86434
+				},
+				{
+					"lat": 51.61784,
+					"lng": 4.865991
+				},
+				{
+					"lat": 51.619554,
+					"lng": 4.866776
+				}
+			],
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.61545,
+						"lng": 4.86439
+					},
+					"colors": [
+						"white",
+						"yellow"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61604,
+						"lng": 4.86474
+					},
+					"colors": [
+						"blue",
+						"red"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.616307,
+						"lng": 4.864973
+					},
+					"colors": [
+						"orange"
+					]
+				}
+			]
+		},
+		"9": {
+			"holeLine": [
+				{
+					"lat": 51.618548,
+					"lng": 4.864954
+				},
+				{
+					"lat": 51.620049,
+					"lng": 4.866316
+				},
+				{
+					"lat": 51.621278,
+					"lng": 4.867784
+				}
+			],
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.61856,
+						"lng": 4.86496
+					},
+					"colors": [
+						"white"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61879,
+						"lng": 4.8652
+					},
+					"colors": [
+						"yellow"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61926,
+						"lng": 4.86562
+					},
+					"colors": [
+						"blue",
+						"red"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.619723,
+						"lng": 4.86602
+					},
+					"colors": [
+						"orange"
+					]
+				}
+			]
+		},
+		"10": {
+			"holeLine": [
+				{
+					"lat": 51.621186,
+					"lng": 4.868645
+				},
+				{
+					"lat": 51.622044,
+					"lng": 4.867058
+				}
+			],
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.62125,
+						"lng": 4.86845
+					},
+					"colors": [
+						"white",
+						"yellow",
+						"blue",
+						"red"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.62154,
+						"lng": 4.86807
+					},
+					"colors": [
+						"orange"
+					]
+				}
+			]
+		},
+		"11": {
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.62228,
+						"lng": 4.86676
+					},
+					"colors": [
+						"white"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.62194,
+						"lng": 4.86646
+					},
+					"colors": [
+						"yellow",
+						"blue"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.62132,
+						"lng": 4.86613
+					},
+					"colors": [
+						"red"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.621041,
+						"lng": 4.866002
+					},
+					"colors": [
+						"orange"
+					]
+				}
+			]
+		},
+		"12": {
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.6192,
+						"lng": 4.86397
+					},
+					"colors": [
+						"white"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61901,
+						"lng": 4.86378
+					},
+					"colors": [
+						"yellow"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61854,
+						"lng": 4.86336
+					},
+					"colors": [
+						"blue",
+						"red"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.618084,
+						"lng": 4.863226
+					},
+					"colors": [
+						"orange"
+					]
+				}
+			]
+		},
+		"13": {
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.61571,
+						"lng": 4.86278
+					},
+					"colors": [
+						"white"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61609,
+						"lng": 4.86287
+					},
+					"colors": [
+						"yellow",
+						"blue",
+						"red"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.616575,
+						"lng": 4.86342
+					},
+					"colors": [
+						"orange"
+					]
+				}
+			],
+			"bunkers": [
+				[
+					{
+						"lat": 51.61703,
+						"lng": 4.86424
+					},
+					{
+						"lat": 51.61706,
+						"lng": 4.864231
+					},
+					{
+						"lat": 51.617082,
+						"lng": 4.864205
+					},
+					{
+						"lat": 51.61709,
+						"lng": 4.86417
+					},
+					{
+						"lat": 51.617082,
+						"lng": 4.864135
+					},
+					{
+						"lat": 51.61706,
+						"lng": 4.864109
+					},
+					{
+						"lat": 51.61703,
+						"lng": 4.8641
+					},
+					{
+						"lat": 51.617,
+						"lng": 4.864109
+					},
+					{
+						"lat": 51.616978,
+						"lng": 4.864135
+					},
+					{
+						"lat": 51.61697,
+						"lng": 4.86417
+					},
+					{
+						"lat": 51.616978,
+						"lng": 4.864205
+					},
+					{
+						"lat": 51.617,
+						"lng": 4.864231
+					},
+					{
+						"lat": 51.61703,
+						"lng": 4.86424
+					}
+				]
+			]
+		},
+		"14": {
+			"holeLine": [
+				{
+					"lat": 51.617214,
+					"lng": 4.864684
+				},
+				{
+					"lat": 51.615403,
+					"lng": 4.863462
+				},
+				{
+					"lat": 51.614698,
+					"lng": 4.861437
+				}
+			],
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.61723,
+						"lng": 4.8647
+					},
+					"colors": [
+						"white"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61706,
+						"lng": 4.86463
+					},
+					"colors": [
+						"yellow"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.6166,
+						"lng": 4.86415
+					},
+					"colors": [
+						"blue",
+						"red"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.616228,
+						"lng": 4.864018
+					},
+					"colors": [
+						"orange"
+					]
+				}
+			]
+		},
+		"15": {
+			"holeLine": [
+				{
+					"lat": 51.613616,
+					"lng": 4.860646
+				},
+				{
+					"lat": 51.612094,
+					"lng": 4.860415
+				}
+			],
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.61362,
+						"lng": 4.86062
+					},
+					"colors": [
+						"white"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61337,
+						"lng": 4.86071
+					},
+					"colors": [
+						"yellow",
+						"blue"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61312,
+						"lng": 4.86066
+					},
+					"colors": [
+						"red"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61302,
+						"lng": 4.86095
+					},
+					"colors": [
+						"orange"
+					]
+				}
+			]
+		},
+		"16": {
+			"holeLine": [
+				{
+					"lat": 51.612076,
+					"lng": 4.86135
+				},
+				{
+					"lat": 51.613837,
+					"lng": 4.861849
+				},
+				{
+					"lat": 51.614398,
+					"lng": 4.864089
+				}
+			],
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.61209,
+						"lng": 4.86136
+					},
+					"colors": [
+						"white"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61236,
+						"lng": 4.86144
+					},
+					"colors": [
+						"yellow",
+						"blue"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61256,
+						"lng": 4.86154
+					},
+					"colors": [
+						"red"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.613253,
+						"lng": 4.861683
+					},
+					"colors": [
+						"orange"
+					]
+				}
+			]
+		},
+		"17": {
+			"holeLine": [
+				{
+					"lat": 51.616057,
+					"lng": 4.865405
+				},
+				{
+					"lat": 51.616834,
+					"lng": 4.867351
+				}
+			],
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.61603,
+						"lng": 4.86537
+					},
+					"colors": [
+						"white"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61611,
+						"lng": 4.86552
+					},
+					"colors": [
+						"yellow",
+						"blue",
+						"red"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61651,
+						"lng": 4.86634
+					},
+					"colors": [
+						"orange"
+					]
+				}
+			]
+		},
+		"18": {
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.61665,
+						"lng": 4.86612
+					},
+					"colors": [
+						"white",
+						"yellow"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61724,
+						"lng": 4.86676
+					},
+					"colors": [
+						"blue",
+						"red"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.617556,
+						"lng": 4.866675
+					},
+					"colors": [
+						"orange"
+					]
+				}
+			]
+		},
+		"(1)": {
+			"holeLine": [
+				{
+					"lat": 51.620957,
+					"lng": 4.871116
+				},
+				{
+					"lat": 51.619648,
+					"lng": 4.870787
+				}
+			],
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.62086,
+						"lng": 4.8711
+					},
+					"colors": [
+						"yellow",
+						"red",
+						"orange"
+					]
+				}
+			]
+		},
+		"(5)": {
+			"holeLine": [
+				{
+					"lat": 51.6184,
+					"lng": 4.87577
+				},
+				{
+					"lat": 51.61812,
+					"lng": 4.8742
+				},
+				{
+					"lat": 51.61816,
+					"lng": 4.873358
+				}
+			],
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.6184,
+						"lng": 4.87577
+					},
+					"colors": [
+						"yellow"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61832,
+						"lng": 4.87544
+					},
+					"colors": [
+						"red"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.6181,
+						"lng": 4.87463
+					},
+					"colors": [
+						"orange"
+					]
+				}
+			]
+		},
+		"(7)": {
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.6177,
+						"lng": 4.86945
+					},
+					"colors": [
+						"yellow",
+						"red",
+						"orange"
+					]
+				}
+			]
+		},
+		"(8)": {
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.61852,
+						"lng": 4.86936
+					},
+					"colors": [
+						"yellow"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.6188,
+						"lng": 4.86942
+					},
+					"colors": [
+						"red",
+						"orange"
+					]
+				}
+			]
+		},
+		"(9)": {
+			"holeLine": [
+				{
+					"lat": 51.619396,
+					"lng": 4.86954
+				},
+				{
+					"lat": 51.62086,
+					"lng": 4.870597
+				}
+			],
+			"teeBoxes": [
+				{
+					"position": {
+						"lat": 51.61939,
+						"lng": 4.86953
+					},
+					"colors": [
+						"yellow"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.61964,
+						"lng": 4.86974
+					},
+					"colors": [
+						"red"
+					]
+				},
+				{
+					"position": {
+						"lat": 51.62015,
+						"lng": 4.87011
+					},
+					"colors": [
+						"orange"
+					]
+				}
+			]
+		},
+		"(2)": {
+			"holeLine": [
+				{
+					"lat": 51.619508,
+					"lng": 4.871269
+				},
+				{
+					"lat": 51.61866,
+					"lng": 4.870781
+				}
+			]
+		},
+		"(3)": {
+			"holeLine": [
+				{
+					"lat": 51.618349,
+					"lng": 4.871099
+				},
+				{
+					"lat": 51.618577,
+					"lng": 4.87282
+				}
+			]
+		}
+	}
+}

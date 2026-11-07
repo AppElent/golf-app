@@ -130,6 +130,12 @@ export function ProfileScreen() {
 					chevron
 					onPress={() => router.push("/profile/clubs")}
 				/>
+				<InsetRow
+					leading={{ symbol: "location.viewfinder" }}
+					title={t.simulator.title}
+					chevron
+					onPress={() => router.push("/profile/simulator")}
+				/>
 			</InsetList>
 
 			<View style={styles.section}>

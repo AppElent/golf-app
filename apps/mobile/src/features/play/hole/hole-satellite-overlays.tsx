@@ -1,13 +1,14 @@
 import type { LatLng } from "@fairway/core/geo";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
-import { Marker, Polyline } from "react-native-maps";
+import { Marker, Polygon, Polyline } from "react-native-maps";
 import { course, type as typeRamp } from "../../../theme";
 import { toCoord } from "./hole-camera";
 import type { HoleCanvasProps } from "./hole-canvas-props";
 import { holeOverlays } from "./hole-overlays";
 
 export function HoleSatelliteOverlays({
+	geometry,
 	player,
 	green,
 	located,
@@ -19,6 +20,7 @@ export function HoleSatelliteOverlays({
 	shots,
 }: Pick<
 	HoleCanvasProps,
+	| "geometry"
 	| "player"
 	| "green"
 	| "located"
@@ -39,6 +41,45 @@ export function HoleSatelliteOverlays({
 	});
 	return (
 		<>
+			{geometry.water.map((ring) => (
+				<Polygon
+					key={`water-${ring[0]?.lat},${ring[0]?.lng},${ring.length}`}
+					coordinates={ring.map(toCoord)}
+					fillColor={course.waterOverlay}
+					strokeColor={course.water}
+					strokeWidth={1}
+					tappable={false}
+				/>
+			))}
+			{geometry.bunkers.map((ring) => (
+				<Polygon
+					key={`bunker-${ring[0]?.lat},${ring[0]?.lng},${ring.length}`}
+					coordinates={ring.map(toCoord)}
+					fillColor={course.bunkerOverlay}
+					strokeColor={course.bunker}
+					strokeWidth={1}
+					tappable={false}
+				/>
+			))}
+			{(geometry.teeBoxes ?? []).map((box) => (
+				<Marker
+					key={`tee-${box.position.lat},${box.position.lng}`}
+					coordinate={toCoord(box.position)}
+					anchor={{ x: 0.5, y: 0.5 }}
+					tracksViewChanges={false}
+					tappable={false}
+				>
+					<View
+						style={[
+							styles.teeBox,
+							{
+								backgroundColor:
+									course.teeMarker[box.colors[0]] ?? course.distanceText,
+							},
+						]}
+					/>
+				</Marker>
+			))}
 			{trail.length > 1 ? (
 				<Polyline
 					coordinates={trail.map(toCoord)}
@@ -155,6 +196,13 @@ function Label({
 }
 
 const styles = StyleSheet.create({
+	teeBox: {
+		width: 10,
+		height: 10,
+		borderRadius: 5,
+		borderWidth: 1.5,
+		borderColor: course.labelFill,
+	},
 	pin: {
 		width: 14,
 		height: 14,

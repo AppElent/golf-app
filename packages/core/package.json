@@ -19,6 +19,7 @@
 		"./round": "./src/round.ts",
 		"./scoring": "./src/scoring.ts",
 		"./shots": "./src/shots.ts",
+		"./simulation": "./src/simulation.ts",
 		"./stats": "./src/stats.ts"
 	},
 	"dependencies": {},
