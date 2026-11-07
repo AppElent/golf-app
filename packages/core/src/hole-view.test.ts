@@ -40,6 +40,17 @@ describe("holeAnchors", () => {
 		const a = holeAnchors({ ...geo, tees: [square(0.0028, 0), square(0, 0)] });
 		expect(a?.tee.lat).toBeCloseTo(52, 6);
 	});
+	it("spans the hole to its farthest tee or corner, whichever is played", () => {
+		const teeBoxes = [
+			{ position: p(0.0005), colors: ["red"] },
+			{ position: p(-0.0005), colors: ["white"] },
+		];
+		const span = holeAnchors({ ...geo, teeBoxes }, "red")?.spanMeters;
+		expect(Math.round(span ?? 0)).toBe(Math.round(0.0035 * 111195));
+		const dogleg = [p(0.002), p(0.002, 0.01), p(0.003)];
+		const corner = holeAnchors({ ...geo, holeLine: dogleg }, "red");
+		expect(corner?.spanMeters).toBeGreaterThan(680);
+	});
 	it("falls back to the hole line, and to null", () => {
 		const a = holeAnchors({ ...geo, tees: [], greens: [] });
 		expect(a?.tee).toEqual(p(0));
@@ -97,6 +108,27 @@ describe("hazardsInPlay", () => {
 			["water", "center"],
 			["water", "center"],
 			["bunker", "right"],
+		]);
+	});
+	it("keeps a crossing on a capped list, even past a nearer bank", () => {
+		const hazards = hazardsInPlay(
+			p(0),
+			p(0.003),
+			{
+				holeLine: [p(0), p(0.003)],
+				bunkers: [square(0.0005, 0.0003)],
+				water: [
+					square(0.001, 0.0003),
+					square(0.0015, -0.0003),
+					square(0.0025, 0),
+				],
+			},
+			{ limit: 3 },
+		);
+		expect(hazards.map((h) => [h.kind, h.side])).toEqual([
+			["bunker", "right"],
+			["water", "right"],
+			["water", "center"],
 		]);
 	});
 	it("follows a dogleg instead of the straight line to the green", () => {

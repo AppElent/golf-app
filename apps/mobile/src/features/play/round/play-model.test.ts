@@ -39,7 +39,7 @@ describe("play model", () => {
 });
 
 describe("isOnHole", () => {
-	const anchors = { tee: { lat: 52, lng: 5 }, green: { lat: 52.0036, lng: 5 } }; // ~400 m
+	const anchors = { green: { lat: 52.0036, lng: 5 }, spanMeters: 400 };
 	it("counts a fix on or beside the hole", () => {
 		expect(isOnHole({ lat: 52.001, lng: 5.001 }, anchors)).toBe(true);
 		expect(isOnHole({ lat: 51.9995, lng: 5 }, anchors)).toBe(true);
@@ -50,7 +50,11 @@ describe("isOnHole", () => {
 });
 
 describe("playerPosition", () => {
-	const anchors = { tee: { lat: 52, lng: 5 }, green: { lat: 52.0036, lng: 5 } };
+	const anchors = {
+		tee: { lat: 52, lng: 5 },
+		green: { lat: 52.0036, lng: 5 },
+		spanMeters: 400,
+	};
 	it("measures from a fix on the hole", () => {
 		const onHole = { lat: 52.001, lng: 5 };
 		expect(playerPosition(onHole, anchors)).toEqual({
@@ -126,6 +130,7 @@ describe("lockScreenHole", () => {
 		tee: { lat: 52, lng: 5 },
 		green: { lat: 52.0036, lng: 5 },
 		greenRing: null,
+		spanMeters: 445,
 	};
 	const input = {
 		preferred: true,

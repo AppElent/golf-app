@@ -337,6 +337,28 @@ describe("normalizeCourse — features", () => {
 		expect(g.bunkers).toEqual([ring]);
 	});
 
+	it("drops an OSM bunker an override names, keeping the others", () => {
+		const bunker = (lat: number) => ({
+			type: "way",
+			id: lat,
+			tags: { golf: "bunker" },
+			geometry: [
+				{ lat, lon: 5.9 },
+				{ lat: lat + 0.00002, lon: 5.9 },
+				{ lat, lon: 5.90002 },
+				{ lat, lon: 5.9 },
+			],
+		});
+		const center = { lat: 52.001007, lng: 5.900007 };
+		const kept = hole([bunker(52.002)], "1");
+		const both = hole([bunker(52.001), bunker(52.002)], "1");
+		expect(both.bunkers).toHaveLength(2);
+		const dropped = hole([bunker(52.001), bunker(52.002)], "1", {
+			"1": { dropBunkers: [center] },
+		});
+		expect(dropped.bunkers).toEqual(kept.bunkers);
+	});
+
 	it("drops an OSM tee ring no corrected tee box stands on", () => {
 		const at = (lat: number) => [
 			{ lat, lon: 5.9 },

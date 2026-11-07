@@ -60,10 +60,11 @@ function RoundCard({
 }) {
 	const { setSimulating } = useSimulationMode();
 	const navigate = useNavigate();
-	const { submit, scoreOf, pendingCount, syncing, online } = useScoreSync();
+	const { submit, scoreOf, hasPending, pendingCount, syncing, online } =
+		useScoreSync();
 	const finish = useMutation(api.rounds.finish);
 	const abandon = useMutation(api.rounds.abandon);
-	const [selected, setSelected] = useState(0);
+	const [selected, setSelected] = useState(data.round.currentHoleIndex);
 	const [playerIndex, setPlayerIndex] = useState(OWNER_INDEX);
 	const [confirmFinish, setConfirmFinish] = useState(false);
 
@@ -272,9 +273,10 @@ function RoundCard({
 						<button
 							type="button"
 							onClick={onFinish}
-							className="flex-1 rounded-full bg-flag px-4 py-3 font-display text-[14px] font-bold text-white"
+							disabled={hasPending(data.round._id)}
+							className="flex-1 rounded-full bg-flag px-4 py-3 font-display text-[14px] font-bold text-white disabled:opacity-40"
 						>
-							Finish round
+							{hasPending(data.round._id) ? "Saving scores…" : "Finish round"}
 						</button>
 						<button
 							type="button"

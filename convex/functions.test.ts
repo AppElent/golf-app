@@ -667,6 +667,22 @@ describe("simulated rounds", () => {
 		expect(scores).toEqual([]);
 	});
 
+	it("accepts a queued score for a finished round, storing nothing", async () => {
+		const { t, alice, bob, course } = await setup();
+		const roundId = await startRound(alice, course);
+		await alice.mutation(api.rounds.finish, { roundId });
+		const score = { roundId, holeIndex: 0, playerIndex: 0, strokes: 4 };
+		await alice.mutation(api.rounds.setScore, { ...score, queued: true });
+		const scores = await t.run((ctx) => ctx.db.query("holeScores").collect());
+		expect(scores).toEqual([]);
+		await expect(alice.mutation(api.rounds.setScore, score)).rejects.toThrow(
+			"Round is not active.",
+		);
+		await expect(
+			bob.mutation(api.rounds.setScore, { ...score, queued: true }),
+		).rejects.toThrow("Round not found.");
+	});
+
 	it("never reaches history, stats or the learned bag", async () => {
 		const { alice, course } = await setup();
 		const roundId = await startSimulation(alice, course);

@@ -39,7 +39,8 @@ pnpm check && pnpm typecheck && pnpm test             # repo-wide
 - Test login: a Clerk `+clerk_test` address with code `424242` (dev instance only).
 - Simulator GPS for on-course testing: set a location on a hole of the seeded
   course (De Oosterhoutse, around `51.6168,4.8700`) with the simulator's location
-  setting. Play counts GPS only within the hole's length + 120 m of the green.
+  setting. Play counts GPS only within the hole's reach (back tee or dogleg corner)
+  + 120 m of the green.
 
 ## Environment
 

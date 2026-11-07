@@ -33,6 +33,8 @@ export interface NormalizedCourse {
  */
 /** A tee ring further than this from every corrected tee box is another tee. */
 const TEE_RING_MATCH_M = 30;
+/** How close `dropBunkers` must name an OSM bunker's center. */
+const DROP_BUNKER_M = 5;
 
 export interface HoleOverride {
 	/** The real line of play, tee to green, with its doglegs. */
@@ -45,6 +47,8 @@ export interface HoleOverride {
 	water?: LatLng[][];
 	/** Bunkers OSM lacks, added to the hole's. */
 	bunkers?: LatLng[][];
+	/** Centers of OSM bunkers that aren't there, dropped from the hole's. */
+	dropBunkers?: LatLng[];
 }
 
 // OSM tag lookups are effectively optional; JSON imports also infer `undefined`
@@ -495,6 +499,13 @@ export function normalizeCourse(
 		}
 		if (override.green) target.greens = [override.green];
 		target.water.push(...(override.water ?? []));
+		target.bunkers = target.bunkers.filter(
+			(ring) =>
+				!override.dropBunkers?.some(
+					(center) =>
+						haversineMeters(center, polygonCentroid(ring)) <= DROP_BUNKER_M,
+				),
+		);
 		target.bunkers.push(...(override.bunkers ?? []));
 	}
 

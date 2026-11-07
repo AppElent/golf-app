@@ -281,13 +281,22 @@ export const setScore = mutation({
 		roundId: v.id("rounds"),
 		holeIndex: v.number(),
 		playerIndex: v.number(),
+		queued: v.optional(v.boolean()),
 		...scoreUpdateFields,
 	},
-	handler: async (ctx, { roundId, holeIndex, playerIndex, ...args }) => {
+	handler: async (
+		ctx,
+		{ roundId, holeIndex, playerIndex, queued, ...args },
+	) => {
 		await getUserId(ctx);
 		// A web queue can still hold scores for a round deleted since. They have
 		// nowhere to go, and failing would block the queue's other scores for good.
 		if (!(await ctx.db.get(roundId))) return;
+		// Same for a round finished since. The phone saves live, so it must hear
+		// that this score was not stored.
+		if (queued && (await requireOwnRound(ctx, roundId)).status !== "active") {
+			return;
+		}
 		// Values to store; a null clears the field (patch() drops undefined).
 		const set = Object.fromEntries(
 			Object.entries(args).filter(([, value]) => value != null),

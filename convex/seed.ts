@@ -124,7 +124,7 @@ async function seedFinishedRound(
 		teeId: course.teeId,
 		holeRefs: course.holeRefs,
 		format: "stableford",
-		players: [{ name: "Eric", handicapIndex: DUMMY_HANDICAP_INDEX }],
+		players: [{ name: "You", handicapIndex: DUMMY_HANDICAP_INDEX }],
 	});
 	for (let i = 0; i < course.holeRefs.length; i++) {
 		const par = course.pars[i];
@@ -151,7 +151,7 @@ async function seedActiveRound(
 		teeId: course.teeId,
 		holeRefs: course.holeRefs,
 		format: "stableford",
-		players: [{ name: "Eric", handicapIndex: DUMMY_HANDICAP_INDEX }],
+		players: [{ name: "You", handicapIndex: DUMMY_HANDICAP_INDEX }],
 	});
 	const holesPlayed = 4;
 	for (let i = 0; i < holesPlayed; i++) {

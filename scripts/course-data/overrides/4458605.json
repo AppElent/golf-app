@@ -1,5 +1,5 @@
 {
-	"method": "Tee boxes re-assigned to the mown pads visible on PDOK 8 cm aerial photos and checked against the 2025 scorecards; orange tees with no visible pad are placed at their card length along the line; hole lines keep the OSM corners but end on the green centre where OSM stops more than 5 m short; hole (5) has its corner moved to the fairway centre south of the lake.",
+	"method": "Tee boxes re-assigned to the mown pads visible on PDOK 8 cm aerial photos and checked against the 2025 scorecards; orange tees with no visible pad are placed at their card length along the line; hole lines keep the OSM corners but end on the green centre where OSM stops more than 5 m short; hole (5) has its corner moved to the fairway centre south of the lake. Hole 2's fairway bunker is OSM's outline moved 8 m north, onto the sand in the photo.",
 	"inferred": {
 		"boxesPerHole": {
 			"1": 1,
@@ -19,7 +19,8 @@
 		},
 		"checkOnCourse": [
 			"The inferred box on each of these holes is orange: no pad visible, placed at its card length along the line, so its length check proves nothing",
-			"(7): both colours are on a pad in deep shade"
+			"(7): both colours are on a pad in deep shade",
+			"2: the fairway bunker follows the PDOK photo; Apple's satellite photo shows its sand 8 m further south"
 		]
 	},
 	"holes": {
@@ -172,7 +173,139 @@
 						"lat": 51.61739,
 						"lng": 4.87133
 					}
+				],
+				[
+					{
+						"lat": 51.617692,
+						"lng": 4.871448
+					},
+					{
+						"lat": 51.617696,
+						"lng": 4.871448
+					},
+					{
+						"lat": 51.617701,
+						"lng": 4.871452
+					},
+					{
+						"lat": 51.617715,
+						"lng": 4.871474
+					},
+					{
+						"lat": 51.617719,
+						"lng": 4.871483
+					},
+					{
+						"lat": 51.617729,
+						"lng": 4.871496
+					},
+					{
+						"lat": 51.617735,
+						"lng": 4.871514
+					},
+					{
+						"lat": 51.617735,
+						"lng": 4.87152
+					},
+					{
+						"lat": 51.617734,
+						"lng": 4.871527
+					},
+					{
+						"lat": 51.617732,
+						"lng": 4.871536
+					},
+					{
+						"lat": 51.617731,
+						"lng": 4.871547
+					},
+					{
+						"lat": 51.617731,
+						"lng": 4.871557
+					},
+					{
+						"lat": 51.617726,
+						"lng": 4.871568
+					},
+					{
+						"lat": 51.617707,
+						"lng": 4.871595
+					},
+					{
+						"lat": 51.617703,
+						"lng": 4.8716
+					},
+					{
+						"lat": 51.617699,
+						"lng": 4.8716
+					},
+					{
+						"lat": 51.617694,
+						"lng": 4.871596
+					},
+					{
+						"lat": 51.617684,
+						"lng": 4.871587
+					},
+					{
+						"lat": 51.617678,
+						"lng": 4.871576
+					},
+					{
+						"lat": 51.617673,
+						"lng": 4.871569
+					},
+					{
+						"lat": 51.617668,
+						"lng": 4.871566
+					},
+					{
+						"lat": 51.617667,
+						"lng": 4.871561
+					},
+					{
+						"lat": 51.617667,
+						"lng": 4.871554
+					},
+					{
+						"lat": 51.617667,
+						"lng": 4.871535
+					},
+					{
+						"lat": 51.617661,
+						"lng": 4.87151
+					},
+					{
+						"lat": 51.617654,
+						"lng": 4.871487
+					},
+					{
+						"lat": 51.617654,
+						"lng": 4.871482
+					},
+					{
+						"lat": 51.617656,
+						"lng": 4.871477
+					},
+					{
+						"lat": 51.61766,
+						"lng": 4.871471
+					},
+					{
+						"lat": 51.617688,
+						"lng": 4.871448
+					},
+					{
+						"lat": 51.617692,
+						"lng": 4.871448
+					}
 				]
+			],
+			"dropBunkers": [
+				{
+					"lat": 51.617621,
+					"lng": 4.871524
+				}
 			]
 		},
 		"3": {
