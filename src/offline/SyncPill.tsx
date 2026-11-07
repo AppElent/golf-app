@@ -1,4 +1,3 @@
-/** Compact status pill for the scorecard: offline / syncing / hidden. */
 export function SyncPill({
 	online,
 	pendingCount,

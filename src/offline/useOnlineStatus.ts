@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
 
-/** Live online/offline flag. SSR-safe: assumes online until mounted. */
+/** Assumes online until mounted, so server and first client render agree. */
 export function useOnlineStatus(): boolean {
 	const [online, setOnline] = useState(true);
 
 	useEffect(() => {
-		if (typeof navigator === "undefined") return;
 		const update = () => setOnline(navigator.onLine);
 		update();
 		window.addEventListener("online", update);

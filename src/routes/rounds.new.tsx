@@ -1,18 +1,26 @@
-import { roundPlayingHandicap } from "@fairway/core/handicap";
-import { detectLoops } from "@fairway/core/loops";
+import {
+	parseHandicapIndex,
+	playingHandicapPreview,
+} from "@fairway/core/handicap";
+import { detectLoops, selectLoops } from "@fairway/core/loops";
+import type { RoundFormat } from "@fairway/core/round";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { Minus, Plus, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
+import { CTA, FIELD, SURFACE } from "../components/classes";
+import { INVALID_INDEX_MESSAGE } from "../components/copy";
+import { Page, PageTitle, Section } from "../components/Page";
+import { PillToggle } from "../components/PillToggle";
 
 export const Route = createFileRoute("/rounds/new")({ component: RoundSetup });
 
 interface GuestDraft {
 	id: string;
 	name: string;
-	handicapIndex: string; // raw input, "" = scratch
+	handicapIndex: string;
 }
 
 function RoundSetup() {
@@ -20,12 +28,9 @@ function RoundSetup() {
 	const [courseId, setCourseId] = useState<Id<"courses"> | null>(null);
 
 	return (
-		<main className="px-5 pt-16 pb-[110px]">
-			<h1 className="font-display text-2xl font-bold tracking-tight text-ink">
-				New round
-			</h1>
+		<Page>
+			<PageTitle>New round</PageTitle>
 
-			{/* Course */}
 			<Section title="Course">
 				<div className="flex flex-col gap-2">
 					{(courses ?? []).map((c) => (
@@ -36,7 +41,7 @@ function RoundSetup() {
 							className={`rounded-xl border px-4 py-3 text-left font-display text-[15px] font-semibold ${
 								courseId === c._id
 									? "border-live bg-live/10 text-ink"
-									: "border-card-line bg-white/60 text-ink"
+									: `${SURFACE} text-ink`
 							}`}
 						>
 							{c.name}
@@ -50,9 +55,8 @@ function RoundSetup() {
 				</div>
 			</Section>
 
-			{/* Config remounts per course (fresh loop/player state, active query) */}
 			{courseId ? <CourseConfig key={courseId} courseId={courseId} /> : null}
-		</main>
+		</Page>
 	);
 }
 
@@ -61,10 +65,10 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 	const detail = useQuery(api.courses.get, { courseId });
 	const start = useMutation(api.rounds.start);
 
-	const [loopIdxs, setLoopIdxs] = useState<number[]>([]); // 1 or 2 picks, dup ok
+	const [loopIdxs, setLoopIdxs] = useState<number[]>([]);
 	const [ownerHi, setOwnerHi] = useState("");
 	const [guests, setGuests] = useState<GuestDraft[]>([]);
-	const [format, setFormat] = useState<"stroke" | "stableford">("stableford");
+	const [format, setFormat] = useState<RoundFormat>("stableford");
 	const [teeId, setTeeId] = useState<Id<"tees"> | null>(null);
 	const [error, setError] = useState<string | null>(null);
 
@@ -75,31 +79,23 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 		return <p className="mt-6 text-[13px] text-flag">Course not found.</p>;
 	}
 
-	const loops = detectLoops(
-		detail.holes.flatMap((h) =>
-			h.ref !== undefined ? [{ ref: h.ref, number: h.number }] : [],
-		),
-	);
-
-	const holeRefs = loopIdxs.flatMap((i) => loops[i]?.refs ?? []);
-	const byRef = new Map(detail.holes.map((h) => [h.ref, h]));
-	const incomplete = holeRefs.filter((ref) => {
-		const h = byRef.get(ref);
-		return !h || h.par === undefined || h.strokeIndex === undefined;
-	});
-	const parTotal = holeRefs.reduce(
-		(sum, ref) => sum + (byRef.get(ref)?.par ?? 0),
-		0,
-	);
+	const loops = detectLoops(detail.holes);
+	const {
+		holeRefs,
+		incomplete,
+		par: parTotal,
+		label: loopLabel,
+	} = selectLoops(detail.holes, loops, loopIdxs);
 	const tee = detail.tees.find((t) => t._id === teeId) ?? detail.tees[0];
 
-	const phFor = (hi: string): number | undefined => {
-		const n = Number.parseFloat(hi);
-		if (Number.isNaN(n) || !tee || holeRefs.length === 0) return undefined;
-		return roundPlayingHandicap(n, tee, parTotal, holeRefs.length);
-	};
+	const phFor = (hi: string) =>
+		playingHandicapPreview(hi, tee, parTotal, holeRefs.length);
 
-	const canStart = tee && holeRefs.length > 0 && incomplete.length === 0;
+	const invalidIndex = [ownerHi, ...guests.map((g) => g.handicapIndex)].some(
+		(text) => !parseHandicapIndex(text).valid,
+	);
+	const canStart =
+		tee && holeRefs.length > 0 && incomplete.length === 0 && !invalidIndex;
 
 	async function onStart() {
 		if (!tee) return;
@@ -109,20 +105,17 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 				courseId,
 				teeId: tee._id,
 				holeRefs,
-				loopLabel: loopIdxs.map((i) => loops[i]?.label).join(" + "),
+				loopLabel,
 				format,
 				players: [
 					{
 						name: "Eric",
-						handicapIndex:
-							ownerHi === "" ? undefined : Number.parseFloat(ownerHi),
+						handicapIndex: parseHandicapIndex(ownerHi).value ?? undefined,
 					},
 					...guests.map((g) => ({
 						name: g.name || "Guest",
 						handicapIndex:
-							g.handicapIndex === ""
-								? undefined
-								: Number.parseFloat(g.handicapIndex),
+							parseHandicapIndex(g.handicapIndex).value ?? undefined,
 					})),
 				],
 			});
@@ -134,7 +127,6 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 
 	return (
 		<>
-			{/* Loops */}
 			{loops.length > 0 ? (
 				<Section
 					title="Holes"
@@ -144,9 +136,10 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 						{loops.map((loop, i) => {
 							const count = loopIdxs.filter((x) => x === i).length;
 							return (
-								<button
-									type="button"
+								<PillToggle
 									key={loop.label}
+									selected={count > 0}
+									tone="live"
 									onClick={() =>
 										setLoopIdxs((prev) =>
 											count > 0 && prev.length >= 2
@@ -156,15 +149,10 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 													: [...prev, i],
 										)
 									}
-									className={`rounded-full border px-4 py-2 font-display text-[13px] font-semibold ${
-										count > 0
-											? "border-live bg-live text-white"
-											: "border-card-line bg-white/60 text-ink"
-									}`}
 								>
 									{loop.label}
 									{count > 1 ? " ×2" : ""}
-								</button>
+								</PillToggle>
 							);
 						})}
 					</div>
@@ -192,7 +180,6 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 				</Section>
 			) : null}
 
-			{/* Players */}
 			{holeRefs.length > 0 ? (
 				<Section title="Players">
 					<PlayerRow
@@ -213,7 +200,7 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 										),
 									)
 								}
-								className="min-w-0 flex-1 rounded-lg border border-card-line bg-cream px-3 py-2 text-[15px] text-ink"
+								className={`${FIELD} min-w-0 flex-1 px-3 py-2 text-[15px]`}
 							/>
 							<HiInput
 								value={g.handicapIndex}
@@ -253,13 +240,12 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 				</Section>
 			) : null}
 
-			{/* Tee */}
 			{detail.tees.length > 1 ? (
 				<Section title="Tee">
 					<select
 						value={tee?._id ?? ""}
 						onChange={(e) => setTeeId(e.target.value as Id<"tees">)}
-						className="w-full rounded-lg border border-card-line bg-cream px-3 py-2 font-sans text-[15px] text-ink"
+						className={`${FIELD} w-full px-3 py-2 font-sans text-[15px]`}
 					>
 						{detail.tees.map((t) => (
 							<option key={t._id} value={t._id}>
@@ -270,61 +256,37 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 				</Section>
 			) : null}
 
-			{/* Format */}
 			{holeRefs.length > 0 ? (
 				<Section title="Format">
 					<div className="flex gap-2">
 						{(["stableford", "stroke"] as const).map((f) => (
-							<button
-								type="button"
+							<PillToggle
 								key={f}
+								selected={format === f}
 								onClick={() => setFormat(f)}
-								className={`rounded-full border px-4 py-2 font-display text-[13px] font-semibold ${
-									format === f
-										? "border-pine bg-pine text-cream"
-										: "border-card-line bg-white/60 text-ink"
-								}`}
 							>
 								{f === "stroke" ? "Stroke play" : "Stableford"}
-							</button>
+							</PillToggle>
 						))}
 					</div>
 				</Section>
 			) : null}
 
-			{error ? (
-				<p className="mt-4 text-[13px] font-semibold text-flag">{error}</p>
+			{invalidIndex || error ? (
+				<p className="mt-4 text-[13px] font-semibold text-flag">
+					{invalidIndex ? INVALID_INDEX_MESSAGE : error}
+				</p>
 			) : null}
 
 			<button
 				type="button"
 				disabled={!canStart}
 				onClick={onStart}
-				className="mt-8 w-full rounded-full bg-flag px-6 py-4 font-display text-[16px] font-bold text-white shadow-lg shadow-flag/25 disabled:opacity-40"
+				className={`mt-8 ${CTA} text-[16px] disabled:opacity-40`}
 			>
 				Start round
 			</button>
 		</>
-	);
-}
-
-function Section({
-	title,
-	hint,
-	children,
-}: {
-	title: string;
-	hint?: string;
-	children: React.ReactNode;
-}) {
-	return (
-		<section className="mt-6">
-			<h2 className="font-display text-sm font-semibold uppercase tracking-wide text-moss">
-				{title}
-			</h2>
-			{hint ? <p className="mt-0.5 text-[12px] text-stone">{hint}</p> : null}
-			<div className="mt-3">{children}</div>
-		</section>
 	);
 }
 
@@ -341,7 +303,9 @@ function PlayerRow({
 }) {
 	return (
 		<div className="flex items-center gap-2">
-			<span className="min-w-0 flex-1 rounded-lg border border-card-line bg-white/60 px-3 py-2 font-display text-[15px] font-semibold text-ink">
+			<span
+				className={`min-w-0 flex-1 rounded-lg border ${SURFACE} px-3 py-2 font-display text-[15px] font-semibold text-ink`}
+			>
 				{name}
 			</span>
 			<HiInput value={hi} onChange={onHi} ph={ph} />
@@ -365,7 +329,7 @@ function HiInput({
 				placeholder="HI"
 				inputMode="decimal"
 				onChange={(e) => onChange(e.target.value)}
-				className="w-16 rounded-lg border border-card-line bg-cream px-2 py-2 text-center text-[15px] text-ink"
+				className={`${FIELD} w-16 px-2 py-2 text-center text-[15px]`}
 			/>
 			<span className="w-10 text-center font-display text-[13px] font-semibold text-live">
 				{ph !== undefined ? `PH ${ph}` : "—"}

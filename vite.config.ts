@@ -20,8 +20,9 @@ function sentryRelease(): string | undefined {
 }
 
 const release = sentryRelease();
-// Only deploying builds (preview.yml, `pnpm env exec … -- pnpm deploy:*`)
-// supply the token; without it the plugin uploads nothing. Never a VITE_ var.
+// Only deploying builds (deploy-web.yml, preview.yml) supply the token; without
+// it the plugin uploads nothing.
+// Never a VITE_ var.
 const uploadToken = process.env.SENTRY_AUTH_TOKEN;
 
 const config = defineConfig({
@@ -31,7 +32,6 @@ const config = defineConfig({
 	// Hidden maps are uploaded, then scripts/remove-client-sourcemaps.mjs
 	// deletes the public client copies before deploy.
 	build: { sourcemap: "hidden" },
-	resolve: { tsconfigPaths: true },
 	plugins: [
 		devtools(),
 		cloudflare({ viteEnvironment: { name: "ssr" } }),

@@ -1,4 +1,7 @@
-/** Shared gradients, patterns, and filters for the hole map. IDs are global. */
+export const MAP_WIDTH = 360;
+export const MAP_HEIGHT = 560;
+
+/** SVG ids are document-global. */
 export function HoleMapDefs() {
 	return (
 		<defs>
@@ -14,7 +17,6 @@ export function HoleMapDefs() {
 				<stop offset="0%" stopColor="#a9d3e0" />
 				<stop offset="100%" stopColor="var(--color-water)" />
 			</linearGradient>
-			{/* Mow stripes: alternating fairway shades rotated ~10°. */}
 			<pattern
 				id="hm-mow"
 				width="18"
@@ -25,9 +27,6 @@ export function HoleMapDefs() {
 				<rect width="18" height="18" fill="var(--color-map-fairway)" />
 				<rect width="9" height="18" fill="#cee0a6" />
 			</pattern>
-			<filter id="hm-soft" x="-20%" y="-20%" width="140%" height="140%">
-				<feDropShadow dx="0" dy="2" stdDeviation="3" floodOpacity="0.18" />
-			</filter>
 		</defs>
 	);
 }

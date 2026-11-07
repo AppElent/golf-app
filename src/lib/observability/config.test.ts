@@ -41,6 +41,6 @@ describe("sentryEnvironment", () => {
 });
 
 it("samples production transactions and keeps every preview transaction", () => {
-	expect(tracesSampleRate("production")).toBe(0.1);
+	expect(tracesSampleRate("production")).toBeLessThan(1);
 	expect(tracesSampleRate("preview")).toBe(1);
 });

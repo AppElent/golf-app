@@ -1,17 +1,18 @@
+import { type HoleScore, type ScoreUpdate, scoreAt } from "@fairway/core/round";
 import { useMutation } from "convex/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import { useOnlineStatus } from "../hooks/useOnlineStatus";
 import {
 	enqueueScore,
+	keyFor,
 	keyOf,
 	readQueue,
 	removeEntry,
 	type ScoreEntry,
-	type ScoreFields,
 	type StorageLike,
 } from "./scoreQueue";
+import { useOnlineStatus } from "./useOnlineStatus";
 
 const FLUSH_INTERVAL_MS = 15000;
 
@@ -20,24 +21,17 @@ function storage(): StorageLike | null {
 	return window.localStorage;
 }
 
-function overlayFrom(store: StorageLike | null): Map<string, ScoreFields> {
-	const map = new Map<string, ScoreFields>();
+function overlayFrom(store: StorageLike | null): Map<string, ScoreUpdate> {
+	const map = new Map<string, ScoreUpdate>();
 	if (!store) return map;
 	for (const entry of readQueue(store)) map.set(keyOf(entry), entry.fields);
 	return map;
 }
 
-export interface ScoreSync {
-	submit: (entry: ScoreEntry) => void;
-	pending: Map<string, ScoreFields>;
-	pendingCount: number;
-	syncing: boolean;
-}
-
-export function useScoreSync(): ScoreSync {
+export function useScoreSync() {
 	const setScore = useMutation(api.rounds.setScore);
 	const online = useOnlineStatus();
-	const [pending, setPending] = useState<Map<string, ScoreFields>>(() =>
+	const [pending, setPending] = useState<Map<string, ScoreUpdate>>(() =>
 		overlayFrom(storage()),
 	);
 	const [syncing, setSyncing] = useState(false);
@@ -48,7 +42,7 @@ export function useScoreSync(): ScoreSync {
 	const flush = useCallback(async () => {
 		const store = storage();
 		if (!store || flushing.current) return;
-		if (typeof navigator !== "undefined" && !navigator.onLine) return;
+		if (!navigator.onLine) return;
 		flushing.current = true;
 		setSyncing(true);
 		try {
@@ -63,7 +57,7 @@ export function useScoreSync(): ScoreSync {
 					removeEntry(store, keyOf(entry));
 					refresh();
 				} catch {
-					// Network/permission failure — leave the rest queued, retry later.
+					// Keep order: everything after a failure stays queued for the retry.
 					break;
 				}
 			}
@@ -84,12 +78,10 @@ export function useScoreSync(): ScoreSync {
 		[flush, refresh],
 	);
 
-	// Flush when connectivity returns.
 	useEffect(() => {
 		if (online) void flush();
 	}, [online, flush]);
 
-	// Periodic retry while anything is queued.
 	useEffect(() => {
 		const id = setInterval(() => {
 			if (pending.size > 0) void flush();
@@ -97,5 +89,21 @@ export function useScoreSync(): ScoreSync {
 		return () => clearInterval(id);
 	}, [flush, pending.size]);
 
-	return { submit, pending, pendingCount: pending.size, syncing };
+	/** One result as the server has it, with this device's unsynced edits on top. */
+	const scoreOf = useCallback(
+		(
+			roundId: string,
+			scores: ReadonlyArray<HoleScore>,
+			holeIndex: number,
+			playerIndex: number,
+		): ScoreUpdate | undefined => {
+			const server = scoreAt(scores, holeIndex, playerIndex);
+			const overlay = pending.get(keyFor(roundId, holeIndex, playerIndex));
+			if (!server && !overlay) return undefined;
+			return { ...server, ...overlay };
+		},
+		[pending],
+	);
+
+	return { submit, scoreOf, pendingCount: pending.size, syncing, online };
 }

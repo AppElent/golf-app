@@ -2,6 +2,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "convex/react";
 import { ChevronRight, MapPin, Pencil } from "lucide-react";
 import { api } from "../../convex/_generated/api";
+import { SURFACE } from "../components/classes";
+import { Page, PageTitle } from "../components/Page";
 
 export const Route = createFileRoute("/courses/")({ component: CoursesScreen });
 
@@ -9,10 +11,8 @@ function CoursesScreen() {
 	const courses = useQuery(api.courses.list);
 
 	return (
-		<main className="px-5 pt-16 pb-[110px]">
-			<h1 className="font-display text-2xl font-bold tracking-tight text-ink">
-				Courses
-			</h1>
+		<Page>
+			<PageTitle>Courses</PageTitle>
 			<p className="mt-1 text-[13px] text-moss">
 				The course catalog is checked against each club's scorecard. Make your
 				own copy to change a course, or suggest a correction.
@@ -31,7 +31,7 @@ function CoursesScreen() {
 							<Link
 								to="/courses/$courseId/edit"
 								params={{ courseId: course._id }}
-								className="flex items-center justify-between rounded-2xl border border-card-line bg-white/60 px-4 py-4 shadow-sm"
+								className={`flex items-center justify-between rounded-2xl border ${SURFACE} px-4 py-4 shadow-sm`}
 							>
 								<span>
 									<span className="block font-display text-[17px] font-semibold text-ink">
@@ -57,6 +57,6 @@ function CoursesScreen() {
 					))}
 				</ul>
 			)}
-		</main>
+		</Page>
 	);
 }
