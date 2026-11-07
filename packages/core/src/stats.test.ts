@@ -1,17 +1,23 @@
 import { describe, expect, it } from "vitest";
+import type { OwnerRoundStats } from "./round";
 import { aggregateStats, type RoundStatInput } from "./stats";
 
-const round = (over: Partial<RoundStatInput> = {}): RoundStatInput => ({
-	holeCount: 18,
-	strokes: 90,
-	vsPar: 18,
-	putts: 34,
-	holesWithPutts: 18,
-	firMade: 8,
-	firEligible: 14,
-	girMade: 6,
-	girHoles: 18,
-	...over,
+const round = ({
+	holeCount = 18,
+	...owner
+}: Partial<OwnerRoundStats> & { holeCount?: number } = {}): RoundStatInput => ({
+	holeCount,
+	owner: {
+		strokes: 90,
+		vsPar: 18,
+		putts: 34,
+		holesWithPutts: 18,
+		firMade: 8,
+		firEligible: 14,
+		girMade: 6,
+		girHoles: 18,
+		...owner,
+	},
 });
 
 describe("aggregateStats", () => {

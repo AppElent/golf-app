@@ -1,13 +1,8 @@
+import type { OwnerRoundStats } from "./round";
+
 export interface RoundStatInput {
 	holeCount: number;
-	strokes: number; // owner total strokes (nulls counted 0 upstream)
-	vsPar: number; // owner vs par for the round
-	putts: number | null; // total putts, null if none recorded
-	holesWithPutts: number; // holes that had a putt value
-	firMade: number;
-	firEligible: number; // non-par-3 holes with a FIR value recorded
-	girMade: number;
-	girHoles: number; // holes with a GIR value recorded
+	owner: OwnerRoundStats;
 }
 
 export interface AggregateStats {
@@ -29,15 +24,15 @@ const ratio = (made: number, total: number): number | null =>
 export function aggregateStats(
 	rounds: ReadonlyArray<RoundStatInput>,
 ): AggregateStats {
-	const mean = (holes: number, pick: (r: RoundStatInput) => number) => {
+	const mean = (holes: number, pick: (r: OwnerRoundStats) => number) => {
 		const of = rounds.filter((r) => r.holeCount === holes);
 		return of.length > 0
-			? round1(of.reduce((t, r) => t + pick(r), 0) / of.length)
+			? round1(of.reduce((t, r) => t + pick(r.owner), 0) / of.length)
 			: null;
 	};
 
-	const puttHoles = rounds.reduce((t, r) => t + r.holesWithPutts, 0);
-	const puttTotal = rounds.reduce((t, r) => t + (r.putts ?? 0), 0);
+	const puttHoles = rounds.reduce((t, r) => t + r.owner.holesWithPutts, 0);
+	const puttTotal = rounds.reduce((t, r) => t + (r.owner.putts ?? 0), 0);
 	const puttsPer18 =
 		puttHoles > 0 ? round1((puttTotal / puttHoles) * 18) : null;
 
@@ -49,12 +44,12 @@ export function aggregateStats(
 		avgVsPar9: mean(9, (r) => r.vsPar),
 		puttsPer18,
 		firPct: ratio(
-			rounds.reduce((t, r) => t + r.firMade, 0),
-			rounds.reduce((t, r) => t + r.firEligible, 0),
+			rounds.reduce((t, r) => t + r.owner.firMade, 0),
+			rounds.reduce((t, r) => t + r.owner.firEligible, 0),
 		),
 		girPct: ratio(
-			rounds.reduce((t, r) => t + r.girMade, 0),
-			rounds.reduce((t, r) => t + r.girHoles, 0),
+			rounds.reduce((t, r) => t + r.owner.girMade, 0),
+			rounds.reduce((t, r) => t + r.owner.girHoles, 0),
 		),
 	};
 }

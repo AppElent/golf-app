@@ -88,11 +88,7 @@ describe("auth", () => {
 	});
 
 	it("keeps the seed entry points internal", () => {
-		for (const fn of [
-			seed.seedData,
-			seed.seedDummyData,
-			seedPreview.seedPreview,
-		]) {
+		for (const fn of [seed.seedDummyData, seedPreview.seedPreview]) {
 			expect(fn.isInternal).toBe(true);
 		}
 	});
@@ -117,13 +113,13 @@ describe("rounds", () => {
 			});
 		}
 		const parTotal = active?.holes.reduce((sum, h) => sum + h.par, 0) ?? 0;
-		const result = await alice.mutation(api.rounds.finish, { roundId });
-		expect(result.totals[0].strokes).toBe(parTotal + 9);
-		expect(result.scoreDifferential).toBeTypeOf("number");
+		await alice.mutation(api.rounds.finish, { roundId });
 
 		expect(await alice.query(api.rounds.active, {})).toBeNull();
 		const history = await alice.query(api.rounds.history, {});
 		expect(history.map((r) => r._id)).toEqual([roundId]);
+		expect(history[0].owner.strokes).toBe(parTotal + 9);
+		expect(history[0].differential).toBeTypeOf("number");
 	});
 
 	it("allows one active round at a time", async () => {
@@ -204,6 +200,34 @@ describe("courses", () => {
 		expect(bobList.map((c) => c._id)).not.toContain(copyId);
 	});
 
+	it("clears a hole's field with null and keeps omitted ones", async () => {
+		const { alice, course } = await setup();
+		const courseId = await alice.mutation(api.courses.fork, {
+			courseId: course.course._id,
+		});
+		const copy = await alice.query(api.courses.get, { courseId });
+		const holeId = copy?.holes[0]._id ?? course.holes[0]._id;
+		const hole = async () => {
+			const row = await alice.query(api.courses.get, { courseId });
+			const found = row?.holes.find((h) => h._id === holeId);
+			return { par: found?.par, strokeIndex: found?.strokeIndex };
+		};
+
+		await alice.mutation(api.courses.upsertHole, {
+			holeId,
+			par: 5,
+			strokeIndex: 7,
+		});
+		await alice.mutation(api.courses.upsertHole, { holeId, par: null });
+		expect(await hole()).toEqual({ par: undefined, strokeIndex: 7 });
+
+		await alice.mutation(api.courses.upsertHole, { holeId, par: 4 });
+		expect(await hole()).toEqual({ par: 4, strokeIndex: 7 });
+
+		await alice.mutation(api.courses.upsertHole, { holeId, strokeIndex: null });
+		expect(await hole()).toEqual({ par: 4, strokeIndex: undefined });
+	});
+
 	it("keeps another user's copy out of reach", async () => {
 		const { alice, bob, course } = await setup();
 		const copyId = await alice.mutation(api.courses.fork, {
@@ -226,13 +250,6 @@ describe("courses", () => {
 		await expect(
 			bob.mutation(api.courses.fork, { courseId: copyId }),
 		).rejects.toThrow(notFound);
-		await expect(
-			bob.mutation(api.courses.suggest, {
-				courseId: course.course._id,
-				message: "hole 1 is a par 4",
-				forkId: copyId,
-			}),
-		).rejects.toThrow("Copy not found.");
 		await expect(
 			bob.mutation(api.settings.update, { homeCourseId: copyId }),
 		).rejects.toThrow(notFound);
@@ -476,9 +493,6 @@ describe("clubs and shots", () => {
 		await expect(
 			bob.mutation(api.shots.setClub, { shotId, club: "PW" }),
 		).rejects.toThrow("Shot not found.");
-		await expect(bob.mutation(api.shots.remove, { shotId })).rejects.toThrow(
-			"Shot not found.",
-		);
 		await expect(bob.mutation(api.rounds.finish, { roundId })).rejects.toThrow(
 			"Round not found.",
 		);

@@ -14,7 +14,6 @@ export const list = query({
 	},
 });
 
-/** Add a club to the end of the bag. */
 export const create = mutation({
 	args: { name: v.string(), carryMeters: v.number() },
 	handler: async (ctx, { name, carryMeters }) => {
@@ -34,7 +33,6 @@ export const create = mutation({
 	},
 });
 
-/** Edit a club's name and/or carry distance. */
 export const update = mutation({
 	args: {
 		clubId: v.id("clubs"),
@@ -52,7 +50,6 @@ export const update = mutation({
 	},
 });
 
-/** Delete a club. */
 export const remove = mutation({
 	args: { clubId: v.id("clubs") },
 	handler: async (ctx, { clubId }) => {

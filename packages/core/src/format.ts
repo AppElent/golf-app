@@ -1,9 +1,16 @@
 export type Units = "m" | "yd";
 
+export const DEFAULT_UNITS: Units = "m";
+
 const YARDS_PER_METER = 1.09361;
 
 export function metersToYards(meters: number): number {
 	return meters * YARDS_PER_METER;
+}
+
+/** "152" in the chosen units, for showing the unit once across several numbers. */
+export function distanceValue(meters: number, units: Units): string {
+	return String(Math.round(units === "yd" ? metersToYards(meters) : meters));
 }
 
 /** Human distance in the chosen units. `null` → em dash. */
@@ -12,8 +19,7 @@ export function formatDistance(
 	units: Units,
 ): string {
 	if (meters == null) return "—";
-	const value = units === "yd" ? metersToYards(meters) : meters;
-	return `${Math.round(value)} ${units}`;
+	return `${distanceValue(meters, units)} ${units}`;
 }
 
 /** Driving-scale distance (course picker): "850 m" / "12 km", or miles in yd mode. */

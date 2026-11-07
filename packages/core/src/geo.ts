@@ -3,9 +3,12 @@ export interface LatLng {
 	lng: number;
 }
 
-const EARTH_RADIUS_M = 6371000;
+export const EARTH_RADIUS_M = 6371000;
 
-const toRad = (deg: number): number => (deg * Math.PI) / 180;
+/** A GPS fix less accurate than this is shown as uncertain. */
+export const GPS_WEAK_ACCURACY_M = 15;
+
+export const toRad = (deg: number): number => (deg * Math.PI) / 180;
 
 export function haversineMeters(a: LatLng, b: LatLng): number {
 	const dLat = toRad(b.lat - a.lat);

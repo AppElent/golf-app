@@ -5,6 +5,9 @@
 		"moduleResolution": "bundler",
 		"verbatimModuleSyntax": true,
 		"noEmit": true,
+		// src/osm.ts also runs under plain Node (scripts/course-data), which
+		// resolves only explicit extensions.
+		"allowImportingTsExtensions": true,
 		"strict": true,
 		"noUnusedLocals": true,
 		"noUnusedParameters": true,

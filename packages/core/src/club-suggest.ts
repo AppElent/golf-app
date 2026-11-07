@@ -17,7 +17,7 @@ export function suggestClub(
 	});
 }
 
-/** Sensible starter bag in meters, used until Profile bag management (Plan 6). */
+/** Sensible starter bag in meters, used until a player has added clubs. */
 export const DEFAULT_BAG: ReadonlyArray<Club> = [
 	{ name: "Driver", carryMeters: 230 },
 	{ name: "3w", carryMeters: 210 },

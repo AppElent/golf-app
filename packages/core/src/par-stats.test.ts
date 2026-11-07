@@ -23,11 +23,11 @@ describe("parTypeAverages", () => {
 describe("scoringDistribution", () => {
 	it("buckets scores to par", () => {
 		expect(scoringDistribution(results)).toEqual({
-			eagles: 1,
-			birdies: 1,
-			pars: 1,
-			bogeys: 1,
-			doubles: 1,
+			eagle: 1,
+			birdie: 1,
+			par: 1,
+			bogey: 1,
+			double: 1,
 		});
 	});
 });

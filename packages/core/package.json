@@ -6,6 +6,7 @@
 	"description": "Framework-free golf domain logic shared by the web app, Convex, and apps/mobile. Ships raw TypeScript (Vite, Convex esbuild and Metro all resolve it); keep it dependency-free.",
 	"exports": {
 		"./club-suggest": "./src/club-suggest.ts",
+		"./course-suggestion": "./src/course-suggestion.ts",
 		"./format": "./src/format.ts",
 		"./geo": "./src/geo.ts",
 		"./handicap": "./src/handicap.ts",
@@ -13,9 +14,9 @@
 		"./hole-projection": "./src/hole-projection.ts",
 		"./hole-view": "./src/hole-view.ts",
 		"./loops": "./src/loops.ts",
-		"./osm": "./src/osm.ts",
 		"./par-stats": "./src/par-stats.ts",
 		"./recap": "./src/recap.ts",
+		"./round": "./src/round.ts",
 		"./scoring": "./src/scoring.ts",
 		"./shots": "./src/shots.ts",
 		"./stats": "./src/stats.ts"

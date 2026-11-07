@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
 	formatVsPar,
+	nineTotals,
 	scoreMark,
-	splitTotals,
 	stablefordPoints,
 	stablefordTotal,
 	strokesPerHole,
@@ -13,26 +13,26 @@ import {
 
 describe("strokesReceived", () => {
 	it("gives one stroke on the lowest-SI holes for a single-digit handicap", () => {
-		expect(strokesReceived(1, 11)).toBe(1);
-		expect(strokesReceived(11, 11)).toBe(1);
-		expect(strokesReceived(12, 11)).toBe(0);
-		expect(strokesReceived(18, 11)).toBe(0);
+		expect(strokesReceived(1, 11, 18)).toBe(1);
+		expect(strokesReceived(11, 11, 18)).toBe(1);
+		expect(strokesReceived(12, 11, 18)).toBe(0);
+		expect(strokesReceived(18, 11, 18)).toBe(0);
 	});
 
 	it("gives a stroke on every hole plus extras when handicap exceeds 18", () => {
-		expect(strokesReceived(6, 24)).toBe(2);
-		expect(strokesReceived(7, 24)).toBe(1);
-		expect(strokesReceived(18, 24)).toBe(1);
+		expect(strokesReceived(6, 24, 18)).toBe(2);
+		expect(strokesReceived(7, 24, 18)).toBe(1);
+		expect(strokesReceived(18, 24, 18)).toBe(1);
 	});
 
 	it("gives no strokes at scratch", () => {
-		expect(strokesReceived(1, 0)).toBe(0);
+		expect(strokesReceived(1, 0, 18)).toBe(0);
 	});
 
 	it("takes strokes back on the highest-SI holes for plus handicaps", () => {
-		expect(strokesReceived(18, -2)).toBe(-1);
-		expect(strokesReceived(17, -2)).toBe(-1);
-		expect(strokesReceived(16, -2)).toBe(0);
+		expect(strokesReceived(18, -2, 18)).toBe(-1);
+		expect(strokesReceived(17, -2, 18)).toBe(-1);
+		expect(strokesReceived(16, -2, 18)).toBe(0);
 	});
 });
 
@@ -61,7 +61,7 @@ describe("strokesPerHole", () => {
 			strokeIndex: 18 - i,
 		}));
 		expect(strokesPerHole(eighteen, 11)).toEqual(
-			eighteen.map((h) => strokesReceived(h.strokeIndex, 11)),
+			eighteen.map((h) => strokesReceived(h.strokeIndex, 11, 18)),
 		);
 	});
 });
@@ -114,7 +114,10 @@ describe("totals", () => {
 	it("formats vs-par golf style", () => {
 		expect(formatVsPar(0)).toBe("E");
 		expect(formatVsPar(3)).toBe("+3");
-		expect(formatVsPar(-2)).toBe("-2");
+		expect(formatVsPar(-2)).toBe("−2");
+		expect(formatVsPar(5.2)).toBe("+5.2");
+		expect(formatVsPar(1, 1)).toBe("+1.0");
+		expect(formatVsPar(-0.04, 1)).toBe("E");
 	});
 });
 
@@ -132,12 +135,12 @@ describe("scoreMark", () => {
 	});
 });
 
-describe("splitTotals", () => {
+describe("nineTotals", () => {
 	it("sums 18 holes into Out/In nines", () => {
 		const strokes = [4, 5, 3, 4, 4, 5, 4, 3, 5, 4, 4, 6, 3, 5, 4, 4, 5, 4];
-		expect(splitTotals(strokes, 9)).toEqual([37, 39]);
+		expect(nineTotals(strokes)).toEqual([37, 39]);
 	});
 	it("treats null (unplayed) as 0 and handles 9-hole rounds", () => {
-		expect(splitTotals([4, null, 5], 9)).toEqual([9]);
+		expect(nineTotals([4, null, 5])).toEqual([9]);
 	});
 });

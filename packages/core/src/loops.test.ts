@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import oosterhoutse from "./__fixtures__/oosterhoutse.overpass.json";
 import welderen from "./__fixtures__/welderen.overpass.json";
-import { detectLoops } from "./loops";
+import { detectLoops, selectLoops } from "./loops";
 import { normalizeCourse } from "./osm";
 
 const holesOf = (fixture: { elements: unknown[] }) =>
@@ -58,5 +58,31 @@ describe("detectLoops", () => {
 		const loops = detectLoops(holesOf(oosterhoutse));
 		expect(loops).toHaveLength(3);
 		expect(loops.every((l) => l.refs.length === 9)).toBe(true);
+	});
+});
+
+describe("selectLoops", () => {
+	const holes = [
+		...Array.from({ length: 18 }, (_, i) => ({
+			ref: String(i + 1),
+			number: i + 1,
+			par: 4,
+			strokeIndex: i + 1,
+		})),
+		{ ref: "(1)", number: 1, par: 3 },
+		{ number: 19 },
+	];
+	const loops = detectLoops(holes);
+
+	it("leaves holes without a ref out of every loop", () => {
+		expect(loops.map((l) => l.label)).toEqual(["1–9", "10–18", "(1)–(1)"]);
+	});
+	it("totals par and flags holes without par or stroke index", () => {
+		const eighteen = selectLoops(holes, loops, [0, 1]);
+		expect(eighteen.holeRefs).toHaveLength(18);
+		expect(eighteen.par).toBe(72);
+		expect(eighteen.incomplete).toEqual([]);
+		expect(eighteen.label).toBe("1–9 + 10–18");
+		expect(selectLoops(holes, loops, [2]).incomplete).toEqual(["(1)"]);
 	});
 });

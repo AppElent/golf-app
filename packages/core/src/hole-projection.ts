@@ -1,4 +1,4 @@
-import { type LatLng, projectToLocal } from "./geo";
+import { EARTH_RADIUS_M, type LatLng, projectToLocal, toRad } from "./geo";
 
 export interface Point {
 	x: number;
@@ -11,18 +11,6 @@ export interface Projector {
 	scale: number;
 }
 
-/** A hole's renderable geometry in WGS84 (consumers project via a Projector). */
-export interface HoleShapes {
-	holeLine: LatLng[];
-	fairways: LatLng[][];
-	greens: LatLng[][];
-	bunkers: LatLng[][];
-	water: LatLng[][];
-	tees: LatLng[][];
-	trees?: LatLng[]; // optional points (not imported yet)
-}
-
-const EARTH_RADIUS_M = 6371000;
 const toDeg = (rad: number): number => (rad * 180) / Math.PI;
 
 /**
@@ -101,8 +89,7 @@ export function buildProjector(opts: {
 		// Inverse equirectangular around the tee.
 		const lat = tee.lat + toDeg(my / EARTH_RADIUS_M);
 		const lng =
-			tee.lng +
-			toDeg(mx / (EARTH_RADIUS_M * Math.cos((tee.lat * Math.PI) / 180)));
+			tee.lng + toDeg(mx / (EARTH_RADIUS_M * Math.cos(toRad(tee.lat))));
 		return { lat, lng };
 	};
 

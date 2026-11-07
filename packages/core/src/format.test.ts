@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+	distanceValue,
 	formatDistance,
 	formatTravelDistance,
 	holeLabel,
@@ -42,5 +43,12 @@ describe("holeLabel", () => {
 	it("strips the parentheses of a second course's refs", () => {
 		expect(holeLabel("(6)")).toBe("6");
 		expect(holeLabel("10")).toBe("10");
+	});
+});
+
+describe("distanceValue", () => {
+	it("rounds in the chosen units, without the unit", () => {
+		expect(distanceValue(150, "m")).toBe("150");
+		expect(distanceValue(150, "yd")).toBe("164");
 	});
 });
