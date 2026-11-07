@@ -7,27 +7,17 @@ description: Verify that a code change actually does what it's supposed to by ex
 
 ## Route → module map
 
-TODO — fill this in as routes are built out. For each real route, map it to the
-files that implement it (route file, main components, Convex functions it calls),
-e.g.:
-
-```
-/some-route  ->  src/routes/some-route.tsx  ->  components: ..., convex: ...
-```
-
-Don't guess this map speculatively; add an entry only once the route exists.
+Web routes are file routes: `/rounds/new` is `src/routes/rounds.new.tsx`, and that
+file imports its components and Convex functions. Mobile routes are in
+`apps/mobile/app/`, each importing a screen from `apps/mobile/src/features`.
 
 ## Logging in during a preview
 
-If the app uses `@appelent/auth`'s `TestLoginButton`/`shouldShowTestLogin`, the
-sign-in screen shows a "▶ Dev: log in as test user" button whenever
-`VITE_CLERK_PUBLISHABLE_KEY` is a Clerk **test** key (`pk_test_...`, never
-`pk_live_...`) *and* both `VITE_TEST_USER_EMAIL`/`VITE_TEST_USER_PASSWORD` are
-set. Use this to authenticate when verifying a feature behind the login wall on
-the dev server or a non-prod preview — don't assume a real Clerk login is
-required or that auth-gated pages are unreachable for automated verification.
-If the button isn't showing, check `.env.local` (or the relevant preview's env)
-for those two vars before concluding the app can't be tested logged-in.
+The web app has no test-login button: `AuthGate`
+(`src/integrations/clerk/auth-gate.tsx`) shows Clerk's sign-in, and nothing behind
+it renders while signed out. The dev server and PR previews use the Clerk test
+instance, so sign in with a test account; if you have none, ask the user to sign in
+in the preview.
 
 ## Scope
 

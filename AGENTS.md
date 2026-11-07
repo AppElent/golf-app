@@ -23,7 +23,6 @@ Biome lints and formats. Vitest tests everything except `apps/mobile`, which use
 
 ```bash
 pnpm dev              # Vite dev server only, port 3000
-pnpm dev:all          # push Convex functions once, then start Vite
 pnpm dev:watch        # Convex dev (watching) + Vite; use when editing convex/
 pnpm generate-routes  # route tree codegen
 pnpm check            # Biome + mobile structure + repo layout checks
@@ -43,8 +42,8 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
 
 - **Root shell**: `src/routes/__root.tsx` wraps the app in `ClerkProvider` →
   `ConvexProvider` → `AuthGate`. The gate shows Clerk's sign-in when signed out
-  and mounts children once Convex has the token. A pre-paint theme script
-  (`src/integrations/theme/theme-init-script.ts`) is inlined in `<head>`.
+  and mounts children once Convex has the token. Dark mode follows the OS through
+  a `prefers-color-scheme` media query in `src/styles.css`.
 - **Clerk ↔ Convex**: `convex/auth.config.ts` reads `CLERK_JWT_ISSUER_DOMAIN`, a
   Convex deployment env var. The web client uses `ConvexProviderWithClerk`
   (`src/integrations/convex/provider.tsx`).
@@ -67,7 +66,7 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   helpers in `src/lib/observability/`. Local hosts never report. Read
   `docs/runbooks/sentry.md` before touching it.
 - **Deploy**: Worker `golf-app` on `fairway.appelent.nl` (production Clerk signs in
-  only on `*.appelent.nl`), with `golf-app-stg` and `golf-app-dev` envs. The Vite plugin
+  only on `*.appelent.nl`), with a `golf-app-stg` env. The Vite plugin
   picks the Worker env at build time from `CLOUDFLARE_ENV`; `wrangler deploy --env`
   is ignored. A merge to `main` runs `.github/workflows/deploy.yml`. Read
   `docs/runbooks/deploy.md` before changing it.
@@ -80,12 +79,12 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
 
 ## Upgrading dependencies
 
-Follow `.claude/commands/upgrade-deps.md`. Never weaken or skip tests to make an
+Follow the `upgrade-deps` skill (`.claude/skills/upgrade-deps/SKILL.md`). Never weaken or skip tests to make an
 upgrade pass; stop and report instead.
 
 ## Docs
 
-- Runbooks: `docs/runbooks/` (deploy, mobile, course catalog). Map: [docs/README.md](docs/README.md).
+- Runbooks: `docs/runbooks/` (deploy, mobile, course catalog, Sentry). Map: [docs/README.md](docs/README.md).
 - `.claude/skills/verify` is project-specific. `review-app`, `review-session` and
   `upgrade-deps` there are copies of the `appelent` plugin's skills; port
   non-project fixes back to the plugin.

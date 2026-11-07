@@ -5,7 +5,7 @@ updates:
   - package-ecosystem: npm # pnpm workspace
     directories: ["/", "/apps/mobile", "/packages/core"]
     schedule: { interval: weekly, day: monday }
-    # Must stay >= minimumReleaseAge in pnpm-workspace.yaml (1 day), or the
+    # Must stay >= minimumReleaseAge in pnpm-workspace.yaml (3 days), or the
     # proposed lockfile fails `pnpm install --frozen-lockfile`.
     cooldown:
       default-days: 7
@@ -51,7 +51,7 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
 
   - package-ecosystem: github-actions
-    directory: "/"
+    directories: ["/", "/.github/actions/setup"]
     schedule: { interval: monthly }
     commit-message: { prefix: "chore(ci)" }
     labels: [dependencies]

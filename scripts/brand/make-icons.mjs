@@ -1,19 +1,9 @@
-import { createRequire } from "node:module";
-import { readdir, readFile, writeFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import sharp from "sharp";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
-const require = createRequire(import.meta.url);
-let sharp;
-try {
-  sharp = require("sharp");
-} catch {
-  const store = path.join(root, "node_modules/.pnpm");
-  const entry = (await readdir(store)).find((name) => name.startsWith("sharp@"));
-  if (!entry) throw new Error("Install the workspace dependencies with pnpm first.");
-  sharp = require(path.join(store, entry, "node_modules/sharp"));
-}
 
 const mobile = "apps/mobile/assets/images/";
 const foreground = `${mobile}android-icon-foreground.png`;

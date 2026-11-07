@@ -70,7 +70,9 @@ app-specific): `pnpm run env plan local`, `pnpm run env apply local|preview|prod
   an earlier update or a finished EAS build there has the same runtime
   fingerprint; otherwise the run summary says a `preview-internal` rebuild is
   due. A local build is not recorded on EAS: after installing one, run the
-  workflow by hand with `force` once.
+  workflow by hand with `force` once. Before any hand-run publish, make sure
+  production Convex has the same commit: the app relies on functions and
+  fields the server fills in, such as `currentHoleIndex`.
 - The app checks for an update on launch and on resume (at most hourly), and
   Home shows "Update ready" once one has downloaded; tapping it restarts into
   it. It never restarts by itself.
@@ -108,7 +110,7 @@ pnpm exec eas update --channel device --environment development -m "…"   # JS-
   preferences, the query cache) can be deleted at any time without data loss.
 - "GPS while locked" (Profile) is opt-in, needs Always location, and runs
   background updates only while the Play screen is mounted. On iOS the "Change to
-  Always" prompt answers late; `background-location.ts` re-reads for 15 s.
+  Always" prompt answers late; `background-location-preference.ts` re-reads for 15 s.
 - Monitoring: Sentry project `appelent/fairway` (`src/monitoring/`). Errors
   only — no tracing, replay, sessions or screenshots — with user, request and
   console arguments scrubbed (`options.ts`). Reports from preview/production

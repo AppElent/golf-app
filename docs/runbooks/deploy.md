@@ -24,8 +24,8 @@ A manual **Run workflow** on another branch deploys that branch to staging
 only. Production always deploys from `main`.
 
 Dev is not a deployed environment: it is `pnpm dev` against your own
-`convex dev` deployment. `pnpm deploy:dev` / `pnpm deploy:prod` remain as a
-manual escape hatch; nothing automated calls them.
+`convex dev` deployment. Production has no laptop path: a local build bundles
+`.env.local`, which holds dev values.
 
 ## One-time setup
 
@@ -36,7 +36,7 @@ manual escape hatch; nothing automated calls them.
    ```
 
    Never pass `--default`: it would make `staging` the project's production
-   deployment, and `pnpm deploy:prod` would quietly deploy there. Set its
+   deployment, and every `--prod` command would quietly target it. Set its
    Clerk issuer (the test instance, like dev):
 
    ```sh
@@ -53,8 +53,9 @@ manual escape hatch; nothing automated calls them.
    | `stg` | `CONVEX_DEPLOY_KEY` (staging key) | `VITE_CLERK_PUBLISHABLE_KEY` (test instance) | Branch: any |
    | `production` | `CONVEX_DEPLOY_KEY` (production key) | `VITE_CLERK_PUBLISHABLE_KEY` (production instance) | Required reviewer: you; branch: `main` |
 
-   `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID` and `EXPO_TOKEN` stay at
-   repo level. The repo-level `CONVEX_DEPLOY_KEY` stays the *preview* key for
+   `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `EXPO_TOKEN`,
+   `SENTRY_AUTH_TOKEN` and the variable `VITE_SENTRY_DSN` stay at repo level.
+   The repo-level `CONVEX_DEPLOY_KEY` stays the *preview* key for
    PR previews: an environment secret shadows a repo secret of the same name
    only inside a job that names that environment.
 

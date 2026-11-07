@@ -10,8 +10,6 @@ dist-ssr
 .output
 .vinxi
 __unconfig*
-todos.json
-mcp-todos.json
 .claude/settings.local.json
 .claude/worktrees/
 CLAUDE.local.md

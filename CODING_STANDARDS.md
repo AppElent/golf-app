@@ -72,7 +72,7 @@ Project facts (identity, env, builds): [mobile runbook](docs/runbooks/mobile.md)
 - **Exception — CI triggers:** `ci.yml` runs on `pull_request` and
   `workflow_call` instead of `push: main`. `deploy.yml` calls it as its first job,
   so a merge is checked once and deploys only after it passes. Node is
-  `22` (latest 22.x, ≥ 22.15) as in the other workflows, not a pinned
+  `22` (latest 22.x, ≥ 22.15), set once in `.github/actions/setup`, not a pinned
   `22.15.0`. One root `pnpm typecheck` covers web, convex, core and mobile.
 - **Toolkit copies with Fairway settings:** `scripts/convex-sentry.mjs` is the
   toolkit forwarder verbatim; `pnpm sentry:convex` sets `SENTRY_APP=fairway-convex`

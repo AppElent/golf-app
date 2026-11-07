@@ -17,7 +17,6 @@
 			"apps/mobile/app/**/*",
 			"apps/mobile/*.{ts,tsx,js}",
 			"**/.vscode/**/*",
-			"**/index.html",
 			"**/vite.config.ts",
 			"!apps/mobile/expo-env.d.ts",
 			"!apps/mobile/ios",

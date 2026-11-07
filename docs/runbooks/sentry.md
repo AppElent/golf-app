@@ -35,9 +35,7 @@ Revisit if a surface's volume or alerting needs to diverge.
   regression test in `src/server.test.ts`). LAN addresses and tunnels are not
   detected — don't build with the DSN to test on a phone over Wi-Fi.
 - **Environment = deployment.** `VITE_SENTRY_ENVIRONMENT` is set by the command
-  that deploys: `staging` and `production` (deploy.yml, or
-  `pnpm deploy:prod` by hand), `development` (`pnpm deploy:dev`), `preview`
-  (preview.yml, which also sets the Worker's `environment_name`), `ci`
+  that deploys: `staging` and `production` (deploy-web.yml), `preview` (preview.yml, which also sets the Worker's `environment_name`), `ci`
   (ci.yml's check build). A build without it reports
   as `unknown`.
 - **Release** = `SENTRY_RELEASE`, else the git commit; one value is inlined in
@@ -70,31 +68,25 @@ Alerts and retention are configured in Sentry, not here.
 
 | Value | Where it comes from |
 | --- | --- |
-| `VITE_SENTRY_DSN` | Manifest: `.env.local` (local, so laptop deploys bundle it) and the GitHub **variable** `VITE_SENTRY_DSN` (preview.yml) |
-| `SENTRY_AUTH_TOKEN` | Manifest: the GitHub **secret** `SENTRY_AUTH_TOKEN` (preview.yml) and EAS. Never a file, never `VITE_*` |
+| `VITE_SENTRY_DSN` | Manifest: the GitHub **variable** `VITE_SENTRY_DSN` (deploy-web.yml, preview.yml) |
+| `SENTRY_AUTH_TOKEN` | Manifest: the GitHub **secret** `SENTRY_AUTH_TOKEN` (deploy-web.yml, preview.yml) and EAS. Never a file, never `VITE_*` |
 | `SENTRY_ORG` / `SENTRY_PROJECT` | Default to `appelent` / `fairway` in `vite.config.ts`; overridable |
 
 `vite build` emits hidden source maps (no `sourceMappingURL`). When the
 process has `SENTRY_AUTH_TOKEN`, `@sentry/vite-plugin` uploads the client and
 Worker maps for the release and an upload error fails the build; without it
 nothing is uploaded. `scripts/remove-client-sourcemaps.mjs` then deletes every
-map from `dist/client` (part of `pnpm build` and `pnpm build:development`), so
+map from `dist/client` (part of `pnpm build`), so
 deployed static assets serve none. Worker maps stay in `dist/server`; they are
 not served.
 
 - **ci.yml** builds without token or DSN (`VITE_SENTRY_ENVIRONMENT=ci`): no
   release per CI run.
-- **preview.yml** builds with the variable + secret above.
-- **Laptop deploys** don't upload unless the token is supplied to the process:
-
-  ```sh
-  node scripts/env.mjs exec production --only github -- pnpm deploy:prod
-  node scripts/env.mjs exec production --only github -- pnpm deploy:dev
-  ```
+- **deploy-web.yml** and **preview.yml** build with the variable + secret above.
 
   `--only github` selects the workflow placements (`SENTRY_AUTH_TOKEN`,
-  `VITE_SENTRY_DSN`, plus the unused `EXPO_TOKEN`) from Infisical for that
-  command only. (`pnpm env …` hits pnpm's built-in `env` command; use
+  `VITE_SENTRY_DSN`, `CLOUDFLARE_*`, plus the unused `EXPO_TOKEN`) from Infisical
+  for that command only. (`pnpm env …` hits pnpm's built-in `env` command; use
   `node scripts/env.mjs` or `pnpm run env …`.)
 
 An upload command succeeding does not prove symbolication: open a deployed

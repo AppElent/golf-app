@@ -14,8 +14,7 @@ the current branch and working-tree state.
 
 1. **Check outdated packages** (`pnpm outdated`). Upgrade dependencies,
    prioritizing the TanStack ecosystem (`@tanstack/react-start`,
-   `@tanstack/react-router`, `@tanstack/router-plugin`,
-   `@tanstack/react-query`, etc.) and keeping them on compatible versions
+   `@tanstack/react-router`, `@tanstack/router-cli`, etc.) and keeping them on compatible versions
    with each other. Apply minor/patch upgrades freely; for major version
    bumps, check release notes / breaking changes and only proceed if the
    migration is straightforward — otherwise list them for the user to

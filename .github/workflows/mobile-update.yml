@@ -70,18 +70,8 @@ jobs:
             echo "changed=true" >> "$GITHUB_OUTPUT"
           fi
 
-      - uses: pnpm/action-setup@v4
+      - uses: ./.github/actions/setup
         if: steps.changed.outputs.changed == 'true'
-
-      - uses: actions/setup-node@v4
-        if: steps.changed.outputs.changed == 'true'
-        with:
-          node-version: 22.15.0
-          cache: pnpm
-
-      - run: pnpm install --frozen-lockfile
-        if: steps.changed.outputs.changed == 'true'
-        working-directory: .
 
       - name: Match fingerprints
         id: match
