@@ -36,20 +36,22 @@ export function legLabel(
 	return club ? `${n} · ${club.name}` : n;
 }
 
-/** Slack beyond the hole's own length (a wayward drive, the walk to the tee). */
+/** Slack beyond the hole's own reach (a wayward drive, the walk to the tee). */
 const ON_HOLE_SLACK_M = 120;
 
 /**
- * Whether a GPS fix belongs to this hole: no further from the green than the
- * hole is long, plus slack. Elsewhere on the course (or at home) distances
- * come from the tee instead of drawing a line across other holes.
+ * Whether a GPS fix belongs to this hole: no further from the green than any
+ * part of the hole is, plus slack. Elsewhere on the course (or at home)
+ * distances come from the tee instead of drawing a line across other holes.
  */
 export function isOnHole(
 	position: LatLng,
-	anchors: { tee: LatLng; green: LatLng },
+	anchors: { green: LatLng; spanMeters: number },
 ): boolean {
-	const length = haversineMeters(anchors.tee, anchors.green);
-	return haversineMeters(position, anchors.green) <= length + ON_HOLE_SLACK_M;
+	return (
+		haversineMeters(position, anchors.green) <=
+		anchors.spanMeters + ON_HOLE_SLACK_M
+	);
 }
 
 /**
@@ -59,7 +61,7 @@ export function isOnHole(
  */
 export function playerPosition(
 	position: LatLng | null,
-	anchors: { tee: LatLng; green: LatLng } | null,
+	anchors: { tee: LatLng; green: LatLng; spanMeters: number } | null,
 	chosen = false,
 ): { fix: LatLng | null; player: LatLng | null } {
 	const fix =

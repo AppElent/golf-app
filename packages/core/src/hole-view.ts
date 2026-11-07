@@ -36,6 +36,9 @@ export interface HoleAnchors {
 	tee: LatLng;
 	green: LatLng;
 	greenRing: LatLng[] | null;
+	/** How far the hole reaches from the green: its back tee, or a dogleg's
+	 *  corner, whichever color is being played. */
+	spanMeters: number;
 }
 
 /** Where a tee color plays from: its own box, else the hole's back tee. */
@@ -72,7 +75,15 @@ export function holeAnchors(
 	if (!green) return null;
 	const tee = teePosition(geo, green, marker);
 	if (!tee) return null;
-	return { tee, green, greenRing };
+	const spanMeters = Math.max(
+		...[
+			tee,
+			...line,
+			...(geo.teeBoxes ?? []).map((box) => box.position),
+			...geo.tees.flat(),
+		].map((p) => haversineMeters(p, green)),
+	);
+	return { tee, green, greenRing, spanMeters };
 }
 
 export type HazardKind = "water" | "bunker";
@@ -205,13 +216,16 @@ function capHazards(
 	hazards: ReadonlyArray<HazardInPlay>,
 	limit: number,
 ): HazardInPlay[] {
-	const kept = hazards.slice(0, limit);
+	const crossing = (h: HazardInPlay) =>
+		h.kind === "water" && h.side === "center";
 	const bunker = hazards.find((h) => h.kind === "bunker");
-	const lastBank = kept
-		.map((h) => h.kind === "water" && h.side !== "center")
-		.lastIndexOf(true);
-	if (!bunker || kept.includes(bunker) || lastBank < 0) return kept;
-	return [...kept.slice(0, lastBank), ...kept.slice(lastBank + 1), bunker];
+	const ranked = [
+		...hazards.filter(crossing),
+		...(bunker ? [bunker] : []),
+		...hazards.filter((h) => !crossing(h) && h !== bunker),
+	];
+	const kept = new Set(ranked.slice(0, limit));
+	return hazards.filter((h) => kept.has(h));
 }
 
 /**

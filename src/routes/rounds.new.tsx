@@ -1,3 +1,4 @@
+import { useUser } from "@clerk/react";
 import {
 	parseHandicapIndex,
 	playingHandicapPreview,
@@ -78,6 +79,8 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 	const start = useMutation(api.rounds.start);
 	const { simulate } = Route.useSearch();
 	const { setSimulating } = useSimulationMode();
+	const { user } = useUser();
+	const ownerName = user?.firstName || user?.username || "You";
 
 	const [loopIdxs, setLoopIdxs] = useState<number[]>([]);
 	const [ownerHi, setOwnerHi] = useState("");
@@ -124,7 +127,7 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 				simulated: simulate,
 				players: [
 					{
-						name: "Eric",
+						name: ownerName,
 						handicapIndex: parseHandicapIndex(ownerHi).value ?? undefined,
 					},
 					...guests.map((g) => ({
@@ -199,7 +202,7 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 			{holeRefs.length > 0 ? (
 				<Section title="Players">
 					<PlayerRow
-						name="Eric (you)"
+						name={ownerName}
 						hi={ownerHi}
 						onHi={setOwnerHi}
 						ph={phFor(ownerHi)}

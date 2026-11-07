@@ -1,5 +1,5 @@
 {
-	"method": "Traced by eye from PDOK 8 cm aerial photos (Actueel_orthoHR) against the 2025 official course maps. Each colour sits on the visible tee nearest its scorecard distance from the green, or where no pad is visible, on its card position or an OSM tee polygon in shade.",
+	"method": "Traced by eye from PDOK 8 cm aerial photos (Actueel_orthoHR) against the 2025 official course maps. Each colour sits on the visible tee nearest its scorecard distance from the green, or where no pad is visible, on its card position or an OSM tee polygon in shade. OSM's \"bunker\" beside the 18th red tee is dropped: grass in the photo, no sand.",
 	"inferred": {
 		"boxesPerHole": {
 			"3": 1,
@@ -1412,6 +1412,12 @@
 					"colors": [
 						"orange"
 					]
+				}
+			],
+			"dropBunkers": [
+				{
+					"lat": 51.94198,
+					"lng": 5.82409
 				}
 			]
 		},
