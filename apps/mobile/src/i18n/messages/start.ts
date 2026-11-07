@@ -8,6 +8,7 @@ export const homeEn = {
 	wouldBeHint: "From your last {count} rounds",
 	startRound: "Start round",
 	resumeTitle: "Round in progress",
+	resumeSimulation: "Simulation — not saved",
 	resume: "Resume",
 	resumeDetail: "Hole {hole} · {n} of {total} played",
 	handicapEdit: "Opens your handicap index",
@@ -29,6 +30,7 @@ export const homeNl: typeof homeEn = {
 	wouldBeHint: "Uit je laatste {count} rondes",
 	startRound: "Ronde starten",
 	resumeTitle: "Ronde bezig",
+	resumeSimulation: "Simulatie — niet opgeslagen",
 	resume: "Hervatten",
 	resumeDetail: "Hole {hole} · {n} van {total} gespeeld",
 	handicapEdit: "Opent je handicapindex",
@@ -92,6 +94,9 @@ export const setupEn = {
 	addGuest: "Add player",
 	removeGuest: "Remove {name}",
 	start: "Tee off",
+	startSimulation: "Start simulation",
+	simulationNote:
+		"A simulated round: nothing counts for your history, stats or handicap.",
 	startError: "Could not start the round.",
 	notFound: "Course not found.",
 	noTees: "This course has no tees yet. Add one on the web first.",
@@ -131,6 +136,9 @@ export const setupNl: typeof setupEn = {
 	addGuest: "Speler toevoegen",
 	removeGuest: "{name} verwijderen",
 	start: "Afslaan",
+	startSimulation: "Simulatie starten",
+	simulationNote:
+		"Een gesimuleerde ronde: niets telt mee voor je historie, statistieken of handicap.",
 	startError: "De ronde kon niet worden gestart.",
 	notFound: "Baan niet gevonden.",
 	noTees: "Deze baan heeft nog geen tees. Voeg er eerst een toe op het web.",
@@ -147,4 +155,22 @@ export const suggestNl: typeof suggestEn = {
 	send: "Versturen",
 	sent: "Bedankt — we kijken ernaar.",
 	error: "Je voorstel kon niet worden verstuurd.",
+};
+
+export const simulatorEn = {
+	title: "Course simulator",
+	intro:
+		"Test a course from anywhere: stand wherever you like and play through its holes. Your real round, history, stats and handicap stay untouched.",
+	running: "Simulation in progress",
+	resume: "Resume",
+	pickCourse: "Start on a course",
+};
+
+export const simulatorNl: typeof simulatorEn = {
+	title: "Baansimulator",
+	intro:
+		"Test een baan vanaf elke plek: ga staan waar je wilt en speel de holes door. Je echte ronde, historie, statistieken en handicap blijven ongemoeid.",
+	running: "Simulatie bezig",
+	resume: "Hervatten",
+	pickCourse: "Starten op een baan",
 };

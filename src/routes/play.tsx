@@ -1,19 +1,29 @@
 import { type Club, DEFAULT_BAG } from "@fairway/core/club-suggest";
-import { GPS_WEAK_ACCURACY_M } from "@fairway/core/geo";
-import { greenNumbers, holeAnchors } from "@fairway/core/hole-view";
+import { GPS_WEAK_ACCURACY_M, type LatLng } from "@fairway/core/geo";
+import {
+	greenNumbers,
+	type HazardInPlay,
+	hazardsInPlay,
+	holeAnchors,
+} from "@fairway/core/hole-view";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { api } from "../../convex/_generated/api";
 import { CTA } from "../components/classes";
 import { HoleMap, type MapVariant } from "../play/HoleMap";
+import {
+	useActiveRound,
+	useSimulatedPosition,
+	useSimulationMode,
+} from "../play/simulation";
 import { useGeolocation } from "../play/useGeolocation";
 
 export const Route = createFileRoute("/play")({ component: PlayScreen });
 
 function PlayScreen() {
-	const active = useQuery(api.rounds.active);
+	const active = useActiveRound();
 	const geometry = useQuery(
 		api.courses.get,
 		active ? { courseId: active.round.courseId } : "skip",
@@ -58,7 +68,13 @@ function PlayInner({
 	onSetHole: (holeIndex: number) => void;
 }) {
 	const navigate = useNavigate();
-	const { position: gps, accuracyM } = useGeolocation();
+	const simulated = active.round.simulated === true;
+	const { position: watched, accuracyM: watchedAccuracy } = useGeolocation(
+		!simulated,
+	);
+	const { setSimulating } = useSimulationMode();
+	const markShot = useMutation(api.shots.mark);
+	const aim = useRef<LatLng | null>(null);
 	const [variant, setVariant] = useState<MapVariant>("map");
 
 	const idx = active.round.currentHoleIndex;
@@ -67,14 +83,45 @@ function PlayInner({
 	const geo = geometry?.geometry.find((g) => g.ref === ref);
 
 	// A hole with only a hole line has anchors too, but no green polygon to map.
-	const anchors = geo ? holeAnchors(geo) : null;
+	const anchors = geo ? holeAnchors(geo, active.tee.marker) : null;
 	const mapAnchors = anchors?.greenRing ? anchors : null;
+	const sim = useSimulatedPosition(ref, anchors, geo?.holeLine);
+	const gps = simulated ? sim.position : watched;
+	const accuracyM = simulated ? null : watchedAccuracy;
 	const position = gps ?? mapAnchors?.tee ?? null;
 	const numbers =
 		position && mapAnchors ? greenNumbers(position, mapAnchors) : null;
 
+	/** The shot goes exactly where it was aimed (the green by default). */
+	async function hitShot() {
+		if (!position || !anchors) return;
+		sim.setWalking(false);
+		await markShot({
+			roundId: active.round._id,
+			holeIndex: idx,
+			position,
+		});
+		sim.moveTo(aim.current ?? anchors.green);
+		aim.current = null;
+	}
+
 	return (
 		<main className="min-h-dvh bg-pine px-4 pt-14 pb-[110px]">
+			{simulated ? (
+				<div className="mb-3 flex items-center justify-between rounded-full bg-flag/90 py-1.5 pr-1.5 pl-4 text-[13px] font-semibold text-white">
+					<span>Simulation — not saved</span>
+					<button
+						type="button"
+						onClick={() => {
+							setSimulating(false);
+							navigate({ to: "/" });
+						}}
+						className="rounded-full bg-white/20 px-3 py-1"
+					>
+						Exit
+					</button>
+				</div>
+			) : null}
 			<header className="flex items-center justify-between">
 				<button
 					type="button"
@@ -135,6 +182,10 @@ function PlayInner({
 						bag={bag}
 						variant={variant}
 						accuracyM={accuracyM}
+						onStandAt={simulated && sim.moving ? sim.moveTo : undefined}
+						onAim={(next) => {
+							aim.current = next;
+						}}
 					/>
 				) : (
 					<SchematicFallback
@@ -152,12 +203,44 @@ function PlayInner({
 				</div>
 			) : null}
 
+			{simulated ? (
+				<div className="mt-3 grid grid-cols-3 gap-1.5">
+					<SimButton onClick={() => sim.jump("tee")}>Tee</SimButton>
+					<SimButton onClick={() => sim.jump("approach")}>100 m</SimButton>
+					<SimButton onClick={() => sim.jump("green")}>Green</SimButton>
+					<SimButton
+						active={sim.moving}
+						onClick={() => sim.setMoving(!sim.moving)}
+					>
+						Tap to move
+					</SimButton>
+					<SimButton
+						active={sim.walking}
+						onClick={() => sim.setWalking(!sim.walking)}
+					>
+						{sim.walking ? "Stop" : "Walk"}
+					</SimButton>
+					<SimButton onClick={() => void hitShot()}>Hit shot</SimButton>
+				</div>
+			) : null}
+
+			{geo && position && anchors ? (
+				<HazardList
+					hazards={hazardsInPlay(position, anchors.green, geo, {
+						maxMeters: 650,
+						limit: 8,
+					})}
+				/>
+			) : null}
+
 			<p className="mt-2 text-center text-[11px] text-mint-soft">
-				{gps
-					? accuracyM && accuracyM > GPS_WEAK_ACCURACY_M
-						? `GPS ±${Math.round(accuracyM)} m`
-						: "GPS locked"
-					: "No GPS — distances from the tee"}
+				{simulated
+					? "Simulated position"
+					: gps
+						? accuracyM && accuracyM > GPS_WEAK_ACCURACY_M
+							? `GPS ±${Math.round(accuracyM)} m`
+							: "GPS locked"
+						: "No GPS — distances from the tee"}
 			</p>
 
 			<button
@@ -168,6 +251,67 @@ function PlayInner({
 				Enter score for hole {idx + 1}
 			</button>
 		</main>
+	);
+}
+
+function SimButton({
+	children,
+	onClick,
+	active,
+}: {
+	children: React.ReactNode;
+	onClick: () => void;
+	active?: boolean;
+}) {
+	return (
+		<button
+			type="button"
+			onClick={onClick}
+			aria-pressed={active}
+			className={`rounded-xl px-2 py-2.5 font-display text-[13px] font-semibold ${
+				active ? "bg-live text-white" : "bg-pine-light text-cream"
+			}`}
+		>
+			{children}
+		</button>
+	);
+}
+
+const SIDE_LABEL: Record<HazardInPlay["side"], string> = {
+	left: "left",
+	right: "right",
+	center: "across",
+};
+
+/** Every hazard left on the hole: what to reach, what to carry. */
+function HazardList({ hazards }: { hazards: HazardInPlay[] }) {
+	if (hazards.length === 0) return null;
+	return (
+		<section className="mt-3 rounded-2xl bg-pine-light px-3 py-2 text-cream">
+			<h2 className="text-[10px] uppercase tracking-wide opacity-70">
+				Hazards
+			</h2>
+			<ul className="mt-1 flex flex-col gap-1 text-[13px]">
+				{hazards.map((h) => (
+					<li
+						key={`${h.kind}-${h.at.lat},${h.at.lng}`}
+						className="flex items-center justify-between"
+					>
+						<span className="flex items-center gap-2">
+							<span
+								aria-hidden
+								className={`size-2 rounded-full ${h.kind === "water" ? "bg-sky-400" : "bg-sand"}`}
+							/>
+							{h.kind === "water" ? "Water" : "Bunker"}
+							<span className="opacity-70">{SIDE_LABEL[h.side]}</span>
+						</span>
+						<span className="font-display font-semibold tabular-nums">
+							{Math.round(h.reach)}–{Math.round(h.carry)} m
+						</span>
+					</li>
+				))}
+			</ul>
+		</section>
 	);
 }
 

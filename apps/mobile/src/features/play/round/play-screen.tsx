@@ -6,8 +6,10 @@
 
 import { type Club, DEFAULT_BAG } from "@fairway/core/club-suggest";
 import { holeLabel, type Units } from "@fairway/core/format";
+import type { LatLng } from "@fairway/core/geo";
 import { learnedBag } from "@fairway/core/shots";
 import { useKeepAwake } from "expo-keep-awake";
+import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -24,6 +26,7 @@ import {
 	type ActiveRound,
 	useActiveRound,
 } from "../../rounds/use-active-round";
+import { useSimulationMode } from "../../simulation/simulation-mode";
 import { hudLayout } from "../hud/hud-layout";
 import { PlayBottomBar } from "./play-bottom-bar";
 import { PlayClubTray } from "./play-club-tray";
@@ -32,6 +35,10 @@ import { PlayGpsPill } from "./play-gps-pill";
 import { PlayHoleView } from "./play-hole-view";
 import { gpsNotice, playerPosition } from "./play-model";
 import { PlayNextTeeOffer } from "./play-next-tee-offer";
+import {
+	PlaySimulationBanner,
+	PlaySimulationControls,
+} from "./play-simulation-controls";
 import { PlayTopBar } from "./play-top-bar";
 import { useCurrentHole } from "./use-current-hole";
 import { useHoleAnchors } from "./use-hole-anchors";
@@ -40,6 +47,10 @@ import { useHoleTarget } from "./use-hole-target";
 import { useLockScreenHole } from "./use-lock-screen-hole";
 import { useNextTeeOffer } from "./use-next-tee-offer";
 import { useShotMarking } from "./use-shot-marking";
+import {
+	SIMULATED_ACCURACY_M,
+	useSimulatedPosition,
+} from "./use-simulated-position";
 
 export function PlayScreen() {
 	useKeepAwake();
@@ -94,16 +105,29 @@ function PlayHole({
 }) {
 	const { t } = useI18n();
 	const insets = useSafeAreaInsets();
-	const gps = useWatchPosition();
+	const router = useRouter();
+	const { setSimulating } = useSimulationMode();
 
 	const { round, holes } = active;
+	const simulated = round.simulated === true;
+	const watched = useWatchPosition(!simulated);
 	const { holeIndex, goTo } = useCurrentHole(round);
 	const meta = holes[holeIndex];
 	const { geometry, anchors, nextAnchors, holeKey } = useHoleAnchors(
 		round.holeRefs,
 		detail,
 		holeIndex,
+		active.tee.marker,
 	);
+	const sim = useSimulatedPosition({
+		holeKey,
+		anchors,
+		geometry,
+		nextAnchors,
+	});
+	const gps = simulated
+		? { position: sim.position, accuracyMeters: SIMULATED_ACCURACY_M }
+		: watched;
 	const { fix, player } = playerPosition(gps.position, anchors);
 
 	const holeNumber = meta ? holeLabel(meta.ref) : holeIndex + 1;
@@ -115,6 +139,7 @@ function PlayHole({
 		courseName: active.course.name,
 		units,
 		position: gps.position,
+		enabled: !simulated,
 	});
 	const { target, setTarget, aimFrom } = useHoleTarget({
 		holeKey,
@@ -143,6 +168,23 @@ function PlayHole({
 
 	const hudTop = insets.top + spacing.sm;
 	const hudBottom = insets.bottom + spacing.md;
+	const simulationHeight = simulated ? hudLayout.simulationPanel : 0;
+
+	/** Simulation mode: stand somewhere else and aim from there. */
+	function standAt(position: LatLng | null) {
+		if (!position) return;
+		sim.stopWalking();
+		sim.moveTo(position);
+		aimFrom(position);
+	}
+
+	/** Simulation mode: the shot goes exactly where it was aimed. */
+	async function hit() {
+		const landed = target;
+		if (!landed) return;
+		sim.stopWalking();
+		if (await onMarkShot()) standAt(landed);
+	}
 
 	return (
 		<View style={styles.root}>
@@ -153,13 +195,13 @@ function PlayHole({
 				player={player}
 				located={fix !== null}
 				target={target}
-				onTargetChange={setTarget}
+				onTargetChange={simulated && sim.moving ? standAt : setTarget}
 				greenView={greenView}
 				shots={holeShots}
 				bag={bag}
 				units={units}
 				hudTop={hudTop}
-				hudBottom={hudBottom}
+				hudBottom={hudBottom + simulationHeight}
 			/>
 			<PlayTopBar
 				top={hudTop}
@@ -170,8 +212,21 @@ function PlayHole({
 				units={units}
 				onGoTo={goTo}
 			/>
+			{simulated ? (
+				<PlaySimulationBanner
+					top={hudTop + hudLayout.gpsPillTop}
+					onExit={() => {
+						setSimulating(false);
+						router.back();
+					}}
+				/>
+			) : null}
 			<PlayGpsPill
-				top={hudTop + hudLayout.gpsPillTop}
+				top={
+					hudTop +
+					hudLayout.gpsPillTop +
+					(simulated ? hudLayout.gpsPillBelowBanner : 0)
+				}
 				notice={gpsNotice({
 					hasAnchors: !!anchors,
 					located: fix !== null,
@@ -183,17 +238,34 @@ function PlayHole({
 				top={hudTop + hudLayout.distancesTop}
 				anchors={anchors}
 				player={player}
+				geometry={greenView ? null : geometry}
 				units={units}
 			/>
+			{simulated ? (
+				<PlaySimulationControls
+					bottom={hudBottom + hudLayout.trayBottom}
+					hasNextTee={sim.nextTee !== null}
+					walking={sim.walking}
+					moving={sim.moving}
+					busy={marking || !!pendingShot}
+					onTee={() => standAt(sim.spot("tee"))}
+					onApproach={() => standAt(sim.spot("approach"))}
+					onGreen={() => standAt(sim.spot("green"))}
+					onNextTee={() => standAt(sim.nextTee)}
+					onToggleMove={() => sim.setMoving((on) => !on)}
+					onToggleWalk={sim.toggleWalking}
+					onHit={() => void hit()}
+				/>
+			) : null}
 			{pendingShot ? (
 				<PlayClubTray
-					bottom={hudBottom + hudLayout.trayBottom}
+					bottom={hudBottom + hudLayout.trayBottom + simulationHeight}
 					bag={bag}
 					onPick={pickClub}
 				/>
 			) : offerNext ? (
 				<PlayNextTeeOffer
-					bottom={hudBottom + hudLayout.trayBottom}
+					bottom={hudBottom + hudLayout.trayBottom + simulationHeight}
 					nextRef={round.holeRefs[holeIndex + 1] ?? ""}
 					onDismiss={dismissOffer}
 					onGo={() => goTo(holeIndex + 1)}

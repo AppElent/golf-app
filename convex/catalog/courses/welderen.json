@@ -3,7 +3,7 @@
 	"name": "Golfbaan Landgoed Welderen",
 	"city": "Elst",
 	"osmRelationId": 901850,
-	"notes": "Championship course. Hole lengths: geel tee. Ratings: 2023 NGF table; women's wit tee has no rating.",
+	"notes": "Championship course. Ratings: 2023 NGF table; women's wit tee has no rating.",
 	"sources": [
 		"https://welderen.nl/wp-content/uploads/2025/09/scorekaarten_wld_2025_cc.pdf",
 		"https://welderen.nl/wp-content/uploads/2023/09/Welderen-Heren.pdf"
@@ -13,55 +13,64 @@
 			"name": "Geel · heren",
 			"color": "#f2c94c",
 			"courseRating": 71.3,
-			"slopeRating": 130
+			"slopeRating": 130,
+			"marker": "yellow"
 		},
 		{
 			"name": "Rood · dames",
 			"color": "#d64545",
 			"courseRating": 72.7,
-			"slopeRating": 124
+			"slopeRating": 124,
+			"marker": "red"
 		},
 		{
 			"name": "Wit · heren",
 			"color": "#ffffff",
 			"courseRating": 72.4,
-			"slopeRating": 132
+			"slopeRating": 132,
+			"marker": "white"
 		},
 		{
 			"name": "Geel · dames",
 			"color": "#f2c94c",
 			"courseRating": 78.1,
-			"slopeRating": 139
+			"slopeRating": 139,
+			"marker": "yellow"
 		},
 		{
 			"name": "Blauw · heren",
 			"color": "#2f6fd6",
 			"courseRating": 68.0,
-			"slopeRating": 119
+			"slopeRating": 119,
+			"marker": "blue"
 		},
 		{
 			"name": "Blauw · dames",
 			"color": "#2f6fd6",
 			"courseRating": 74.2,
-			"slopeRating": 126
+			"slopeRating": 126,
+			"marker": "blue"
 		},
 		{
 			"name": "Rood · heren",
 			"color": "#d64545",
 			"courseRating": 66.9,
-			"slopeRating": 117
+			"slopeRating": 117,
+			"marker": "red"
 		},
 		{
 			"name": "Oranje · heren",
 			"color": "#f2994a",
 			"courseRating": 63.9,
-			"slopeRating": 110
+			"slopeRating": 110,
+			"marker": "orange"
 		},
 		{
 			"name": "Oranje · dames",
 			"color": "#f2994a",
 			"courseRating": 69.4,
-			"slopeRating": 123
+			"slopeRating": 123,
+			"marker": "orange"
 		}
 	],
 	"holes": [
@@ -70,126 +79,252 @@
 			"ref": "1",
 			"par": 5,
 			"strokeIndex": 11,
-			"lengthMeters": 457
+			"lengthMeters": 457,
+			"lengths": {
+				"white": 466,
+				"blue": 389,
+				"yellow": 457,
+				"red": 385,
+				"orange": 346
+			}
 		},
 		{
 			"number": 2,
 			"ref": "2",
 			"par": 4,
 			"strokeIndex": 7,
-			"lengthMeters": 340
+			"lengthMeters": 340,
+			"lengths": {
+				"white": 362,
+				"blue": 296,
+				"yellow": 340,
+				"red": 289,
+				"orange": 260
+			}
 		},
 		{
 			"number": 3,
 			"ref": "3",
 			"par": 5,
 			"strokeIndex": 17,
-			"lengthMeters": 469
+			"lengthMeters": 469,
+			"lengths": {
+				"white": 476,
+				"blue": 401,
+				"yellow": 469,
+				"red": 397,
+				"orange": 357
+			}
 		},
 		{
 			"number": 4,
 			"ref": "4",
 			"par": 3,
 			"strokeIndex": 13,
-			"lengthMeters": 133
+			"lengthMeters": 133,
+			"lengths": {
+				"white": 137,
+				"blue": 128,
+				"yellow": 133,
+				"red": 122,
+				"orange": 110
+			}
 		},
 		{
 			"number": 5,
 			"ref": "5",
 			"par": 4,
 			"strokeIndex": 15,
-			"lengthMeters": 301
+			"lengthMeters": 301,
+			"lengths": {
+				"white": 305,
+				"blue": 296,
+				"yellow": 301,
+				"red": 287,
+				"orange": 258
+			}
 		},
 		{
 			"number": 6,
 			"ref": "6",
 			"par": 4,
 			"strokeIndex": 3,
-			"lengthMeters": 379
+			"lengthMeters": 379,
+			"lengths": {
+				"white": 388,
+				"blue": 322,
+				"yellow": 379,
+				"red": 318,
+				"orange": 286
+			}
 		},
 		{
 			"number": 7,
 			"ref": "7",
 			"par": 3,
 			"strokeIndex": 9,
-			"lengthMeters": 150
+			"lengthMeters": 150,
+			"lengths": {
+				"white": 154,
+				"blue": 139,
+				"yellow": 150,
+				"red": 132,
+				"orange": 119
+			}
 		},
 		{
 			"number": 8,
 			"ref": "8",
 			"par": 4,
 			"strokeIndex": 1,
-			"lengthMeters": 388
+			"lengthMeters": 388,
+			"lengths": {
+				"white": 395,
+				"blue": 315,
+				"yellow": 388,
+				"red": 315,
+				"orange": 283
+			}
 		},
 		{
 			"number": 9,
 			"ref": "9",
 			"par": 4,
 			"strokeIndex": 5,
-			"lengthMeters": 324
+			"lengthMeters": 324,
+			"lengths": {
+				"white": 327,
+				"blue": 315,
+				"yellow": 324,
+				"red": 307,
+				"orange": 276
+			}
 		},
 		{
 			"number": 10,
 			"ref": "10",
 			"par": 4,
 			"strokeIndex": 14,
-			"lengthMeters": 337
+			"lengthMeters": 337,
+			"lengths": {
+				"white": 337,
+				"blue": 302,
+				"yellow": 337,
+				"red": 290,
+				"orange": 261
+			}
 		},
 		{
 			"number": 11,
 			"ref": "11",
 			"par": 3,
 			"strokeIndex": 6,
-			"lengthMeters": 180
+			"lengthMeters": 180,
+			"lengths": {
+				"white": 190,
+				"blue": 170,
+				"yellow": 180,
+				"red": 146,
+				"orange": 131
+			}
 		},
 		{
 			"number": 12,
 			"ref": "12",
 			"par": 4,
 			"strokeIndex": 2,
-			"lengthMeters": 367
+			"lengthMeters": 367,
+			"lengths": {
+				"white": 373,
+				"blue": 311,
+				"yellow": 367,
+				"red": 307,
+				"orange": 276
+			}
 		},
 		{
 			"number": 13,
 			"ref": "13",
 			"par": 3,
 			"strokeIndex": 16,
-			"lengthMeters": 150
+			"lengthMeters": 150,
+			"lengths": {
+				"white": 155,
+				"blue": 123,
+				"yellow": 150,
+				"red": 122,
+				"orange": 110
+			}
 		},
 		{
 			"number": 14,
 			"ref": "14",
 			"par": 5,
 			"strokeIndex": 18,
-			"lengthMeters": 446
+			"lengthMeters": 446,
+			"lengths": {
+				"white": 458,
+				"blue": 382,
+				"yellow": 446,
+				"red": 378,
+				"orange": 340
+			}
 		},
 		{
 			"number": 15,
 			"ref": "15",
 			"par": 5,
 			"strokeIndex": 12,
-			"lengthMeters": 479
+			"lengthMeters": 479,
+			"lengths": {
+				"white": 494,
+				"blue": 406,
+				"yellow": 479,
+				"red": 406,
+				"orange": 365
+			}
 		},
 		{
 			"number": 16,
 			"ref": "16",
 			"par": 4,
 			"strokeIndex": 10,
-			"lengthMeters": 309
+			"lengthMeters": 309,
+			"lengths": {
+				"white": 313,
+				"blue": 303,
+				"yellow": 309,
+				"red": 296,
+				"orange": 266
+			}
 		},
 		{
 			"number": 17,
 			"ref": "17",
 			"par": 4,
 			"strokeIndex": 8,
-			"lengthMeters": 362
+			"lengthMeters": 362,
+			"lengths": {
+				"white": 409,
+				"blue": 362,
+				"yellow": 362,
+				"red": 308,
+				"orange": 277
+			}
 		},
 		{
 			"number": 18,
 			"ref": "18",
 			"par": 4,
 			"strokeIndex": 4,
-			"lengthMeters": 347
+			"lengthMeters": 347,
+			"lengths": {
+				"white": 402,
+				"blue": 342,
+				"yellow": 347,
+				"red": 310,
+				"orange": 279
+			}
 		}
 	]
 }

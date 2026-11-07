@@ -24,6 +24,8 @@ export function HoleMap({
 	bag,
 	variant,
 	accuracyM,
+	onStandAt,
+	onAim,
 }: {
 	geometry: HoleGeometry;
 	anchors: HoleAnchors;
@@ -32,6 +34,9 @@ export function HoleMap({
 	bag: ReadonlyArray<Club>;
 	variant: MapVariant;
 	accuracyM: number | null;
+	/** Simulation mode: a tap puts the player there instead of measuring. */
+	onStandAt?: (position: LatLng) => void;
+	onAim?: (aim: LatLng) => void;
 }) {
 	const svgRef = useRef<SVGSVGElement>(null);
 	const [aim, setAim] = useState<LatLng>(anchors.green);
@@ -66,6 +71,10 @@ export function HoleMap({
 
 	function onPointerDown(e: React.PointerEvent) {
 		const pt = svgPointFromEvent(e);
+		if (onStandAt) {
+			onStandAt(proj.unproject(pt));
+			return;
+		}
 		const aimPt = proj.project(aim);
 		if (Math.hypot(pt.x - aimPt.x, pt.y - aimPt.y) < 22) {
 			dragging.current = true;
@@ -76,7 +85,9 @@ export function HoleMap({
 	}
 	function onPointerMove(e: React.PointerEvent) {
 		if (!dragging.current) return;
-		setAim(proj.unproject(svgPointFromEvent(e)));
+		const next = proj.unproject(svgPointFromEvent(e));
+		setAim(next);
+		onAim?.(next);
 	}
 	function onPointerUp() {
 		dragging.current = false;

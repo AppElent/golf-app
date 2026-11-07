@@ -15,7 +15,7 @@ import {
 	vsPar,
 } from "@fairway/core/scoring";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
 import { api } from "../../convex/_generated/api";
@@ -23,11 +23,13 @@ import { CTA, SURFACE } from "../components/classes";
 import { Page, PageNote, PageTitle } from "../components/Page";
 import { SyncPill } from "../offline/SyncPill";
 import { useScoreSync } from "../offline/useScoreSync";
+import { useActiveRound, useSimulationMode } from "../play/simulation";
 
 export const Route = createFileRoute("/card")({ component: CardScreen });
 
 function CardScreen() {
-	const data = useQuery(api.rounds.active);
+	const data = useActiveRound();
+	const { setSimulating } = useSimulationMode();
 	const navigate = useNavigate();
 	const { submit, scoreOf, pendingCount, syncing, online } = useScoreSync();
 	const finish = useMutation(api.rounds.finish);
@@ -91,6 +93,7 @@ function CardScreen() {
 
 	async function onFinish() {
 		await finish({ roundId: round._id });
+		if (round.simulated) setSimulating(false);
 		setConfirmFinish(false);
 		navigate({ to: "/" });
 	}
@@ -108,6 +111,11 @@ function CardScreen() {
 					/>
 				</div>
 			</header>
+			{round.simulated ? (
+				<p className="mt-1 text-[12px] font-semibold text-flag">
+					Simulation — not saved
+				</p>
+			) : null}
 
 			{round.players.length > 1 ? (
 				<div className="mt-3 flex flex-wrap gap-2">
@@ -245,8 +253,9 @@ function CardScreen() {
 			{confirmFinish ? (
 				<div className="mt-6 rounded-2xl border border-flag/40 bg-flag/5 p-4">
 					<p className="text-[13px] font-semibold text-ink">
-						Finish this round? Your differential is saved if the card is
-						complete and you have a handicap.
+						{round.simulated
+							? "End this simulation? It is deleted: nothing counts for your history or handicap."
+							: "Finish this round? Your differential is saved if the card is complete and you have a handicap."}
 					</p>
 					<div className="mt-3 flex gap-2">
 						<button
@@ -278,6 +287,7 @@ function CardScreen() {
 						type="button"
 						onClick={async () => {
 							await abandon({ roundId: round._id });
+							if (round.simulated) setSimulating(false);
 						}}
 						className="rounded-full border border-card-line px-4 py-3 font-display text-[13px] font-semibold text-moss"
 					>

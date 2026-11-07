@@ -127,6 +127,22 @@ export function HoleSchematic(props: HoleCanvasProps) {
 							{geometry.tees.map((r) => (
 								<Path key={`t${ringKey(r)}`} d={path(r)} fill={course.tee} />
 							))}
+							{(geometry.teeBoxes ?? []).map((box) => {
+								const at = project(box.position);
+								return (
+									<Circle
+										key={`tb${box.position.lat},${box.position.lng}`}
+										cx={at.x}
+										cy={at.y}
+										r={5}
+										fill={
+											course.teeMarker[box.colors[0]] ?? course.distanceText
+										}
+										stroke={course.labelFill}
+										strokeWidth={1.5}
+									/>
+								);
+							})}
 							{geometry.water.map((r) => (
 								<Path key={`w${ringKey(r)}`} d={path(r)} fill={course.water} />
 							))}

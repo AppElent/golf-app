@@ -8,7 +8,7 @@ import { commonEn, tabsEn } from "./common";
 import { clubsEn, profileEn, roundsEn, statsEn } from "./history";
 import { playEn } from "./play";
 import { scorecardEn, scoreEn } from "./score";
-import { coursesEn, homeEn, setupEn, suggestEn } from "./start";
+import { coursesEn, homeEn, setupEn, simulatorEn, suggestEn } from "./start";
 
 export const en = {
 	common: commonEn,
@@ -20,6 +20,7 @@ export const en = {
 	courses: coursesEn,
 	setup: setupEn,
 	suggest: suggestEn,
+	simulator: simulatorEn,
 	play: playEn,
 	score: scoreEn,
 	scorecard: scorecardEn,

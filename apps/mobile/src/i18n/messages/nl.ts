@@ -4,7 +4,7 @@ import type { Messages } from "./en";
 import { clubsNl, profileNl, roundsNl, statsNl } from "./history";
 import { playNl } from "./play";
 import { scorecardNl, scoreNl } from "./score";
-import { coursesNl, homeNl, setupNl, suggestNl } from "./start";
+import { coursesNl, homeNl, setupNl, simulatorNl, suggestNl } from "./start";
 
 export const nl = {
 	common: commonNl,
@@ -16,6 +16,7 @@ export const nl = {
 	courses: coursesNl,
 	setup: setupNl,
 	suggest: suggestNl,
+	simulator: simulatorNl,
 	play: playNl,
 	score: scoreNl,
 	scorecard: scorecardNl,

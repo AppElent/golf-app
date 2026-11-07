@@ -3,7 +3,7 @@
  *
  * Curated facts (par, stroke index, lengths, tees and their ratings) live in
  * `courses/<key>.json`, each with its sources. Hole geometry is generated from
- * OpenStreetMap into `geometry/<osmRelationId>.json` by
+ * OpenStreetMap plus reviewed corrections into `geometry/<osmRelationId>.json` by
  * `scripts/course-data/refresh-geometry.mjs`. `courseCatalog:sync` writes both
  * into the database; the catalog always wins over database edits.
  * Process: docs/runbooks/course-catalog.md.
@@ -27,6 +27,7 @@ export type CatalogHoleGeometry = {
 	bunkers: LatLng[][];
 	tees: LatLng[][];
 	water: LatLng[][];
+	teeBoxes: { position: LatLng; colors: string[] }[];
 };
 
 export type CatalogCourse = {
@@ -40,6 +41,8 @@ export type CatalogCourse = {
 	tees: {
 		name: string;
 		color: string;
+		/** The color's name in `holes.lengths` and the geometry's `teeBoxes`. */
+		marker: string;
 		courseRating: number;
 		slopeRating: number;
 	}[];
@@ -49,6 +52,8 @@ export type CatalogCourse = {
 		par: number;
 		strokeIndex: number;
 		lengthMeters: number;
+		/** The card's length per tee `marker`. */
+		lengths: Record<string, number>;
 	}[];
 };
 

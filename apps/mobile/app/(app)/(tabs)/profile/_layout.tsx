@@ -10,6 +10,7 @@ export default function ProfileStack() {
 			<Stack.Screen name="handicap" options={small} />
 			<Stack.Screen name="home-course" options={small} />
 			<Stack.Screen name="club" options={small} />
+			<Stack.Screen name="simulator" options={small} />
 		</Stack>
 	);
 }

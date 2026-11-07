@@ -46,7 +46,7 @@ export function useShotMarking({
 	async function onMarkShot() {
 		if (!fix) {
 			toast.error(t.play.markNeedsGps);
-			return;
+			return false;
 		}
 		setMarking(true);
 		try {
@@ -54,8 +54,10 @@ export function useShotMarking({
 			haptics.saveConfirmed();
 			setPendingShot(shotId);
 			onMarked(fix);
+			return true;
 		} catch {
 			toast.error(t.play.markError);
+			return false;
 		} finally {
 			setMarking(false);
 		}

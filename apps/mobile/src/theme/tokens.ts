@@ -91,6 +91,17 @@ export const course = {
 	tee: "#5fae6e",
 	bunker: "#e9d8a6",
 	water: "#3f8fbf",
+	/** Hazards drawn over the imagery: visible, without hiding what's under. */
+	waterOverlay: "rgba(63, 143, 191, 0.4)",
+	bunkerOverlay: "rgba(233, 216, 166, 0.45)",
+	/** Tee markers, by the color a tee plays from. */
+	teeMarker: {
+		white: "#ffffff",
+		yellow: "#ffd400",
+		blue: "#2f8fff",
+		red: "#ff3b30",
+		orange: "#ff9500",
+	} as Record<string, string>,
 	birdie: "#e0532f",
 } as const;
 

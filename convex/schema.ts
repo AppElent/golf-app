@@ -36,6 +36,8 @@ export default defineSchema({
 		courseId: v.id("courses"),
 		name: v.string(),
 		color: v.optional(v.string()),
+		// The color's name in `holes.lengths` and `holeGeometry.teeBoxes`.
+		marker: v.optional(v.string()),
 		courseRating: v.number(),
 		slopeRating: v.number(),
 		// Dropped from the catalog but still referenced by a round: kept for
@@ -50,6 +52,8 @@ export default defineSchema({
 		par: v.optional(v.number()),
 		strokeIndex: v.optional(v.number()),
 		lengthMeters: v.optional(v.number()),
+		// The card's length per tee `marker`; `lengthMeters` is the fallback.
+		lengths: v.optional(v.record(v.string(), v.number())),
 		// Dropped from the catalog but still in a round's holeRefs: kept for
 		// that round's par and stroke index, hidden from the course.
 		retired: v.optional(v.boolean()),
@@ -67,6 +71,10 @@ export default defineSchema({
 		bunkers: v.array(polygon),
 		tees: v.array(polygon),
 		water: v.array(polygon),
+		// Where each tee `marker` plays from.
+		teeBoxes: v.optional(
+			v.array(v.object({ position: latLng, colors: v.array(v.string()) })),
+		),
 	}).index("by_course", ["courseId"]),
 
 	userSettings: defineTable({
@@ -110,6 +118,9 @@ export default defineSchema({
 			),
 		),
 		scoreDifferential: v.optional(v.union(v.number(), v.null())),
+		// A practice run in simulation mode: at most one per user, separate from
+		// the real active round, deleted when finished, and never in any stats.
+		simulated: v.optional(v.boolean()),
 	})
 		.index("by_user", ["userId"])
 		.index("by_tee", ["teeId"]),
@@ -150,6 +161,8 @@ export default defineSchema({
 		position: latLng,
 		club: v.optional(v.string()),
 		markedAt: v.number(),
+		// From a simulated round: not a real distance, so not in the learned bag.
+		simulated: v.optional(v.boolean()),
 	})
 		.index("by_round", ["roundId"])
 		.index("by_user", ["userId"]),

@@ -32,7 +32,7 @@ describe("play model", () => {
 	});
 
 	it("labels a hazard by kind, with reach and carry in units", () => {
-		const hazard = { reach: 100, carry: 150, at: tee };
+		const hazard = { reach: 100, carry: 150, at: tee, side: "left" as const };
 		expect(hazardLabel({ ...hazard, kind: "water" }, "m")).toBe("W 100/150");
 		expect(hazardLabel({ ...hazard, kind: "bunker" }, "yd")).toBe("B 109/164");
 	});

@@ -14,8 +14,13 @@ import { CTA, FIELD, SURFACE } from "../components/classes";
 import { INVALID_INDEX_MESSAGE } from "../components/copy";
 import { Page, PageTitle, Section } from "../components/Page";
 import { PillToggle } from "../components/PillToggle";
+import { useSimulationMode } from "../play/simulation";
 
-export const Route = createFileRoute("/rounds/new")({ component: RoundSetup });
+export const Route = createFileRoute("/rounds/new")({
+	component: RoundSetup,
+	validateSearch: (search: Record<string, unknown>): { simulate?: true } =>
+		search.simulate ? { simulate: true } : {},
+});
 
 interface GuestDraft {
 	id: string;
@@ -26,10 +31,17 @@ interface GuestDraft {
 function RoundSetup() {
 	const courses = useQuery(api.courses.list);
 	const [courseId, setCourseId] = useState<Id<"courses"> | null>(null);
+	const { simulate } = Route.useSearch();
 
 	return (
 		<Page>
-			<PageTitle>New round</PageTitle>
+			<PageTitle>{simulate ? "Course simulator" : "New round"}</PageTitle>
+			{simulate ? (
+				<p className="mt-2 text-[13px] text-moss">
+					Practice the course from your couch: you set where you stand. Nothing
+					counts for your history or handicap.
+				</p>
+			) : null}
 
 			<Section title="Course">
 				<div className="flex flex-col gap-2">
@@ -64,6 +76,8 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 	const navigate = useNavigate();
 	const detail = useQuery(api.courses.get, { courseId });
 	const start = useMutation(api.rounds.start);
+	const { simulate } = Route.useSearch();
+	const { setSimulating } = useSimulationMode();
 
 	const [loopIdxs, setLoopIdxs] = useState<number[]>([]);
 	const [ownerHi, setOwnerHi] = useState("");
@@ -107,6 +121,7 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 				holeRefs,
 				loopLabel,
 				format,
+				simulated: simulate,
 				players: [
 					{
 						name: "Eric",
@@ -119,7 +134,8 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 					})),
 				],
 			});
-			navigate({ to: "/card" });
+			setSimulating(simulate === true);
+			navigate({ to: simulate ? "/play" : "/card" });
 		} catch (e) {
 			setError(e instanceof Error ? e.message : "Could not start the round.");
 		}
@@ -284,7 +300,7 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 				onClick={onStart}
 				className={`mt-8 ${CTA} text-[16px] disabled:opacity-40`}
 			>
-				Start round
+				{simulate ? "Start simulation" : "Start round"}
 			</button>
 		</>
 	);

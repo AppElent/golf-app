@@ -29,6 +29,7 @@ import {
 import { SkeletonList } from "../../../ui/skeleton";
 import { AppText } from "../../../ui/text";
 import type { CourseDetail } from "../../courses/course-detail";
+import { useSimulationMode } from "../../simulation/simulation-mode";
 import { toggleLoopPick } from "./round-setup-model";
 
 interface GuestDraft {
@@ -37,7 +38,13 @@ interface GuestDraft {
 	index: string;
 }
 
-export function RoundSetupScreen({ courseId }: { courseId: Id<"courses"> }) {
+export function RoundSetupScreen({
+	courseId,
+	simulate,
+}: {
+	courseId: Id<"courses">;
+	simulate: boolean;
+}) {
 	const { t } = useI18n();
 	const detail = useQuery(api.courses.get, { courseId });
 	const settings = useQuery(api.settings.get);
@@ -53,16 +60,23 @@ export function RoundSetupScreen({ courseId }: { courseId: Id<"courses"> }) {
 		return <EmptyState body={t.setup.notFound} />;
 	}
 	return (
-		<RoundSetupForm courseId={courseId} detail={detail} settings={settings} />
+		<RoundSetupForm
+			courseId={courseId}
+			simulate={simulate}
+			detail={detail}
+			settings={settings}
+		/>
 	);
 }
 
 function RoundSetupForm({
 	courseId,
+	simulate,
 	detail,
 	settings,
 }: {
 	courseId: Id<"courses">;
+	simulate: boolean;
 	detail: CourseDetail;
 	settings: ReturnType<typeof useQuery<typeof api.settings.get>>;
 }) {
@@ -71,6 +85,7 @@ function RoundSetupForm({
 	const colors = useTokens();
 	const { user } = useUser();
 	const start = useMutation(api.rounds.start);
+	const { setSimulating } = useSimulationMode();
 
 	const loops = useMemo(() => detectLoops(detail.holes), [detail]);
 	const [picks, setPicks] = useState<number[]>([]);
@@ -130,11 +145,13 @@ function RoundSetupForm({
 						name: p.name,
 						handicapIndex: parseHandicapIndex(p.index).value ?? undefined,
 					})),
+					simulated: simulate || undefined,
 				}),
 			{
 				errorFallback: t.setup.startError,
 				onSuccess: () => {
 					haptics.saveConfirmed();
+					setSimulating(simulate);
 					router.dismissAll();
 					router.push("/play");
 				},
@@ -150,13 +167,19 @@ function RoundSetupForm({
 	return (
 		<FormScreen
 			primaryAction={{
-				label: t.setup.start,
+				label: simulate ? t.setup.startSimulation : t.setup.start,
 				onPress: onStart,
 				loading: submit.pending,
 				disabled: !canStart,
 			}}
 		>
 			<Stack.Screen options={{ title: detail.course.name }} />
+
+			{simulate ? (
+				<AppText variant="footnote" style={styles.inset}>
+					{t.setup.simulationNote}
+				</AppText>
+			) : null}
 
 			<FormSection
 				title={t.setup.holes}

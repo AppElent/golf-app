@@ -13,25 +13,29 @@
 			"name": "Geel · heren",
 			"color": "#f2c94c",
 			"courseRating": 26.7,
-			"slopeRating": 70
+			"slopeRating": 70,
+			"marker": "yellow"
 		},
 		{
 			"name": "Rood · dames",
 			"color": "#d64545",
 			"courseRating": 26.0,
-			"slopeRating": 67
+			"slopeRating": 67,
+			"marker": "red"
 		},
 		{
 			"name": "Geel · dames",
 			"color": "#f2c94c",
 			"courseRating": 27.2,
-			"slopeRating": 72
+			"slopeRating": 72,
+			"marker": "yellow"
 		},
 		{
 			"name": "Rood · heren",
 			"color": "#d64545",
 			"courseRating": 25.7,
-			"slopeRating": 65
+			"slopeRating": 65,
+			"marker": "red"
 		}
 	],
 	"holes": [
@@ -40,63 +44,99 @@
 			"ref": "(1)",
 			"par": 3,
 			"strokeIndex": 9,
-			"lengthMeters": 145
+			"lengthMeters": 145,
+			"lengths": {
+				"yellow": 145,
+				"red": 130
+			}
 		},
 		{
 			"number": 2,
 			"ref": "(2)",
 			"par": 3,
 			"strokeIndex": 17,
-			"lengthMeters": 95
+			"lengthMeters": 95,
+			"lengths": {
+				"yellow": 95,
+				"red": 78
+			}
 		},
 		{
 			"number": 3,
 			"ref": "(3)",
 			"par": 3,
 			"strokeIndex": 11,
-			"lengthMeters": 117
+			"lengthMeters": 117,
+			"lengths": {
+				"yellow": 117,
+				"red": 94
+			}
 		},
 		{
 			"number": 4,
 			"ref": "(4)",
 			"par": 3,
 			"strokeIndex": 3,
-			"lengthMeters": 178
+			"lengthMeters": 178,
+			"lengths": {
+				"yellow": 178,
+				"red": 145
+			}
 		},
 		{
 			"number": 5,
 			"ref": "(5)",
 			"par": 3,
 			"strokeIndex": 1,
-			"lengthMeters": 175
+			"lengthMeters": 175,
+			"lengths": {
+				"yellow": 175,
+				"red": 137
+			}
 		},
 		{
 			"number": 6,
 			"ref": "(6)",
 			"par": 3,
 			"strokeIndex": 7,
-			"lengthMeters": 158
+			"lengthMeters": 158,
+			"lengths": {
+				"yellow": 158,
+				"red": 136
+			}
 		},
 		{
 			"number": 7,
 			"ref": "(7)",
 			"par": 3,
 			"strokeIndex": 15,
-			"lengthMeters": 113
+			"lengthMeters": 113,
+			"lengths": {
+				"yellow": 113,
+				"red": 98
+			}
 		},
 		{
 			"number": 8,
 			"ref": "(8)",
 			"par": 3,
 			"strokeIndex": 13,
-			"lengthMeters": 114
+			"lengthMeters": 114,
+			"lengths": {
+				"yellow": 114,
+				"red": 88
+			}
 		},
 		{
 			"number": 9,
 			"ref": "(9)",
 			"par": 3,
 			"strokeIndex": 5,
-			"lengthMeters": 175
+			"lengthMeters": 175,
+			"lengths": {
+				"yellow": 175,
+				"red": 145
+			}
 		}
 	]
 }

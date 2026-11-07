@@ -8,9 +8,16 @@ import {
 	distancesToGreen,
 	haversineMeters,
 	type LatLng,
+	locateOnPolyline,
 	polygonCentroid,
-	projectToLocal,
+	polylineCrossesRing,
 } from "./geo";
+
+/** One tee position: where the listed tee colors (`tee.marker`) play from. */
+export interface TeeBox {
+	position: LatLng;
+	colors: string[];
+}
 
 /** A hole's renderable geometry in WGS84 (consumers project via a Projector). */
 export interface HoleGeometry {
@@ -20,6 +27,7 @@ export interface HoleGeometry {
 	bunkers: LatLng[][];
 	water: LatLng[][];
 	tees: LatLng[][];
+	teeBoxes?: TeeBox[];
 }
 
 export interface HoleAnchors {
@@ -28,23 +36,47 @@ export interface HoleAnchors {
 	greenRing: LatLng[] | null;
 }
 
-/** Tee = first tee box centroid, else the hole line's start; green = first
- *  green centroid, else the hole line's end. Null when neither exists. */
-export function holeAnchors(geo: HoleGeometry): HoleAnchors | null {
+/** Where a tee color plays from: its own box, else the hole's back tee. */
+function teePosition(
+	geo: HoleGeometry,
+	green: LatLng,
+	marker: string | undefined,
+): LatLng | undefined {
+	const boxes = geo.teeBoxes ?? [];
+	const own = marker ? boxes.find((b) => b.colors.includes(marker)) : undefined;
+	if (own) return own.position;
+	const rings = geo.tees.filter((r) => r.length > 2).map(polygonCentroid);
+	const known = [...boxes.map((b) => b.position), ...rings];
+	if (known.length === 0) return geo.holeLine?.[0];
+	return known.reduce((back, p) =>
+		haversineMeters(p, green) > haversineMeters(back, green) ? p : back,
+	);
+}
+
+/** Green = first green centroid, else the hole line's end. Tee = the box of the
+ *  played tee color (`marker`), else the farthest known tee, else the hole
+ *  line's start. Null when either is unknown. */
+export function holeAnchors(
+	geo: HoleGeometry,
+	marker?: string,
+): HoleAnchors | null {
 	const line = geo.holeLine ?? [];
 	const greenRing = geo.greens.find((r) => r.length > 2) ?? null;
-	const teeRing = geo.tees.find((r) => r.length > 2);
-	const tee = teeRing ? polygonCentroid(teeRing) : line[0];
 	const green = greenRing
 		? polygonCentroid(greenRing)
 		: line.length > 1
 			? line[line.length - 1]
 			: undefined;
-	if (!tee || !green) return null;
+	if (!green) return null;
+	const tee = teePosition(geo, green, marker);
+	if (!tee) return null;
 	return { tee, green, greenRing };
 }
 
 export type HazardKind = "water" | "bunker";
+
+/** Side of the line of play, as the player looks toward the green. */
+export type HazardSide = "left" | "right" | "center";
 
 export interface HazardInPlay {
 	kind: HazardKind;
@@ -52,42 +84,93 @@ export interface HazardInPlay {
 	reach: number;
 	/** Distance to its farthest edge — what it takes to carry it. */
 	carry: number;
-	/** Label anchor: the hazard's centroid. */
+	/** Label anchor: the bunker's centroid, the water's edge nearest the line
+	 *  of play (a pond or ditch can run far beyond this hole). */
 	at: LatLng;
+	side: HazardSide;
+}
+
+/** Further than this from the line of play, a hazard is another hole's. */
+const MAX_OFFSET_M = 45;
+/** A hazard this close behind the green is still the green's. */
+const BEHIND_GREEN_M = 25;
+
+/** The line of play from `position` on: the hole line past it, or straight. */
+export function lineOfPlay(
+	position: LatLng,
+	green: LatLng,
+	holeLine: ReadonlyArray<LatLng> | undefined,
+): LatLng[] {
+	if (!holeLine || holeLine.length < 2) return [position, green];
+	const from = locateOnPolyline(position, holeLine).along;
+	let walked = 0;
+	const rest: LatLng[] = [];
+	for (let i = 0; i < holeLine.length; i++) {
+		if (i > 0) walked += haversineMeters(holeLine[i - 1], holeLine[i]);
+		if (walked > from) rest.push(holeLine[i]);
+	}
+	return [position, ...rest, green];
+}
+
+/** Ditches are mapped in pieces: read touching pieces as the one hazard. */
+function mergeWater(hazards: readonly HazardInPlay[]): HazardInPlay[] {
+	const merged: HazardInPlay[] = [];
+	for (const hazard of hazards) {
+		const previous = [...merged]
+			.reverse()
+			.find((h) => h.kind === "water" && h.side === hazard.side);
+		if (
+			hazard.kind === "water" &&
+			previous &&
+			hazard.reach <= previous.carry + 5
+		) {
+			previous.carry = Math.max(previous.carry, hazard.carry);
+		} else {
+			merged.push({ ...hazard });
+		}
+	}
+	return merged;
 }
 
 /**
- * Hazards between you and the green: ahead of you along the you→green axis,
- * not beyond the green, reachable within `maxMeters`. Nearest first.
+ * Hazards ahead of you on the line of play, up to just behind the green,
+ * reachable within `maxMeters`. Nearest first. Follows the hole line, so the
+ * hazards of a dogleg's far leg count, and neighbouring holes' hazards do not.
  */
 export function hazardsInPlay(
 	position: LatLng,
 	green: LatLng,
-	geo: Pick<HoleGeometry, "water" | "bunkers">,
+	geo: Pick<HoleGeometry, "water" | "bunkers" | "holeLine">,
 	{ maxMeters = 330, limit = 4 }: { maxMeters?: number; limit?: number } = {},
 ): HazardInPlay[] {
-	const axis = projectToLocal(position, green);
-	const length = Math.hypot(axis.x, axis.y) || 1;
-	const along = (p: LatLng) => {
-		const l = projectToLocal(position, p);
-		return (l.x * axis.x + l.y * axis.y) / length;
-	};
+	const line = lineOfPlay(position, green, geo.holeLine);
+	const toGreen = locateOnPolyline(green, line).along;
 	const rings: Array<[HazardKind, LatLng[]]> = [
 		...geo.water.map((r): [HazardKind, LatLng[]] => ["water", r]),
 		...geo.bunkers.map((r): [HazardKind, LatLng[]] => ["bunker", r]),
 	];
-	return rings
+	const found = rings
 		.filter(([, ring]) => ring.length > 2)
-		.map(([kind, ring]) => ({
-			kind,
-			...carryDistances(position, ring),
-			at: polygonCentroid(ring),
-			ahead: along(polygonCentroid(ring)),
-		}))
-		.filter((h) => h.ahead > 0 && h.ahead <= length + 5 && h.reach <= maxMeters)
-		.sort((a, b) => a.reach - b.reach)
-		.slice(0, limit)
-		.map(({ ahead: _ahead, ...h }) => h);
+		.flatMap(([kind, ring]): HazardInPlay[] => {
+			const fixes = ring.map((p) => ({ p, fix: locateOnPolyline(p, line) }));
+			const { p: closest, fix } = fixes.reduce((a, b) =>
+				b.fix.offset < a.fix.offset ? b : a,
+			);
+			const behindYou = fixes.every((f) => f.fix.along === 0);
+			const pastGreen = fix.along >= toGreen && fix.offset > BEHIND_GREEN_M;
+			if (behindYou || pastGreen || fix.offset > MAX_OFFSET_M) return [];
+			return [
+				{
+					kind,
+					...carryDistances(position, ring),
+					at: kind === "water" ? closest : polygonCentroid(ring),
+					side: polylineCrossesRing(line, ring) ? "center" : fix.side,
+				},
+			];
+		})
+		.filter((h) => h.reach <= maxMeters)
+		.sort((a, b) => a.reach - b.reach);
+	return mergeWater(found).slice(0, limit);
 }
 
 export interface HoleNumbers {

@@ -8,8 +8,52 @@ import {
 	labelSpot,
 	polygonCentroid,
 	projectToLocal,
+	routeMeters,
 	sortByDistance,
 } from "./geo";
+
+describe("routeMeters", () => {
+	const green = { lat: 52.003, lng: 5 };
+	const straight = [{ lat: 52, lng: 5 }, green];
+
+	it("goes straight to the green from a pad beside a straight line", () => {
+		const pad = { lat: 52.0005, lng: 5.0005 };
+		expect(routeMeters(pad, straight, green)).toBeCloseTo(
+			haversineMeters(pad, green),
+			3,
+		);
+	});
+
+	it("still rounds a dogleg ahead of the tee", () => {
+		const corner = { lat: 52.002, lng: 5.002 };
+		const dogleg = [{ lat: 52, lng: 5 }, corner, green];
+		const tee = { lat: 52.0002, lng: 5.0002 };
+		expect(routeMeters(tee, dogleg, green)).toBeCloseTo(
+			haversineMeters(tee, corner) + haversineMeters(corner, green),
+			3,
+		);
+	});
+
+	it("ignores a dogleg the tee is already past", () => {
+		const corner = { lat: 52.001, lng: 5.002 };
+		const dogleg = [{ lat: 52, lng: 5 }, corner, green];
+		const forward = { lat: 52.0015, lng: 5.0015 };
+		expect(routeMeters(forward, dogleg, green)).toBeCloseTo(
+			haversineMeters(forward, green),
+			3,
+		);
+	});
+
+	it("does not take a mapper's wobble for a dogleg", () => {
+		const wobble = { lat: 52.0015, lng: 5.00005 };
+		const line = [{ lat: 52, lng: 5 }, wobble, green];
+		const tee = { lat: 52, lng: 5 };
+		expect(routeMeters(tee, line, green)).toBeCloseTo(
+			haversineMeters(tee, green),
+			3,
+		);
+	});
+});
 
 describe("haversineMeters", () => {
 	it("measures 0.001° latitude as ~111.2 m", () => {

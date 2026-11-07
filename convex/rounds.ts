@@ -25,11 +25,25 @@ const playerInput = v.object({
 	handicapIndex: v.optional(v.number()),
 });
 
+/** The round being played for real; a simulation runs alongside it. */
 function findActiveRound(ctx: QueryCtx, userId: string) {
 	return ctx.db
 		.query("rounds")
 		.withIndex("by_user", (q) => q.eq("userId", userId))
-		.filter((q) => q.eq(q.field("status"), "active"))
+		.filter((q) =>
+			q.and(
+				q.eq(q.field("status"), "active"),
+				q.neq(q.field("simulated"), true),
+			),
+		)
+		.first();
+}
+
+function findSimulation(ctx: QueryCtx, userId: string) {
+	return ctx.db
+		.query("rounds")
+		.withIndex("by_user", (q) => q.eq("userId", userId))
+		.filter((q) => q.eq(q.field("simulated"), true))
 		.first();
 }
 
@@ -65,7 +79,11 @@ function roundScores(ctx: QueryCtx, roundId: Id<"rounds">) {
 /** The round's own holes in play order. `start` guarantees each has par and
  *  stroke index, and a catalog sync retires holes rounds use rather than
  *  deleting them; a value since cleared on a user's copy reads as 0. */
-function holesOfRound(round: Doc<"rounds">, holes: Doc<"holes">[]) {
+function holesOfRound(
+	round: Doc<"rounds">,
+	holes: Doc<"holes">[],
+	teeMarker?: string,
+) {
 	const byRef = new Map(holes.map((h) => [h.ref, h]));
 	return round.holeRefs.map((ref) => {
 		const hole = byRef.get(ref);
@@ -73,7 +91,9 @@ function holesOfRound(round: Doc<"rounds">, holes: Doc<"holes">[]) {
 			ref,
 			par: hole?.par ?? 0,
 			strokeIndex: hole?.strokeIndex ?? 0,
-			lengthMeters: hole?.lengthMeters,
+			lengthMeters:
+				(teeMarker ? hole?.lengths?.[teeMarker] : undefined) ??
+				hole?.lengthMeters,
 		};
 	});
 }
@@ -91,7 +111,7 @@ async function assembleRound(ctx: QueryCtx, round: Doc<"rounds">) {
 		round: { ...round, currentHoleIndex: round.currentHoleIndex ?? 0 },
 		course,
 		tee,
-		holes: holesOfRound(round, holes),
+		holes: holesOfRound(round, holes, tee.marker),
 		scores,
 	};
 }
@@ -131,6 +151,8 @@ export function assertHoleOfRound(round: Doc<"rounds">, holeIndex: number) {
  * Start a round. Validates every selected hole has par + stroke index
  * (scoring math needs them) and computes each player's playing handicap
  * server-side from the tee's CR/slope and the selected holes' par total.
+ * A `simulated` round replaces the user's previous simulation, leaves their real
+ * round alone, and doesn't touch their profile.
  */
 export const start = mutation({
 	args: {
@@ -140,12 +162,13 @@ export const start = mutation({
 		loopLabel: v.optional(v.string()),
 		format: roundFormat,
 		players: v.array(playerInput),
+		simulated: v.optional(v.boolean()),
 	},
-	handler: async (ctx, args) => {
+	handler: async (ctx, { simulated, ...args }) => {
 		const userId = await getUserId(ctx);
 
 		const existing = await findActiveRound(ctx, userId);
-		if (existing) {
+		if (existing && !simulated) {
 			throw new Error(
 				"An active round already exists — finish or abandon it first.",
 			);
@@ -190,9 +213,14 @@ export const start = mutation({
 						),
 		}));
 
+		if (simulated) {
+			const previous = await findSimulation(ctx, userId);
+			if (previous) await deleteRoundData(ctx, previous._id);
+		}
+
 		// The index you tee off with is your current one: keep the profile in step.
 		const ownerIndex = args.players[OWNER_INDEX].handicapIndex;
-		if (ownerIndex !== undefined) {
+		if (ownerIndex !== undefined && !simulated) {
 			await upsertSettings(ctx, userId, { handicapIndex: ownerIndex });
 		}
 
@@ -207,6 +235,7 @@ export const start = mutation({
 			status: "active",
 			players,
 			currentHoleIndex: 0,
+			...(simulated ? { simulated: true } : {}),
 		});
 	},
 });
@@ -217,6 +246,16 @@ export const active = query({
 	handler: async (ctx) => {
 		const userId = await getUserId(ctx);
 		const round = await findActiveRound(ctx, userId);
+		return round ? assembleRound(ctx, round) : null;
+	},
+});
+
+/** The user's simulated round, assembled like `active`. */
+export const activeSimulation = query({
+	args: {},
+	handler: async (ctx) => {
+		const userId = await getUserId(ctx);
+		const round = await findSimulation(ctx, userId);
 		return round ? assembleRound(ctx, round) : null;
 	},
 });
@@ -301,12 +340,17 @@ export const abandon = mutation({
 
 /**
  * Finish the round: stamp the owner's WHS score differential, where the round
- * can count for one. Totals are computed from holeScores when read.
+ * can count for one. Totals are computed from holeScores when read. A simulated
+ * round is deleted instead, so it never reaches history or the handicap.
  */
 export const finish = mutation({
 	args: { roundId: v.id("rounds") },
 	handler: async (ctx, { roundId }) => {
 		const round = await requireActiveRound(ctx, roundId);
+		if (round.simulated) {
+			await deleteRoundData(ctx, roundId);
+			return;
+		}
 		const [tee, allHoles, scores] = await Promise.all([
 			ctx.db.get(round.teeId),
 			courseHoles(ctx, round.courseId),

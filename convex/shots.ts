@@ -21,7 +21,7 @@ export const forRound = query({
 	},
 });
 
-/** Every shot the user has marked (input for learned club distances). */
+/** Every real shot the user has marked (input for learned club distances). */
 export const mine = query({
 	args: {},
 	handler: async (ctx) => {
@@ -29,6 +29,7 @@ export const mine = query({
 		return await ctx.db
 			.query("shots")
 			.withIndex("by_user", (q) => q.eq("userId", userId))
+			.filter((q) => q.neq(q.field("simulated"), true))
 			.collect();
 	},
 });
@@ -51,6 +52,7 @@ export const mark = mutation({
 			position,
 			club,
 			markedAt: Date.now(),
+			...(round.simulated ? { simulated: true } : {}),
 		});
 	},
 });

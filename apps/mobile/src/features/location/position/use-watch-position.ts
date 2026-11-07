@@ -18,13 +18,15 @@ interface WatchedPosition {
 	accuracyMeters: number | null;
 }
 
-export function useWatchPosition(): WatchedPosition {
+/** Off (simulation mode), it never asks for location or starts the watch. */
+export function useWatchPosition(enabled = true): WatchedPosition {
 	const [state, setState] = useState<WatchedPosition>({
 		position: null,
 		accuracyMeters: null,
 	});
 
 	useEffect(() => {
+		if (!enabled) return;
 		let fixedAt = 0;
 		let subscription: Location.LocationSubscription | null = null;
 		let cancelled = false;
@@ -68,7 +70,7 @@ export function useWatchPosition(): WatchedPosition {
 			appState.remove();
 			subscription?.remove();
 		};
-	}, []);
+	}, [enabled]);
 
 	return state;
 }

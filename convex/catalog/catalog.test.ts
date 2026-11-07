@@ -1,5 +1,17 @@
+import { polygonCentroid, routeMeters } from "@fairway/core/geo";
 import { describe, expect, it } from "vitest";
 import { CATALOG, geometryFor } from "./index";
+
+/** How far a tee's mapped route may be off the card: positions come from an
+ *  aerial photo, and a card rounds and measures from the marker. */
+const cardTolerance = (meters: number) => Math.max(12, meters * 0.05);
+
+/** Holes where the ground and the card disagree, with the gap accepted.
+ *  (7): the only tee visible on the aerial is the pad by the (6) green; 226-230 m
+ *  from the green is past the ditch, in a farm field. The card is from 2016. */
+const CARD_DISAGREES: Record<string, number> = {
+	"welderen-par3 (7)": 35,
+};
 
 describe("course catalog", () => {
 	it("has unique, stable keys", () => {
@@ -56,6 +68,43 @@ describe("course catalog", () => {
 				// Holes without a mapped green fall back to the hole line's end.
 				const withGreen = geometry.filter((g) => g.greens.length > 0);
 				expect(withGreen.length / geometry.length).toBeGreaterThan(0.8);
+			});
+
+			it("has a card length per tee color on every hole", () => {
+				for (const tee of course.tees) {
+					expect(tee.marker).toMatch(/^(white|yellow|blue|red|orange)$/);
+					for (const h of course.holes) {
+						expect(h.lengths[tee.marker]).toBeGreaterThan(40);
+					}
+				}
+			});
+
+			it("places every tee color so its route matches the card", () => {
+				const geometry = geometryFor(course);
+				const off: string[] = [];
+				const markers = new Set(course.tees.map((tee) => tee.marker));
+				for (const h of course.holes) {
+					const g = geometry.find((x) => x.ref === h.ref);
+					if (!g) throw new Error(`no geometry for ${h.ref}`);
+					const green = g.greens[0]
+						? polygonCentroid(g.greens[0])
+						: g.holeLine[g.holeLine.length - 1];
+					for (const marker of markers) {
+						const box = g.teeBoxes.find((b) => b.colors.includes(marker));
+						const card = h.lengths[marker];
+						if (!box) {
+							off.push(`${h.ref} ${marker}: no tee box`);
+							continue;
+						}
+						const route = routeMeters(box.position, g.holeLine, green);
+						const allowed =
+							CARD_DISAGREES[`${course.key} ${h.ref}`] ?? cardTolerance(card);
+						if (Math.abs(route - card) > allowed) {
+							off.push(`${h.ref} ${marker}: ${Math.round(route)} vs ${card}`);
+						}
+					}
+				}
+				expect(off).toEqual([]);
 			});
 		});
 	}

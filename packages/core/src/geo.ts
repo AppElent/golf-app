@@ -154,3 +154,154 @@ export function sortByDistance<T extends { location?: LatLng | null }>(
 		})
 		.map(({ item }) => item);
 }
+
+/** Length of a polyline in meters. */
+export function polylineLength(line: ReadonlyArray<LatLng>): number {
+	let total = 0;
+	for (let i = 1; i < line.length; i++) {
+		total += haversineMeters(line[i - 1], line[i]);
+	}
+	return total;
+}
+
+/** Where a point falls on a polyline. */
+export interface PolylineFix {
+	/** The closest point on the line. */
+	point: LatLng;
+	/** Meters from the line's start to `point`, following the line. */
+	along: number;
+	/** Meters from the point to the line. */
+	offset: number;
+	/** Which side of the line's direction the point lies on. */
+	side: "left" | "right";
+}
+
+/** Project a point onto a polyline of at least one point. */
+export function locateOnPolyline(
+	point: LatLng,
+	line: ReadonlyArray<LatLng>,
+): PolylineFix {
+	const origin = line[0];
+	const p = projectToLocal(origin, point);
+	let best: PolylineFix = {
+		point: origin,
+		along: 0,
+		offset: haversineMeters(point, origin),
+		side: "left",
+	};
+	let walked = 0;
+	for (let i = 1; i < line.length; i++) {
+		const a = projectToLocal(origin, line[i - 1]);
+		const b = projectToLocal(origin, line[i]);
+		const dx = b.x - a.x;
+		const dy = b.y - a.y;
+		const segment = Math.hypot(dx, dy);
+		const t =
+			segment === 0
+				? 0
+				: Math.max(
+						0,
+						Math.min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / segment ** 2),
+					);
+		const offset = Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
+		if (i === 1 || offset < best.offset) {
+			best = {
+				point: interpolate(line[i - 1], line[i], t),
+				along: walked + t * segment,
+				offset,
+				side: dx * (p.y - a.y) - dy * (p.x - a.x) >= 0 ? "left" : "right",
+			};
+		}
+		walked += segment;
+	}
+	return best;
+}
+
+/** The point `meters` along a polyline, clamped to its ends. */
+export function pointAlongPolyline(
+	line: ReadonlyArray<LatLng>,
+	meters: number,
+): LatLng {
+	let left = meters;
+	for (let i = 1; i < line.length; i++) {
+		const segment = haversineMeters(line[i - 1], line[i]);
+		if (left <= segment) {
+			return interpolate(
+				line[i - 1],
+				line[i],
+				segment === 0 ? 0 : left / segment,
+			);
+		}
+		left -= segment;
+	}
+	return line[line.length - 1];
+}
+
+type Point2 = { x: number; y: number };
+
+/** Whether a line passes through a closed ring's edge anywhere. */
+export function polylineCrossesRing(
+	line: ReadonlyArray<LatLng>,
+	ring: ReadonlyArray<LatLng>,
+): boolean {
+	if (line.length < 2 || ring.length < 2) return false;
+	const origin = line[0];
+	const local = (p: LatLng) => projectToLocal(origin, p);
+	const turn = (a: Point2, b: Point2, c: Point2) =>
+		(b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x);
+	const path = line.map(local);
+	const edge = ring.map(local);
+	for (let i = 1; i < path.length; i++) {
+		for (let j = 0; j < edge.length; j++) {
+			const c = edge[j];
+			const d = edge[(j + 1) % edge.length];
+			if (
+				turn(path[i - 1], path[i], c) * turn(path[i - 1], path[i], d) < 0 &&
+				turn(c, d, path[i - 1]) * turn(c, d, path[i]) < 0
+			) {
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+/** A bend smaller than this is a mapper's wobble, not a dogleg. */
+const CORNER_TOLERANCE_M = 10;
+
+/** Where a line really changes direction (Douglas-Peucker), ends excluded. */
+function corners(line: ReadonlyArray<LatLng>): LatLng[] {
+	if (line.length < 3) return [];
+	const chord = [line[0], line[line.length - 1]];
+	let farthest = 0;
+	let farthestOffset = CORNER_TOLERANCE_M;
+	for (let i = 1; i < line.length - 1; i++) {
+		const { offset } = locateOnPolyline(line[i], chord);
+		if (offset > farthestOffset) {
+			farthest = i;
+			farthestOffset = offset;
+		}
+	}
+	if (farthest === 0) return [];
+	return [
+		...corners(line.slice(0, farthest + 1)),
+		line[farthest],
+		...corners(line.slice(farthest)),
+	];
+}
+
+/** Meters from a tee to a green the way a card measures: straight from the tee
+ *  to each dogleg still ahead of it, then to the green. */
+export function routeMeters(
+	from: LatLng,
+	line: ReadonlyArray<LatLng>,
+	to: LatLng,
+): number {
+	const start = locateOnPolyline(from, line).along;
+	const end = locateOnPolyline(to, line).along;
+	const ahead = corners(line).filter((corner) => {
+		const { along } = locateOnPolyline(corner, line);
+		return along > start && along < end;
+	});
+	return polylineLength([from, ...ahead, to]);
+}

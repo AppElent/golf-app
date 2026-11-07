@@ -6,12 +6,13 @@ export function useHoleAnchors(
 	holeRefs: readonly string[],
 	detail: CourseDetail | null,
 	holeIndex: number,
+	teeMarker: string | undefined,
 ) {
 	const ref = holeRefs[holeIndex];
 	const geometry = detail?.geometry.find((g) => g.ref === ref) ?? null;
 	const anchors = useMemo(
-		() => (geometry ? holeAnchors(geometry) : null),
-		[geometry],
+		() => (geometry ? holeAnchors(geometry, teeMarker) : null),
+		[geometry, teeMarker],
 	);
 	const nextRef = holeRefs[holeIndex + 1];
 	const nextGeometry =
@@ -19,8 +20,8 @@ export function useHoleAnchors(
 			? null
 			: (detail?.geometry.find((g) => g.ref === nextRef) ?? null);
 	const nextAnchors = useMemo(
-		() => (nextGeometry ? holeAnchors(nextGeometry) : null),
-		[nextGeometry],
+		() => (nextGeometry ? holeAnchors(nextGeometry, teeMarker) : null),
+		[nextGeometry, teeMarker],
 	);
 	return {
 		geometry,
