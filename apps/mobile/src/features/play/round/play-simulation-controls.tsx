@@ -5,38 +5,6 @@ import { AppText } from "../../../ui/text";
 import { HudGlass } from "../hud/hud-glass";
 import { hudStyles } from "../hud/hud-styles";
 
-/** Always on screen in simulation mode: nothing here is the real round. */
-export function PlaySimulationBanner({
-	top,
-	onExit,
-}: {
-	top: number;
-	onExit: () => void;
-}) {
-	const { t } = useI18n();
-	return (
-		<View style={[styles.banner, { top }]} pointerEvents="box-none">
-			<Pressable
-				testID="simulation-exit"
-				accessibilityRole="button"
-				accessibilityLabel={`${t.play.simulationBanner}. ${t.play.simulationExit}`}
-				onPress={onExit}
-				hitSlop={6}
-			>
-				<HudGlass style={styles.bannerPill}>
-					<View style={styles.bannerDot} />
-					<AppText variant="caption" style={hudStyles.onHud}>
-						{t.play.simulationBanner}
-					</AppText>
-					<AppText variant="caption" style={styles.exit}>
-						{t.play.simulationExit}
-					</AppText>
-				</HudGlass>
-			</Pressable>
-		</View>
-	);
-}
-
 /** Set where the player stands: jump, walk, tap the map, or play the shot. */
 export function PlaySimulationControls({
 	bottom,
@@ -148,21 +116,6 @@ function Control({
 }
 
 const styles = StyleSheet.create({
-	banner: { position: "absolute", left: 0, right: 0, alignItems: "center" },
-	bannerPill: {
-		flexDirection: "row",
-		alignItems: "center",
-		gap: spacing.xs,
-		paddingHorizontal: spacing.md,
-		paddingVertical: spacing.xs,
-	},
-	bannerDot: {
-		width: 8,
-		height: 8,
-		borderRadius: 4,
-		backgroundColor: course.flag,
-	},
-	exit: { color: course.target, fontWeight: "800" },
 	panel: { position: "absolute", left: spacing.md, right: spacing.md },
 	glass: { padding: spacing.xs, gap: spacing.xs },
 	row: { flexDirection: "row", gap: spacing.xs },

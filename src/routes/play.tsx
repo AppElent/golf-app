@@ -76,6 +76,8 @@ function PlayInner({
 	const markShot = useMutation(api.shots.mark);
 	const [aimed, setAimed] = useState<{ ref: string; at: LatLng } | null>(null);
 	const [variant, setVariant] = useState<MapVariant>("map");
+	const [hitting, setHitting] = useState(false);
+	const [hitFailed, setHitFailed] = useState(false);
 
 	const idx = active.round.currentHoleIndex;
 	const ref = active.round.holeRefs[idx];
@@ -96,15 +98,23 @@ function PlayInner({
 
 	/** The shot goes exactly where it was aimed (the green by default). */
 	async function hitShot() {
-		if (!position || !aim) return;
+		if (!position || !aim || hitting) return;
 		sim.setWalking(false);
-		await markShot({
-			roundId: active.round._id,
-			holeIndex: idx,
-			position,
-		});
-		sim.moveTo(aim);
-		setAimed(null);
+		setHitting(true);
+		setHitFailed(false);
+		try {
+			await markShot({
+				roundId: active.round._id,
+				holeIndex: idx,
+				position,
+			});
+			sim.moveTo(aim);
+			setAimed(null);
+		} catch {
+			setHitFailed(true);
+		} finally {
+			setHitting(false);
+		}
 	}
 
 	return (
@@ -221,15 +231,22 @@ function PlayInner({
 					>
 						{sim.walking ? "Stop" : "Walk"}
 					</SimButton>
-					<SimButton onClick={() => void hitShot()}>Hit shot</SimButton>
+					<SimButton disabled={hitting} onClick={() => void hitShot()}>
+						Hit shot
+					</SimButton>
 				</div>
+			) : null}
+			{hitFailed ? (
+				<p className="mt-2 text-center text-[13px] font-semibold text-flag">
+					Could not mark the shot.
+				</p>
 			) : null}
 
 			{geo && position && anchors ? (
 				<HazardList
 					hazards={hazardsInPlay(position, anchors.green, geo, {
 						maxMeters: 650,
-						limit: 8,
+						limit: Number.POSITIVE_INFINITY,
 					})}
 				/>
 			) : null}
@@ -259,17 +276,20 @@ function SimButton({
 	children,
 	onClick,
 	active,
+	disabled,
 }: {
 	children: React.ReactNode;
 	onClick: () => void;
 	active?: boolean;
+	disabled?: boolean;
 }) {
 	return (
 		<button
 			type="button"
 			onClick={onClick}
 			aria-pressed={active}
-			className={`rounded-xl px-2 py-2.5 font-display text-[13px] font-semibold ${
+			disabled={disabled}
+			className={`rounded-xl px-2 py-2.5 font-display text-[13px] font-semibold disabled:opacity-40 ${
 				active ? "bg-live text-white" : "bg-pine-light text-cream"
 			}`}
 		>

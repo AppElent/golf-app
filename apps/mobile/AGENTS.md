@@ -16,7 +16,7 @@ Do not rely on remembered APIs.
   sheets). Routes import a screen from `src/features`.
 - `src/features/<feature>/<subject>/` — screens, models (`*-model.ts`, pure and
   unit-tested) and hooks. Feature folders: auth, courses, home, live,
-  location, play, profile, rounds, stats.
+  location, play, profile, rounds, simulation, stats.
 - `src/ui/` — domain-free controls; never imports features.
 - `src/theme`, `src/i18n`, `src/convex`, `src/prefs`, `src/auth`, `src/feedback`
   (haptics, reduced motion), `src/monitoring`, `src/updates`.

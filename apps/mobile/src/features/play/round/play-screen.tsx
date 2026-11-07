@@ -26,7 +26,7 @@ import {
 	type ActiveRound,
 	useActiveRound,
 } from "../../rounds/use-active-round";
-import { useSimulationMode } from "../../simulation/simulation-mode";
+import { useSimulationMode } from "../../simulation/mode/use-simulation-mode";
 import { hudLayout } from "../hud/hud-layout";
 import { PlayBottomBar } from "./play-bottom-bar";
 import { PlayClubTray } from "./play-club-tray";
@@ -35,10 +35,8 @@ import { PlayGpsPill } from "./play-gps-pill";
 import { PlayHoleView } from "./play-hole-view";
 import { gpsNotice, playerPosition } from "./play-model";
 import { PlayNextTeeOffer } from "./play-next-tee-offer";
-import {
-	PlaySimulationBanner,
-	PlaySimulationControls,
-} from "./play-simulation-controls";
+import { PlaySimulationBanner } from "./play-simulation-banner";
+import { PlaySimulationControls } from "./play-simulation-controls";
 import { PlayTopBar } from "./play-top-bar";
 import { useCurrentHole } from "./use-current-hole";
 import { useHoleAnchors } from "./use-hole-anchors";

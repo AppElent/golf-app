@@ -31,6 +31,9 @@ export interface NormalizedCourse {
  * A reviewed correction to one hole, for what OpenStreetMap lacks: positions
  * read off the aerial photo and checked against the club's scorecard.
  */
+/** A tee ring further than this from every corrected tee box is another tee. */
+const TEE_RING_MATCH_M = 30;
+
 export interface HoleOverride {
 	/** The real line of play, tee to green, with its doglegs. */
 	holeLine?: LatLng[];
@@ -478,7 +481,18 @@ export function normalizeCourse(
 	for (const [ref, override] of Object.entries(overrides)) {
 		const target = geometry.get(ref);
 		if (!target) continue;
-		if (override.teeBoxes) target.teeBoxes = override.teeBoxes;
+		const boxes = override.teeBoxes;
+		if (boxes) {
+			target.teeBoxes = boxes;
+			// A ring no corrected box stands on is OSM's wrong tee: don't draw it.
+			target.tees = target.tees.filter((ring) =>
+				boxes.some(
+					(box) =>
+						haversineMeters(box.position, polygonCentroid(ring)) <=
+						TEE_RING_MATCH_M,
+				),
+			);
+		}
 		if (override.green) target.greens = [override.green];
 		target.water.push(...(override.water ?? []));
 		target.bunkers.push(...(override.bunkers ?? []));

@@ -1,6 +1,6 @@
 import { api } from "../../convex/api";
 import { useQuery } from "../../convex/query-cache";
-import { useSimulationMode } from "../simulation/simulation-mode";
+import { useSimulationMode } from "../simulation/mode/use-simulation-mode";
 
 export type ActiveRound = NonNullable<ReturnType<typeof useActiveRound>>;
 

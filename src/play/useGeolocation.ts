@@ -2,7 +2,7 @@ import type { LatLng } from "@fairway/core/geo";
 import { useEffect, useState } from "react";
 
 /** Off (simulation mode), it never asks for location. */
-export function useGeolocation(enabled = true) {
+export function useGeolocation(enabled: boolean) {
 	const [fix, setFix] = useState<{
 		position: LatLng | null;
 		accuracyM: number | null;

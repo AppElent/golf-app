@@ -37,7 +37,7 @@ if (!TaskManager.isTaskDefined(TASK)) {
 /** Runs background updates while the calling screen (Play) is mounted. */
 export function useBackgroundLocationWhilePlaying(
 	notification: { title: string; body: string },
-	enabled = true,
+	enabled: boolean,
 ) {
 	const { title, body } = notification;
 	useEffect(() => {

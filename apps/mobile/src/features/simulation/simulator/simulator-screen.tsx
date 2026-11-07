@@ -1,13 +1,13 @@
 import { Stack, useRouter } from "expo-router";
 import { ScrollView, StyleSheet } from "react-native";
-import { api } from "../../convex/api";
-import { useQuery } from "../../convex/query-cache";
-import { useI18n } from "../../i18n";
-import { metrics, spacing } from "../../theme";
-import { InsetList, InsetRow } from "../../ui/inset-list";
-import { SkeletonList } from "../../ui/skeleton";
-import { AppText } from "../../ui/text";
-import { useSimulationMode } from "./simulation-mode";
+import { api } from "../../../convex/api";
+import { useQuery } from "../../../convex/query-cache";
+import { useI18n } from "../../../i18n";
+import { metrics, spacing } from "../../../theme";
+import { InsetList, InsetRow } from "../../../ui/inset-list";
+import { SkeletonList } from "../../../ui/skeleton";
+import { AppText } from "../../../ui/text";
+import { useSimulationMode } from "../mode/use-simulation-mode";
 
 /** Entry to simulation mode: pick up the last run, or start one on a course. */
 export function SimulatorScreen() {

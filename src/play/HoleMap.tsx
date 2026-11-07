@@ -54,6 +54,7 @@ export function HoleMap({
 			...geometry.bunkers,
 			...geometry.water,
 			...geometry.tees,
+			(geometry.teeBoxes ?? []).map((box) => box.position),
 			[position, aim],
 		],
 		width: MAP_WIDTH,

@@ -166,9 +166,7 @@ export function polylineLength(line: ReadonlyArray<LatLng>): number {
 
 /** Where a point falls on a polyline. */
 export interface PolylineFix {
-	/** The closest point on the line. */
-	point: LatLng;
-	/** Meters from the line's start to `point`, following the line. */
+	/** Meters from the line's start to the closest point, following the line. */
 	along: number;
 	/** Meters from the point to the line. */
 	offset: number;
@@ -184,7 +182,6 @@ export function locateOnPolyline(
 	const origin = line[0];
 	const p = projectToLocal(origin, point);
 	let best: PolylineFix = {
-		point: origin,
 		along: 0,
 		offset: haversineMeters(point, origin),
 		side: "left",
@@ -206,7 +203,6 @@ export function locateOnPolyline(
 		const offset = Math.hypot(p.x - (a.x + t * dx), p.y - (a.y + t * dy));
 		if (i === 1 || offset < best.offset) {
 			best = {
-				point: interpolate(line[i - 1], line[i], t),
 				along: walked + t * segment,
 				offset,
 				side: dx * (p.y - a.y) - dy * (p.x - a.x) >= 0 ? "left" : "right",

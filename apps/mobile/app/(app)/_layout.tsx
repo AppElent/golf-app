@@ -15,7 +15,7 @@ import { Platform, View } from "react-native";
 import { ConvexSessionGate } from "../../src/auth/convex-session-gate";
 import { OfflineBanner } from "../../src/convex/offline-banner";
 import { AppQueryCacheProvider } from "../../src/convex/query-cache";
-import { SimulationModeProvider } from "../../src/features/simulation/simulation-mode";
+import { SimulationModeProvider } from "../../src/features/simulation/mode/simulation-mode-provider";
 import { useTokens } from "../../src/theme";
 import { ConfirmProvider } from "../../src/ui/confirm-dialog";
 import { useBaseStackOptions } from "../../src/ui/stack-options";

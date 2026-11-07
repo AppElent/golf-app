@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when adding a course, correcting course data, or handling a user's course suggestion.
-version: 1.1.0
+version: 2.0.0
 ---
 
 # Course catalog
@@ -74,7 +74,8 @@ Tees, water and bunkers are assigned by where the feature lies along the hole, n
 `scripts/course-data/overrides/<osmRelationId>.json` holds per-hole corrections
 that `pnpm courses:geometry` applies after OSM: `holeLine`, `teeBoxes`, `green`,
 `water` and `bunkers`. Trace them from PDOK aerial imagery (CC BY 4.0), and state
-what you saw and what you inferred in the file. Prefer fixing OSM itself when the
+what you saw and what you inferred in the file. Corrected `teeBoxes` also drop OSM
+tee rings more than 30 m from every box. Prefer fixing OSM itself when the
 error is OSM's and you intend to contribute there.
 
 ```sh

@@ -16,6 +16,7 @@ import { hudStyles, hudTextShadow } from "../hud/hud-styles";
 
 /** How far ahead the list reaches: all of a hole, from any tee. */
 const HAZARDS_MAX_METERS = 650;
+/** What fits over the map: the nearest ones, the rest come up as you play. */
 const HAZARDS_LISTED = 5;
 
 /** Which way to look: the same in every language. */

@@ -8,6 +8,7 @@ import {
 	query,
 } from "./_generated/server";
 import { getUserId } from "./lib";
+import { deleteRoundData } from "./rounds";
 
 /**
  * Courses come from the catalog (convex/catalog, read-only, everyone sees
@@ -231,7 +232,12 @@ export const remove = mutation({
 	args: { courseId: v.id("courses") },
 	handler: async (ctx, { courseId }) => {
 		await requireOwnCourse(ctx, courseId);
-		const rounds = await roundsOnCourse(ctx, courseId);
+		const all = await roundsOnCourse(ctx, courseId);
+		// A simulation keeps nothing worth a course: it goes with the course.
+		await Promise.all(
+			all.filter((r) => r.simulated).map((r) => deleteRoundData(ctx, r._id)),
+		);
+		const rounds = all.filter((r) => !r.simulated);
 		if (rounds.some((r) => r.status === "active")) {
 			// Clients map the code to their own copy (web course editor).
 			throw new ConvexError({ code: "courseInActiveRound" });

@@ -19,7 +19,7 @@ interface WatchedPosition {
 }
 
 /** Off (simulation mode), it never asks for location or starts the watch. */
-export function useWatchPosition(enabled = true): WatchedPosition {
+export function useWatchPosition(enabled: boolean): WatchedPosition {
 	const [state, setState] = useState<WatchedPosition>({
 		position: null,
 		accuracyMeters: null,

@@ -20,7 +20,7 @@ import { FormScreen } from "../../../ui/form";
 import { NavHeader } from "../../../ui/nav-header";
 import { SkeletonList } from "../../../ui/skeleton";
 import { AppText } from "../../../ui/text";
-import { useSimulationMode } from "../../simulation/simulation-mode";
+import { useSimulationMode } from "../../simulation/mode/use-simulation-mode";
 import { NoActiveRound } from "../components/no-active-round";
 import { ScorecardGrid } from "../components/scorecard-grid";
 import { cardRows } from "../components/scorecard-model";

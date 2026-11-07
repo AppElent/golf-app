@@ -336,4 +336,28 @@ describe("normalizeCourse — features", () => {
 		expect(g.water).toEqual([ring]);
 		expect(g.bunkers).toEqual([ring]);
 	});
+
+	it("drops an OSM tee ring no corrected tee box stands on", () => {
+		const at = (lat: number) => [
+			{ lat, lon: 5.9 },
+			{ lat: lat + 0.00002, lon: 5.9 },
+			{ lat, lon: 5.90002 },
+		];
+		const onBox = at(52);
+		const stale = at(52.001);
+		const g = hole(
+			[
+				{ type: "way", id: 90, tags: { golf: "tee" }, geometry: onBox },
+				{ type: "way", id: 91, tags: { golf: "tee" }, geometry: stale },
+			],
+			"1",
+			{
+				"1": {
+					teeBoxes: [{ position: { lat: 52, lng: 5.9 }, colors: ["white"] }],
+				},
+			},
+		);
+		expect(g.tees).toHaveLength(1);
+		expect(g.tees[0][0].lat).toBe(52);
+	});
 });

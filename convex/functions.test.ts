@@ -418,6 +418,26 @@ describe("course copies", () => {
 		expect(await alice.query(api.rounds.active, {})).not.toBeNull();
 	});
 
+	it("deletes a copy with only a simulation on it, simulation included", async () => {
+		const { t, alice, course } = await setup();
+		const copyId = await alice.mutation(api.courses.fork, {
+			courseId: course.course._id,
+		});
+		const copy = await alice.query(api.courses.get, { courseId: copyId });
+		if (!copy) throw new Error("copy missing");
+		await alice.mutation(api.rounds.start, {
+			courseId: copy.course._id,
+			teeId: copy.tees[0]._id,
+			holeRefs: copy.holes.flatMap((h) => (h.ref ? [h.ref] : [])),
+			format: "stroke",
+			players: [{ name: "Alice" }],
+			simulated: true,
+		});
+		await alice.mutation(api.courses.remove, { courseId: copyId });
+		expect(await alice.query(api.rounds.activeSimulation, {})).toBeNull();
+		expect(await t.run((ctx) => ctx.db.get(copyId))).toBeNull();
+	});
+
 	it("retires a copy finished rounds were played on", async () => {
 		const { alice, course, copyId, roundId } = await playOnCopy();
 		await alice.mutation(api.rounds.finish, { roundId });

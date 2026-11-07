@@ -29,7 +29,7 @@ import {
 import { SkeletonList } from "../../../ui/skeleton";
 import { AppText } from "../../../ui/text";
 import type { CourseDetail } from "../../courses/course-detail";
-import { useSimulationMode } from "../../simulation/simulation-mode";
+import { useSimulationMode } from "../../simulation/mode/use-simulation-mode";
 import { toggleLoopPick } from "./round-setup-model";
 
 interface GuestDraft {
