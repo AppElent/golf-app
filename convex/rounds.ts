@@ -281,16 +281,22 @@ export const setScore = mutation({
 		roundId: v.id("rounds"),
 		holeIndex: v.number(),
 		playerIndex: v.number(),
+		queued: v.optional(v.boolean()),
 		...scoreUpdateFields,
 	},
-	handler: async (ctx, { roundId, holeIndex, playerIndex, ...args }) => {
+	handler: async (
+		ctx,
+		{ roundId, holeIndex, playerIndex, queued, ...args },
+	) => {
 		await getUserId(ctx);
-		// A web queue can still hold scores for a round finished or deleted since.
-		// They have nowhere to go, and failing would block the queue's other scores
-		// for good.
+		// A web queue can still hold scores for a round deleted since. They have
+		// nowhere to go, and failing would block the queue's other scores for good.
 		if (!(await ctx.db.get(roundId))) return;
-		const round = await requireOwnRound(ctx, roundId);
-		if (round.status !== "active") return;
+		// Same for a round finished since. The phone saves live, so it must hear
+		// that this score was not stored.
+		if (queued && (await requireOwnRound(ctx, roundId)).status !== "active") {
+			return;
+		}
 		// Values to store; a null clears the field (patch() drops undefined).
 		const set = Object.fromEntries(
 			Object.entries(args).filter(([, value]) => value != null),
@@ -300,6 +306,7 @@ export const setScore = mutation({
 				.filter(([, value]) => value === null)
 				.map(([key]) => [key, undefined]),
 		);
+		const round = await requireActiveRound(ctx, roundId);
 		assertHoleOfRound(round, holeIndex);
 		if (playerIndex < 0 || playerIndex >= round.players.length) {
 			throw new Error("playerIndex out of range.");

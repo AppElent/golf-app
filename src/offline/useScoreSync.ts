@@ -52,16 +52,18 @@ export function useScoreSync() {
 						roundId: entry.roundId as Id<"rounds">,
 						holeIndex: entry.holeIndex,
 						playerIndex: entry.playerIndex,
+						queued: true,
 						...entry.fields,
 					});
 					removeEntry(store, keyOf(entry));
 					refresh();
 				} catch {
-					// Keep order: everything after a failure stays queued for the retry.
-					break;
+					// Stays queued for the retry. Entries are per hole and player, so
+					// the ones behind it can still go.
 				}
 			}
 		} finally {
+			refresh();
 			flushing.current = false;
 			setSyncing(false);
 		}
@@ -105,5 +107,19 @@ export function useScoreSync() {
 		[pending],
 	);
 
-	return { submit, scoreOf, pendingCount: pending.size, syncing, online };
+	/** The queue can hold another round's scores, so ask about one round. */
+	const hasPending = useCallback(
+		(roundId: string) =>
+			[...pending.keys()].some((key) => key.startsWith(`${roundId}:`)),
+		[pending],
+	);
+
+	return {
+		submit,
+		scoreOf,
+		hasPending,
+		pendingCount: pending.size,
+		syncing,
+		online,
+	};
 }

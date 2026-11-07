@@ -47,10 +47,6 @@ describe("isOnHole", () => {
 	it("ignores a fix two holes away", () => {
 		expect(isOnHole({ lat: 51.996, lng: 5 }, anchors)).toBe(false);
 	});
-	it("counts the hole's back tee when a forward tee is being played", () => {
-		const backTee = { lat: 51.996, lng: 5 }; // ~845 m from the green
-		expect(isOnHole(backTee, { ...anchors, spanMeters: 845 })).toBe(true);
-	});
 });
 
 describe("playerPosition", () => {

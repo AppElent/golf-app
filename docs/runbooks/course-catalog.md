@@ -73,9 +73,10 @@ Tees, water and bunkers are assigned by where the feature lies along the hole, n
 
 `scripts/course-data/overrides/<osmRelationId>.json` holds per-hole corrections
 that `pnpm courses:geometry` applies after OSM: `holeLine`, `teeBoxes`, `green`,
-`water` and `bunkers`. Trace them from PDOK aerial imagery (CC BY 4.0), and state
-what you saw and what you inferred in the file. Corrected `teeBoxes` also drop OSM
-tee rings more than 30 m from every box. Prefer fixing OSM itself when the
+`water`, `bunkers` and `dropBunkers`. Trace them from PDOK aerial imagery (CC BY
+4.0), and state what you saw and what you inferred in the file. Corrected `teeBoxes`
+also drop OSM tee rings more than 30 m from every box. `dropBunkers` removes the OSM
+bunker within 5 m of each point: if OSM later moves it further, it comes back. Prefer fixing OSM itself when the
 error is OSM's and you intend to contribute there.
 
 ```sh

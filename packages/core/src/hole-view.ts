@@ -211,7 +211,10 @@ function mergeWater(hazards: readonly HazardInPlay[]): HazardInPlay[] {
 	return merged;
 }
 
-/** A bank can line a whole hole: the nearest bunker keeps a place over one. */
+/**
+ * A capped list keeps water to carry, then the nearest bunker, then the rest in
+ * order. Otherwise a bank that lines a whole hole would fill it.
+ */
 function capHazards(
 	hazards: ReadonlyArray<HazardInPlay>,
 	limit: number,
