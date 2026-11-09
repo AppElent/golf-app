@@ -17,7 +17,8 @@ jobs:
     permissions:
       contents: read
     env:
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      # Repository scope, written by `pnpm env:apply preview --only github`.
+      EXPO_TOKEN: ${{ secrets.PREVIEW_EXPO_TOKEN }}
       # Builds that need uploaded source maps stay on the EAS cloud flow.
       SENTRY_DISABLE_AUTO_UPLOAD: "true"
       ARTIFACT: fairway-${{ inputs.platform }}-${{ inputs.profile }}.${{ inputs.platform == 'ios' && 'ipa' || 'apk' }}
@@ -25,7 +26,7 @@ jobs:
       - name: Check Expo token
         run: |
           if [ -z "$EXPO_TOKEN" ]; then
-            echo "::error::Add an EXPO_TOKEN repository secret (expo.dev → Access tokens)."
+            echo "::error::PREVIEW_EXPO_TOKEN is not set. Store expo-token in Infisical and run pnpm env:apply preview --only github."
             exit 1
           fi
 

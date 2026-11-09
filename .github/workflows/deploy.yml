@@ -6,11 +6,11 @@ name: Deploy
 # reviewer. Releases queue rather than cancel: a newer merge waiting behind
 # another replaces the older waiting one.
 #
-# Each target's values are environment-scoped: the `stg` and `production`
-# GitHub Environments hold the same names with their own values, so this
-# file names each once. PR previews (preview.yml) declare no environment and
-# keep the repo-level preview CONVEX_DEPLOY_KEY; giving them one would point
-# every PR at a real backend without failing.
+# Each target's values are environment-scoped: the `staging` and `production`
+# GitHub Environments hold the same names with their own values, written by
+# `pnpm env:apply <environment> --only github`, so deploy-web.yml names each
+# once. Repository scope holds only PREVIEW_ names (preview.yml), so a missing
+# Environment value never falls back to a preview one.
 on:
   push:
     branches: [main]
@@ -22,19 +22,20 @@ jobs:
     permissions:
       contents: read
 
-  stg:
+  staging:
     needs: checks
     concurrency:
-      group: deploy-stg
+      group: deploy-staging
       cancel-in-progress: false
     uses: ./.github/workflows/deploy-web.yml
     with:
-      environment: stg
-      wrangler-env: stg
+      environment: staging
+      # Predates the standard golf-app-staging name (env.manifest.ts).
+      worker: golf-app-stg
     secrets: inherit
 
   production:
-    needs: stg
+    needs: staging
     # Only main reaches production, also from a manual run.
     if: github.ref == 'refs/heads/main'
     concurrency:
@@ -43,6 +44,7 @@ jobs:
     uses: ./.github/workflows/deploy-web.yml
     with:
       environment: production
+      worker: golf-app
       url: https://fairway.appelent.nl
     secrets: inherit
 
