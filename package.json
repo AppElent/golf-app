@@ -22,23 +22,23 @@
     "check:repo-layout": "node scripts/check-repo-layout.mjs"
   },
   "dependencies": {
-    "@clerk/react": "^6.18.3",
-    "@cloudflare/vite-plugin": "^1.26.0",
+    "@clerk/react": "^6.18.4",
+    "@cloudflare/vite-plugin": "^1.67.0",
     "@fairway/core": "workspace:*",
     "@sentry/cloudflare": "11.10.0",
     "@sentry/react": "11.10.0",
     "@t3-oss/env-core": "^0.13.10",
-    "@tailwindcss/vite": "^4.1.18",
+    "@tailwindcss/vite": "^4.3.3",
     "@tanstack/react-devtools": "^0.10.14",
     "@tanstack/react-router": "^1.170.46",
     "@tanstack/react-router-devtools": "^1.167.2",
     "@tanstack/react-start": "^1.169.4",
-    "convex": "^1.42.1",
+    "convex": "^1.49.0",
     "lucide-react": "^0.577.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
-    "tailwindcss": "^4.1.18",
-    "zod": "^4.3.6"
+    "tailwindcss": "^4.3.3",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@biomejs/biome": "2.6.2",
