@@ -24,16 +24,21 @@ only. Production always deploys from `main`. There is no `dev` environment and
 no local deploy script: local work runs against your worktree's own Convex
 deployment (`appelent.json` `workspace.backend`).
 
-## Exception: Clerk on workers.dev
+## Auth
 
-The production Clerk instance (`clerk.appelent.nl`) signs in only on
-`*.appelent.nl`. The staging Worker and PR previews are served on workers.dev,
-so their web builds and Convex backends use the Clerk development instance:
-`env.manifest.ts` lands `web-test-clerk-publishable-key` and
-`web-test-clerk-jwt-issuer-domain` (Infisical `staging`, `/fairway`) there
-instead of the standard production keys. The mobile preview app keeps the
-standard production values. Drop the exception once staging and previews have
-`*.appelent.nl` hosts.
+Auth follows lifetime ([environments](../standards/environments.md)). PR
+previews are short-lived and use the Clerk development instance: their web build
+and per-PR backend read `pr-clerk-publishable-key` and
+`pr-clerk-jwt-issuer-domain`, Infisical `staging` references to the `dev` values.
+The installed preview app and production use the production instance
+(`clerk.appelent.nl`).
+
+**Exception, until staging gets a host under `appelent.nl`:** the production
+instance signs in only on `*.appelent.nl`, and the staging Worker is served on
+workers.dev. Staging web and its Convex backend therefore also read the `pr-*`
+keys instead of production auth. When staging gets a subdomain, add it as the
+Worker's route, move staging to the production Clerk landings in
+`env.manifest.ts`, and delete this exception.
 
 ## Values
 

@@ -57,8 +57,9 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   touching course data. `seed:seedDummyData` adds demo rounds for one user:
   `pnpm exec convex run seed:seedDummyData --identity '{"subject":"user_…"}'`.
 - **Env vars**: `env.manifest.ts` routes Infisical values (`/`, `/fairway`) with
-  the `env:*` scripts (see `docs/standards/environments.md`). Web preview and staging
-  use the Clerk development instance (exception in `docs/runbooks/deploy.md`).
+  the `env:*` scripts (see `docs/standards/environments.md`). Web PR previews use the
+  Clerk development instance, and so does staging web until it leaves workers.dev
+  (exception in `docs/runbooks/deploy.md`).
   A new worktree gets its files from `node scripts/workspace.mjs prepare` (the
   `t3.json` hook), never by copying another checkout's. `CONVEX_DEPLOYMENT` in
   `.env.local` is written by `convex dev`.

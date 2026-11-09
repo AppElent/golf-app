@@ -4,10 +4,10 @@
 // docs/standards/environments.md: entries say which consumer reads a value in
 // which environment; the engine picks the destination.
 //
-// App exception (docs/runbooks/deploy.md): the web preview and staging Workers
-// are served on workers.dev, where the production Clerk instance cannot sign
-// in, so their web builds and Convex backends use the Clerk development
-// instance through the `webTestClerk*` entries.
+// App exception (docs/runbooks/deploy.md): the staging Worker is served on
+// workers.dev, where the production Clerk instance cannot sign in, so staging
+// web and its Convex backend also read the `pr-*` Clerk entries until staging
+// gets a host under appelent.nl.
 
 export const ENV_CONFIG = {
 	appName: "fairway",
@@ -56,19 +56,20 @@ export const ENTRIES = [
 		},
 	},
 	{
-		key: "webTestClerkPublishableKey",
-		infisicalKey: "web-test-clerk-publishable-key",
+		key: "prClerkPublishableKey",
+		infisicalKey: "pr-clerk-publishable-key",
 		description:
-			"Clerk development-instance `pk_test_` key for the web preview and staging builds on workers.dev.",
+			"Reference to the dev `pk_test_` key: web PR previews are short-lived. Staging web too, until it leaves workers.dev.",
 		secret: false,
 		lands: {
 			"vite-build": { name: "VITE_CLERK_PUBLISHABLE_KEY", environments: ["preview", "staging"] },
 		},
 	},
 	{
-		key: "webTestClerkJwtIssuerDomain",
-		infisicalKey: "web-test-clerk-jwt-issuer-domain",
-		description: "Clerk development-instance issuer for the PR-preview and staging backends.",
+		key: "prClerkJwtIssuerDomain",
+		infisicalKey: "pr-clerk-jwt-issuer-domain",
+		description:
+			"Reference to the dev issuer the per-PR backends trust. The staging backend too, until staging web leaves workers.dev.",
 		secret: false,
 		lands: {
 			"convex-functions": { name: "CLERK_JWT_ISSUER_DOMAIN", environments: ["preview", "staging"] },

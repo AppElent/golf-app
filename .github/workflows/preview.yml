@@ -34,8 +34,8 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.PREVIEW_CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.PREVIEW_CLOUDFLARE_ACCOUNT_ID }}
       SENTRY_AUTH_TOKEN: ${{ secrets.PREVIEW_SENTRY_AUTH_TOKEN }}
-      # The Clerk development instance: production Clerk does not sign in on
-      # workers.dev (docs/runbooks/deploy.md).
+      # The Clerk development instance: previews are short-lived
+      # (docs/runbooks/deploy.md).
       VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.PREVIEW_VITE_CLERK_PUBLISHABLE_KEY }}
       VITE_SENTRY_DSN: ${{ vars.PREVIEW_VITE_SENTRY_DSN }}
       VITE_SENTRY_ENVIRONMENT: preview
