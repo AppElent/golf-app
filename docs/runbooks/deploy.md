@@ -5,27 +5,51 @@ description: Read before changing how the web app and Convex reach staging or pr
 
 # Deploys
 
-A merge to `main` runs **Deploy** (`.github/workflows/deploy.yml`):
+A merge to `main` runs **Deploy** (`.github/workflows/deploy.yml`), which calls
+`deploy-web.yml` once per target:
 
 1. **checks**: `ci.yml` (Biome, typecheck, tests, build).
-2. **stg**: Convex `staging` deployment, course catalog sync, Worker
+2. **staging**: Convex `staging` deployment, course catalog sync, Worker
    `golf-app-stg`, smoke check.
 3. **production**: waits for approval on the `production` GitHub
    Environment (Actions → the run → *Review deployments*), then the same
    steps against production Convex and the `golf-app` Worker on
-   https://fairway.appelent.nl. The production Clerk instance
-   (`clerk.appelent.nl`) only signs in on `*.appelent.nl`, so the Worker has
-   no workers.dev URL.
+   https://fairway.appelent.nl.
 4. **mobile**: `mobile-update.yml` publishes an EAS update to channel
    `preview` when the app changed (see [mobile](mobile.md#builds)). It runs
    after production because `preview` builds use production Convex.
 
 A manual **Run workflow** on another branch deploys that branch to staging
-only. Production always deploys from `main`.
+only. Production always deploys from `main`. There is no `dev` environment and
+no local deploy script: local work runs against your worktree's own Convex
+deployment (`appelent.json` `workspace.backend`).
 
-Dev is not a deployed environment: it is `pnpm dev` against your own
-`convex dev` deployment. Production has no laptop path: a local build bundles
-`.env.local`, which holds dev values.
+## Exception: Clerk on workers.dev
+
+The production Clerk instance (`clerk.appelent.nl`) signs in only on
+`*.appelent.nl`. The staging Worker and PR previews are served on workers.dev,
+so their web builds and Convex backends use the Clerk development instance:
+`env.manifest.ts` lands `web-test-clerk-publishable-key` and
+`web-test-clerk-jwt-issuer-domain` (Infisical `staging`, `/fairway`) there
+instead of the standard production keys. The mobile preview app keeps the
+standard production values. Drop the exception once staging and previews have
+`*.appelent.nl` hosts.
+
+## Values
+
+Each target's values live in its GitHub Environment (`staging`, `production`);
+PR previews and the mobile workflows read repository-scope `PREVIEW_<name>`
+values. All of them come from Infisical through `env.manifest.ts`:
+
+```sh
+pnpm env:plan staging                 # review, then
+pnpm env:apply staging --only github
+pnpm env:apply production --only github
+pnpm env:apply preview --only github
+```
+
+The staging deploy key is `convex-staging-deploy-key` in Infisical `staging`
+(`/fairway`); `convex-deploy-key` there is the preview key PR previews use.
 
 ## One-time setup
 
@@ -36,28 +60,14 @@ Dev is not a deployed environment: it is `pnpm dev` against your own
    ```
 
    Never pass `--default`: it would make `staging` the project's production
-   deployment, and every `--prod` command would quietly target it. Set its
-   Clerk issuer (the test instance, like dev):
-
-   ```sh
-   pnpm exec convex env set CLERK_JWT_ISSUER_DOMAIN <issuer> --deployment staging
-   ```
+   deployment, and every `--prod` command would quietly target it.
 
 2. Deploy keys (Convex dashboard → deployment → Settings → Deploy keys) for
    `staging` and for production. Both start with `prod:`; the workflow
-   refuses anything else.
-3. GitHub Environments (repo Settings → Environments):
-
-   | Name | Secrets | Variables | Protection |
-   | --- | --- | --- | --- |
-   | `stg` | `CONVEX_DEPLOY_KEY` (staging key) | `VITE_CLERK_PUBLISHABLE_KEY` (test instance) | Branch: any |
-   | `production` | `CONVEX_DEPLOY_KEY` (production key) | `VITE_CLERK_PUBLISHABLE_KEY` (production instance) | Required reviewer: you; branch: `main` |
-
-   `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `EXPO_TOKEN`,
-   `SENTRY_AUTH_TOKEN` and the variable `VITE_SENTRY_DSN` stay at repo level.
-   The repo-level `CONVEX_DEPLOY_KEY` stays the *preview* key for
-   PR previews: an environment secret shadows a repo secret of the same name
-   only inside a job that names that environment.
+   refuses anything else. Store them in Infisical (`convex-staging-deploy-key`
+   in `staging`, `convex-deploy-key` in `prod`, both under `/fairway`).
+3. GitHub Environments `staging` (no protection) and `production` (required
+   reviewer: you; branch: `main`), then the `env:apply` commands above.
 
 ## Verify
 
@@ -74,6 +84,7 @@ Dev is not a deployed environment: it is `pnpm dev` against your own
   time, and `wrangler deploy --env` is ignored. The deploy step refuses a
   mismatched name.
 - **Check environment fails**: the named value is missing on that GitHub
-  Environment.
+  Environment, or `CONVEX_DEPLOY_KEY` is not a `prod:` key. Run
+  `pnpm env:plan <environment>`, fix Infisical, and apply again.
 - **Catalog sync fails after the Convex deploy**: functions are live, the
   Worker is not flipped. Fix and re-run the job; the sync is idempotent.

@@ -33,7 +33,7 @@ pnpm test:mobile      # Jest in apps/mobile
 pnpm build            # production web build
 pnpm cf-typegen       # regenerate worker-configuration.d.ts after editing wrangler.jsonc
 pnpm courses:sync     # write the course catalog into the dev deployment
-pnpm run env plan|apply|check <local|preview|production>
+pnpm env:plan|env:apply|env:check <local|preview|staging|production>
 ```
 
 Single test file: `pnpm exec vitest run path/to/file.test.ts`.
@@ -57,16 +57,18 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   touching course data. `seed:seedDummyData` adds demo rounds for one user:
   `pnpm exec convex run seed:seedDummyData --identity '{"subject":"user_…"}'`.
 - **Env vars**: `env.manifest.ts` routes Infisical values (`/`, `/fairway`) with
-  `pnpm run env` (see `docs/standards/environments.md`). The Convex preview default
-  and the web CI secrets are still set by hand (listed in the manifest header).
-  `CONVEX_DEPLOYMENT` in `.env.local` is written by `convex dev`.
+  the `env:*` scripts (see `docs/standards/environments.md`). Web preview and staging
+  use the Clerk development instance (exception in `docs/runbooks/deploy.md`).
+  A new worktree gets its files from `node scripts/workspace.mjs prepare` (the
+  `t3.json` hook), never by copying another checkout's. `CONVEX_DEPLOYMENT` in
+  `.env.local` is written by `convex dev`.
 - **Sentry**: one project (`appelent/fairway`) for browser (`src/instrument.client.ts`
   via `src/client.tsx`), Worker SSR (`src/server.ts`, the `wrangler.jsonc` `main`),
   Convex (`pnpm sentry:convex` log forwarder, not yet hosted) and mobile; shared
   helpers in `src/lib/observability/`. Local hosts never report. Read
   `docs/runbooks/sentry.md` before touching it.
 - **Deploy**: Worker `golf-app` on `fairway.appelent.nl` (production Clerk signs in
-  only on `*.appelent.nl`), with a `golf-app-stg` env. The Vite plugin
+  only on `*.appelent.nl`), with a `staging` env whose Worker is `golf-app-stg`. The Vite plugin
   picks the Worker env at build time from `CLOUDFLARE_ENV`; `wrangler deploy --env`
   is ignored. A merge to `main` runs `.github/workflows/deploy.yml`. Read
   `docs/runbooks/deploy.md` before changing it.

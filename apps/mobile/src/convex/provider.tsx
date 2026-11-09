@@ -17,7 +17,7 @@ const CONVEX_URL = process.env.EXPO_PUBLIC_CONVEX_URL;
 
 if (!CONVEX_URL) {
 	throw new Error(
-		"EXPO_PUBLIC_CONVEX_URL is not set. Add it to apps/mobile/.env.local (see .env.example).",
+		"EXPO_PUBLIC_CONVEX_URL is not set. Run `pnpm env:apply local --only file` from the repo root.",
 	);
 }
 
