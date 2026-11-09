@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when enabling or changing Dependabot, or reviewing automated dependency PRs.
-version: 1.0.0
+version: 1.0.1
 applies_to: [web, mobile, backend]
 ---
 
@@ -12,10 +12,8 @@ Dependabot delivers security fixes and routine bumps as small, reviewable PRs; a
 
 ## Rules
 
-Rules are required unless marked **Default** (replaceable with a recorded exception).
-
 - Enable Dependabot alerts and security updates on every repository.
-- Version updates never propose majors. Majors and migrations go through the `upgrade-deps` skill and are discussed first.
+- Version updates never propose majors. Majors and migrations go through the `upgrade-dependencies` skill and are discussed first.
 - Packages whose versions an SDK selects (Expo: `expo`, `expo-*`, `@expo/*`, `react`, `react-dom`, `react-native`, `react-native-*`, `@react-native/*`, `jest-expo`, and SDK-pinned tooling) are ignored by version updates and upgraded with `expo install --fix`.
 - Packages with a committed patch (`patchedDependencies`) are ignored by version updates.
 - Every `ignore` entry names `update-types`; a bare `dependency-name` ignore also blocks security updates. Ignore majors in every ecosystem entry, GitHub Actions included.
@@ -39,7 +37,3 @@ Rules are required unless marked **Default** (replaceable with a recorded except
 - `gh api repos/<owner>/<repo>/automated-security-fixes` reports `enabled: true`.
 - After merge, the first run under Insights → Dependency graph → Dependabot completes without lockfile errors (Dependabot can trail new pnpm releases).
 - The first Dependabot PR's CI passes, and secret-dependent jobs are skipped, not failed.
-
-## Exceptions
-
-Record in `CODING_STANDARDS.md`: rule, scope, replacement, reason.

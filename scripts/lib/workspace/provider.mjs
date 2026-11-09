@@ -3,6 +3,7 @@ import { join } from "node:path";
 import { readEnvValues, readProjectText, removeEnvNames, setEnvName, writeProjectText, } from "./dotenv.mjs";
 import { deriveDeploymentReference } from "./identity.mjs";
 import { workspaceExpiryAt } from "./policy.mjs";
+import { describeFailure } from "./process.mjs";
 export const DEPLOYMENT_ENV_NAMES = new Set([
     "CONVEX_DEPLOY_KEY",
     "CONVEX_DEPLOYMENT_TOKEN",
@@ -23,7 +24,7 @@ async function invoke(run, request) {
         removeEnv: PROVIDER_ENV_REMOVALS,
     });
     if (result.status !== "ok")
-        throw new Error(`${request.label} failed (${result.status})`);
+        throw new Error(describeFailure(request.label, result));
     return result;
 }
 function requireOwnedEnvironment(text) {
@@ -115,7 +116,7 @@ export async function prepareBackend(request) {
             });
         }
         else if (select.status !== "ok") {
-            throw new Error(`Backend lookup failed (${select.status}); refusing to create`);
+            throw new Error(`${describeFailure("Backend lookup", select)}; refusing to create`);
         }
         const selected = readEnvValues(await readProjectText(staging, ".env.local"));
         const publicUrl = selected.VITE_CONVEX_URL ?? selected.CONVEX_URL;

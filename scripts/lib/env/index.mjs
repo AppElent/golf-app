@@ -6,3 +6,4 @@ export { OWNERSHIP_PATH, planOwnedRemovals, readOwnership } from "./ownership.mj
 export { execVariables, planEnvironment, selectPlacements } from "./planning.mjs";
 export { runCommand, runProcess } from "./process.mjs";
 export { EnvironmentSourceError, jobEnvironmentSource, loadInfisicalSource, mergeInfisicalFolders, mergeSourceFolders, normalizeInfisicalExport, readInfisicalConfig, } from "./source.mjs";
+export { REPO_SCOPE_PREFIX, resolveEnvironmentManifest, STANDARD_CONSUMERS, STANDARD_ENVIRONMENTS, STANDARD_SOURCE, standardDestination, standardPlacements, } from "./routing.mjs";

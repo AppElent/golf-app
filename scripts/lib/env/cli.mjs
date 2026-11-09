@@ -5,6 +5,7 @@ import { createInterface } from "node:readline/promises";
 import { applyEnvironment, checkEnvironment, checkJobEnvironment, checkManifestAndExample, } from "./engine.mjs";
 import { atomicWrite } from "./files.mjs";
 import { loadEnvironmentManifest, renderEnvironmentExample, validateEnvironmentManifest, } from "./manifest.mjs";
+import { resolveEnvironmentManifest } from "./routing.mjs";
 import { planOwnedRemovals, readOwnership } from "./ownership.mjs";
 import { execVariables, planEnvironment } from "./planning.mjs";
 import { runCommand as defaultRunCommand, runProcess as defaultRunProcess, } from "./process.mjs";
@@ -169,9 +170,9 @@ export async function runEnvCli(args, options) {
         return finish(failure("exec", "usage", "exec accepts only --only and --pr"), 2);
     let manifest;
     try {
-        manifest =
-            options.manifest ??
-                (await loadEnvironmentManifest(options.root, options.manifestPath));
+        manifest = options.manifest
+            ? resolveEnvironmentManifest(options.manifest)
+            : await loadEnvironmentManifest(options.root, options.manifestPath);
     }
     catch {
         return finish(failure(parsed.command, "manifest.unavailable", "Environment manifest could not be loaded", parsed.environment), 1);
@@ -243,7 +244,7 @@ export async function runEnvCli(args, options) {
         return finish({ command: "check", environment: parsed.environment, operations: [], findings }, findings.some((item) => item.level === "error") ? 1 : 0);
     }
     const sourceFindings = jobOnly
-        ? [{ level: "note", code: "source.job-environment", message: "No INFISICAL_TOKEN: values come from the job environment under their destination names" }]
+        ? [{ level: "note", code: "source.job-environment", message: "No INFISICAL_TOKEN: values come from the job environment under their variable names" }]
         : [];
     const runProcess = options.dependencies?.runProcess ?? defaultRunProcess;
     let source;

@@ -39,6 +39,15 @@ export function planEnvironment(manifest, environment, source, options = {}) {
             });
         }
     }
+    if (environment === "preview" &&
+        !options.prNumber &&
+        manifest.ENV_CONFIG.worker?.name &&
+        manifest.ENTRIES.some((entry) => entry.lands["worker-runtime"]?.environments.includes("preview")))
+        findings.push({
+            level: "warning",
+            code: "placement.pr-required",
+            message: "worker-runtime: preview Worker values need --pr <n>",
+        });
     for (const override of source.overrides)
         findings.push({
             level: "note",
@@ -56,6 +65,14 @@ export function planEnvironment(manifest, environment, source, options = {}) {
                     message: `${mostSpecific}/${name}: not declared in the manifest`,
                 });
         }
+    if (environment !== "local" && environment !== "dev")
+        for (const placement of placements)
+            if (/TEST_USER/.test(placement.name))
+                findings.push({
+                    level: "error",
+                    code: "landing.test-user",
+                    message: `${destinationLabel(placement.destination)}/${placement.name}: test-user values land only in local and dev`,
+                });
     for (const placement of placements) {
         if (placement.suppliedBy) {
             findings.push({
@@ -96,15 +113,16 @@ export function execVariables(placements, source) {
         const value = source.values[placement.entry.infisicalKey];
         if (value === undefined || value === "")
             continue;
-        if (Object.hasOwn(env, placement.name) && env[placement.name] !== value) {
+        const variable = placement.variable ?? placement.name;
+        if (Object.hasOwn(env, variable) && env[variable] !== value) {
             findings.push({
                 level: "error",
                 code: "exec.collision",
-                message: `${placement.name}: selected placements disagree; narrow them with --only`,
+                message: `${variable}: selected placements disagree; narrow them with --only`,
             });
             continue;
         }
-        env[placement.name] = value;
+        env[variable] = value;
     }
     return { env: { ...env }, findings };
 }

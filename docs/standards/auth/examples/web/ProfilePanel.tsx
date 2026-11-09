@@ -1,4 +1,4 @@
-import { useClerk, useUser } from "@clerk/clerk-react";
+import { useClerk, useUser } from "@clerk/react";
 import { useEffect, useState } from "react";
 import { AppearanceSettings } from "./AppearanceSettings";
 import { AuthButton } from "./AuthButton";
