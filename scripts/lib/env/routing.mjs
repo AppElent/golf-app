@@ -8,7 +8,7 @@ export const STANDARD_SOURCE = {
     local: "dev",
     dev: "dev",
     preview: "staging",
-    staging: "staging",
+    staging: "prod",
     production: "prod",
 };
 export const STANDARD_CONSUMERS = [
@@ -24,7 +24,8 @@ export const STANDARD_CONSUMERS = [
 /** GitHub repository scope holds preview values; the prefix keeps them from shadowing Environment values. */
 export const REPO_SCOPE_PREFIX = "PREVIEW_";
 const DEPLOYED = new Set(["dev", "staging", "production"]);
-const EAS = { local: "development", dev: "development", preview: "preview", production: "production" };
+// The installed preview app is long-lived like staging, so EAS preview is written from staging.
+const EAS = { local: "development", dev: "development", staging: "preview", production: "production" };
 function workerName(config, environment, context) {
     const name = config.worker?.name;
     if (!name)

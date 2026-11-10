@@ -3,8 +3,8 @@
   "repository": "AppElent/developer-tools",
   "scope": "project",
   "ref": "main",
-  "commit": "872db87c1287367a489a36ab519bc031809c1fc1",
-  "manifestHash": "448ffdeb3a69fc1893416fd75128cb358daf11ebacbd371e9d5c6a2a0dbfdf31",
+  "commit": "ce5633e5a2f0b0b43a598187eb50f5921773b6fc",
+  "manifestHash": "54e7dc7737a8fefd5c9b56de3c10d91e12d5d6710dc868242ccd3cf861858731",
   "files": {
     "docs/adr/.template.md": {
       "sha256": "f28b286102fb1a00512455a06896e5da3c47d67a14b0ee6c08fa84258af24adf",
@@ -153,11 +153,11 @@
       "sha256": "4cb3d7947e1f06f21e35fc76e011c84db45925d83d8f7664e0a5ca2d491c453b"
     },
     "docs/standards/dependency-updates.md": {
-      "sha256": "aad7db1ce91bea27594a0c7e6f3a7856f53230ffa9e201450ba3e9aa4e8d90cb",
-      "version": "1.0.1"
+      "sha256": "62b7a1404d2e50b2602144e82b5ad4e6fb86681be12c3f58ccb1a9b1a1ef7b95",
+      "version": "1.1.0"
     },
     "docs/standards/dependency-updates/templates/dependabot.yml": {
-      "sha256": "039f585004b6fa58974fca437018a7766ba95bdadb6b61a075205501bc84111d"
+      "sha256": "9e440cb851da565328dcb517cbc78a42ff431a7a78a9da85ab35c86db01f70ab"
     },
     "docs/standards/design-studies.md": {
       "sha256": "15ba133a766083366f2b146b891a5164675bcc0c5dc701ce9a9cefff9ecb2879",
@@ -172,11 +172,11 @@
       "version": "1.2.0"
     },
     "docs/standards/environments.md": {
-      "sha256": "7df4449898da163c36eec3e75ec73c038fd46ea822d569697aeea03e2d745172",
-      "version": "3.0.0"
+      "sha256": "4132c427ff4e83389a87ed92869387536c41bebbdd99b08d620415ec3ed905a7",
+      "version": "4.0.0"
     },
     "docs/standards/environments/examples/env.manifest.ts": {
-      "sha256": "40e4ee378ebb5af3adb9224adc1e19fcf3cbc982c44060733d6347664f108931"
+      "sha256": "d3d0dec4caa63413f4029734624632b4586e7b68751d543a7b4ccca50c0ab8ac"
     },
     "docs/standards/general-coding.md": {
       "sha256": "2744ad32dcf6ba4b3ed947233f262e62df13cda08c4c2a1a437b0921e7b6d97e",
@@ -187,20 +187,20 @@
       "version": "1.4.1"
     },
     "docs/standards/i18n.md": {
-      "sha256": "501f9cdc14752bf4eb500602fa39b378330306b42ef3ef6b7ed0b4207f03c9b5",
-      "version": "2.3.0"
+      "sha256": "5511fef972a66a3c4f62504b8803c86afb9d8993616e9183b63457088f03e9f1",
+      "version": "3.0.0"
     },
     "docs/standards/i18n/examples/clerk-sync.tsx": {
-      "sha256": "03c9679f618156608c82e767633a5c28769830c3531a6872b17275b28ac84908"
+      "sha256": "e4d20a6e2cdc511fbb084fe83701a3ab8ec5dddcad68a0ffb8699ffdfb02f3f4"
     },
     "docs/standards/i18n/examples/core.ts": {
       "sha256": "71c8b40676a5641ece745b88766718ddeb69c2aaa6bca53f4ad7572ba10385d7"
     },
     "docs/standards/i18n/examples/index.tsx": {
-      "sha256": "3c4f82bcdb3b8c85b22ac0b4d7241cc9af596994c85a523d5286d9eed83cf0d0"
+      "sha256": "446f064d03fa322c0b69081a9c8eeb06484ffb8720ca23d257f49e4af4ab3d35"
     },
     "docs/standards/i18n/examples/native.tsx": {
-      "sha256": "bb3145c3fd530e475715235e36a3fe4b70d5ece53d2e56a526d7aa191594a6eb"
+      "sha256": "e0d308fbae1998f51aff867e6628a29c23b085d1f4e083b88994b68fbbf0fe81"
     },
     "docs/standards/i18n/examples/server.ts": {
       "sha256": "b93aca71087c930bcb8e90f6ec7b7a575639d0fbf3da164015107872e3e5c939"
@@ -257,11 +257,11 @@
       "version": "1.0.3"
     },
     "docs/standards/previews.md": {
-      "sha256": "7dfb0895b1a288d0446f205bb7323b970732c45ddca49b854ef74d5de954c69c",
-      "version": "4.0.0"
+      "sha256": "e503bf9209305937e1ee9e192eb4db748c5ee12e0bff9a2cbb10c613ae98b3fd",
+      "version": "4.1.0"
     },
     "docs/standards/previews/templates/preview.yml": {
-      "sha256": "9affb12834162dc34e3adaa995ff29bec8ac7061d59cef6b44d1755f9773f541"
+      "sha256": "57f93df1b3d673645f173791e181eaee7eb30470a7e403f6e466c4ceb38394a5"
     },
     "docs/standards/pwa.md": {
       "sha256": "847f3533259814cdac4afec4fe04622f96b04891cf04a52de89a1c040b289764",
@@ -344,7 +344,7 @@
       "sha256": "7ae56289232a444251eb1a93d15d66c4986793fbe4cc8f6532c86298d47eb125"
     },
     "scripts/lib/env/cli.mjs": {
-      "sha256": "e0e8ff8bdb820085242480b07f614f140b7277d1bfdf3c54ae42e042d6c3c1c2"
+      "sha256": "dd5ec4d93594a7c01eb27a3bac810eefd1f3b5407913001173377d34cd70692a"
     },
     "scripts/lib/env/engine.mjs": {
       "sha256": "85fd2aa12c1233000e253e51061848f41575b586169a76dd0ab66fd9377dbf7f"
@@ -353,16 +353,16 @@
       "sha256": "46ed1a44395a7808913a1321a59e132bc314ea7f0bfceb2a09d28a23c4bcca9b"
     },
     "scripts/lib/env/index.mjs": {
-      "sha256": "454c849ee1f9fae29bd3b6651611c56693ffad52657a9b9879138fda6af74970"
+      "sha256": "1cb65a1a3e676e32a36f8ff92324cafef83e5ca1c672868984846ca07385c416"
     },
     "scripts/lib/env/manifest.mjs": {
-      "sha256": "e2c89be40aa452933853649129864e5f68619ad86f08e951dc513c678bc4bea5"
+      "sha256": "c83459085a06d73956bc0604da56fa826059f459c26d3047300a5929488f4ecc"
     },
     "scripts/lib/env/ownership.mjs": {
       "sha256": "bd66c16dc3075c7c14ef343e5c43b46d038c19feb952d1b187c867475ebe61c6"
     },
     "scripts/lib/env/planning.mjs": {
-      "sha256": "9eaac48ef15e18c8a5403e81499d24b65fd484bf1ecb4e17b74498a582f1f282"
+      "sha256": "38e9477a3b9701bf045873d957cd3c7433166be280abd0844f91b1526834911c"
     },
     "scripts/lib/env/process.mjs": {
       "sha256": "2efd7df320726c84bcdb9ff25a0212fdcdcd4a53faac98800f7a7e98ec8df1da"
@@ -410,7 +410,7 @@
       "sha256": "87746377e3e418618d80f672b178dadcbfcf869f56fda43b78a7808bf1a1009d"
     },
     "scripts/lib/workspace/provider.mjs": {
-      "sha256": "25d0fa9f78bc8b4430d085dd3b5f7184712cfc966d8f6ea1668acf8b0fc0fa3f"
+      "sha256": "b66e5261f0064220a02d43a94c5889cab50387ebabeafa983eaa1f534524a3ce"
     },
     "scripts/lib/workspace/types.ts": {
       "sha256": "76e8b2b06c7287c9ff48cb4aeaa31cc1261342e21ca25326dbb8cd06ae2ade01"
@@ -454,7 +454,7 @@
       "sha256": "b1e4e1dea2ded85bb58e0fae2b23c05fd6933de183403b7a5eb3f9a2e14ebe15"
     },
     "docs/standards/mobile-baseline/templates/publish-update.mjs": {
-      "sha256": "47838724acb2e4d024333af9deb78ff233f6e69e702f6804250cd5e69a885701"
+      "sha256": "08f060ba9fcc4a643b8b0f086b7c33e44c1abbc319be69f14cbd6a076e2acc65"
     },
     "docs/standards/mobile-distribution.md": {
       "sha256": "4ad2983960ecdfe3702823d13acc52191ea642fbc908807c506b3917434c0096",
@@ -468,7 +468,7 @@
       "sha256": "f6cd3d75195ae7fad1083eeb1ab6f347f40ced85d189d6232e4c1c1a2c78648f"
     },
     "scripts/lib/env/routing.mjs": {
-      "sha256": "1905abbe294bd89cddab50f867c70e15bbe67afbb69e2bf4a96c961cdf1afad1"
+      "sha256": "6c8818945acef97af6638089cc79d72342c91df5c361a25a8a3312b9a240a89a"
     }
   },
   "blocks": {

@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when adding or changing pull-request preview deployments.
-version: 4.0.0
+version: 4.1.0
 applies_to: [web, backend]
 ---
 
@@ -19,7 +19,7 @@ A same-repository pull request labelled `preview:web` gets an isolated, disposab
 - A guard step fails the job when the deploy output mentions `custom domain`. If a preview claimed the domain, redeploy production to take it back.
 - Existing custom staging/production environment names and routes survive.
 - The seed function is safe for a fresh disposable backend and never writes production resources.
-- Previews use production auth and a per-PR backend that trusts the production issuer ([environments](environments.md)); test-user values never reach them.
+- Previews use the Clerk development instance, and the per-PR backend trusts its issuer ([environments](environments.md)). Test-user values still never reach them: `VITE_*` values are public in the bundle.
 - Only same-repository PRs deploy. Never switch to `pull_request_target` with an untrusted PR checkout to reach secrets. Review deploy-token permissions and branch trust.
 - Worker cleanup is not backend cleanup. No safe Convex deployment delete is assumed: configure provider expiry/retention.
 

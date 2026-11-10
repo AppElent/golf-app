@@ -89,4 +89,10 @@ jobs:
           node-version: 22.15.0
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - run: pnpm exec wrangler delete --force --name "APP_NAME-pr-${{ github.event.pull_request.number }}" || true
+      - # Close always runs cleanup, so a PR that never deployed has no Worker.
+        # Tolerate only that; any other failure must stay visible.
+        run: |
+          status=0; out=$(pnpm exec wrangler delete --force --name "APP_NAME-pr-${{ github.event.pull_request.number }}" 2>&1) || status=$?
+          echo "$out"
+          # Wrangler reports a missing Worker as code 10007 ("This Worker does not exist").
+          [ "$status" -eq 0 ] || echo "$out" | grep -qE "10007|does not exist" || exit "$status"

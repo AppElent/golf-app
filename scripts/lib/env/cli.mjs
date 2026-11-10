@@ -7,7 +7,7 @@ import { atomicWrite } from "./files.mjs";
 import { loadEnvironmentManifest, renderEnvironmentExample, validateEnvironmentManifest, } from "./manifest.mjs";
 import { resolveEnvironmentManifest } from "./routing.mjs";
 import { planOwnedRemovals, readOwnership } from "./ownership.mjs";
-import { execVariables, planEnvironment } from "./planning.mjs";
+import { execVariables, localFileNames, planEnvironment } from "./planning.mjs";
 import { runCommand as defaultRunCommand, runProcess as defaultRunProcess, } from "./process.mjs";
 import { jobEnvironmentSource, loadInfisicalSource } from "./source.mjs";
 const kinds = new Set([
@@ -270,7 +270,7 @@ export async function runEnvCli(args, options) {
         let variables;
         try {
             planned = planEnvironment(manifest, parsed.environment, source, planOptions);
-            variables = execVariables(planned.placements, source);
+            variables = execVariables(planned.placements, source, parsed.environment === "local" ? [] : localFileNames(manifest));
         }
         catch {
             return finish(failure("exec", "exec.failed", "Environment variables could not be prepared", parsed.environment), 1);

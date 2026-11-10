@@ -174,6 +174,12 @@ function validateEnvironmentManifestUnsafe(manifest) {
                     code: "landing.test-user",
                     message: `${entry.key}.${consumer}: test-user values land only in local and dev`,
                 });
+            if ((consumer === "expo-build" || consumer === "eas-tooling") && landing.environments.includes("preview"))
+                findings.push({
+                    level: "warning",
+                    code: "landing.eas-preview",
+                    message: `${entry.key}.${consumer}: the installed preview app reads staging; list "staging", not "preview"`,
+                });
             for (const environment of landing.environments)
                 if (!envSet.has(environment))
                     findings.push({

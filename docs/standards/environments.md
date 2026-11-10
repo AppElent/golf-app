@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when adding, routing, or checking environment variables and secrets.
-version: 3.0.0
+version: 4.0.0
 applies_to: [all]
 ---
 
@@ -21,23 +21,29 @@ lands each value in the same destination, from one data-only manifest.
   | --- | --- | --- |
   | `local` | Your machine and every worktree | `dev` |
   | `dev` | A shared deployed development backend | `dev` |
-  | `preview` | PR previews and the installed preview app | `staging` |
-  | `staging` | A deployed release candidate | `staging` |
+  | `preview` | Short-lived web PR previews | `staging` |
+  | `staging` | A deployed release candidate, and the installed preview app | `prod` |
   | `production` | Production | `prod` |
 
-- Infisical `dev` uses the development auth instance; `staging` and `prod` use
-  production auth ([auth](auth.md)).
-
-- Infisical `staging` holds the production Clerk publishable key and issuer at `/`, plus
-  copies of the production backend URL, web origin, and monitoring values the installed
-  preview app needs. That app is the owner's daily driver on real data; web PR previews
-  keep their own per-PR Convex backend that trusts the production issuer.
+- Infisical tiers follow lifetime. `dev` serves your machine and the shared dev
+  backend, `staging` serves only short-lived web PR previews, and `prod` serves
+  everything long-lived: `staging`, `production`, and the installed preview app, which
+  is the owner's daily driver on real data. Infisical has exactly these three tiers.
+- Auth follows the tier ([auth](auth.md)). Infisical `dev` and `staging` hold the
+  Clerk development instance's key and issuer, so PR previews and their per-PR
+  backends sign in on `workers.dev`; `prod` holds the production instance. A
+  production instance signs in only on its domain and subdomains, so staging web needs
+  such a host, not `workers.dev`.
+- The installed preview app is written from `staging`: EAS `preview` gets its values
+  from `env:apply staging`, so an app with a mobile preview build lists `staging` even
+  without a staging web. EAS landings never list `preview`; `env:check` warns
+  (`landing.eas-preview`).
 - Test-user values (any name containing `TEST_USER`) land only in `local` and `dev`.
   `env:check` warns on any other landing, and plan, apply, and exec refuse that
   environment.
-- `preview` and `staging` share Infisical `staging`. A value that differs between them,
-  such as the Convex deploy key (preview kind vs. `prod:`), gets its own Infisical key
-  per environment.
+- `staging` and `production` share Infisical `prod`. A value that differs between them,
+  such as a staging web's own `prod:` Convex deploy key, gets its own Infisical key
+  (`convex-staging-deploy-key`).
 - The mobile preview app sees backend changes only after a production deploy. Keep
   client changes compatible with deployed functions, or ship them together.
 
@@ -54,7 +60,7 @@ lands each value in the same destination, from one data-only manifest.
   | `worker-runtime` | `.dev.vars` | `<worker>-dev` | `<worker>-pr-<n>` | `<worker>-staging` | `<worker>` |
   | `convex-functions` | `convex.deployments.dev`, else the CLI's dev deployment | `convex.deployments.dev` | preview default | `convex.deployments.staging` | `convex.deployments.production` |
   | `workflow` | | GitHub `dev` | GitHub repo | GitHub `staging` | GitHub `production` |
-  | `expo-build`, `eas-tooling` | EAS development | EAS development | EAS preview | | EAS production |
+  | `expo-build`, `eas-tooling` | EAS development | EAS development | | EAS preview | EAS production |
   | `expo-local` | `<mobile>/.env.local` | | | | |
 
 - GitHub repository scope holds only preview values, named `PREVIEW_<name>`, so a
@@ -78,10 +84,13 @@ lands each value in the same destination, from one data-only manifest.
 - Every app has exactly these scripts, each `node scripts/env.mjs <command>`:
   `env:check`, `env:plan`, `env:apply`, `env:generate`, `env:exec`.
 - `env:exec` adds the selected values to one command's environment under their
-  variable names (unprefixed), writes nothing, and returns the command's exit code. Local
+  variable names (unprefixed), writes nothing, and returns the command's exit code. For
+  a deployed environment it also sets every local-file name it doesn't supply to `""`,
+  so `.env.local` values (test users, local flags) can't leak into a build. Local
   deploys and OTA publishes use it: `deploy:<environment>` runs
   `node scripts/env.mjs exec <environment> --only github -- <deploy command>`, and
-  `mobile:update:<channel>` runs `… exec <channel> --only eas -- <publish command>`.
+  `mobile:update:<channel>` runs `… exec <environment> --only eas -- <publish command>`,
+  where the `preview` channel's environment is `staging`.
 - Worktrees get local values from [workspaces](workspaces.md), never by copying
   another checkout's dotenv files.
 
@@ -129,12 +138,24 @@ use `import type` only, and avoid enums, namespaces, and parameter properties.
 
 - `pnpm env:check` reports no errors and no `environment.nonstandard`,
   `source.nonstandard`, or `landing.test-user` warnings.
-- After `env:apply preview`, GitHub repository variables and EAS `preview` hold a
-  `pk_live_` key, the mobile preview holds the production backend URL, and local and
-  dev hold `pk_test_`.
+- After `env:apply staging`, EAS `preview` holds a `pk_live_` key and the production
+  backend URL, while `PREVIEW_VITE_CLERK_PUBLISHABLE_KEY`, local, and dev hold
+  `pk_test_`.
 - `git ls-files '*.env*'` lists only `.env.example` files.
 
 ## Migration
+
+From 3.x:
+
+1. In Infisical `staging` at `/`, point `clerk-publishable-key` and
+   `clerk-jwt-issuer-domain` at the `dev` values (secret references). Values only the
+   preview app read from `staging` now come from `prod`.
+2. Drop the `pr-clerk-*` entries; the regular Clerk entries land in `preview` again.
+3. Move every `expo-build` and `eas-tooling` landing from `preview` to `staging`, and
+   add `staging` to `ENVIRONMENTS` if the app ships a mobile preview build.
+4. A staging web's `convex-staging-deploy-key` moves to Infisical `prod`.
+5. `mobile:update:preview` runs `exec staging --only eas`. Then `env:plan` and
+   `env:apply` `preview` and `staging`.
 
 From 2.x:
 

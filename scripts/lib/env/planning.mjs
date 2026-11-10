@@ -103,8 +103,19 @@ export function planEnvironment(manifest, environment, source, options = {}) {
         placements,
     };
 }
+/**
+ * Names the manifest writes to local files. exec sets the ones it doesn't supply to
+ * "" for deployed environments, because Vite and Convex still read `.env.local` and
+ * an inherited value beats an empty file entry only when it exists.
+ */
+export function localFileNames(manifest) {
+    return [...new Set(manifest
+        .placementsFor("local", {})
+        .filter((placement) => placement.destination.kind === "file")
+        .map((placement) => placement.variable ?? placement.name))];
+}
 /** Child-process variables for exec. Values stay in the returned object only. */
-export function execVariables(placements, source) {
+export function execVariables(placements, source, masked = []) {
     const env = Object.create(null);
     const findings = [];
     for (const placement of placements) {
@@ -124,5 +135,8 @@ export function execVariables(placements, source) {
         }
         env[variable] = value;
     }
+    for (const name of masked)
+        if (!Object.hasOwn(env, name))
+            env[name] = "";
     return { env: { ...env }, findings };
 }
