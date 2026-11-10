@@ -8,11 +8,10 @@
   // Production only. Routes are inherited, so each env sets its own.
   "routes": [{ "pattern": "fairway.appelent.nl", "custom_domain": true }],
   "env": {
-    // What a merge to main deploys first (.github/workflows/deploy.yml). The
-    // Worker keeps its original name; env.manifest.ts records it. A custom
-    // domain, because production Clerk signs in only on *.appelent.nl.
+    // What a merge to main deploys first (.github/workflows/deploy.yml). A
+    // custom domain, because production Clerk signs in only on *.appelent.nl.
     "staging": {
-      "name": "golf-app-stg",
+      "name": "golf-app-staging",
       "workers_dev": true,
       "routes": [{ "pattern": "fairway-stg.appelent.nl", "custom_domain": true }]
     },

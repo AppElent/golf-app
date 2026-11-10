@@ -10,7 +10,7 @@
 //
 // Staging is a frontend on the production Convex deployment: there are three
 // backends (dev, per-PR previews, production) and no staging one. A merge
-// ships the golf-app-stg Worker; backend changes ship with production.
+// ships the golf-app-staging Worker; backend changes ship with production.
 
 export const ENV_CONFIG = {
 	appName: "fairway",
@@ -19,8 +19,7 @@ export const ENV_CONFIG = {
 		project: "eric-jansen:golf",
 		deployments: { production: "giddy-pelican-141" },
 	},
-	// The staging Worker predates the standard `<worker>-staging` name.
-	worker: { name: "golf-app", names: { staging: "golf-app-stg" } },
+	worker: { name: "golf-app" },
 	mobile: { path: "apps/mobile" },
 	github: { repository: "AppElent/golf-app" },
 };

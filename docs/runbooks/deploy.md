@@ -10,7 +10,7 @@ A merge to `main` runs **Deploy** (`.github/workflows/deploy.yml`), which calls
 
 1. **checks**: `ci.yml` (Biome, typecheck, tests, build).
 2. **staging**: builds against the production Convex URL and ships only the
-   Worker `golf-app-stg` on https://fairway-stg.appelent.nl, then a smoke
+   Worker `golf-app-staging` on https://fairway-stg.appelent.nl, then a smoke
    check. Staging is a frontend on the production backend; it has no Convex
    deployment of its own, so a merge cannot change the production backend.
 3. **production**: waits for approval on the `production` GitHub

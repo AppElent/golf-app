@@ -30,8 +30,7 @@ jobs:
     uses: ./.github/workflows/deploy-web.yml
     with:
       environment: staging
-      # Predates the standard golf-app-staging name (env.manifest.ts).
-      worker: golf-app-stg
+      worker: golf-app-staging
       url: https://fairway-stg.appelent.nl
     secrets: inherit
 
