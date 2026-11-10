@@ -10,7 +10,7 @@ A merge to `main` runs **Deploy** (`.github/workflows/deploy.yml`), which calls
 
 1. **checks**: `ci.yml` (Biome, typecheck, tests, build).
 2. **staging**: Convex `staging` deployment, course catalog sync, Worker
-   `golf-app-stg`, smoke check.
+   `golf-app-stg` on https://fairway-stg.appelent.nl, smoke check.
 3. **production**: waits for approval on the `production` GitHub
    Environment (Actions → the run → *Review deployments*), then the same
    steps against production Convex and the `golf-app` Worker on
@@ -29,18 +29,12 @@ deployment (`appelent.json` `workspace.backend`).
 Auth follows the Infisical tier ([environments](../standards/environments.md)).
 PR previews read Infisical `staging`, whose `clerk-publishable-key` and
 `clerk-jwt-issuer-domain` reference the `dev` values, so their web build and
-per-PR backend use the Clerk development instance. The installed preview app
-(EAS `preview`, written from `staging`) and production read Infisical `prod` and
-use the production instance (`clerk.appelent.nl`).
-
-**Exception, until staging gets a host under `appelent.nl`:** the production
-instance signs in only on `*.appelent.nl`, and the staging Worker is served on
-workers.dev. Staging web and its Convex backend therefore read
-`staging-clerk-publishable-key` and `staging-clerk-jwt-issuer-domain`
-(Infisical `prod`, `/fairway`, references to the `dev` values) instead of
-production auth. When staging gets a subdomain, add it as the Worker's route,
-move staging to the regular Clerk landings in `env.manifest.ts`, delete those two
-keys, and delete this exception.
+per-PR backend use the Clerk development instance. Staging, the installed
+preview app (EAS `preview`, written from `staging`) and production read Infisical
+`prod` and use the production instance (`clerk.appelent.nl`). That instance signs
+in only on `*.appelent.nl`, so staging web is served on the custom domain
+`fairway-stg.appelent.nl` (`wrangler.jsonc` `env.staging.routes`); the first
+staging deploy creates it.
 
 ## Values
 

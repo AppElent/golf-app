@@ -5,12 +5,17 @@
   "compatibility_flags": ["nodejs_compat"],
   // Wraps @tanstack/react-start/server-entry with Sentry (deployed hosts only).
   "main": "src/server.ts",
-  // Production only. Routes are inherited, so each env clears them.
+  // Production only. Routes are inherited, so each env sets its own.
   "routes": [{ "pattern": "fairway.appelent.nl", "custom_domain": true }],
   "env": {
     // What a merge to main deploys first (.github/workflows/deploy.yml). The
-    // Worker keeps its original name; env.manifest.ts records it.
-    "staging": { "name": "golf-app-stg", "workers_dev": true, "routes": [] },
+    // Worker keeps its original name; env.manifest.ts records it. A custom
+    // domain, because production Clerk signs in only on *.appelent.nl.
+    "staging": {
+      "name": "golf-app-stg",
+      "workers_dev": true,
+      "routes": [{ "pattern": "fairway-stg.appelent.nl", "custom_domain": true }]
+    },
     // PR previews (.github/workflows/preview.yml) build with CLOUDFLARE_ENV=pr
     // and deploy under --name golf-app-pr-<N>. Without this env they inherit
     // the production route and take over fairway.appelent.nl.

@@ -7,12 +7,6 @@
 // Infisical tiers follow lifetime: local reads dev, preview (web PR previews)
 // reads staging, staging and production read prod. `staging` is also the
 // installed preview app (EAS preview).
-//
-// App exception (docs/runbooks/deploy.md): the staging Worker is served on
-// workers.dev, where the production Clerk instance cannot sign in, so staging
-// web and its Convex backend read the `staging-clerk-*` entries (Infisical
-// prod, references to the dev values) until staging gets a host under
-// appelent.nl.
 
 export const ENV_CONFIG = {
 	appName: "fairway",
@@ -46,7 +40,7 @@ export const ENTRIES = [
 		lands: {
 			"vite-build": {
 				name: "VITE_CLERK_PUBLISHABLE_KEY",
-				environments: ["local", "preview", "production"],
+				environments: ["local", ...WEB_DEPLOYED],
 			},
 			"expo-build": {
 				name: "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY",
@@ -63,28 +57,8 @@ export const ENTRIES = [
 		lands: {
 			"convex-functions": {
 				name: "CLERK_JWT_ISSUER_DOMAIN",
-				environments: ["local", "preview", "production"],
+				environments: ["local", ...WEB_DEPLOYED],
 			},
-		},
-	},
-	{
-		key: "stagingClerkPublishableKey",
-		infisicalKey: "staging-clerk-publishable-key",
-		description:
-			"Reference to the dev `pk_test_` key for staging web, until it leaves workers.dev.",
-		secret: false,
-		lands: {
-			"vite-build": { name: "VITE_CLERK_PUBLISHABLE_KEY", environments: ["staging"] },
-		},
-	},
-	{
-		key: "stagingClerkJwtIssuerDomain",
-		infisicalKey: "staging-clerk-jwt-issuer-domain",
-		description:
-			"Reference to the dev issuer the staging backend trusts, until staging web leaves workers.dev.",
-		secret: false,
-		lands: {
-			"convex-functions": { name: "CLERK_JWT_ISSUER_DOMAIN", environments: ["staging"] },
 		},
 	},
 

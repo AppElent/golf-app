@@ -58,8 +58,7 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   `pnpm exec convex run seed:seedDummyData --identity '{"subject":"user_…"}'`.
 - **Env vars**: `env.manifest.ts` routes Infisical values (`/`, `/fairway`) with
   the `env:*` scripts (see `docs/standards/environments.md`). Web PR previews use the
-  Clerk development instance, and so does staging web until it leaves workers.dev
-  (exception in `docs/runbooks/deploy.md`).
+  Clerk development instance; staging and production use the production instance.
   A new worktree gets its files from `node scripts/workspace.mjs prepare` (the
   `t3.json` hook), never by copying another checkout's. `CONVEX_DEPLOYMENT` in
   `.env.local` is written by `convex dev`.
@@ -69,7 +68,7 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   helpers in `src/lib/observability/`. Local hosts never report. Read
   `docs/runbooks/sentry.md` before touching it.
 - **Deploy**: Worker `golf-app` on `fairway.appelent.nl` (production Clerk signs in
-  only on `*.appelent.nl`), with a `staging` env whose Worker is `golf-app-stg`. The Vite plugin
+  only on `*.appelent.nl`), with a `staging` env whose Worker is `golf-app-stg` on `fairway-stg.appelent.nl`. The Vite plugin
   picks the Worker env at build time from `CLOUDFLARE_ENV`; `wrangler deploy --env`
   is ignored. A merge to `main` runs `.github/workflows/deploy.yml`. Read
   `docs/runbooks/deploy.md` before changing it.
