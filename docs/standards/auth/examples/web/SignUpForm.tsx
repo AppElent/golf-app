@@ -1,13 +1,13 @@
-import { useSignUp } from "@clerk/clerk-react";
+import { useSignUp } from "@clerk/react";
 import { useState } from "react";
 import { AuthButton } from "./AuthButton";
 import { useAuthConfig } from "./AuthConfigProvider";
 import { AuthError } from "./AuthError";
 import { AuthField } from "./AuthField";
-import { clerkErrorMessage } from "./core";
+import { clerkErrorMessage, orThrow } from "./core";
 
 export function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
-	const { isLoaded, signUp, setActive } = useSignUp();
+	const { signUp } = useSignUp();
 	const config = useAuthConfig();
 	const [step, setStep] = useState<"details" | "verify">("details");
 	const [email, setEmail] = useState("");
@@ -18,14 +18,11 @@ export function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
 
 	async function submitDetails(e: React.FormEvent) {
 		e.preventDefault();
-		if (!isLoaded) {
-			return;
-		}
 		setError(null);
 		setLoading(true);
 		try {
-			await signUp.create({ emailAddress: email, password });
-			await signUp.prepareEmailAddressVerification({ strategy: "email_code" });
+			await orThrow(signUp.password({ emailAddress: email, password }));
+			await orThrow(signUp.verifications.sendEmailCode());
 			setStep("verify");
 		} catch (err) {
 			setError(clerkErrorMessage(err));
@@ -36,15 +33,12 @@ export function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
 
 	async function submitCode(e: React.FormEvent) {
 		e.preventDefault();
-		if (!isLoaded) {
-			return;
-		}
 		setError(null);
 		setLoading(true);
 		try {
-			const result = await signUp.attemptEmailAddressVerification({ code });
-			if (result.status === "complete") {
-				await setActive({ session: result.createdSessionId });
+			await orThrow(signUp.verifications.verifyEmailCode({ code }));
+			if (signUp.status === "complete") {
+				await orThrow(signUp.finalize());
 				onSuccess();
 			} else {
 				setError("Invalid or incomplete verification.");

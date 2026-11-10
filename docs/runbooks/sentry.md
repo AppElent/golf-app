@@ -68,8 +68,8 @@ Alerts and retention are configured in Sentry, not here.
 
 | Value | Where it comes from |
 | --- | --- |
-| `VITE_SENTRY_DSN` | Manifest: the GitHub **variable** `VITE_SENTRY_DSN` (deploy-web.yml, preview.yml) |
-| `SENTRY_AUTH_TOKEN` | Manifest: the GitHub **secret** `SENTRY_AUTH_TOKEN` (deploy-web.yml, preview.yml) and EAS. Never a file, never `VITE_*` |
+| `VITE_SENTRY_DSN` | Manifest: the GitHub **variable** `VITE_SENTRY_DSN` in the `staging` and `production` Environments (deploy-web.yml), `PREVIEW_VITE_SENTRY_DSN` at repository scope (preview.yml) |
+| `SENTRY_AUTH_TOKEN` | Manifest: the GitHub **secret** `SENTRY_AUTH_TOKEN` in those Environments, `PREVIEW_SENTRY_AUTH_TOKEN` at repository scope, and EAS. Never a file, never `VITE_*` |
 | `SENTRY_ORG` / `SENTRY_PROJECT` | Default to `appelent` / `fairway` in `vite.config.ts`; overridable |
 
 `vite build` emits hidden source maps (no `sourceMappingURL`). When the
@@ -84,10 +84,7 @@ not served.
   release per CI run.
 - **deploy-web.yml** and **preview.yml** build with the variable + secret above.
 
-  `--only github` selects the workflow placements (`SENTRY_AUTH_TOKEN`,
-  `VITE_SENTRY_DSN`, `CLOUDFLARE_*`, plus the unused `EXPO_TOKEN`) from Infisical
-  for that command only. (`pnpm env …` hits pnpm's built-in `env` command; use
-  `node scripts/env.mjs` or `pnpm run env …`.)
+  `pnpm env:apply <environment> --only github` writes them from Infisical.
 
 An upload command succeeding does not prove symbolication: open a deployed
 error in Sentry and check the stack resolves to `src/` files.

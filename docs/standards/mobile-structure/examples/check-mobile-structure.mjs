@@ -1,3 +1,11 @@
+// Copy to scripts/, set the roots below, and run it from the project's `check`
+// script. It enforces feature filenames, the src/ui/ import boundary, and
+// literal font sizes. Across src/ and app/ it also reports UI text outside the
+// message catalog: literal JSX text, readable props (TEXT_ATTRIBUTES, such as
+// accessibilityLabel and placeholder), literal toast and alert messages,
+// `locale === "…"` branches that pick text, and `*-copy.ts` modules. List words
+// that read the same in every language in UNTRANSLATED. Component ownership
+// still needs review.
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -168,8 +176,12 @@ export function inspectMobileSource(filename, source, resolveImport) {
 				wordy(node.initializer)
 			);
 		if (jsx && ts.isCallExpression(node)) {
+			// `console.error(...)` logs for developers; it is not UI text.
 			const callee = ts.isPropertyAccessExpression(node.expression)
-				? node.expression.name.text
+				? ts.isIdentifier(node.expression.expression) &&
+					node.expression.expression.text === "console"
+					? ""
+					: node.expression.name.text
 				: ts.isIdentifier(node.expression)
 					? node.expression.text
 					: "";

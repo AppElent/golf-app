@@ -6,7 +6,6 @@
       "mode": "cloud",
       "project": "eric-jansen:golf",
       "expiration": "in 5 days",
-      "scopedCredential": false,
       "push": true
     },
     "install": true,

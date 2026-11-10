@@ -5,8 +5,8 @@ Expo mobile app (`apps/mobile`), sharing a Convex backend.
 
 ```bash
 pnpm install
-pnpm run env apply local   # writes .env.local files from Infisical
-pnpm dev:watch             # Convex dev + Vite on port 3000
+pnpm env:apply local --only file   # writes the .env.local files from Infisical
+pnpm dev:watch                     # Convex dev + Vite on port 3000
 ```
 
 Commands, architecture and deploys: [AGENTS.md](AGENTS.md). Coding rules:

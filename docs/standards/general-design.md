@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read before designing or changing any user interface.
-version: 1.3.1
+version: 1.4.1
 applies_to: [web, mobile]
 ---
 
@@ -18,11 +18,8 @@ Every screen designs all its states, preserves input, and makes destructive acti
 - Confirm destructive actions that would lose meaningful data through the app's accessible confirmation mechanism. Name the action in the confirmation button; cancel leaves data unchanged.
 - For editable drafts, apply the [editors pattern](editors.md) for ownership, commit, and dismissal.
 - Use the project's canonical components and semantic tokens. Respect text scaling, reduced motion, accessible names, and supported locales/themes.
+- **Default:** visual identity comes from the design system; without one, commit to a small named one (1–3 typefaces, one ground, 0–2 accents) and one icon family, with type sizes and spacing consistent across screens. Treat generic AI-generated tells as unfinished work: a cream ground or display serif chosen by habit rather than brief, emoji in place of icons, decorative gradient washes, and cards with a colored left border.
 
 ## Verify
 
 - Delayed, empty, and failed responses as well as success. A screenshot does not establish interaction behavior.
-
-## Exceptions
-
-Record in `DESIGN_SYSTEM.md`: rule, scope, replacement, reason.

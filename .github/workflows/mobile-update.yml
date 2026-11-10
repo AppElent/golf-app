@@ -37,7 +37,8 @@ jobs:
       # Moves the mobile-ota/preview tag.
       contents: write
     env:
-      EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+      # Repository scope, written by `pnpm env:apply preview --only github`.
+      EXPO_TOKEN: ${{ secrets.PREVIEW_EXPO_TOKEN }}
       APP_VARIANT: preview
       CHANNEL: preview
       TAG: mobile-ota/preview
@@ -50,7 +51,7 @@ jobs:
         working-directory: .
         run: |
           if [ -z "$EXPO_TOKEN" ]; then
-            echo "::error::Add an EXPO_TOKEN repository secret (expo.dev → Access tokens)."
+            echo "::error::PREVIEW_EXPO_TOKEN is not set. Store expo-token in Infisical and run pnpm env:apply preview --only github."
             exit 1
           fi
 

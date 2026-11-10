@@ -1,16 +1,17 @@
 name: Deploy web
 
-# One web target: Convex functions, the course catalog, then the Worker. The
-# backend is complete before the new frontend can be reached. Called by
-# deploy.yml for `stg` and `production`.
+# One web target. Production: Convex functions, the course catalog, then the
+# Worker, so the backend is complete before the new frontend can be reached.
+# Staging is a frontend on the production Convex deployment: it builds against
+# the production URL and ships only its Worker. Called by deploy.yml for
+# `staging` and `production`.
 on:
   workflow_call:
     inputs:
+      # The GitHub Environment, also the Wrangler env (production = top level).
       environment: { type: string, required: true }
-      # wrangler.jsonc env block; empty means the top-level `golf-app` Worker.
-      # The Cloudflare Vite plugin resolves it at build time (CLOUDFLARE_ENV)
-      # into dist/server/wrangler.json; `wrangler deploy --env` is ignored.
-      wrangler-env: { type: string, default: "" }
+      # The Worker this target must build; the deploy refuses any other.
+      worker: { type: string, required: true }
       # The Worker's custom domain; empty means its workers.dev URL.
       url: { type: string, default: "" }
 
@@ -24,44 +25,49 @@ jobs:
     permissions:
       contents: read
     env:
-      # The deploy key alone picks the Convex deployment.
-      CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+      # Every value is scoped to the GitHub Environment, written by
+      # `pnpm env:apply <environment> --only github` (env.manifest.ts).
+      ENVIRONMENT_NAME: ${{ inputs.environment }}
+      # The deploy key alone picks the Convex deployment. Production only: a
+      # staging job would also inherit any repository secret of this name, so
+      # withholding it here is what stops a merge changing the backend.
+      CONVEX_DEPLOY_KEY: ${{ inputs.environment == 'production' && secrets.CONVEX_DEPLOY_KEY || '' }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      # Public, inlined into the bundle: a variable, not a secret.
+      CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
+      SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY }}
-      CLOUDFLARE_ENV: ${{ inputs.wrangler-env }}
-      WORKER_NAME: golf-app${{ inputs.wrangler-env && format('-{0}', inputs.wrangler-env) || '' }}
+      # Staging only: the production deployment's URL. Production gets it from
+      # convex deploy below.
+      VITE_CONVEX_URL: ${{ vars.VITE_CONVEX_URL }}
+      VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
+      VITE_SENTRY_ENVIRONMENT: ${{ inputs.environment }}
+      # The Cloudflare Vite plugin picks the Wrangler env at build time and
+      # `wrangler deploy` follows dist/server/wrangler.json; --env is ignored.
+      CLOUDFLARE_ENV: ${{ inputs.environment != 'production' && inputs.environment || '' }}
+      EXPECTED_WORKER: ${{ inputs.worker }}
     steps:
-      # Fails before anything ships rather than deploying half a target.
-      - name: Check environment
-        run: |
-          missing=0
-          for name in CONVEX_DEPLOY_KEY CLOUDFLARE_API_TOKEN CLOUDFLARE_ACCOUNT_ID VITE_CLERK_PUBLISHABLE_KEY; do
-            if [ -z "${!name}" ]; then
-              echo "::error::$name is not set on the '${{ inputs.environment }}' GitHub Environment (or the repo)."
-              missing=1
-            fi
-          done
-          case "$CONVEX_DEPLOY_KEY" in
-            prod:*|"") ;;
-            *) echo "::error::CONVEX_DEPLOY_KEY on '${{ inputs.environment }}' must be a prod: key (convex deployment create … --type prod)."; missing=1 ;;
-          esac
-          exit $missing
-
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
 
+      # Fails before anything ships rather than deploying half a target. An
+      # Environment without its own CONVEX_DEPLOY_KEY would inherit a
+      # repository one, so production checks the prefix too.
+      - name: Check environment
+        run: |
+          if [ "$ENVIRONMENT_NAME" = production ]; then
+            case "$CONVEX_DEPLOY_KEY" in
+              prod:*) ;;
+              *) echo "::error::CONVEX_DEPLOY_KEY in the production Environment is missing or not a prod: key."; exit 1 ;;
+            esac
+          fi
+          node scripts/env.mjs check "$ENVIRONMENT_NAME" --ci
+
       # Convex exposes the deployment's URL to --cmd as $CONVEX_URL; the app
       # reads VITE_CONVEX_URL at build time. Both targets build in production
-      # mode: staging exists to run the bundle production ships.
+      # mode: staging exists to run the bundle production ships. The hidden
+      # source maps upload when SENTRY_AUTH_TOKEN is set (docs/runbooks/sentry.md).
       - name: Convex deploy + build
-        # Sentry: tagged with this target, and the hidden source maps upload
-        # when the token is set (see docs/runbooks/sentry.md).
-        env:
-          VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
-          VITE_SENTRY_ENVIRONMENT: ${{ inputs.environment == 'stg' && 'staging' || inputs.environment }}
-          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+        if: inputs.environment == 'production'
         run: |
           # shellcheck disable=SC2016 # $CONVEX_URL expands inside convex deploy
           pnpm exec convex deploy \
@@ -69,20 +75,30 @@ jobs:
             --cmd 'VITE_CONVEX_URL=$CONVEX_URL pnpm build'
 
       - name: Sync course catalog
+        if: inputs.environment == 'production'
         run: pnpm exec convex run courseCatalog:sync
+
+      # VITE_CONVEX_URL comes from the staging Environment, as the production URL.
+      - name: Build staging
+        if: inputs.environment != 'production'
+        run: pnpm build
+
+      # A build for the wrong env would replace another environment's Worker.
+      - name: Guard Worker name
+        run: |
+          built=$(jq -r .name dist/server/wrangler.json)
+          if [ "$built" != "$EXPECTED_WORKER" ]; then
+            echo "::error::Built Worker is $built, expected $EXPECTED_WORKER. Check CLOUDFLARE_ENV."
+            exit 1
+          fi
 
       - name: Deploy Worker
         id: worker
         run: |
           set -o pipefail
-          built=$(jq -r .name dist/server/wrangler.json)
-          if [ "$built" != "$WORKER_NAME" ]; then
-            echo "::error::Build targets Worker '$built', expected '$WORKER_NAME'."
-            exit 1
-          fi
           pnpm exec wrangler deploy 2>&1 | tee "$RUNNER_TEMP/wrangler.log"
           url="${{ inputs.url }}"
-          [ -n "$url" ] || url=$(grep -oE "https://$WORKER_NAME\.[^ ]+workers\.dev" "$RUNNER_TEMP/wrangler.log" | head -1)
+          [ -n "$url" ] || url=$(grep -oE "https://$EXPECTED_WORKER\.[^ ]+workers\.dev" "$RUNNER_TEMP/wrangler.log" | head -1)
           echo "url=$url" >> "$GITHUB_OUTPUT"
 
       - name: Smoke check
@@ -90,7 +106,7 @@ jobs:
           URL: ${{ steps.worker.outputs.url }}
         run: |
           if [ -z "$URL" ]; then
-            echo "::error::No URL for $WORKER_NAME: wrangler printed no workers.dev URL and no url input was given."
+            echo "::error::No URL for $EXPECTED_WORKER: wrangler printed no workers.dev URL and no url input was given."
             exit 1
           fi
           curl -fsS --retry 5 --retry-delay 3 --retry-all-errors -o /dev/null -w "%{http_code} $URL\n" "$URL"

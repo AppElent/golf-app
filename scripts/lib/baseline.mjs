@@ -76,7 +76,7 @@ export async function planBaseline(kind, options = {}) {
     if (kind === 'mobile') {
       if (!dependencies.expo || !dependencies['expo-router']) throw new Error('Mobile baseline requires an existing Expo Router scaffold; run it at the app target root.');
       script('start', 'expo start --dev-client'); script('ios', 'expo run:ios'); script('android', 'expo run:android');
-      await create('eas.json', json({ cli: { appVersionSource: 'remote' }, build: { development: { developmentClient: true, distribution: 'internal' }, preview: { distribution: 'internal' }, production: { autoIncrement: true } } }));
+      await create('eas.json', json({ cli: { appVersionSource: 'remote' }, build: { development: { developmentClient: true, distribution: 'internal' }, preview: { channel: 'preview' }, 'preview-internal': { extends: 'preview', distribution: 'internal' }, production: { autoIncrement: true } } }));
       notes.push('Preserved app identifiers, routes, SDK versions, and native dependencies. Install expo-dev-client before using start. Build/device acceptance and OTA compatibility remain explicit.');
     }
     if (options.ci) {

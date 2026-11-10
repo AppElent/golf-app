@@ -26,7 +26,7 @@ Project facts for `apps/mobile`. Shared steps live in
 ## Local development
 
 ```bash
-cp apps/mobile/.env.example apps/mobile/.env.local   # fill in, never commit
+pnpm env:apply local --only file                      # writes apps/mobile/.env.local from Infisical
 pnpm --filter @fairway/mobile exec expo run:ios       # first time / after native changes
 pnpm --filter @fairway/mobile exec expo start --dev-client
 pnpm test:mobile                                      # Jest (mobile only)
@@ -45,18 +45,20 @@ pnpm check && pnpm typecheck && pnpm test             # repo-wide
 ## Environment
 
 Values are routed by `env.manifest.ts` from Infisical (`/` shared, `/fairway`
-app-specific): `pnpm run env plan local`, `pnpm run env apply local|preview|production`,
-`pnpm run env check <environment>`. Local apply writes `apps/mobile/.env.local`.
+app-specific): `pnpm env:plan <environment>`, `pnpm env:apply <environment>`,
+`pnpm env:check <environment>`. Local apply writes `apps/mobile/.env.local`, and a
+new worktree gets it from `node scripts/workspace.mjs prepare`. EAS `preview` (the
+installed preview app) is written from `staging`: `pnpm env:apply staging --only eas`.
 
 | Variable | Lands in | Notes |
 | --- | --- | --- |
 | `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` | `.env.local`, EAS development/preview/production | `pk_test_` locally and in development, `pk_live_` for preview and production |
-| `EXPO_PUBLIC_CONVEX_URL` | `.env.local`, EAS all | Dev deployment locally, production for preview/production builds |
+| `EXPO_PUBLIC_CONVEX_URL` | `.env.local`, EAS development/preview/production | Dev deployment locally, production for preview/production builds |
 | `EXPO_PUBLIC_TEST_USER_*` | `.env.local` only | Honoured with `pk_test_` keys only |
 | `EXPO_PUBLIC_SENTRY_DSN` | EAS preview/production | No DSN → no reporting |
 | `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` | EAS preview/production | Debug-symbol and source-map upload |
 | `GOOGLE_MAPS_ANDROID_API_KEY` | EAS (optional, not set) | Android satellite view only; iOS uses Apple Maps. Without it Android draws the schematic |
-| `EXPO_TOKEN` | GitHub secret | The local-build workflow |
+| `EXPO_TOKEN` | GitHub repository secret `PREVIEW_EXPO_TOKEN` | The Mobile Build and Mobile Update workflows |
 
 ## Builds
 

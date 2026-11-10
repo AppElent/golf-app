@@ -20,7 +20,7 @@ const TEST_USER_PASSWORD = process.env.EXPO_PUBLIC_TEST_USER_PASSWORD;
 
 if (!PUBLISHABLE_KEY) {
 	throw new Error(
-		"EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY is not set. Add it to apps/mobile/.env.local (see .env.example).",
+		"EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY is not set. Run `pnpm env:apply local --only file` from the repo root.",
 	);
 }
 

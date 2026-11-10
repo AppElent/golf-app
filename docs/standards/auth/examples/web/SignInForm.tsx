@@ -1,4 +1,4 @@
-import { useSignIn } from "@clerk/clerk-react";
+import { useSignIn } from "@clerk/react";
 import { useState } from "react";
 import { AuthButton } from "./AuthButton";
 import { useAuthConfig } from "./AuthConfigProvider";
@@ -7,6 +7,7 @@ import { AuthField } from "./AuthField";
 import { TestLoginButton } from "./TestLoginButton";
 import {
 	clerkErrorMessage,
+	orThrow,
 	pickSecondFactor,
 	type SecondFactorStrategy,
 } from "./core";
@@ -27,8 +28,27 @@ function secondFactorPrompt({ strategy, safeIdentifier }: SecondFactorStep) {
 	}
 }
 
+type SignIn = ReturnType<typeof useSignIn>["signIn"];
+
+function verifySecondFactor(
+	signIn: SignIn,
+	strategy: SecondFactorStrategy,
+	code: string,
+) {
+	switch (strategy) {
+		case "totp":
+			return signIn.mfa.verifyTOTP({ code });
+		case "backup_code":
+			return signIn.mfa.verifyBackupCode({ code });
+		case "phone_code":
+			return signIn.mfa.verifyPhoneCode({ code });
+		case "email_code":
+			return signIn.mfa.verifyEmailCode({ code });
+	}
+}
+
 export function SignInForm({ onSuccess }: { onSuccess: () => void }) {
-	const { isLoaded, signIn, setActive } = useSignIn();
+	const { signIn } = useSignIn();
 	const config = useAuthConfig();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -41,37 +61,33 @@ export function SignInForm({ onSuccess }: { onSuccess: () => void }) {
 
 	async function handleSubmit(e: React.FormEvent) {
 		e.preventDefault();
-		if (!isLoaded) {
-			return;
-		}
 		setError(null);
 		setLoading(true);
 		try {
-			const result = await signIn.create({ identifier: email, password });
-			if (result.status === "complete") {
-				await setActive({ session: result.createdSessionId });
+			await orThrow(signIn.password({ identifier: email, password }));
+			if (signIn.status === "complete") {
+				await orThrow(signIn.finalize());
 				onSuccess();
 				return;
 			}
-			if (result.status !== "needs_second_factor") {
+			// Device trust (`needs_client_trust`) verifies a new device with the
+			// same second-factor methods as MFA.
+			if (
+				signIn.status !== "needs_second_factor" &&
+				signIn.status !== "needs_client_trust"
+			) {
 				setError("This account needs a sign-in step this form can't complete.");
 				return;
 			}
-			const factor = pickSecondFactor(result.supportedSecondFactors ?? []);
+			const factor = pickSecondFactor(signIn.supportedSecondFactors);
 			if (!factor) {
 				setError("No supported verification method is set up for this account.");
 				return;
 			}
 			if (factor.strategy === "phone_code") {
-				await signIn.prepareSecondFactor({
-					strategy: "phone_code",
-					phoneNumberId: factor.phoneNumberId,
-				});
+				await orThrow(signIn.mfa.sendPhoneCode());
 			} else if (factor.strategy === "email_code") {
-				await signIn.prepareSecondFactor({
-					strategy: "email_code",
-					emailAddressId: factor.emailAddressId,
-				});
+				await orThrow(signIn.mfa.sendEmailCode());
 			}
 			setCode("");
 			setSecondFactor({
@@ -88,18 +104,15 @@ export function SignInForm({ onSuccess }: { onSuccess: () => void }) {
 
 	async function handleVerify(e: React.FormEvent) {
 		e.preventDefault();
-		if (!isLoaded || !secondFactor) {
+		if (!secondFactor) {
 			return;
 		}
 		setError(null);
 		setLoading(true);
 		try {
-			const result = await signIn.attemptSecondFactor({
-				strategy: secondFactor.strategy,
-				code,
-			});
-			if (result.status === "complete") {
-				await setActive({ session: result.createdSessionId });
+			await orThrow(verifySecondFactor(signIn, secondFactor.strategy, code));
+			if (signIn.status === "complete") {
+				await orThrow(signIn.finalize());
 				onSuccess();
 			} else {
 				setError("Invalid or incomplete verification.");

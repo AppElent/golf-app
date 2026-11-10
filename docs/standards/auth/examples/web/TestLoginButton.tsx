@@ -1,15 +1,16 @@
-import { useSignIn } from "@clerk/clerk-react";
+import { useSignIn } from "@clerk/react";
 import { useState } from "react";
 import { AuthButton } from "./AuthButton";
 import { AuthError } from "./AuthError";
 import {
 	CLERK_TEST_VERIFICATION_CODE,
 	clerkErrorMessage,
+	orThrow,
 	shouldShowTestLogin,
 } from "./core";
 
 export function TestLoginButton({ onSuccess }: { onSuccess: () => void }) {
-	const { isLoaded, signIn, setActive } = useSignIn();
+	const { signIn } = useSignIn();
 	const [error, setError] = useState<string | null>(null);
 	const [loading, setLoading] = useState(false);
 
@@ -18,34 +19,28 @@ export function TestLoginButton({ onSuccess }: { onSuccess: () => void }) {
 	}
 
 	async function loginTestUser() {
-		if (!isLoaded) {
-			return;
-		}
 		setError(null);
 		setLoading(true);
 		try {
 			// Clerk test emails sign in with a fixed code on development
 			// instances, so no password is shipped in the bundle.
-			const { supportedFirstFactors } = await signIn.create({
-				identifier: import.meta.env.VITE_TEST_USER_EMAIL as string,
-			});
-			const factor = supportedFirstFactors?.find(
-				(f) => f.strategy === "email_code",
+			await orThrow(
+				signIn.create({
+					identifier: import.meta.env.VITE_TEST_USER_EMAIL as string,
+				}),
 			);
-			if (factor?.strategy !== "email_code") {
+			if (
+				!signIn.supportedFirstFactors.some((f) => f.strategy === "email_code")
+			) {
 				setError("Enable email code sign-in for the test instance.");
 				return;
 			}
-			await signIn.prepareFirstFactor({
-				strategy: "email_code",
-				emailAddressId: factor.emailAddressId,
-			});
-			const result = await signIn.attemptFirstFactor({
-				strategy: "email_code",
-				code: CLERK_TEST_VERIFICATION_CODE,
-			});
-			if (result.status === "complete") {
-				await setActive({ session: result.createdSessionId });
+			await orThrow(signIn.emailCode.sendCode());
+			await orThrow(
+				signIn.emailCode.verifyCode({ code: CLERK_TEST_VERIFICATION_CODE }),
+			);
+			if (signIn.status === "complete") {
+				await orThrow(signIn.finalize());
 				onSuccess();
 			} else {
 				setError("Test user requires additional steps.");
