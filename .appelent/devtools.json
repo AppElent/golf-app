@@ -3,8 +3,8 @@
   "repository": "AppElent/developer-tools",
   "scope": "project",
   "ref": "main",
-  "commit": "ce5633e5a2f0b0b43a598187eb50f5921773b6fc",
-  "manifestHash": "54e7dc7737a8fefd5c9b56de3c10d91e12d5d6710dc868242ccd3cf861858731",
+  "commit": "4599d4eeca420bc75cab5aff31f40e4a46885f4e",
+  "manifestHash": "8b2219c43ef9feca9d2cf3d1213fcacdb60532b9f77ef71c17f6754a020a6ead",
   "files": {
     "docs/adr/.template.md": {
       "sha256": "f28b286102fb1a00512455a06896e5da3c47d67a14b0ee6c08fa84258af24adf",
@@ -135,8 +135,8 @@
       "sha256": "2b5fc7ca3a68216d3c63124808e073c093899f5020312349ee9be43246a75b35"
     },
     "docs/standards/baseline.md": {
-      "sha256": "a216d316dce0b78b7021c8a506c7a25398ec4bf43db3769c9e94afaa0805dfaf",
-      "version": "2.2.1"
+      "sha256": "dc9fe89d3c00bb3d3721c642100b89811741888ea8548ebf377edb3942a42443",
+      "version": "2.3.0"
     },
     "docs/standards/baseline/toolkit.md": {
       "sha256": "f3f526b71e4410bac1753a5a282359bec8a6e13eddd2bddf7c81765fa24a91c1",
@@ -335,13 +335,13 @@
       "sha256": "6336676db6dcd2e4801992cc1b878ffafa65719314a27861247a6c8f73fd0c04"
     },
     "scripts/check-project.mjs": {
-      "sha256": "51c3669decec8cdde905222ee8128a07c6fe1c19946950441086aa419454594d"
+      "sha256": "9fa2d5a2ad31cd1d068f4bd5c2a7d2762fb03f23119e224aca553bf579c925af"
     },
     "scripts/env.mjs": {
       "sha256": "9347b3602296c5d9d31b7fab503e2ef696886f2f3de4c9899d44b459e8add087"
     },
     "scripts/lib/baseline.mjs": {
-      "sha256": "7ae56289232a444251eb1a93d15d66c4986793fbe4cc8f6532c86298d47eb125"
+      "sha256": "d4f0d6ec03027b91578ceb96d9e39e3342f81964aa9b8da421fe23348cf20fc5"
     },
     "scripts/lib/env/cli.mjs": {
       "sha256": "dd5ec4d93594a7c01eb27a3bac810eefd1f3b5407913001173377d34cd70692a"
@@ -425,7 +425,7 @@
       "sha256": "b9dd169a93273be50cad537983871ab1a066698002887ce803b94b165c096951"
     },
     "docs/standards/baseline/templates/ci.yml": {
-      "sha256": "d1cd16bc50601826f88905218b48853421d796e59527cb83515bec5f1ca0859d"
+      "sha256": "a1c91ef2e1fa5b62c178ff344ccbd28103ea41c0c323a868046c977a3170e960"
     },
     "docs/standards/baseline/templates/lefthook.yml": {
       "sha256": "4b7dee796eea2a3dae8fbd6dcfed6f84cb1f5a84525858b570b0ac86cd6787c7"
@@ -438,8 +438,8 @@
       "version": "2.0.0"
     },
     "docs/standards/deployments.md": {
-      "sha256": "76730fdafb65bcaf2c65f20063d4f4f7e25b488da4e21ff1683c6cf98305f930",
-      "version": "1.1.0"
+      "sha256": "29386b300f95fbc58d1e16fe0534683f82232e3a925e532fad356a32dbbc1ac3",
+      "version": "1.2.0"
     },
     "docs/standards/deployments/templates/deploy.yml": {
       "sha256": "98d83aca835c5107161d02fbebf359e9cf72674177098a98153ebc0b041eccd2"
@@ -469,6 +469,9 @@
     },
     "scripts/lib/env/routing.mjs": {
       "sha256": "6c8818945acef97af6638089cc79d72342c91df5c361a25a8a3312b9a240a89a"
+    },
+    "docs/standards/deployments/templates/main-ruleset.json": {
+      "sha256": "7d1e6ec6bfce7142748b1cac25b6301052ed441d201d6a312d74a6e18761140a"
     }
   },
   "blocks": {
