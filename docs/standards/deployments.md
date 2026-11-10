@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when adding or changing how a web app and its backend deploy to staging or production.
-version: 1.1.0
+version: 1.2.0
 applies_to: [web, backend]
 ---
 
@@ -20,7 +20,7 @@ Shipped environments deploy from `main` through one workflow, with the backend f
 - The deploy job compares the built Worker name (`jq -r .name dist/server/wrangler.json`) with the target it expects and fails on a mismatch. Without that check, a staging deploy silently replaces the production Worker.
 - Deploys never cancel each other: `concurrency` per target with `cancel-in-progress: false`.
 - Rerun the CI checks in the deploy workflow (`uses:` the CI workflow), because admins can bypass required checks.
-- **Default:** a `main` ruleset requires a pull request and the CI check job, blocks force pushes and deletion, and lets admins bypass only through a pull request.
+- **Default:** a `main` ruleset requires a pull request and the CI job `check`, blocks force pushes and deletion, and lets admins bypass only through a pull request.
 - **Default:** a local `deploy:<environment>` script runs the same deploy command with values from Infisical (`env.mjs exec <environment> --only github -- …`), for when CI is unavailable.
 
 ## Implementation
@@ -28,10 +28,11 @@ Shipped environments deploy from `main` through one workflow, with the backend f
 1. Adapt the [workflow template](deployments/templates/deploy.yml). Add `workflow_call:` to the CI workflow and drop its `push: main` trigger, which the deploy now covers.
 2. In the manifest, land build values on `vite-build` and deploy credentials on `workflow` for each deployed environment; the shared routing writes both to that GitHub Environment. Mark `VITE_CONVEX_URL` `suppliedIn` those environments by `convex deploy --cmd-url-env-var-name CONVEX_URL`.
 3. Create a production deploy key in the Convex dashboard, store it in Infisical, create the Environment (`gh api -X PUT repos/<owner>/<repo>/environments/<name>`) and run `pnpm env:apply <environment> --only github`.
-4. Create the ruleset with `gh api repos/<owner>/<repo>/rulesets --input <file>`, with the CI check context as the required status check.
+4. Once a pull request has a successful status check named `check`, create the ruleset from the [template](deployments/templates/main-ruleset.json): `gh api -X POST repos/<owner>/<repo>/rulesets --input docs/standards/deployments/templates/main-ruleset.json`. It requires the CI job `check` from GitHub Actions (`integration_id` 15368); created earlier, it blocks every pull request, including the one that adds the job. Rulesets need a public repository or a paid plan; a private repository on GitHub Free records the missing ruleset as an exception.
 
 ## Verify
 
+- `gh api repos/<owner>/<repo>/rules/branches/main` lists `pull_request` and `required_status_checks` with context `check`.
 - `pnpm env:plan <environment>` lists every GitHub destination with no errors.
 - A staging build's `jq -r .name dist/server/wrangler.json` prints the staging Worker name.
 - A manual run from a branch fails at the ref guard; one with no Environment deploy key fails at the environment check.

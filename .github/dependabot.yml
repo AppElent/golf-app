@@ -1,5 +1,5 @@
 # Dependabot handles security fixes and routine minor/patch bumps. Majors and
-# Expo SDK-aligned packages go through the upgrade-deps skill.
+# Expo SDK-aligned packages go through the upgrade-dependencies skill.
 version: 2
 updates:
   - package-ecosystem: npm # pnpm workspace

@@ -18,6 +18,8 @@ jobs:
       - run: pnpm run check
       # Manifest and .env.example only; needs no credentials.
       - run: pnpm env:check
+      # Toolkit conformance; any new drift fails the PR.
+      - run: node scripts/check-project.mjs --strict
       # Web, convex, packages/core and apps/mobile in one root script.
       - run: pnpm run typecheck
       - run: pnpm test

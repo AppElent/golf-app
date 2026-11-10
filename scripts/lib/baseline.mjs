@@ -82,7 +82,7 @@ export async function planBaseline(kind, options = {}) {
     if (options.ci) {
       const roles = kind === 'mobile' ? ['check', 'typecheck', 'test'] : ['check', 'typecheck', 'test', 'build'];
       if (roles.some(role => !pkg.scripts[role])) throw new Error(`CI requires declared scripts: ${roles.join(', ')}`);
-      await create('.github/workflows/ci.yml', `name: CI\non: [push, pull_request]\njobs:\n  verify:\n    runs-on: ubuntu-latest\n    permissions:\n      contents: read\n    steps:\n      - uses: actions/checkout@v4\n      - uses: pnpm/action-setup@v4\n      - uses: actions/setup-node@v4\n        with:\n          node-version: 22\n          cache: pnpm\n      - run: pnpm install --frozen-lockfile\n${roles.map(role => `      - run: pnpm ${role}\n`).join('')}`);
+      await create('.github/workflows/ci.yml', `name: CI\non:\n  pull_request:\n  push:\n    branches: [main]\njobs:\n  # Keep the id \`check\`: the main ruleset requires it. Add \`node scripts/check-project.mjs --strict\` once it shows no warnings.\n  check:\n    runs-on: ubuntu-latest\n    permissions:\n      contents: read\n    steps:\n      - uses: actions/checkout@v4\n      - uses: pnpm/action-setup@v4\n      - uses: actions/setup-node@v4\n        with:\n          node-version: 22.15.0\n          cache: pnpm\n      - run: pnpm install --frozen-lockfile\n${roles.map(role => `      - run: pnpm ${role}\n`).join('')}`);
     }
     const after = json(pkg);
     if (JSON.stringify(pkg) !== JSON.stringify(object(packageText, 'package.json'))) files.set('package.json', { path: 'package.json', before: packageText, after });
