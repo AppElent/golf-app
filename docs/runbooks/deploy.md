@@ -26,19 +26,21 @@ deployment (`appelent.json` `workspace.backend`).
 
 ## Auth
 
-Auth follows lifetime ([environments](../standards/environments.md)). PR
-previews are short-lived and use the Clerk development instance: their web build
-and per-PR backend read `pr-clerk-publishable-key` and
-`pr-clerk-jwt-issuer-domain`, Infisical `staging` references to the `dev` values.
-The installed preview app and production use the production instance
-(`clerk.appelent.nl`).
+Auth follows the Infisical tier ([environments](../standards/environments.md)).
+PR previews read Infisical `staging`, whose `clerk-publishable-key` and
+`clerk-jwt-issuer-domain` reference the `dev` values, so their web build and
+per-PR backend use the Clerk development instance. The installed preview app
+(EAS `preview`, written from `staging`) and production read Infisical `prod` and
+use the production instance (`clerk.appelent.nl`).
 
 **Exception, until staging gets a host under `appelent.nl`:** the production
 instance signs in only on `*.appelent.nl`, and the staging Worker is served on
-workers.dev. Staging web and its Convex backend therefore also read the `pr-*`
-keys instead of production auth. When staging gets a subdomain, add it as the
-Worker's route, move staging to the production Clerk landings in
-`env.manifest.ts`, and delete this exception.
+workers.dev. Staging web and its Convex backend therefore read
+`staging-clerk-publishable-key` and `staging-clerk-jwt-issuer-domain`
+(Infisical `prod`, `/fairway`, references to the `dev` values) instead of
+production auth. When staging gets a subdomain, add it as the Worker's route,
+move staging to the regular Clerk landings in `env.manifest.ts`, delete those two
+keys, and delete this exception.
 
 ## Values
 
@@ -53,8 +55,9 @@ pnpm env:apply production --only github
 pnpm env:apply preview --only github
 ```
 
-The staging deploy key is `convex-staging-deploy-key` in Infisical `staging`
-(`/fairway`); `convex-deploy-key` there is the preview key PR previews use.
+Staging and production both read Infisical `prod`. The staging deploy key is
+`convex-staging-deploy-key` in Infisical `prod` (`/fairway`); `convex-deploy-key`
+in Infisical `staging` is the preview key PR previews use.
 
 ## One-time setup
 
@@ -69,8 +72,8 @@ The staging deploy key is `convex-staging-deploy-key` in Infisical `staging`
 
 2. Deploy keys (Convex dashboard → deployment → Settings → Deploy keys) for
    `staging` and for production. Both start with `prod:`; the workflow
-   refuses anything else. Store them in Infisical (`convex-staging-deploy-key`
-   in `staging`, `convex-deploy-key` in `prod`, both under `/fairway`).
+   refuses anything else. Store them in Infisical `prod` under `/fairway`
+   (`convex-staging-deploy-key` and `convex-deploy-key`).
 3. GitHub Environments `staging` (no protection) and `production` (required
    reviewer: you; branch: `main`), then the `env:apply` commands above.
 

@@ -4,10 +4,15 @@
 // docs/standards/environments.md: entries say which consumer reads a value in
 // which environment; the engine picks the destination.
 //
+// Infisical tiers follow lifetime: local reads dev, preview (web PR previews)
+// reads staging, staging and production read prod. `staging` is also the
+// installed preview app (EAS preview).
+//
 // App exception (docs/runbooks/deploy.md): the staging Worker is served on
 // workers.dev, where the production Clerk instance cannot sign in, so staging
-// web and its Convex backend also read the `pr-*` Clerk entries until staging
-// gets a host under appelent.nl.
+// web and its Convex backend read the `staging-clerk-*` entries (Infisical
+// prod, references to the dev values) until staging gets a host under
+// appelent.nl.
 
 export const ENV_CONFIG = {
 	appName: "fairway",
@@ -28,20 +33,24 @@ export const ENV_CONFIG = {
 export const ENVIRONMENTS = ["local", "preview", "staging", "production"] as const;
 
 const WEB_DEPLOYED = ["preview", "staging", "production"];
-const RELEASES = ["preview", "production"];
+// Installed apps: the preview app reads staging, the store app production.
+const APP = ["staging", "production"];
 
 export const ENTRIES = [
 	// ---------- Clerk ----------
 	{
 		key: "clerkPublishableKey",
 		infisicalKey: "clerk-publishable-key",
-		description: "Clerk publishable key: `pk_test_` in dev, `pk_live_` in staging and prod.",
+		description: "Clerk publishable key: `pk_test_` in Infisical dev and staging, `pk_live_` in prod.",
 		secret: false,
 		lands: {
-			"vite-build": { name: "VITE_CLERK_PUBLISHABLE_KEY", environments: ["local", "production"] },
+			"vite-build": {
+				name: "VITE_CLERK_PUBLISHABLE_KEY",
+				environments: ["local", "preview", "production"],
+			},
 			"expo-build": {
 				name: "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY",
-				environments: ["local", "preview", "production"],
+				environments: ["local", ...APP],
 			},
 			"expo-local": { name: "EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY", environments: ["local"] },
 		},
@@ -52,27 +61,30 @@ export const ENTRIES = [
 		description: "Issuer Convex trusts. A deployment without it refuses every signed-in call.",
 		secret: false,
 		lands: {
-			"convex-functions": { name: "CLERK_JWT_ISSUER_DOMAIN", environments: ["local", "production"] },
+			"convex-functions": {
+				name: "CLERK_JWT_ISSUER_DOMAIN",
+				environments: ["local", "preview", "production"],
+			},
 		},
 	},
 	{
-		key: "prClerkPublishableKey",
-		infisicalKey: "pr-clerk-publishable-key",
+		key: "stagingClerkPublishableKey",
+		infisicalKey: "staging-clerk-publishable-key",
 		description:
-			"Reference to the dev `pk_test_` key: web PR previews are short-lived. Staging web too, until it leaves workers.dev.",
+			"Reference to the dev `pk_test_` key for staging web, until it leaves workers.dev.",
 		secret: false,
 		lands: {
-			"vite-build": { name: "VITE_CLERK_PUBLISHABLE_KEY", environments: ["preview", "staging"] },
+			"vite-build": { name: "VITE_CLERK_PUBLISHABLE_KEY", environments: ["staging"] },
 		},
 	},
 	{
-		key: "prClerkJwtIssuerDomain",
-		infisicalKey: "pr-clerk-jwt-issuer-domain",
+		key: "stagingClerkJwtIssuerDomain",
+		infisicalKey: "staging-clerk-jwt-issuer-domain",
 		description:
-			"Reference to the dev issuer the per-PR backends trust. The staging backend too, until staging web leaves workers.dev.",
+			"Reference to the dev issuer the staging backend trusts, until staging web leaves workers.dev.",
 		secret: false,
 		lands: {
-			"convex-functions": { name: "CLERK_JWT_ISSUER_DOMAIN", environments: ["preview", "staging"] },
+			"convex-functions": { name: "CLERK_JWT_ISSUER_DOMAIN", environments: ["staging"] },
 		},
 	},
 
@@ -95,7 +107,7 @@ export const ENTRIES = [
 			},
 			"expo-build": {
 				name: "EXPO_PUBLIC_CONVEX_URL",
-				environments: ["local", "preview", "production"],
+				environments: ["local", ...APP],
 			},
 			"expo-local": { name: "EXPO_PUBLIC_CONVEX_URL", environments: ["local"] },
 		},
@@ -103,15 +115,15 @@ export const ENTRIES = [
 	{
 		key: "convexDeployKey",
 		infisicalKey: "convex-deploy-key",
-		description: "Deploy key: preview kind in staging (PR previews), production kind in prod.",
+		description: "Deploy key: preview kind in Infisical staging (PR previews), production kind in prod.",
 		secret: true,
-		lands: { workflow: { name: "CONVEX_DEPLOY_KEY", environments: RELEASES } },
+		lands: { workflow: { name: "CONVEX_DEPLOY_KEY", environments: ["preview", "production"] } },
 	},
 	{
 		key: "convexStagingDeployKey",
 		infisicalKey: "convex-staging-deploy-key",
 		description:
-			"`prod:` deploy key of the staging deployment. The deploy workflow refuses a missing or non-`prod:` key.",
+			"`prod:` deploy key of the staging deployment, in Infisical prod. The deploy workflow refuses a missing or non-`prod:` key.",
 		optional: true,
 		secret: true,
 		lands: { workflow: { name: "CONVEX_DEPLOY_KEY", environments: ["staging"] } },
@@ -145,7 +157,7 @@ export const ENTRIES = [
 		secret: false,
 		lands: {
 			"vite-build": { name: "VITE_SENTRY_DSN", environments: WEB_DEPLOYED },
-			"expo-build": { name: "EXPO_PUBLIC_SENTRY_DSN", environments: RELEASES },
+			"expo-build": { name: "EXPO_PUBLIC_SENTRY_DSN", environments: APP },
 		},
 	},
 	{
@@ -154,7 +166,7 @@ export const ENTRIES = [
 		description: "Sentry organisation slug, for debug-symbol and source-map upload.",
 		optional: true,
 		secret: false,
-		lands: { "eas-tooling": { name: "SENTRY_ORG", environments: RELEASES } },
+		lands: { "eas-tooling": { name: "SENTRY_ORG", environments: APP } },
 	},
 	{
 		key: "sentryProject",
@@ -162,7 +174,7 @@ export const ENTRIES = [
 		description: "Sentry project slug, for debug-symbol and source-map upload.",
 		optional: true,
 		secret: false,
-		lands: { "eas-tooling": { name: "SENTRY_PROJECT", environments: RELEASES } },
+		lands: { "eas-tooling": { name: "SENTRY_PROJECT", environments: APP } },
 	},
 	{
 		key: "sentryAuthToken",
@@ -172,7 +184,7 @@ export const ENTRIES = [
 		secret: true,
 		lands: {
 			workflow: { name: "SENTRY_AUTH_TOKEN", environments: WEB_DEPLOYED },
-			"eas-tooling": { name: "SENTRY_AUTH_TOKEN", environments: RELEASES },
+			"eas-tooling": { name: "SENTRY_AUTH_TOKEN", environments: APP },
 		},
 	},
 
@@ -187,7 +199,7 @@ export const ENTRIES = [
 		lands: {
 			"eas-tooling": {
 				name: "GOOGLE_MAPS_ANDROID_API_KEY",
-				environments: ["local", "preview", "production"],
+				environments: ["local", ...APP],
 			},
 		},
 	},

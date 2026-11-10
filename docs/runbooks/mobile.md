@@ -47,7 +47,8 @@ pnpm check && pnpm typecheck && pnpm test             # repo-wide
 Values are routed by `env.manifest.ts` from Infisical (`/` shared, `/fairway`
 app-specific): `pnpm env:plan <environment>`, `pnpm env:apply <environment>`,
 `pnpm env:check <environment>`. Local apply writes `apps/mobile/.env.local`, and a
-new worktree gets it from `node scripts/workspace.mjs prepare`.
+new worktree gets it from `node scripts/workspace.mjs prepare`. EAS `preview` (the
+installed preview app) is written from `staging`: `pnpm env:apply staging --only eas`.
 
 | Variable | Lands in | Notes |
 | --- | --- | --- |
