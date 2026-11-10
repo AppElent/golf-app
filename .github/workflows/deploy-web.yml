@@ -1,8 +1,10 @@
 name: Deploy web
 
-# One web target: Convex functions, the course catalog, then the Worker. The
-# backend is complete before the new frontend can be reached. Called by
-# deploy.yml for `staging` and `production`.
+# One web target. Production: Convex functions, the course catalog, then the
+# Worker, so the backend is complete before the new frontend can be reached.
+# Staging is a frontend on the production Convex deployment: it builds against
+# the production URL and ships only its Worker. Called by deploy.yml for
+# `staging` and `production`.
 on:
   workflow_call:
     inputs:
@@ -26,12 +28,17 @@ jobs:
       # Every value is scoped to the GitHub Environment, written by
       # `pnpm env:apply <environment> --only github` (env.manifest.ts).
       ENVIRONMENT_NAME: ${{ inputs.environment }}
-      # The deploy key alone picks the Convex deployment.
-      CONVEX_DEPLOY_KEY: ${{ secrets.CONVEX_DEPLOY_KEY }}
+      # The deploy key alone picks the Convex deployment. Production only: a
+      # staging job would also inherit any repository secret of this name, so
+      # withholding it here is what stops a merge changing the backend.
+      CONVEX_DEPLOY_KEY: ${{ inputs.environment == 'production' && secrets.CONVEX_DEPLOY_KEY || '' }}
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.CLOUDFLARE_ACCOUNT_ID }}
       SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
       VITE_CLERK_PUBLISHABLE_KEY: ${{ vars.VITE_CLERK_PUBLISHABLE_KEY }}
+      # Staging only: the production deployment's URL. Production gets it from
+      # convex deploy below.
+      VITE_CONVEX_URL: ${{ vars.VITE_CONVEX_URL }}
       VITE_SENTRY_DSN: ${{ vars.VITE_SENTRY_DSN }}
       VITE_SENTRY_ENVIRONMENT: ${{ inputs.environment }}
       # The Cloudflare Vite plugin picks the Wrangler env at build time and
@@ -44,13 +51,15 @@ jobs:
 
       # Fails before anything ships rather than deploying half a target. An
       # Environment without its own CONVEX_DEPLOY_KEY would inherit a
-      # repository one, so check the prefix too.
+      # repository one, so production checks the prefix too.
       - name: Check environment
         run: |
-          case "$CONVEX_DEPLOY_KEY" in
-            prod:*) ;;
-            *) echo "::error::CONVEX_DEPLOY_KEY in the $ENVIRONMENT_NAME Environment is missing or not a prod: key."; exit 1 ;;
-          esac
+          if [ "$ENVIRONMENT_NAME" = production ]; then
+            case "$CONVEX_DEPLOY_KEY" in
+              prod:*) ;;
+              *) echo "::error::CONVEX_DEPLOY_KEY in the production Environment is missing or not a prod: key."; exit 1 ;;
+            esac
+          fi
           node scripts/env.mjs check "$ENVIRONMENT_NAME" --ci
 
       # Convex exposes the deployment's URL to --cmd as $CONVEX_URL; the app
@@ -58,6 +67,7 @@ jobs:
       # mode: staging exists to run the bundle production ships. The hidden
       # source maps upload when SENTRY_AUTH_TOKEN is set (docs/runbooks/sentry.md).
       - name: Convex deploy + build
+        if: inputs.environment == 'production'
         run: |
           # shellcheck disable=SC2016 # $CONVEX_URL expands inside convex deploy
           pnpm exec convex deploy \
@@ -65,7 +75,13 @@ jobs:
             --cmd 'VITE_CONVEX_URL=$CONVEX_URL pnpm build'
 
       - name: Sync course catalog
+        if: inputs.environment == 'production'
         run: pnpm exec convex run courseCatalog:sync
+
+      # VITE_CONVEX_URL comes from the staging Environment, as the production URL.
+      - name: Build staging
+        if: inputs.environment != 'production'
+        run: pnpm build
 
       # A build for the wrong env would replace another environment's Worker.
       - name: Guard Worker name

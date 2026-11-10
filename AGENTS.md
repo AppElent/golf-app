@@ -68,7 +68,9 @@ Single test file: `pnpm exec vitest run path/to/file.test.ts`.
   helpers in `src/lib/observability/`. Local hosts never report. Read
   `docs/runbooks/sentry.md` before touching it.
 - **Deploy**: Worker `golf-app` on `fairway.appelent.nl` (production Clerk signs in
-  only on `*.appelent.nl`), with a `staging` env whose Worker is `golf-app-stg` on `fairway-stg.appelent.nl`. The Vite plugin
+  only on `*.appelent.nl`), with a `staging` env whose Worker is `golf-app-stg` on `fairway-stg.appelent.nl`.
+  Staging is a frontend on the production Convex deployment; only production deploys
+  Convex. The Vite plugin
   picks the Worker env at build time from `CLOUDFLARE_ENV`; `wrangler deploy --env`
   is ignored. A merge to `main` runs `.github/workflows/deploy.yml`. Read
   `docs/runbooks/deploy.md` before changing it.

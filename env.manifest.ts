@@ -7,16 +7,17 @@
 // Infisical tiers follow lifetime: local reads dev, preview (web PR previews)
 // reads staging, staging and production read prod. `staging` is also the
 // installed preview app (EAS preview).
+//
+// Staging is a frontend on the production Convex deployment: there are three
+// backends (dev, per-PR previews, production) and no staging one. A merge
+// ships the golf-app-stg Worker; backend changes ship with production.
 
 export const ENV_CONFIG = {
 	appName: "fairway",
 	source: { paths: ["/", "/fairway"] },
 	convex: {
 		project: "eric-jansen:golf",
-		deployments: {
-			staging: "eric-jansen:golf:staging",
-			production: "giddy-pelican-141",
-		},
+		deployments: { production: "giddy-pelican-141" },
 	},
 	// The staging Worker predates the standard `<worker>-staging` name.
 	worker: { name: "golf-app", names: { staging: "golf-app-stg" } },
@@ -55,9 +56,10 @@ export const ENTRIES = [
 		description: "Issuer Convex trusts. A deployment without it refuses every signed-in call.",
 		secret: false,
 		lands: {
+			// Staging shares the production deployment, which production configures.
 			"convex-functions": {
 				name: "CLERK_JWT_ISSUER_DOMAIN",
-				environments: ["local", ...WEB_DEPLOYED],
+				environments: ["local", "preview", "production"],
 			},
 		},
 	},
@@ -73,9 +75,9 @@ export const ENTRIES = [
 			"vite-build": {
 				name: "VITE_CONVEX_URL",
 				environments: ["local", ...WEB_DEPLOYED],
+				// Staging builds against the production URL from Infisical prod.
 				suppliedIn: {
 					preview: "convex deploy",
-					staging: "convex deploy",
 					production: "convex deploy",
 				},
 			},
@@ -89,18 +91,10 @@ export const ENTRIES = [
 	{
 		key: "convexDeployKey",
 		infisicalKey: "convex-deploy-key",
-		description: "Deploy key: preview kind in Infisical staging (PR previews), production kind in prod.",
+		description:
+			"Deploy key: preview kind in Infisical staging (PR previews), production kind in prod. Absent from staging by design: a merge must not change the production backend.",
 		secret: true,
 		lands: { workflow: { name: "CONVEX_DEPLOY_KEY", environments: ["preview", "production"] } },
-	},
-	{
-		key: "convexStagingDeployKey",
-		infisicalKey: "convex-staging-deploy-key",
-		description:
-			"`prod:` deploy key of the staging deployment, in Infisical prod. The deploy workflow refuses a missing or non-`prod:` key.",
-		optional: true,
-		secret: true,
-		lands: { workflow: { name: "CONVEX_DEPLOY_KEY", environments: ["staging"] } },
 	},
 
 	// ---------- Test login (Clerk development instance only) ----------
