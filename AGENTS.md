@@ -26,3 +26,23 @@ Before the task, read the matching project doc:
 | Watching a PR through CI and review | `babysit-pr` skill |
 
 Adding, moving, or finding docs: [docs map](docs/README.md).
+
+## Factory workflow
+
+Linear (workspace `appelent`, team AppElent, key `APP`) is the source of truth. Work is a Linear issue with an app label and a blast radius.
+
+- `ready-for-agent`: the issue has sharp, testable acceptance criteria and a blast radius, so an agent can pick it up.
+- `ready-for-human`: Eric must do or decide something. Add a comment saying what, where, and roughly how long.
+- The moment you start a T3 thread for an issue, post a Linear comment `T3 thread: <title> (<thread id>), started by <bot or fallback>` and move the issue to In Progress. An issue with such a comment is taken; do not start a second thread for it.
+
+Work in a worktree from `origin/main` on a branch `<type>/app-123-short-slug` (type: feat, fix, refactor, chore, docs, or test). Put `Fixes APP-123` in the PR description. End in a PR with tests (and a PR preview where the repo has one). Do not merge the PR yourself.
+
+End your report with a **Leftover work** heading listing everything found but left out of scope, without fixing it.
+
+Blast radius (`low` / `med` / `high`, also `blast-radius:low|med|high` on the PR):
+
+- low: UI, copy, tests, refactors within one module, docs.
+- med: data model changes with migration and rollback, new dependencies, CI/workflows, shared behaviour across several screens.
+- high: auth, payments, production config, secrets, deleting data, permissions, anything affecting other users without a way back.
+
+Agents never merge med or high PRs. Never read or change production secrets, and never approve production deployments.
