@@ -3,7 +3,10 @@
 version: 2
 updates:
   - package-ecosystem: npm # pnpm workspace
-    directories: ["/", "/apps/mobile", "/packages/core"]
+    # Root only: Dependabot reads the `packages:` globs in pnpm-workspace.yaml
+    # and updates apps/mobile and packages/core from here. A workspace
+    # subdirectory entry fails with `misconfigured_tooling`.
+    directory: "/"
     schedule: { interval: weekly, day: monday }
     # Must stay >= minimumReleaseAge in pnpm-workspace.yaml (3 days), or the
     # proposed lockfile fails `pnpm install --frozen-lockfile`.
