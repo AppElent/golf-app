@@ -106,6 +106,61 @@ pnpm exec eas update --channel device --environment development -m "…"   # JS-
 - Sign in with an email code. Native Sign in with Apple needs the bundle ID
   on the Clerk instance, and the dev instance is shared with other apps.
 
+### Runtime fingerprint check
+
+**Mobile runtime** (`.github/workflows/mobile-runtime.yml`) runs on PRs that
+touch the app or the lockfile. It compares the PR's runtime fingerprints with
+the base branch's (`apps/mobile/scripts/fingerprint.mjs diff`) and comments
+whether merging needs new builds. It also lists version changes of the
+packages in `WATCHED` (`@clerk/expo`, `expo-application`), and its last step
+(`fingerprint.mjs check`) fails the PR when one of them drops out of a
+fingerprint.
+
+- `@clerk/expo` 4.15.0 enforces the Clerk Dashboard's minimum app version per
+  bundle ID. It reads the build's version through `expo-application`; without
+  that module the check always reports "supported".
+- Android fingerprints currently hold no Expo-autolinked modules at all:
+  `@expo/fingerprint` 0.21.7 throws on expo-widgets' Maven gradle plugin (no
+  `sourceDir`) and drops the whole Android autolinking source. `check` warns
+  instead of failing there, and starts failing again once that is fixed.
+
+```bash
+node apps/mobile/scripts/fingerprint.mjs            # hashes per variant
+node apps/mobile/scripts/fingerprint.mjs check      # watched packages present
+node apps/mobile/scripts/fingerprint.mjs diff <base checkout>
+```
+
+### Preview sign-in test
+
+`apps/mobile/.maestro/preview-sign-in.yaml` signs in to a Fairway Preview
+build (`com.appelent.fairway.preview`) and fails if sign-in breaks or Clerk's
+"Update required" screen appears. Run it after a Clerk SDK bump or a change to
+Clerk's minimum versions. It needs a Preview build on the Clerk **test**
+instance with the dev-login credentials from `.env.local`; never a `pk_live_`
+build.
+
+```bash
+pnpm env:apply local --only file          # or copy apps/mobile/.env.local from the main checkout
+cd apps/mobile
+APP_VARIANT=preview pnpm exec expo prebuild -p ios
+cd ios && APP_VARIANT=preview SENTRY_DISABLE_AUTO_UPLOAD=true xcodebuild \
+  -workspace FairwayPreview.xcworkspace -scheme FairwayPreview \
+  -configuration Release -sdk iphonesimulator -derivedDataPath build/dd \
+  -destination id=<simulator udid> CODE_SIGN_IDENTITY=- CODE_SIGN_STYLE=Manual \
+  DEVELOPMENT_TEAM= PROVISIONING_PROFILE_SPECIFIER= build
+xcrun simctl install <simulator udid> build/dd/Build/Products/Release-iphonesimulator/FairwayPreview.app
+cd .. && pnpm e2e:preview-sign-in         # maestro test .maestro/preview-sign-in.yaml
+```
+
+- Build with `xcodebuild` and ad hoc signing (`CODE_SIGN_IDENTITY=-`).
+  `expo run:ios --configuration Release` asks for a signing certificate, and an
+  unsigned build (`CODE_SIGNING_ALLOWED=NO`) has no keychain entitlement, so
+  the app stalled on the splash screen in testing.
+
+- It covers the Preview bundle ID on the test instance. The installed
+  `preview-internal` build uses the production instance, whose minimum
+  versions only the owner checks in the Clerk Dashboard.
+
 ## Runtime notes
 
 - Online first: Convex is the source of truth; a write counts as saved when the
