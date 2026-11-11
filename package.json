@@ -64,7 +64,7 @@
     "typescript": "~6.0.3",
     "vite": "^8.3.5",
     "vitest": "^4.1.12",
-    "wrangler": "^4.156.2"
+    "wrangler": "^4.157.0"
   },
   "packageManager": "pnpm@11.8.0",
   "engines": {
