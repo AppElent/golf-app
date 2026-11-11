@@ -18,7 +18,7 @@ Every surface reports to one Sentry project, `appelent/fairway`, with one DSN
 | --- | --- | --- | --- |
 | Browser | `fairway-web` | `src/instrument.client.ts`, `src/client.tsx`, `src/router.tsx` | React render/query errors (`onUncaughtError`/`onCaughtError`/`onRecoverableError`), failed Convex mutations/actions returned to this browser, route navigation traces |
 | Worker SSR | `fairway-web-server` | `src/server.ts` (`wrangler.jsonc` `main`) | Uncaught Worker exceptions and SSR responses ≥ 500 that TanStack Start turned into a response, request traces |
-| Convex | `fairway-convex` | `scripts/convex-sentry.mjs` (`pnpm sentry:convex`) | Failed function executions, including scheduled ones — **inactive until the forwarder runs somewhere** (see below) |
+| Convex | `fairway-convex` | `scripts/convex-sentry.mjs` (`pnpm sentry:convex`) | Failed function executions, including scheduled ones — production only, from the always-on forwarder (see below) |
 | Mobile | `fairway-mobile` | `apps/mobile/src/monitoring/` | See the [mobile runbook](mobile.md) |
 
 One project because it is one product with one team and low volume: a broken
@@ -104,25 +104,80 @@ is the name the manifest's workflow placement uses. `SENTRY_CONVEX_DSN` wins
 over both.
 
 ```sh
-SENTRY_DSN=<dsn> pnpm sentry:convex --prod
 SENTRY_DSN=<dsn> SENTRY_ENVIRONMENT=development pnpm sentry:convex --deployment <dev deployment>
-# or let the manifest supply the DSN:
-node scripts/env.mjs exec production --only github -- pnpm sentry:convex --prod
 ```
 
-It runs `convex logs --jsonl` (CLI login or a private `CONVEX_DEPLOY_KEY` for
-that deployment), forwards failed completions only (not retried OCC
-conflicts), tags `func`, `func_type`, `caller`, `request_id`, and never sends
+Production runs as a service; see [Production service](#production-service)
+for how it gets the DSN and log access.
+
+It runs `convex logs --jsonl` (CLI login, or a private deploy key with
+`deployment:logs:view` for that deployment), forwards failed completions only
+(not retried OCC conflicts), tags `func`, `func_type`, `caller`, `request_id`, and never sends
 log lines, arguments, results or identity. On restart it replays the last 100
 records; stable event ids deduplicate them. The reader reconnects with backoff
 (5 s doubling to 60 s). Delivery is in memory: failures while it is down beyond
 that history, or not yet sent at a crash, are lost. There is no user
 attribution and no backend tracing.
 
-**Status: inactive.** No always-on host runs it yet, so unattended backend
-failures (scheduled jobs, crons) are not reported. Run one reader per
-deployment on a supervised host to activate it. If managed Convex reporting is
-ever enabled, stop the reader for that deployment first to avoid duplicates.
+Run one reader per deployment. If managed Convex reporting is ever enabled,
+stop the reader for that deployment first to avoid duplicates.
+
+### Production service
+
+**Status: active for production.** One reader runs on Eric's always-on Mac
+Studio as a launchd user agent. Staging, previews and dev deployments have no
+reader. The service lives outside this repo:
+
+| What | Where |
+| --- | --- |
+| launchd label | `com.appelent.convex-sentry.fairway` (`~/Library/LaunchAgents/com.appelent.convex-sentry.fairway.plist`) |
+| Wrapper | `~/Developer/.services/bin/convex-sentry-run fairway`; host notes in `~/Developer/.services/README.md` |
+| Checkout | `~/Developer/.services/golf-app`, a dedicated clone |
+| Log | `~/Library/Logs/convex-sentry-fairway.log` |
+
+The agent has `RunAtLoad`, `KeepAlive` and `ThrottleInterval` 30, so it
+restarts after a crash (at most every 30 s) and after a reboot once this user
+is logged in. On each start the wrapper updates the checkout to `origin/main`
+when its tree is clean (otherwise it keeps the existing checkout and logs
+why), installs dependencies when the lockfile changed, then runs the
+equivalent of:
+
+```sh
+pnpm env:exec production --only github -- \
+  sh -c 'unset CONVEX_DEPLOY_KEY CONVEX_DEPLOYMENT_TOKEN
+         SENTRY_ENVIRONMENT=production pnpm sentry:convex --deployment eric-jansen:golf:prod'
+```
+
+- **DSN**: `env:exec` loads Infisical `sentry-dsn` as `VITE_SENTRY_DSN`; the
+  `sentry:convex` script maps it to `SENTRY_DSN` and sets
+  `SENTRY_APP=fairway-convex`.
+- **Log access**: the logged-in Convex CLI on the Mac. The deploy keys are
+  unset because the production deploy key can deploy but lacks
+  `deployment:logs:view`.
+- **Deployment**: `--deployment eric-jansen:golf:prod` (the public project
+  selector from `env.manifest.ts`). `--prod` alone fails here: the service
+  clone has no `.env.local`, so there is no `CONVEX_DEPLOYMENT` to resolve it.
+
+Do not run the production forwarder from a T3 worktree or from
+`~/Developer/golf-app`: keep one reader per deployment, and only the service
+is supervised.
+
+Restart, then watch the log:
+
+```sh
+launchctl kickstart -k "gui/$(id -u)/com.appelent.convex-sentry.fairway"
+tail -f ~/Library/Logs/convex-sentry-fairway.log
+```
+
+A healthy start logs `[Production] eric-jansen:golf:production (prod)` and a
+`Watching logs for …` line. Stop it with:
+
+```sh
+launchctl bootout "gui/$(id -u)/com.appelent.convex-sentry.fairway"
+```
+
+`bootout` unloads the agent until the next login; to start it again without
+logging out, `launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/com.appelent.convex-sentry.fairway.plist`.
 
 ## Acceptance (not yet done)
 
