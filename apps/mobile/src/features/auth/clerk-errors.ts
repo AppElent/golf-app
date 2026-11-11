@@ -21,6 +21,10 @@ const GENERIC = "Something went wrong. Please try again.";
 const CODE_MAP: Record<string, string> = {
 	form_identifier_not_found: "No account found with that email.",
 	form_password_incorrect: "That password is not right.",
+	// The account exists but has no password (made with Apple, Microsoft or
+	// an email code).
+	strategy_for_user_invalid:
+		"This account has no password. Use Apple, Microsoft or an email code instead.",
 	form_identifier_exists: "An account with that email already exists.",
 	form_password_length_too_short: "That password is too short.",
 	form_password_pwned:

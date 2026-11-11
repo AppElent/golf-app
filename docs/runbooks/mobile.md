@@ -14,6 +14,7 @@ Project facts for `apps/mobile`. Shared steps live in
 | Variant (`APP_VARIANT`) | Name | Bundle ID / package | Scheme |
 | --- | --- | --- | --- |
 | unset or `development` | Fairway Dev | `com.appelent.fairway.dev` | `fairway-dev` |
+| `test` | Fairway Test | `com.appelent.fairway.test` | `fairway-test` |
 | `preview` | Fairway Preview | `com.appelent.fairway.preview` | `fairway-preview` |
 | `production` | Fairway | `com.appelent.fairway` | `fairway` |
 
@@ -82,29 +83,42 @@ installed preview app) is written from `staging`: `pnpm env:apply staging --only
 
 ### On your own iPhone
 
-Two internal builds install side by side (the phone's UDID is registered with
+Three internal builds install side by side (the phone's UDID is registered with
 the Apple team on EAS; add another with `eas device:create`):
 
 | Profile | App | JS from | Backend |
 | --- | --- | --- | --- |
+| `preview-internal` | Fairway Preview | bundled; updates on channel `preview` after each deploy | production Convex + Clerk production |
+| `test` | Fairway Test | bundled; updates on channel `test` | Convex dev + Clerk test instance |
 | `development` | Fairway Dev | Metro on your Mac (same Wi‑Fi) | `EXPO_PUBLIC_*` of EAS *development* |
-| `device` | Fairway Preview | bundled; updates over the air on channel `device` | Convex dev + Clerk test instance |
 
 ```bash
 cd apps/mobile
-pnpm exec eas build -p ios --profile device        # first run: Apple login creates the ad hoc profile
+SENTRY_DISABLE_AUTO_UPLOAD=true pnpm exec eas build -p ios --profile preview-internal --local --output <dir>/preview.ipa
+pnpm exec eas build -p ios --profile test          # first run: Apple login creates the ad hoc profiles
 pnpm exec eas build -p ios --profile development
-pnpm exec eas update --channel device --environment development -m "…"   # JS-only change to the device build
+pnpm exec eas update --channel test --environment development -m "…"   # JS-only change to the test build
 ```
 
-- The first build per profile needs an interactive Apple login; afterwards
+- Fairway Preview is the daily driver: your real account and rounds.
+- Fairway Test exists to try unmerged backend changes on the phone, because
+  production Convex only has `main`'s functions. Its data is the dev
+  deployment's, which gets reseeded.
+- The first build per bundle ID needs an interactive Apple login, which creates
+  the ad hoc profiles for the app and its widget extension; afterwards
   `--non-interactive` works.
-- `device` exists because `preview` and `production` point at production
-  Convex, which only has `main`'s functions.
-- Both profiles set `SENTRY_DISABLE_AUTO_UPLOAD`: the *development* EAS
-  environment has no Sentry token, and a Release build fails on the upload.
-- Sign in with an email code. Native Sign in with Apple needs the bundle ID
-  on the Clerk instance, and the dev instance is shared with other apps.
+- `test` and `development` set `SENTRY_DISABLE_AUTO_UPLOAD`: the *development*
+  EAS environment has no Sentry token, and a Release build fails on the upload.
+  A local `preview-internal` build sets it on the command line, as CI does.
+- Clerk accounts on the test instance are separate from production. An account
+  made there with Apple or Microsoft has no password: sign in with Apple,
+  Microsoft or an email code.
+- Native sign-in (Apple) needs the bundle ID registered as an iOS app on the
+  Clerk instance (team `D8AMB5N29A`), and Microsoft needs
+  `<scheme>://sso-callback` allowlisted. Test instance (shared with other
+  apps): `.dev`, `.test`, `.preview`. Production instance: `.preview`; add
+  `com.appelent.fairway` before the first store build. Callbacks: all four
+  schemes on the instance their builds use.
 
 ## Runtime notes
 

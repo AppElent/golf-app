@@ -28,12 +28,12 @@
 			"distribution": "internal",
 			"android": { "buildType": "apk" }
 		},
-		"device": {
+		"test": {
 			"extends": "preview-internal",
-			"channel": "device",
+			"channel": "test",
 			"environment": "development",
 			"env": {
-				"APP_VARIANT": "preview",
+				"APP_VARIANT": "test",
 				"SENTRY_DISABLE_AUTO_UPLOAD": "true",
 				"SHARP_IGNORE_GLOBAL_LIBVIPS": "1"
 			}
