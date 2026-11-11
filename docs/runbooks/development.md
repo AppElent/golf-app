@@ -29,6 +29,7 @@ pnpm lint:fix         # biome check --write
 pnpm typecheck        # root, convex, packages/core, apps/mobile
 pnpm test             # Vitest: web, convex (convex-test), packages/core
 pnpm test:mobile      # Jest in apps/mobile
+pnpm verify           # check + typecheck + test + test:mobile; run before calling work done
 pnpm build            # production web build
 pnpm cf-typegen       # regenerate worker-configuration.d.ts after editing wrangler.jsonc
 pnpm courses:sync     # write the course catalog into the dev deployment
