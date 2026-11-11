@@ -37,6 +37,8 @@ Linear (workspace `appelent`, team AppElent, key `APP`) is the source of truth. 
 
 Work in a worktree from `origin/main` on a branch `<type>/app-123-short-slug` (type: feat, fix, refactor, chore, docs, or test). Put `Fixes APP-123` in the PR description. End in a PR with tests (and a PR preview where the repo has one). Do not merge the PR yourself.
 
+After opening the PR, run a council review in this same thread as subagents (Opus, Sol, Grok; read-only). Post the scores and any blockers as a PR comment, fix blockers and re-run if needed, and end your final message with `Council verdict: PROCEED` (only if every reviewer scores 9 or higher with no blockers) or `Council verdict: REVISE` with reasons. Do not start separate review or council threads.
+
 End your report with a **Leftover work** heading listing everything found but left out of scope, without fixing it.
 
 Blast radius (`low` / `med` / `high`, also `blast-radius:low|med|high` on the PR):
