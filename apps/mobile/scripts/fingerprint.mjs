@@ -63,6 +63,9 @@ function sourceKey(source) {
 		: source.filePath.replace(/^.*node_modules\//, "node_modules/");
 }
 
+/** WATCHED packages fingerprinted only as autolinked modules, not config plugins. */
+const AUTOLINKED = new Set(["expo-application"]);
+
 /** Source keys (`node_modules/<package>/…`) that belong to `name`. */
 function sourcesOf(print, name) {
 	const prefix = `node_modules/${name}/`;
@@ -83,30 +86,32 @@ function installedVersion(name, root = appRoot) {
 }
 
 /**
- * True when a fingerprint holds no Expo-autolinked native module. On Android
- * that is a known @expo/fingerprint gap, not an app without modules: a gradle
+ * True for an Android fingerprint with no Expo-autolinked native module. That
+ * is a known @expo/fingerprint gap, not an app without modules: a gradle
  * plugin published to Maven (expo-widgets' glance fork) has no `sourceDir`,
  * the Android autolinking sourcer throws on it and returns nothing, so no
  * Expo module's Android code reaches the Android fingerprint.
  */
-function lacksExpoAutolinking(print, platform) {
-	const reason = platform === "ios" ? "expoAutolinkingIos" : "expoAutolinkingAndroid";
-	return !print.sources.some((s) => s.reasons.includes(reason));
+function androidAutolinkingGap(print, platform) {
+	return (
+		platform === "android" &&
+		!print.sources.some((s) => s.reasons.includes("expoAutolinkingAndroid"))
+	);
 }
 
 /**
  * Each WATCHED package missing from one fingerprint: an error, or a warning
- * when the platform's whole autolinking source is missing (see above), so
+ * for an AUTOLINKED package under the Android gap above, so
  * the check tightens by itself once @expo/fingerprint is fixed.
  */
 export function missingWatched(variant, platform, print) {
-	const gap = lacksExpoAutolinking(print, platform);
+	const gap = androidAutolinkingGap(print, platform);
 	const errors = [];
 	const warnings = [];
 	for (const name of Object.keys(WATCHED)) {
 		if (sourcesOf(print, name).length > 0) continue;
 		const line = `${variant} ${platform}: ${name} is not in the fingerprint`;
-		if (gap) {
+		if (gap && AUTOLINKED.has(name)) {
 			warnings.push(`${line} (no Expo autolinking sources at all; @expo/fingerprint gap)`);
 		} else {
 			errors.push(line);

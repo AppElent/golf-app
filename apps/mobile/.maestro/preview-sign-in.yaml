@@ -21,6 +21,8 @@ name: Preview sign-in
     visible:
       id: sign-in-submit
     timeout: 60000
+# Clerk may not have fetched its environment yet; a blocked sign-in still
+# never reaches Home, and the check after sign-in covers a late screen.
 - assertNotVisible: Update required
 # Disabled means the build has no dev-login credentials; see the header.
 - assertVisible:

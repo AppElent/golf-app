@@ -142,7 +142,7 @@ build.
 ```bash
 pnpm env:apply local --only file          # or copy apps/mobile/.env.local from the main checkout
 cd apps/mobile
-APP_VARIANT=preview pnpm exec expo prebuild -p ios
+APP_VARIANT=preview pnpm exec expo prebuild -p ios --clean   # --clean: ios/ may hold another variant
 cd ios && APP_VARIANT=preview SENTRY_DISABLE_AUTO_UPLOAD=true xcodebuild \
   -workspace FairwayPreview.xcworkspace -scheme FairwayPreview \
   -configuration Release -sdk iphonesimulator -derivedDataPath build/dd \
