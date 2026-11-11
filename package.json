@@ -22,7 +22,8 @@
     "courses:sync": "pnpm exec convex run courseCatalog:sync",
     "test:mobile": "pnpm --filter @fairway/mobile test",
     "check:mobile-structure": "node scripts/check-mobile-structure.mjs",
-    "check:repo-layout": "node scripts/check-repo-layout.mjs"
+    "check:repo-layout": "node scripts/check-repo-layout.mjs",
+    "verify": "pnpm check && pnpm typecheck && pnpm test && pnpm test:mobile"
   },
   "dependencies": {
     "@clerk/react": "^6.18.4",
