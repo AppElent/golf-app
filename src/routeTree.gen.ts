@@ -12,8 +12,10 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CardRouteImport } from './routes/card'
 import { Route as PlayRouteImport } from './routes/play'
+import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProfileRouteImport } from './routes/profile'
 import { Route as ProgressRouteImport } from './routes/progress'
+import { Route as SupportRouteImport } from './routes/support'
 import { Route as CoursesIndexRouteImport } from './routes/courses.index'
 import { Route as RoundsNewRouteImport } from './routes/rounds.new'
 import { Route as CoursesCourseIdEditRouteImport } from './routes/courses.$courseId.edit'
@@ -33,6 +35,11 @@ const PlayRoute = PlayRouteImport.update({
   path: '/play',
   getParentRoute: () => rootRouteImport,
 } as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileRoute = ProfileRouteImport.update({
   id: '/profile',
   path: '/profile',
@@ -41,6 +48,11 @@ const ProfileRoute = ProfileRouteImport.update({
 const ProgressRoute = ProgressRouteImport.update({
   id: '/progress',
   path: '/progress',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SupportRoute = SupportRouteImport.update({
+  id: '/support',
+  path: '/support',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CoursesIndexRoute = CoursesIndexRouteImport.update({
@@ -63,8 +75,10 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/card': typeof CardRoute
   '/play': typeof PlayRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/progress': typeof ProgressRoute
+  '/support': typeof SupportRoute
   '/rounds/new': typeof RoundsNewRoute
   '/courses/': typeof CoursesIndexRoute
   '/courses/$courseId/edit': typeof CoursesCourseIdEditRoute
@@ -73,8 +87,10 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/card': typeof CardRoute
   '/play': typeof PlayRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/progress': typeof ProgressRoute
+  '/support': typeof SupportRoute
   '/rounds/new': typeof RoundsNewRoute
   '/courses': typeof CoursesIndexRoute
   '/courses/$courseId/edit': typeof CoursesCourseIdEditRoute
@@ -84,8 +100,10 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/card': typeof CardRoute
   '/play': typeof PlayRoute
+  '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
   '/progress': typeof ProgressRoute
+  '/support': typeof SupportRoute
   '/rounds/new': typeof RoundsNewRoute
   '/courses/': typeof CoursesIndexRoute
   '/courses/$courseId/edit': typeof CoursesCourseIdEditRoute
@@ -96,8 +114,10 @@ export interface FileRouteTypes {
     | '/'
     | '/card'
     | '/play'
+    | '/privacy'
     | '/profile'
     | '/progress'
+    | '/support'
     | '/rounds/new'
     | '/courses/'
     | '/courses/$courseId/edit'
@@ -106,8 +126,10 @@ export interface FileRouteTypes {
     | '/'
     | '/card'
     | '/play'
+    | '/privacy'
     | '/profile'
     | '/progress'
+    | '/support'
     | '/rounds/new'
     | '/courses'
     | '/courses/$courseId/edit'
@@ -116,8 +138,10 @@ export interface FileRouteTypes {
     | '/'
     | '/card'
     | '/play'
+    | '/privacy'
     | '/profile'
     | '/progress'
+    | '/support'
     | '/rounds/new'
     | '/courses/'
     | '/courses/$courseId/edit'
@@ -127,8 +151,10 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CardRoute: typeof CardRoute
   PlayRoute: typeof PlayRoute
+  PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
   ProgressRoute: typeof ProgressRoute
+  SupportRoute: typeof SupportRoute
   RoundsNewRoute: typeof RoundsNewRoute
   CoursesIndexRoute: typeof CoursesIndexRoute
   CoursesCourseIdEditRoute: typeof CoursesCourseIdEditRoute
@@ -157,6 +183,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PlayRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile': {
       id: '/profile'
       path: '/profile'
@@ -169,6 +202,13 @@ declare module '@tanstack/react-router' {
       path: '/progress'
       fullPath: '/progress'
       preLoaderRoute: typeof ProgressRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/support': {
+      id: '/support'
+      path: '/support'
+      fullPath: '/support'
+      preLoaderRoute: typeof SupportRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/courses/': {
@@ -199,8 +239,10 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CardRoute: CardRoute,
   PlayRoute: PlayRoute,
+  PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
   ProgressRoute: ProgressRoute,
+  SupportRoute: SupportRoute,
   RoundsNewRoute: RoundsNewRoute,
   CoursesIndexRoute: CoursesIndexRoute,
   CoursesCourseIdEditRoute: CoursesCourseIdEditRoute,
@@ -208,12 +250,3 @@ const rootRouteChildren: RootRouteChildren = {
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
-
-import type { getRouter } from './router.tsx'
-import type { createStart } from '@tanstack/react-start'
-declare module '@tanstack/react-start' {
-  interface Register {
-    ssr: true
-    router: Awaited<ReturnType<typeof getRouter>>
-  }
-}

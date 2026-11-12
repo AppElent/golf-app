@@ -1,7 +1,13 @@
 import { TanStackDevtools } from "@tanstack/react-devtools";
-import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router";
+import {
+	createRootRoute,
+	HeadContent,
+	Scripts,
+	useRouterState,
+} from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import BottomNav from "../components/BottomNav";
+import { isPublicPath } from "../components/LegalPage";
 import { ServiceWorker } from "../components/ServiceWorker";
 import { AuthGate } from "../integrations/clerk/auth-gate";
 import ClerkProvider from "../integrations/clerk/provider";
@@ -30,6 +36,9 @@ export const Route = createRootRoute({
 });
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+	const isPublic = useRouterState({
+		select: (state) => isPublicPath(state.location.pathname),
+	});
 	return (
 		<html lang="en">
 			<head>
@@ -40,10 +49,10 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 					<ConvexProvider>
 						<SimulationModeProvider>
 							<div className="relative mx-auto min-h-dvh w-full max-w-[430px] bg-cream shadow-2xl">
-								<AuthGate>{children}</AuthGate>
+								{isPublic ? children : <AuthGate>{children}</AuthGate>}
 							</div>
 						</SimulationModeProvider>
-						<BottomNav />
+						{isPublic ? null : <BottomNav />}
 						<ServiceWorker />
 						<TanStackDevtools
 							config={{ position: "bottom-right" }}

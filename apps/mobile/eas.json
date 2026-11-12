@@ -44,5 +44,8 @@
 			"environment": "production",
 			"env": { "APP_VARIANT": "production", "SHARP_IGNORE_GLOBAL_LIBVIPS": "1" }
 		}
+	},
+	"submit": {
+		"production": { "ios": { "ascAppId": "6833832527" } }
 	}
 }
