@@ -30,7 +30,7 @@ const SECTIONS: readonly LegalSection[] = [
 	{
 		heading: "Your account",
 		paragraphs: [
-			"Delete a round from its detail screen. Delete your account and all its data under Profile → Delete account. See the privacy policy at fairway.appelent.nl/privacy.",
+			"Delete a round from its detail screen. Delete your account and all its data in the iPhone app under Profile → Delete account. See the privacy policy at fairway.appelent.nl/privacy.",
 		],
 	},
 ];
