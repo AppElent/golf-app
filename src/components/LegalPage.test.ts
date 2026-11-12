@@ -11,5 +11,12 @@ describe("isPublicPath", () => {
 		expect(isPublicPath("/")).toBe(false);
 		expect(isPublicPath("/profile")).toBe(false);
 		expect(isPublicPath("/privacy-settings")).toBe(false);
+		expect(isPublicPath("/privacy/rounds")).toBe(false);
+		expect(isPublicPath("/PRIVACY")).toBe(false);
+		expect(isPublicPath("/%70rivacy")).toBe(false);
+	});
+
+	it("treats repeated trailing slashes like one", () => {
+		expect(isPublicPath("/privacy//")).toBe(true);
 	});
 });

@@ -12,10 +12,11 @@ const SECTIONS: readonly LegalSection[] = [
 		heading: "What we collect",
 		paragraphs: [
 			"Account: your email address and a password (stored hashed by our sign-in provider), or the name and email address shared by Apple, Google or Microsoft when you sign in with them, plus your sign-in sessions. This is an Appelent account, which also signs you in to other Appelent apps.",
-			"Golf data: the rounds you play with their scores, putts, fairways and greens, the handicap index you enter, your home course, your clubs, and the names and handicap indexes of guest players you add to a round. We use these to keep your scorecard, history and stats.",
+			"Golf data: the rounds you play with their scores, putts, fairways and greens, the handicap index you enter, your home course, your clubs, courses you copy and edit, and the names and handicap indexes of guest players you add to a round. We use these to keep your scorecard, history and stats.",
 			"Shot positions: when you mark a shot, its GPS position is saved with that round so Fairway can work out your club distances. Delete the round and its shots go with it.",
 			"Course suggestions: the text of any correction you send about a course.",
-			"Diagnostics: crash and error reports (device model, OS and app version, what went wrong) and any problem report you choose to send. They never include your email address or name. Reports from the website carry your account's internal ID, so we can see which errors hit the same person; reports from the phone app carry no account details.",
+			"Diagnostics: crash and error reports (device model, OS and app version, what went wrong) and, on the website, timing data for a sample of page loads. They never include your email address or name. Reports from the website carry your account's internal ID, so we can see which errors hit the same person; reports from the phone app carry no account details.",
+			"Problem reports: when you send one from the app, we receive your message and, only if you fill them in, the name and email address you enter so we can reply.",
 		],
 	},
 	{
@@ -48,7 +49,7 @@ const SECTIONS: readonly LegalSection[] = [
 	{
 		heading: "Your choices and rights",
 		paragraphs: [
-			"You can delete a round at any time, and delete your account and all its data in the app under Profile → Delete account, or by emailing us. This deletes your Appelent account for every Appelent app.",
+			"You can delete a round at any time, and delete your account and all its data in the iPhone app under Profile → Delete account, or by emailing us. This deletes your Appelent account for every Appelent app.",
 			"You may ask for a copy of your data, its correction or deletion, or object to its use, by emailing privacy@appelent.nl. You can also complain to your local data protection authority; in the Netherlands, the Autoriteit Persoonsgegevens.",
 			"Fairway is not directed at children under 13 and we do not knowingly collect their personal data.",
 		],

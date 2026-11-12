@@ -215,7 +215,9 @@ export function ProfileScreen() {
 				<InsetRow
 					leading={{ symbol: "hand.raised" }}
 					title={t.profile.privacy}
-					onPress={() => void openBrowserAsync(PRIVACY_POLICY_URL)}
+					onPress={() => {
+						openBrowserAsync(PRIVACY_POLICY_URL).catch(() => {});
+					}}
 				/>
 				<InsetRow
 					title={t.profile.signOut}

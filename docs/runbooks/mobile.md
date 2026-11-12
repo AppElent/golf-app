@@ -136,7 +136,7 @@ still blocks App Review. Review needs these fields:
 | Feedback email | `privacy@appelent.nl` (Cloudflare Email Routing forwards it) |
 | Sign-in for review | `appreview@appelent.nl` in production Clerk, shared with the other Appelent apps; its password is set in the Clerk dashboard |
 | Review notes | The catalog covers Dutch courses only; Profile → Course simulator plays a course from anywhere |
-| App Privacy | Email, name, user ID, precise location (marked shots) and user content (rounds) linked to the user; crash and diagnostic data not linked; nothing used for tracking |
+| App Privacy | Email, name, user ID, precise location (marked shots) and user content (rounds) linked to the user; crash and diagnostic data and problem reports (customer support) not linked; nothing used for tracking |
 | Categories, age rating | Sports, then Health & Fitness; every age-rating answer "none" |
 
 Profile links to the policy page (`src/routes/privacy.tsx`). Profile → Delete
