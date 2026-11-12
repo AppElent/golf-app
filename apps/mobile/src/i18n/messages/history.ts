@@ -174,6 +174,7 @@ export const profileEn = {
 		"Keeps your position up to date during a round when the phone is locked: the Lock Screen shows the hole and the distances to the green, and they are ready the moment you look. Needs location access set to Always.",
 	locationLockedDenied:
 		"Allow location access 'Always' for Fairway in Settings to use this.",
+	privacy: "Privacy policy",
 	report: "Report a problem",
 	reportUnavailable:
 		"Problem reports aren't available in this build yet. Please tell us at the club or by email.",
@@ -216,6 +217,7 @@ export const profileNl: typeof profileEn = {
 		"Houdt je positie bij tijdens een ronde als je telefoon vergrendeld is: het toegangsscherm toont de hole en de afstanden tot de green, en ze staan meteen klaar. Vereist locatietoegang 'Altijd'.",
 	locationLockedDenied:
 		"Sta locatietoegang 'Altijd' toe voor Fairway in Instellingen om dit te gebruiken.",
+	privacy: "Privacybeleid",
 	report: "Probleem melden",
 	reportUnavailable:
 		"Problemen melden kan nog niet in deze versie. Laat het ons weten via de club of per e-mail.",

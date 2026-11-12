@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing sign-in, the web app shell, or who may read or write a user's data in Convex.
-version: 1.0.0
+version: 1.1.0
 status: current
 ---
 
@@ -16,6 +16,10 @@ signing in with Clerk.
   `ConvexProvider` → `AuthGate` (`src/integrations/clerk/auth-gate.tsx`). Signed
   out, the gate shows Clerk's sign-in and renders nothing behind it; signed in, it
   mounts the app once Convex has the token. There is no test-login button.
+- **Public pages:** the paths in `PUBLIC_PATHS` (`src/components/LegalPage.tsx`),
+  `/privacy` and `/support`, render without `AuthGate` and without the tab bar, so
+  App Store Connect and the phone app can link to them. They read no user data.
+  `isPublicPath` matches them exactly (case-sensitive, trailing slashes ignored).
 - **Theme:** dark mode follows the OS through a `prefers-color-scheme` media query
   in `src/styles.css`.
 - **Clerk ↔ Convex:** the web client uses `ConvexProviderWithClerk`
@@ -31,7 +35,7 @@ signing in with Clerk.
 
 ## States
 
-- Signed out: Clerk's sign-in, nothing else.
+- Signed out: Clerk's sign-in, nothing else, except on the public pages.
 - Signed in, token not yet accepted by Convex: nothing behind the gate renders.
 
 ## Out of scope

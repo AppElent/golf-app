@@ -3,6 +3,7 @@ import type { Units } from "@fairway/core/format";
 import { useMutation } from "convex/react";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
+import { openBrowserAsync } from "expo-web-browser";
 import { useState } from "react";
 import { Alert, ScrollView, StyleSheet, Switch, View } from "react-native";
 import { api } from "../../../convex/api";
@@ -35,6 +36,9 @@ const LANGUAGES: { value: Locale; label: string }[] = [
 	{ value: "en", label: "English" },
 	{ value: "nl", label: "Nederlands" },
 ];
+
+/** The policy page on the web app; App Store Connect links the same URL. */
+const PRIVACY_POLICY_URL = "https://fairway.appelent.nl/privacy";
 
 export function ProfileScreen() {
 	const { t, locale, numbers, setLocale } = useI18n();
@@ -206,6 +210,13 @@ export function ProfileScreen() {
 						if (!openProblemReport()) {
 							Alert.alert(t.profile.report, t.profile.reportUnavailable);
 						}
+					}}
+				/>
+				<InsetRow
+					leading={{ symbol: "hand.raised" }}
+					title={t.profile.privacy}
+					onPress={() => {
+						openBrowserAsync(PRIVACY_POLICY_URL).catch(() => {});
 					}}
 				/>
 				<InsetRow
