@@ -104,9 +104,12 @@ pnpm exec eas update --channel test --environment development -m "…"   # JS-on
 - Fairway Test exists to try unmerged backend changes on the phone, because
   production Convex only has `main`'s functions. Its data is the dev
   deployment's, which gets reseeded.
-- The first build per bundle ID needs an interactive Apple login, which creates
-  the ad hoc profiles for the app and its widget extension; afterwards
-  `--non-interactive` works.
+- The first build per bundle ID needs an interactive Apple ID login, which
+  creates the ad hoc profiles for the app and its widget extension and assigns
+  the `group.<bundle ID>` app group to both; afterwards `--non-interactive`
+  works. An App Store Connect API key (`EXPO_ASC_*`) can register the bundle
+  IDs and capabilities but cannot assign app groups, so its profiles fail
+  signing with "doesn't support the group… App Group".
 - `test` and `development` set `SENTRY_DISABLE_AUTO_UPLOAD`: the *development*
   EAS environment has no Sentry token, and a Release build fails on the upload.
   A local `preview-internal` build sets it on the command line, as CI does.
