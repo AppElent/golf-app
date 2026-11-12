@@ -127,8 +127,8 @@ importers:
   apps/mobile:
     dependencies:
       '@clerk/expo':
-        specifier: ^4.14.5
-        version: 4.14.5(46de6589435e5a4061e3a7251ca8cdd1)
+        specifier: ^4.15.0
+        version: 4.15.0(8cdb87210fd0f5ca1f3d1edfe6300e43)
       '@expo/ui':
         specifier: ~58.0.0
         version: 58.0.25(@babel/core@7.29.7)(expo@58.0.21)(react-dom@19.3.0(react@19.3.0))(react-native-worklets@0.13.0(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0))(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
@@ -150,6 +150,9 @@ importers:
       expo-apple-authentication:
         specifier: ~58.0.0
         version: 58.0.2(expo@58.0.21)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      expo-application:
+        specifier: ~58.1.2
+        version: 58.1.2(expo@58.0.21)
       expo-auth-session:
         specifier: ~58.0.0
         version: 58.0.16(expo@58.0.21)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(typescript@6.0.3)
@@ -883,8 +886,8 @@ packages:
       react: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
       react-dom: ^18.0.0 || ~19.0.3 || ~19.1.4 || ~19.2.3 || ~19.3.0-0
 
-  '@clerk/expo@4.14.5':
-    resolution: {integrity: sha512-7ZurNLPw5sI9nd+kE2XhU9p14XnRCMg/9oqQKVHUbgZ4eodqvsjnlIAkUfBZWgASNi8CXSSnnRh78qcHk+5rlA==}
+  '@clerk/expo@4.15.0':
+    resolution: {integrity: sha512-0UJZA/1O7myC7fuyEWLySgthcEpMF0lYsJkdtEo5pfvhSRH3040Uu0k9qc4ZzpOdrmKkz1sYfnNW1CNiJyMb/w==}
     engines: {node: '>=20.9.0'}
     peerDependencies:
       '@clerk/expo-biometrics': '>=0.1.0'
@@ -893,6 +896,7 @@ packages:
       '@clerk/expo-passkeys': '>=0.0.6'
       expo: '>=54 <59'
       expo-apple-authentication: '>=7.0.0'
+      expo-application: '>=5.0.0'
       expo-auth-session: '>=5'
       expo-constants: '>=12'
       expo-crypto: '>=12'
@@ -912,6 +916,8 @@ packages:
       '@clerk/expo-passkeys':
         optional: true
       expo-apple-authentication:
+        optional: true
+      expo-application:
         optional: true
       expo-auth-session:
         optional: true
@@ -3554,6 +3560,9 @@ packages:
 
   '@tanstack/query-core@5.105.0':
     resolution: {integrity: sha512-7p56vRmT/z4UJ6sctGIdl5WRUQyUv53IUpUwEKi2g97zMbO7zh8ZsCLffGAvCPBR4xD72e3VXsDyLwXHhoNTMQ==}
+
+  '@tanstack/query-core@5.105.3':
+    resolution: {integrity: sha512-v1rbNy7MB/4Akth7CQH+CerV13K7Ok9hAusEsfz4sCjDdu3/kOSJPoWfoB+YjdEX1eBFBWKNAGE5nqZCgdlHDw==}
 
   '@tanstack/react-devtools@0.10.14':
     resolution: {integrity: sha512-wFoNpqiU03MDbY1RljhX4vMUoGWwqpa5AZthWEaJRrojBFWFoB57lzzIM5r+EPGi+BsEX+OcXkn8Zkfoe4hGiA==}
@@ -8008,11 +8017,14 @@ packages:
     resolution: {integrity: sha512-BNGbWLfd0eUPabhkXUVm0j8uuvREyTh5ovRa/dyow/BqAbZJyC+5fU+IzQOzmAKzYqYRAISoRhdQr3eIZ/PXqg==}
     engines: {node: '>= 0.8'}
 
-  viem@2.57.13:
-    resolution: {integrity: sha512-hSIsR4Y47BKrp89idH11WC3pqYOJFq9nVYBYxuJ9zXCA8Qg3pQhnlhnHn4qnjo7Z5wXs920XhtWbnrAtFidk+Q==}
+  viem@2.57.16:
+    resolution: {integrity: sha512-+4uaUw3NfkqjaqsZp8Zci94K33oc9rv7mIUgvPduJxsY/tI0ASi2YkaXoUVSBGfdIw/QPWuVnIf9LTFf35IoMg==}
     peerDependencies:
+      mppx: '>=0.17.0'
       typescript: '>=5.0.4'
     peerDependenciesMeta:
+      mppx:
+        optional: true
       typescript:
         optional: true
 
@@ -9032,12 +9044,13 @@ snapshots:
       idb-keyval: 6.2.1
       ox: 0.6.9(typescript@6.0.3)(zod@4.6.7)
       preact: 10.24.2
-      viem: 2.57.13(typescript@6.0.3)(zod@4.6.7)
+      viem: 2.57.16(typescript@6.0.3)(zod@4.6.7)
       zustand: 5.0.3(@types/react@19.3.0)(react@19.3.0)(use-sync-external-store@1.7.0(react@19.3.0))
     transitivePeerDependencies:
       - '@types/react'
       - bufferutil
       - immer
+      - mppx
       - react
       - typescript
       - use-sync-external-store
@@ -9100,7 +9113,7 @@ snapshots:
       '@coinbase/wallet-sdk': 4.3.7(typescript@6.0.3)(zod@4.6.7)
       '@stripe/stripe-js': 5.6.0
       '@swc/helpers': 0.5.21
-      '@tanstack/query-core': 5.105.0
+      '@tanstack/query-core': 5.105.3
       '@wallet-standard/core': 1.1.1
       '@zxcvbn-ts/core': 3.0.4
       '@zxcvbn-ts/language-common': 3.0.4
@@ -9113,6 +9126,7 @@ snapshots:
       - '@types/react'
       - bufferutil
       - immer
+      - mppx
       - preact-render-to-string
       - react
       - react-dom
@@ -9129,7 +9143,7 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
-  '@clerk/expo@4.14.5(46de6589435e5a4061e3a7251ca8cdd1)':
+  '@clerk/expo@4.15.0(8cdb87210fd0f5ca1f3d1edfe6300e43)':
     dependencies:
       '@clerk/clerk-js': 6.42.3(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(typescript@6.0.3)(use-sync-external-store@1.7.0(react@19.3.0))(zod@4.6.7)
       '@clerk/react': 6.18.6(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -9141,6 +9155,7 @@ snapshots:
       react-native-url-polyfill: 4.0.0(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))
     optionalDependencies:
       expo-apple-authentication: 58.0.2(expo@58.0.21)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)
+      expo-application: 58.1.2(expo@58.0.21)
       expo-auth-session: 58.0.16(expo@58.0.21)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(react@19.3.0)(typescript@6.0.3)
       expo-constants: 58.0.14(expo@58.0.21)(react-native@0.88.1(@babel/core@7.29.7)(@react-native/metro-config@0.88.1(@babel/core@7.29.7))(@types/react@19.3.0)(react@19.3.0)(supports-color@8.1.1))(typescript@6.0.3)
       expo-crypto: 58.0.7(expo@58.0.21)
@@ -9151,6 +9166,7 @@ snapshots:
       - '@types/react'
       - bufferutil
       - immer
+      - mppx
       - preact-render-to-string
       - typescript
       - use-sync-external-store
@@ -9244,9 +9260,10 @@ snapshots:
       clsx: 1.2.1
       eventemitter3: 5.0.4
       preact: 10.29.8
-      viem: 2.57.13(typescript@6.0.3)(zod@4.6.7)
+      viem: 2.57.16(typescript@6.0.3)(zod@4.6.7)
     transitivePeerDependencies:
       - bufferutil
+      - mppx
       - preact-render-to-string
       - typescript
       - utf-8-validate
@@ -11880,6 +11897,8 @@ snapshots:
   '@tanstack/history@1.162.5': {}
 
   '@tanstack/query-core@5.105.0': {}
+
+  '@tanstack/query-core@5.105.3': {}
 
   '@tanstack/react-devtools@0.10.14(@types/react-dom@19.2.3(@types/react@19.2.17))(@types/react@19.2.17)(csstype@3.2.3)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)(solid-js@1.9.18)':
     dependencies:
@@ -16997,7 +17016,7 @@ snapshots:
 
   vary@1.1.2: {}
 
-  viem@2.57.13(typescript@6.0.3)(zod@4.6.7):
+  viem@2.57.16(typescript@6.0.3)(zod@4.6.7):
     dependencies:
       '@noble/curves': 1.9.1
       '@noble/hashes': 1.8.0

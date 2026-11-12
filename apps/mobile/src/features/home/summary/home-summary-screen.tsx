@@ -38,6 +38,7 @@ export function HomeSummaryScreen() {
 
 	return (
 		<ScrollView
+			testID="home-summary"
 			contentInsetAdjustmentBehavior="automatic"
 			contentContainerStyle={styles.content}
 		>

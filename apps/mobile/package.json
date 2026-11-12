@@ -2,7 +2,7 @@
   "name": "@fairway/mobile",
   "main": "expo-router/entry",
   "dependencies": {
-    "@clerk/expo": "^4.14.5",
+    "@clerk/expo": "^4.15.0",
     "@expo/ui": "~58.0.0",
     "@fairway/core": "workspace:*",
     "@sentry/react-native": "~8.28.0",
@@ -10,6 +10,7 @@
     "convex-helpers": "^0.1.120",
     "expo": "~58.0.0",
     "expo-apple-authentication": "~58.0.0",
+    "expo-application": "~58.1.2",
     "expo-auth-session": "~58.0.0",
     "expo-constants": "~58.0.0",
     "expo-crypto": "~58.0.0",
@@ -59,7 +60,8 @@
     "ios": "expo run:ios",
     "android": "expo run:android",
     "typecheck": "tsc --noEmit",
-    "test": "jest --passWithNoTests"
+    "test": "jest --passWithNoTests",
+    "e2e:preview-sign-in": "maestro test .maestro/preview-sign-in.yaml"
   },
   "private": true
 }

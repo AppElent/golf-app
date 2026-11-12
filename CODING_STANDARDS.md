@@ -80,6 +80,10 @@ Project facts (identity, env, builds): [mobile runbook](docs/runbooks/mobile.md)
   `scripts/check-mobile-structure.mjs` (mobile-structure 1.1) adds the app and
   language names to `UNTRANSLATED` and skips `console.*` calls, which upstream
   reports as toast text.
+  `apps/mobile/scripts/fingerprint.mjs` and `.github/workflows/mobile-runtime.yml`
+  (mobile-baseline templates) add `WATCHED` native packages, a `check` command
+  and a final `check` step that fails the PR when one drops out of a
+  fingerprint ([mobile runbook](docs/runbooks/mobile.md#runtime-fingerprint-check)).
 - **Not yet migrated** (differences from shared standards, to be agreed or fixed):
   - [Convex backend](docs/standards/convex.md): the auth helper is `getUserId`
     in `convex/lib.ts`, not `convex/lib/auth.ts`; public functions declare no

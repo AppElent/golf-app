@@ -1,0 +1,41 @@
+# Preview sign-in smoke test: signs in to a Fairway Preview build and fails if
+# sign-in breaks or Clerk's "Update required" screen appears. Added for the
+# @clerk/expo 4.15.0 bump, which turns on Clerk's minimum app version check:
+# Clerk matches the build's bundle ID (com.appelent.fairway.preview) and
+# version against the Clerk Dashboard, and can block every request.
+#
+# Needs a Preview build on the Clerk test instance with the dev-login
+# credentials baked in (EXPO_PUBLIC_TEST_USER_*, honoured with pk_test_ keys
+# only), so the sign-in form is pre-filled. See docs/runbooks/mobile.md,
+# "Preview sign-in test". Never point it at a pk_live_ build.
+#
+#   maestro test apps/mobile/.maestro/preview-sign-in.yaml
+appId: com.appelent.fairway.preview
+name: Preview sign-in
+---
+# Signed out, with no cached Clerk session in the keychain.
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- extendedWaitUntil:
+    visible:
+      id: sign-in-submit
+    timeout: 60000
+# Clerk may not have fetched its environment yet; a blocked sign-in still
+# never reaches Home, and the check after sign-in covers a late screen.
+- assertNotVisible: Update required
+# Disabled means the build has no dev-login credentials; see the header.
+- assertVisible:
+    id: sign-in-submit
+    enabled: true
+- tapOn:
+    id: sign-in-submit
+# Home renders only once Clerk is signed in and Convex has the session.
+- extendedWaitUntil:
+    visible:
+      id: home-summary
+    timeout: 60000
+# Clerk re-reads the minimum version from its environment after sign-in.
+- assertNotVisible: Update required
+- assertVisible:
+    id: home-summary
