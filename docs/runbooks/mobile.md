@@ -106,6 +106,50 @@ pnpm exec eas update --channel device --environment development -m "…"   # JS-
 - Sign in with an email code. Native Sign in with Apple needs the bundle ID
   on the Clerk instance, and the dev instance is shared with other apps.
 
+### TestFlight and the App Store
+
+The App Store Connect app is `6833832527` (`submit.production.ios.ascAppId` in
+`eas.json`); the store name is "Fairway: Golf GPS & Scorecard" ("…& Scorekaart"
+in nl-NL). Production builds use production Clerk and Convex, so deploy the
+backend first. Build and upload:
+
+```bash
+cd apps/mobile
+APP_VARIANT=production pnpm exec eas build -p ios --profile production
+# eas submit --non-interactive cannot set up an App Store Connect API key, so upload the IPA with asc:
+curl -sSLo Fairway.ipa "$(pnpm exec eas build:view <BUILD_ID> --json | jq -r .artifacts.buildUrl)"
+asc builds upload --app 6833832527 --ipa Fairway.ipa --wait
+```
+
+External testers join through the **Public** group's link,
+`https://testflight.apple.com/join/5SAF8udZ`. Add each new build to that group
+(`asc builds add-groups --app 6833832527 --latest --group 764aa696-537e-4ac1-8690-af453a3f77ae --submit --confirm`)
+and give it What to Test notes (`asc builds test-notes create`, en-US and nl-NL);
+a new version needs Beta App Review again. `asc status --app 6833832527` shows
+where things stand, and `asc validate --app 6833832527 --version <v>` lists what
+still blocks App Review. Review needs these fields:
+
+| Field | Value |
+| --- | --- |
+| Privacy Policy URL (App Information) | `https://fairway.appelent.nl/privacy` |
+| Support URL, Marketing URL | `https://fairway.appelent.nl/support`, `https://fairway.appelent.nl` |
+| Feedback email | `privacy@appelent.nl` (Cloudflare Email Routing forwards it) |
+| Sign-in for review | `appreview@appelent.nl` in production Clerk, shared with the other Appelent apps; its password is set in the Clerk dashboard |
+| Review notes | The catalog covers Dutch courses only; Profile → Course simulator plays a course from anywhere |
+| App Privacy | Email, name, user ID, precise location (marked shots) and user content (rounds) linked to the user; crash and diagnostic data not linked; nothing used for tracking |
+| Categories, age rating | Sports, then Health & Fitness; every age-rating answer "none" |
+
+Profile links to the policy page (`src/routes/privacy.tsx`). Profile → Delete
+account deletes the shared Appelent Clerk user, so a review that tests it removes
+the reviewer for every Appelent app: recreate it before the next submission.
+
+Store screenshots are 1320×2868 (iPhone 6.9"), one set per locale. Take them on
+a Release simulator build of the dev variant with the display name set to
+"Fairway", seeded with a finished-rounds history and a round in progress, the
+status bar overridden to 9:41 with a full battery, and the location on the hole
+so live distances show. Upload with
+`asc screenshots upload --app 6833832527 --version <v> --locale <l> --path <dir> --device-type IPHONE_69`.
+
 ## Runtime notes
 
 - Online first: Convex is the source of truth; a write counts as saved when the
