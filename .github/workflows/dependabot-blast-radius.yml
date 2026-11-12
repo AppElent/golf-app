@@ -1,0 +1,65 @@
+name: Dependabot blast radius
+# Labels Dependabot PRs: a patch to app dependencies -> blast-radius:low;
+# everything else (minor, major, unknown, or any CI/workflow change) ->
+# blast-radius:med. Human and agent PRs are skipped, so their blast-radius
+# labels are never touched.
+#
+# Detection: dependabot/fetch-metadata parses the Dependabot commit metadata
+# into `update-type` (version-update:semver-patch|minor|major). For a grouped
+# PR it reports the highest update type in the group, so one minor bump makes
+# the whole group med.
+# CI/workflow exception: a PR is med, even for a patch, when fetch-metadata's
+# `package-ecosystem` (from the branch, dependabot/<ecosystem>/...) is
+# `github_actions`, or when it changes any file under .github/.
+#
+# Plain `pull_request`, never `pull_request_target` (dependency-updates
+# standard): Dependabot runs may raise their own token scope via `permissions`.
+on:
+  pull_request:
+    types: [opened, reopened, synchronize]
+concurrency:
+  group: dependabot-blast-radius-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+jobs:
+  label:
+    if: github.event.pull_request.user.login == 'dependabot[bot]'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - id: metadata
+        uses: dependabot/fetch-metadata@v3
+        # If metadata cannot be read, outputs are empty and the PR gets med.
+        continue-on-error: true
+      - name: Apply blast-radius label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+          UPDATE_TYPE: ${{ steps.metadata.outputs.update-type }}
+          ECOSYSTEM: ${{ steps.metadata.outputs.package-ecosystem }}
+        run: |
+          set -euo pipefail
+          labels=$(gh pr view "$PR" --json labels --jq '.labels[].name')
+          # Never downgrade high. Only high is preserved; low/med are recomputed.
+          if grep -qx 'blast-radius:high' <<<"$labels"; then
+            echo "blast-radius:high already set; leaving labels alone."
+            exit 0
+          fi
+          files=$(gh pr view "$PR" --json files --jq '.files[].path')
+          ci=false
+          if [ "$ECOSYSTEM" = "github_actions" ] || grep -q '^\.github/' <<<"$files"; then
+            ci=true
+          fi
+          # Only a non-CI patch is low; unknown or missing update type is med.
+          if [ "$UPDATE_TYPE" = "version-update:semver-patch" ] && [ "$ci" = false ]; then
+            want=blast-radius:low; stale=blast-radius:med
+          else
+            want=blast-radius:med; stale=blast-radius:low
+          fi
+          echo "update-type='$UPDATE_TYPE' ecosystem='$ECOSYSTEM' ci=$ci -> $want"
+          args=(--add-label "$want")
+          # A rebase can change the update type; drop the other label.
+          if grep -qx "$stale" <<<"$labels"; then args+=(--remove-label "$stale"); fi
+          gh pr edit "$PR" "${args[@]}"
