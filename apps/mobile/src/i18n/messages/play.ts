@@ -37,6 +37,8 @@ export const playEn = {
 	noRoundHint: "Start a round from Home.",
 	noMap: "No map for this hole",
 	noMapHint: "This hole's geometry is missing in OpenStreetMap.",
+	/** Required by the OpenStreetMap licence wherever its data is shown. */
+	osmCredit: "© OpenStreetMap contributors",
 	holeError: "Could not change hole. Check your connection.",
 	loading: "Loading round…",
 	markShot: "Mark shot",
@@ -89,6 +91,7 @@ export const playNl: typeof playEn = {
 	noRoundHint: "Start een ronde vanaf Home.",
 	noMap: "Geen kaart voor deze hole",
 	noMapHint: "De geometrie van deze hole ontbreekt in OpenStreetMap.",
+	osmCredit: "© OpenStreetMap-bijdragers",
 	holeError: "Hole wisselen mislukt. Controleer je verbinding.",
 	loading: "Ronde laden…",
 	markShot: "Slag markeren",

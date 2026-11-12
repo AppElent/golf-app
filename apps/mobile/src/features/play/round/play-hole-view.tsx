@@ -58,43 +58,59 @@ export function PlayHoleView({
 	}
 	const toGreen = haversineMeters(target, anchors.green);
 	return (
-		<HoleCanvas
-			geometry={geometry}
-			green={anchors.green}
-			player={player}
-			located={located}
-			target={target}
-			onTargetChange={onTargetChange}
-			toTargetLabel={legLabel(
-				haversineMeters(player, target),
-				units,
-				bag,
-				true,
-			)}
-			targetToGreenLabel={
-				toGreen < 8 ? null : legLabel(toGreen, units, bag, false)
-			}
-			// The green view is about the green itself; hazard callouts are
-			// tee-shot info.
-			hazards={
-				greenView
-					? []
-					: hazardsInPlay(player, anchors.green, geometry, { limit: 3 })
-			}
-			hazardLabel={(h: HazardInPlay) => hazardLabel(h, units)}
-			greenView={greenView}
-			shots={shots}
-			insets={{
-				top: hudTop + hudLayout.canvasTop,
-				bottom: hudBottom + hudLayout.canvasBottom,
-				left: 0,
-				right: hudLayout.canvasRight,
-			}}
-		/>
+		<>
+			<HoleCanvas
+				geometry={geometry}
+				green={anchors.green}
+				player={player}
+				located={located}
+				target={target}
+				onTargetChange={onTargetChange}
+				toTargetLabel={legLabel(
+					haversineMeters(player, target),
+					units,
+					bag,
+					true,
+				)}
+				targetToGreenLabel={
+					toGreen < 8 ? null : legLabel(toGreen, units, bag, false)
+				}
+				// The green view is about the green itself; hazard callouts are
+				// tee-shot info.
+				hazards={
+					greenView
+						? []
+						: hazardsInPlay(player, anchors.green, geometry, { limit: 3 })
+				}
+				hazardLabel={(h: HazardInPlay) => hazardLabel(h, units)}
+				greenView={greenView}
+				shots={shots}
+				insets={{
+					top: hudTop + hudLayout.canvasTop,
+					bottom: hudBottom + hudLayout.canvasBottom,
+					left: 0,
+					right: hudLayout.canvasRight,
+				}}
+			/>
+			<AppText
+				variant="caption"
+				pointerEvents="none"
+				style={[
+					hudStyles.onHud,
+					styles.credit,
+					{ bottom: hudBottom + hudLayout.canvasBottom },
+				]}
+			>
+				{t.play.osmCredit}
+			</AppText>
+		</>
 	);
 }
 
 const styles = StyleSheet.create({
+	// The hole layouts come from OpenStreetMap; its licence requires this
+	// credit. It sits level with the map's own legal link, on the other side.
+	credit: { position: "absolute", right: spacing.md, opacity: 0.85 },
 	noMap: {
 		flex: 1,
 		alignItems: "center",

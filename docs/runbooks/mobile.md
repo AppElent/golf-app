@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when running, building, or releasing the Fairway mobile app (apps/mobile).
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Mobile app (Fairway)
@@ -138,6 +138,8 @@ still blocks App Review. Review needs these fields:
 | Review notes | The catalog covers Dutch courses only; Profile → Course simulator plays a course from anywhere |
 | App Privacy | Email, name, user ID, precise location (marked shots), user content (rounds) and problem reports (customer support, which may hold a name and email) linked to the user; crash and diagnostic data not linked; nothing used for tracking |
 | Categories, age rating | Sports, then Health & Fitness; every age-rating answer "none" |
+| Pricing and availability | Free, every territory, new territories included |
+| Content rights | Uses third-party content with the rights to it: the OpenStreetMap course layouts (ODbL), credited as "© OpenStreetMap contributors" under every hole map on web and phone. Keep that credit wherever OSM data is drawn |
 
 Profile links to the policy page (`src/routes/privacy.tsx`). Profile → Delete
 account deletes the shared Appelent Clerk user, so a review that tests it removes

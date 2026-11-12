@@ -204,6 +204,13 @@ function PlayInner({
 						lengthMeters={holeMeta?.lengthMeters}
 					/>
 				)}
+				{geo ? (
+					// The hole layouts come from OpenStreetMap; its licence requires
+					// this credit wherever the data is shown.
+					<p className="mt-1 text-right text-[11px] text-stone">
+						© OpenStreetMap contributors
+					</p>
+				) : null}
 			</div>
 
 			{numbers ? (
