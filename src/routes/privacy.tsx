@@ -15,7 +15,7 @@ const SECTIONS: readonly LegalSection[] = [
 			"Golf data: the rounds you play with their scores, putts, fairways and greens, the handicap index you enter, your home course, your clubs, and the names and handicap indexes of guest players you add to a round. We use these to keep your scorecard, history and stats.",
 			"Shot positions: when you mark a shot, its GPS position is saved with that round so Fairway can work out your club distances. Delete the round and its shots go with it.",
 			"Course suggestions: the text of any correction you send about a course.",
-			"Diagnostics: crash and error reports (device model, OS and app version, what went wrong) and any problem report you choose to send. These contain no account details.",
+			"Diagnostics: crash and error reports (device model, OS and app version, what went wrong) and any problem report you choose to send. They never include your email address or name. Reports from the website carry your account's internal ID, so we can see which errors hit the same person; reports from the phone app carry no account details.",
 		],
 	},
 	{
