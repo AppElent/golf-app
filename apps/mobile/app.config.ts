@@ -1,15 +1,15 @@
 /**
  * One identity per EAS profile, so production, preview and development builds
  * install side by side. `app.json` holds everything shared; this file only
- * swaps the per-variant name, scheme, bundle ID, package and icon (a DEV or
- * PREVIEW badge; see `assets/images/README.md`).
+ * swaps the per-variant name, scheme, bundle ID, package and icon (a DEV, TEST
+ * or PREVIEW badge; see `assets/images/README.md`).
  *
  * `APP_VARIANT` is set per profile in `eas.json`. Unset means a local
  * development build, so a local run never replaces a store install.
  */
 import type { ConfigContext, ExpoConfig } from "expo/config";
 
-type AppVariant = "development" | "preview" | "production";
+type AppVariant = "development" | "test" | "preview" | "production";
 
 const VARIANTS = {
 	production: { suffix: "", name: "Fairway", scheme: "fairway", icon: "" },
@@ -18,6 +18,14 @@ const VARIANTS = {
 		name: "Fairway Preview",
 		scheme: "fairway-preview",
 		icon: "-preview",
+	},
+	// Bundled JS on the development backend (Convex dev, Clerk test instance),
+	// for trying unmerged backend changes away from the Mac.
+	test: {
+		suffix: ".test",
+		name: "Fairway Test",
+		scheme: "fairway-test",
+		icon: "-test",
 	},
 	development: {
 		suffix: ".dev",

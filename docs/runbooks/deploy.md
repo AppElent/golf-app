@@ -64,7 +64,8 @@ is the preview key PR previews use.
 ## One-time setup
 
 1. Production deploy key (Convex dashboard → deployment → Settings → Deploy
-   keys). It starts with `prod:`; the workflow refuses anything else. Store it
+   keys), with full permissions: the deploy also runs the internal
+   `courseCatalog:sync`. It starts with `prod:`; the workflow refuses anything else. Store it
    in Infisical `prod` under `/fairway` as `convex-deploy-key`.
 2. GitHub Environments `staging` (no protection) and `production` (required
    reviewer: you; branch: `main`), then the `env:apply` commands above.
@@ -86,3 +87,8 @@ is the preview key PR previews use.
   `pnpm env:plan <environment>`, fix Infisical, and apply again.
 - **Catalog sync fails after the Convex deploy**: functions are live, the
   Worker is not flipped. Fix and re-run the job; the sync is idempotent.
+  `deployment:functions:runInternalMutations` means the deploy key is scoped
+  too narrowly. Create a full one with
+  `pnpm exec convex deployment token create <name> --deployment eric-jansen:golf:prod`,
+  store it as `convex-deploy-key` in Infisical `prod` under `/fairway`, run
+  `pnpm env:apply production --only github`, then re-run the failed job.
