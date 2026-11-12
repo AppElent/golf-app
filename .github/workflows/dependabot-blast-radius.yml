@@ -30,6 +30,8 @@ jobs:
     steps:
       - id: metadata
         uses: dependabot/fetch-metadata@v3
+        # If metadata cannot be read, outputs are empty and the PR gets med.
+        continue-on-error: true
       - name: Apply blast-radius label
         env:
           GH_TOKEN: ${{ github.token }}
@@ -40,7 +42,7 @@ jobs:
         run: |
           set -euo pipefail
           labels=$(gh pr view "$PR" --json labels --jq '.labels[].name')
-          # A person escalated it; never downgrade.
+          # Never downgrade high. Only high is preserved; low/med are recomputed.
           if grep -qx 'blast-radius:high' <<<"$labels"; then
             echo "blast-radius:high already set; leaving labels alone."
             exit 0
