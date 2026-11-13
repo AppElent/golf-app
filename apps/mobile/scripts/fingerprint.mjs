@@ -97,7 +97,10 @@ function installedVersion(name, root = appRoot) {
  */
 export function missingWatched(variant, platform, print) {
 	const errors = [];
-	if (!print.sources.some((s) => s.reasons.includes(AUTOLINKING_REASON[platform]))) {
+	const autolinked = print.sources.filter(
+		(s) => s.hash !== null && s.reasons.includes(AUTOLINKING_REASON[platform]),
+	);
+	if (autolinked.length === 0) {
 		errors.push(`${variant} ${platform}: no Expo-autolinked module is in the fingerprint`);
 	}
 	for (const name of Object.keys(WATCHED)) {

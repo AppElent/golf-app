@@ -7,10 +7,10 @@ import { missingWatched, PLATFORMS, WATCHED } from "./fingerprint.mjs";
 const REASON = { ios: "expoAutolinkingIos", android: "expoAutolinkingAndroid" };
 
 /** A source as @expo/fingerprint reports it, from pnpm's store. */
-function moduleSource(name, reason, hash = "abc") {
+function moduleSource(name, platform, reason, hash = "abc") {
 	return {
 		type: "dir",
-		filePath: `node_modules/.pnpm/${name}@1.0.0/node_modules/${name}/android`,
+		filePath: `node_modules/.pnpm/${name}@1.0.0/node_modules/${name}/${platform}`,
 		reasons: [reason],
 		hash,
 	};
@@ -24,7 +24,7 @@ function print(platform, { without = [], autolinking = true } = {}) {
 			{ type: "contents", id: "expoConfig", contents: "{}", reasons: ["expoConfig"], hash: "c" },
 			...Object.keys(WATCHED)
 				.filter((name) => !without.includes(name))
-				.map((name) => moduleSource(name, reason)),
+				.map((name) => moduleSource(name, platform, reason)),
 		],
 	};
 }
@@ -58,6 +58,16 @@ describe("missingWatched", () => {
 			"preview android: no Expo-autolinked module is in the fingerprint",
 			"preview android: expo-application is not in the fingerprint",
 		]);
+	});
+
+	it("does not count autolinking sources without a hash", () => {
+		const unhashed = print("android");
+		unhashed.sources = unhashed.sources.map((s) =>
+			s.reasons.includes("expoAutolinkingAndroid") ? { ...s, hash: null } : s,
+		);
+		expect(missingWatched("preview", "android", unhashed)).toContain(
+			"preview android: no Expo-autolinked module is in the fingerprint",
+		);
 	});
 
 	it("does not count a source without a hash", () => {

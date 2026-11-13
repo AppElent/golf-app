@@ -145,7 +145,7 @@ the same check before it publishes. Its tests run with `pnpm test`
 
 ```bash
 node apps/mobile/scripts/fingerprint.mjs            # hashes per variant
-node apps/mobile/scripts/fingerprint.mjs check      # watched packages present
+node apps/mobile/scripts/fingerprint.mjs check      # autolinked modules + watched packages present
 node apps/mobile/scripts/fingerprint.mjs diff <base checkout>
 ```
 
