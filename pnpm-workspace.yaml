@@ -38,3 +38,10 @@ virtualStoreDirMaxLength: 60
 
 # Install before `pnpm run <script>` when node_modules is stale.
 verifyDepsBeforeRun: install
+
+# APP-71 (2026-11-13): @expo/fingerprint 0.21.7 drops every Expo module from the
+# Android fingerprint (it throws on expo-widgets' Maven-only gradle plugin, which
+# has no sourceDir). Fixed in 0.21.8. Remove once `expo` is 58.0.22 or later,
+# which requires ^0.21.8 itself.
+overrides:
+  "@expo/fingerprint": "^0.21.8"

@@ -13,9 +13,13 @@ name: Mobile Update
 # when something on the channel already runs this fingerprint — an earlier
 # update, or a finished EAS build. A native change (new module, config
 # plugin, SDK bump) changes the fingerprint; the job then skips that platform
-# and says a rebuild is due. Local builds (`eas build --local`) are not
-# recorded on EAS, so after installing one, run this workflow by hand with
-# `force` to seed the channel.
+# and says a rebuild is due. The job fails before publishing when a
+# fingerprint misses Expo's autolinked modules or a WATCHED package
+# (`fingerprint.mjs check`), since such a fingerprint would not change with
+# native code.
+#
+# Local builds (`eas build --local`) are not recorded on EAS, so after
+# installing one, run this workflow by hand with `force` to seed the channel.
 on:
   workflow_call:
   workflow_dispatch:
@@ -73,6 +77,14 @@ jobs:
 
       - uses: ./.github/actions/setup
         if: steps.changed.outputs.changed == 'true'
+
+      # The gate below trusts the fingerprint to change with native code. Stop,
+      # even with `force`, when it can't: a fingerprint without Expo's
+      # autolinked modules (as @expo/fingerprint 0.21.7 produced on Android,
+      # APP-71) matches builds that lack an added module's native code.
+      - name: Fingerprints cover native modules
+        if: steps.changed.outputs.changed == 'true'
+        run: node scripts/fingerprint.mjs check
 
       - name: Match fingerprints
         id: match

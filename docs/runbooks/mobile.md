@@ -130,16 +130,18 @@ touch the app or the lockfile. It compares the PR's runtime fingerprints with
 the base branch's (`apps/mobile/scripts/fingerprint.mjs diff`) and comments
 whether merging needs new builds. It also lists version changes of the
 packages in `WATCHED` (`@clerk/expo`, `expo-application`), and its last step
-(`fingerprint.mjs check`) fails the PR when one of them drops out of a
-fingerprint.
+(`fingerprint.mjs check`) fails the PR when a fingerprint (any variant, iOS or
+Android) has no Expo-autolinked module or misses one of them. Mobile Update runs
+the same check before it publishes. Its tests run with `pnpm test`
+(`apps/mobile/scripts/fingerprint.test.mjs`).
 
 - `@clerk/expo` 4.15.0 enforces the Clerk Dashboard's minimum app version per
   bundle ID. It reads the build's version through `expo-application`; without
   that module the check always reports "supported".
-- Android fingerprints currently hold no Expo-autolinked modules at all:
-  `@expo/fingerprint` 0.21.7 throws on expo-widgets' Maven gradle plugin (no
-  `sourceDir`) and drops the whole Android autolinking source. `check` warns
-  instead of failing there, and starts failing again once that is fixed.
+- `@expo/fingerprint` 0.21.7 threw on expo-widgets' Maven gradle plugin (no
+  `sourceDir`) and dropped every Expo module from the Android fingerprint
+  (APP-71). An override in `pnpm-workspace.yaml` keeps it at ^0.21.8, which
+  skips such plugins; remove it once `expo` is 58.0.22 or later.
 
 ```bash
 node apps/mobile/scripts/fingerprint.mjs            # hashes per variant
