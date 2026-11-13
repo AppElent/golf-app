@@ -65,9 +65,10 @@ describe("missingWatched", () => {
 		unhashed.sources = unhashed.sources.map((s) =>
 			s.reasons.includes("expoAutolinkingAndroid") ? { ...s, hash: null } : s,
 		);
-		expect(missingWatched("preview", "android", unhashed)).toContain(
+		expect(missingWatched("preview", "android", unhashed)).toEqual([
 			"preview android: no Expo-autolinked module is in the fingerprint",
-		);
+			...Object.keys(WATCHED).map((name) => `preview android: ${name} is not in the fingerprint`),
+		]);
 	});
 
 	it("does not count a source without a hash", () => {
