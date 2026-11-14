@@ -13,13 +13,17 @@
 //                                                         # WATCHED package
 //
 // `check` rule: for every variant and platform, each module that Expo
-// autolinking resolves for that platform (`expo-modules-autolinking resolve
-// --platform <p>`, the same list the native build links) must have a hashed
-// source in that platform's fingerprint with the platform's autolinking
-// reason. The expected set is per platform, so a module that only links on
-// iOS (expo-symbols) or only on Android is never expected on the other one.
-// A fingerprint with no autolinked module at all gets one error instead of
-// one per module. Every WATCHED package must also have a hashed source.
+// autolinking resolves for it (`expo-modules-autolinking resolve --platform
+// <apple|android>` with that APP_VARIANT, the list the native build links and
+// @expo/fingerprint hashes) must have a hashed source under
+// `node_modules/<package>/` with the platform's autolinking reason. The
+// expected set is per platform, so a module that only links on iOS
+// (expo-symbols) or only on Android (@sentry/react-native's Expo package) is
+// never expected on the other one. A fingerprint with no autolinked module at
+// all gets one error instead of one per module. Every WATCHED package must
+// also have a hashed source. A local Expo module (`modules/<name>`) or a
+// workspace package has no `node_modules/` path and would be reported
+// missing; teach `sourceKey` its path before adding one (none today).
 //
 // `diff` needs `<base>` installed (`pnpm install`), because native modules
 // are fingerprinted from node_modules.
@@ -64,14 +68,26 @@ export function fingerprint(variant, platform, root = appRoot) {
 			`fingerprint:generate failed in ${root} (${variant}, ${platform}):\n${result.stderr}`,
 		);
 	}
-	return JSON.parse(result.stdout);
+	return parseJson(result.stdout);
 }
 
 /**
- * Package names Expo autolinking links for `platform` in the app at `root`:
- * the modules every fingerprint of that platform must contain.
+ * JSON printed by a `pnpm exec` command. Skips anything pnpm prints before
+ * it (when it installs first, it logs `Scope: …` to stdout).
  */
-export function autolinkedModules(platform, root = appRoot) {
+function parseJson(stdout) {
+	const start = stdout.search(/^[{[]/m);
+	return JSON.parse(start === -1 ? stdout : stdout.slice(start));
+}
+
+/** The `--platform` autolinking and @expo/fingerprint use for iOS modules. */
+const AUTOLINKING_PLATFORM = { ios: "apple", android: "android" };
+
+/**
+ * Package names Expo autolinking links for one variant and platform of the
+ * app at `root`: the modules that fingerprint must contain.
+ */
+export function autolinkedModules(variant, platform, root = appRoot) {
 	const result = spawnSync(
 		"pnpm",
 		[
@@ -79,17 +95,22 @@ export function autolinkedModules(platform, root = appRoot) {
 			"expo-modules-autolinking",
 			"resolve",
 			"--platform",
-			platform,
+			AUTOLINKING_PLATFORM[platform],
 			"--json",
 		],
-		{ cwd: root, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+		{
+			cwd: root,
+			env: { ...process.env, APP_VARIANT: variant },
+			encoding: "utf8",
+			maxBuffer: 64 * 1024 * 1024,
+		},
 	);
 	if (result.status !== 0) {
 		throw new Error(
-			`expo-modules-autolinking resolve failed in ${root} (${platform}):\n${result.stderr}`,
+			`expo-modules-autolinking resolve failed in ${root} (${variant}, ${platform}):\n${result.stderr}`,
 		);
 	}
-	return JSON.parse(result.stdout).modules.map((m) => m.packageName);
+	return parseJson(result.stdout).modules.map((m) => m.packageName);
 }
 
 /** Readable id: pnpm's store path shortened to `node_modules/<package>/…`. */
@@ -134,7 +155,7 @@ function installedVersion(name, root = appRoot) {
  * the same failure for a single module. An update could then reach builds
  * without the native code it needs.
  */
-export function missingWatched(variant, platform, print, expected = []) {
+export function fingerprintErrors(variant, platform, print, expected = []) {
 	const errors = [];
 	const reason = AUTOLINKING_REASON[platform];
 	const autolinked = print.sources.filter(
@@ -164,15 +185,14 @@ export function missingWatched(variant, platform, print, expected = []) {
 
 function check() {
 	const errors = [];
-	for (const platform of PLATFORMS) {
-		const expected = autolinkedModules(platform);
-		for (const variant of VARIANTS) {
+	for (const variant of VARIANTS) {
+		for (const platform of PLATFORMS) {
 			errors.push(
-				...missingWatched(
+				...fingerprintErrors(
 					variant,
 					platform,
 					fingerprint(variant, platform),
-					expected,
+					autolinkedModules(variant, platform),
 				),
 			);
 		}

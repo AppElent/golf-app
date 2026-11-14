@@ -7,7 +7,7 @@ import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
-import { missingWatched, PLATFORMS, WATCHED } from "./fingerprint.mjs";
+import { fingerprintErrors, PLATFORMS, WATCHED } from "./fingerprint.mjs";
 
 const REASON = { ios: "expoAutolinkingIos", android: "expoAutolinkingAndroid" };
 
@@ -40,9 +40,9 @@ function print(platform, { without = [], autolinking = true } = {}) {
 	};
 }
 
-describe("missingWatched", () => {
+describe("fingerprintErrors", () => {
 	it.each(PLATFORMS)("passes a complete %s fingerprint", (platform) => {
-		expect(missingWatched("preview", platform, print(platform))).toEqual([]);
+		expect(fingerprintErrors("preview", platform, print(platform))).toEqual([]);
 	});
 
 	it.each(PLATFORMS)(
@@ -50,7 +50,7 @@ describe("missingWatched", () => {
 		(platform) => {
 			// The @expo/fingerprint 0.21.7 shape on Android (APP-71): the
 			// autolinking source is gone, config plugins remain.
-			const errors = missingWatched(
+			const errors = fingerprintErrors(
 				"preview",
 				platform,
 				print(platform, { autolinking: false }),
@@ -66,7 +66,7 @@ describe("missingWatched", () => {
 			Object.keys(WATCHED).map((name) => [platform, name]),
 		),
 	)("fails on %s when %s is missing", (platform, name) => {
-		const errors = missingWatched(
+		const errors = fingerprintErrors(
 			"production",
 			platform,
 			print(platform, { without: [name] }),
@@ -77,7 +77,7 @@ describe("missingWatched", () => {
 	});
 
 	it("fails on Android when expo-application is missing and autolinking is gone", () => {
-		const errors = missingWatched(
+		const errors = fingerprintErrors(
 			"preview",
 			"android",
 			print("android", { without: ["expo-application"], autolinking: false }),
@@ -93,7 +93,7 @@ describe("missingWatched", () => {
 		unhashed.sources = unhashed.sources.map((s) =>
 			s.reasons.includes("expoAutolinkingAndroid") ? { ...s, hash: null } : s,
 		);
-		expect(missingWatched("preview", "android", unhashed)).toEqual([
+		expect(fingerprintErrors("preview", "android", unhashed)).toEqual([
 			"preview android: no Expo-autolinked module is in the fingerprint",
 			...Object.keys(WATCHED).map(
 				(name) => `preview android: ${name} is not in the fingerprint`,
@@ -106,13 +106,13 @@ describe("missingWatched", () => {
 		unhashed.sources = unhashed.sources.map((s) =>
 			s.filePath?.includes("/expo-application/") ? { ...s, hash: null } : s,
 		);
-		expect(missingWatched("preview", "ios", unhashed)).toEqual([
+		expect(fingerprintErrors("preview", "ios", unhashed)).toEqual([
 			"preview ios: expo-application is not in the fingerprint",
 		]);
 	});
 });
 
-describe("missingWatched with the autolinked module list", () => {
+describe("fingerprintErrors with the autolinked module list", () => {
 	const expected = [...Object.keys(WATCHED), "expo-sqlite"];
 
 	/** A complete fingerprint that also holds expo-sqlite. */
@@ -128,7 +128,7 @@ describe("missingWatched with the autolinked module list", () => {
 		"passes when every %s module is fingerprinted",
 		(platform) => {
 			expect(
-				missingWatched("preview", platform, full(platform), expected),
+				fingerprintErrors("preview", platform, full(platform), expected),
 			).toEqual([]);
 		},
 	);
@@ -140,7 +140,7 @@ describe("missingWatched with the autolinked module list", () => {
 			lost.sources = lost.sources.filter(
 				(s) => !s.filePath?.includes("/expo-sqlite/"),
 			);
-			expect(missingWatched("preview", platform, lost, expected)).toEqual([
+			expect(fingerprintErrors("preview", platform, lost, expected)).toEqual([
 				`preview ${platform}: Expo-autolinked expo-sqlite is not in the fingerprint`,
 			]);
 		},
@@ -151,9 +151,11 @@ describe("missingWatched with the autolinked module list", () => {
 		unhashed.sources = unhashed.sources.map((s) =>
 			s.filePath?.includes("/expo-sqlite/") ? { ...s, hash: null } : s,
 		);
-		expect(missingWatched("preview", "android", unhashed, expected)).toEqual([
-			"preview android: Expo-autolinked expo-sqlite is not in the fingerprint",
-		]);
+		expect(fingerprintErrors("preview", "android", unhashed, expected)).toEqual(
+			[
+				"preview android: Expo-autolinked expo-sqlite is not in the fingerprint",
+			],
+		);
 	});
 
 	it("does not count a module that is only a config plugin", () => {
@@ -163,14 +165,14 @@ describe("missingWatched with the autolinked module list", () => {
 				? { ...s, reasons: ["expoConfigPlugins"] }
 				: s,
 		);
-		expect(missingWatched("preview", "ios", pluginOnly, expected)).toEqual([
+		expect(fingerprintErrors("preview", "ios", pluginOnly, expected)).toEqual([
 			"preview ios: Expo-autolinked expo-sqlite is not in the fingerprint",
 		]);
 	});
 
 	it("reports a fingerprint without autolinking once, not per module", () => {
 		expect(
-			missingWatched(
+			fingerprintErrors(
 				"preview",
 				"android",
 				print("android", { autolinking: false }),
@@ -195,6 +197,12 @@ const platform = args[args.indexOf("--platform") + 1];
 const file = args.includes("fingerprint:generate")
 	? \`fingerprint-\${process.env.APP_VARIANT}-\${platform}.json\`
 	: \`autolinking-\${platform}.json\`;
+if (process.env.FAIL_RESOLVE && !args.includes("fingerprint:generate")) {
+	process.stderr.write("resolve failed");
+	process.exit(1);
+}
+// pnpm logs this to stdout when it installs before running.
+process.stdout.write("Scope: all 3 workspace projects\\n");
 process.stdout.write(readFileSync(join(process.env.FINGERPRINT_FIXTURES, file), "utf8"));
 `;
 	const VARIANTS = ["preview", "production", "development"];
@@ -231,7 +239,7 @@ process.stdout.write(readFileSync(join(process.env.FINGERPRINT_FIXTURES, file), 
 	 * Runs `check` with fixtures. `modules[platform]` is what autolinking
 	 * resolves; `prints(variant, platform)` the fingerprint to report.
 	 */
-	function runCheck(modules, prints) {
+	function runCheck(modules, prints, env = {}) {
 		const dir = mkdtempSync(join(tmpdir(), "fingerprint-check-"));
 		dirs.push(dir);
 		writeFileSync(join(dir, "pnpm"), FAKE_PNPM);
@@ -241,7 +249,11 @@ process.stdout.write(readFileSync(join(process.env.FINGERPRINT_FIXTURES, file), 
 				modules: modules[platform].map((packageName) => ({ packageName })),
 			};
 			writeFileSync(
-				join(dir, `autolinking-${platform}.json`),
+				// The script must ask autolinking for `apple`, as @expo/fingerprint does.
+				join(
+					dir,
+					`autolinking-${platform === "ios" ? "apple" : platform}.json`,
+				),
 				JSON.stringify(resolved),
 			);
 			for (const variant of VARIANTS) {
@@ -257,6 +269,7 @@ process.stdout.write(readFileSync(join(process.env.FINGERPRINT_FIXTURES, file), 
 				...process.env,
 				FINGERPRINT_FIXTURES: dir,
 				PATH: `${dir}${delimiter}${process.env.PATH}`,
+				...env,
 			},
 		});
 	}
@@ -271,9 +284,17 @@ process.stdout.write(readFileSync(join(process.env.FINGERPRINT_FIXTURES, file), 
 
 	it("exits 0 when every fingerprint has its platform's modules", () => {
 		const result = runCheck(modules, healthy);
-		expect(result.stderr).toBe("");
 		expect(result.status).toBe(0);
 		expect(result.stdout).not.toContain("::error::");
+		expect(result.stdout).toContain(
+			"Every fingerprint has every Expo-autolinked module",
+		);
+	});
+
+	it("exits 1 when autolinking cannot be resolved", () => {
+		const result = runCheck(modules, healthy, { FAIL_RESOLVE: "1" });
+		expect(result.status).toBe(1);
+		expect(result.stderr).toContain("expo-modules-autolinking resolve failed");
 	});
 
 	it("exits 1 for the APP-71 Android shape: no autolinked module, config plugins kept", () => {

@@ -132,7 +132,7 @@ whether merging needs new builds. It also lists version changes of the
 packages in `WATCHED` (`@clerk/expo`, `expo-application`), and its last step
 (`fingerprint.mjs check`) fails the PR when a fingerprint (any variant, iOS or
 Android) misses a watched package or any module that Expo autolinking links for
-that platform (`expo-modules-autolinking resolve --platform <p>`), so an
+that platform (`expo-modules-autolinking resolve --platform apple|android`), so an
 iOS-only module is never expected on Android. Mobile Update runs the same check
 before it publishes. Its tests run with `pnpm test`
 (`apps/mobile/scripts/fingerprint.test.mjs`), including the CLI's exit code
