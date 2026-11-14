@@ -6,19 +6,30 @@ import { AppText } from "../../../ui/text";
 import { HudGlass } from "../hud/hud-glass";
 import { hudStyles } from "../hud/hud-styles";
 
+/**
+ * On the next tee: move on, or first score the hole being left when it has
+ * no score yet (`unscoredRef`).
+ */
 export function PlayNextTeeOffer({
 	bottom,
 	nextRef,
+	unscoredRef,
 	onDismiss,
 	onGo,
+	onScore,
 }: {
 	bottom: number;
 	nextRef: string;
+	unscoredRef: string | null;
 	onDismiss: () => void;
 	onGo: () => void;
+	onScore: () => void;
 }) {
 	const { t } = useI18n();
 	const n = holeLabel(nextRef);
+	const actionLabel = unscoredRef
+		? fmt(t.play.scoreBeforeNext, { n: holeLabel(unscoredRef) })
+		: fmt(t.play.goToHole, { n });
 	return (
 		<View style={[hudStyles.tray, { bottom }]} pointerEvents="box-none">
 			<HudGlass capsule={false} style={styles.offer}>
@@ -44,7 +55,7 @@ export function PlayNextTeeOffer({
 				</Pressable>
 				<Pressable
 					accessibilityRole="button"
-					onPress={onGo}
+					onPress={unscoredRef ? onScore : onGo}
 					hitSlop={6}
 					style={({ pressed }) => [
 						styles.offerButton,
@@ -53,7 +64,7 @@ export function PlayNextTeeOffer({
 					]}
 				>
 					<AppText variant="control" style={styles.offerGoText}>
-						{fmt(t.play.goToHole, { n })}
+						{actionLabel}
 					</AppText>
 				</Pressable>
 			</HudGlass>

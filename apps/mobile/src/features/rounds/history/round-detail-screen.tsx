@@ -149,7 +149,14 @@ export function RoundDetailScreen() {
 			</View>
 			<View style={styles.tiles}>
 				{[tiles.score, tiles.toPar, ...tiles.stats].map((tile) => (
-					<View key={tile.label} style={styles.tile}>
+					<View
+						key={tile.label}
+						style={styles.tile}
+						accessible
+						accessibilityLabel={[tile.label, tile.value, tile.sub]
+							.filter(Boolean)
+							.join(", ")}
+					>
 						<AppText variant="footnote">{tile.label}</AppText>
 						<AppText variant="title" style={styles.tileValue}>
 							{tile.value}

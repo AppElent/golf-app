@@ -17,7 +17,11 @@ import {
 	StepperField,
 } from "../../../ui/form";
 import { AppText } from "../../../ui/text";
-import { quickStrokes, type ScoreDraft } from "./score-model";
+import {
+	quickStrokes,
+	type ScoreDraft,
+	type ScoreDraftPatch,
+} from "./score-model";
 
 export function PlayerScoreForm({
 	name,
@@ -30,7 +34,7 @@ export function PlayerScoreForm({
 	par: number;
 	draft: ScoreDraft;
 	owner: boolean;
-	onChange: (patch: Partial<ScoreDraft>) => void;
+	onChange: (patch: ScoreDraftPatch) => void;
 }) {
 	const { t } = useI18n();
 	const colors = useTokens();

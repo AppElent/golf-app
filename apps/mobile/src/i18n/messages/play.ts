@@ -20,7 +20,8 @@ export const playEn = {
 	sideLeft: "left",
 	sideRight: "right",
 	sideCenter: "across the line",
-	hazardRow: "{kind} {side}: {reach} to reach, {carry} to carry, {units}",
+	hazardRow:
+		"{kind} {side}: {reach} {units} to reach, {carry} {units} to carry",
 	simulationBanner: "Simulation — not saved",
 	simulationExit: "Exit",
 	simulationExitLabel: "Simulation, not saved. Exit",
@@ -48,6 +49,8 @@ export const playEn = {
 	skipClub: "Skip",
 	nextTee: "On the tee of hole {n}",
 	goToHole: "Go to hole {n}",
+	/** The next-tee offer when the hole being left has no score yet. */
+	scoreBeforeNext: "Score hole {n}",
 	notNow: "Not now",
 	trackingTitle: "Fairway round in progress",
 	trackingBody: "Keeping your distances ready.",
@@ -74,7 +77,8 @@ export const playNl: typeof playEn = {
 	sideLeft: "links",
 	sideRight: "rechts",
 	sideCenter: "over de speellijn",
-	hazardRow: "{kind} {side}: {reach} tot begin, {carry} tot voorbij, {units}",
+	hazardRow:
+		"{kind} {side}: {reach} {units} tot begin, {carry} {units} tot voorbij",
 	simulationBanner: "Simulatie — niet opgeslagen",
 	simulationExit: "Stoppen",
 	simulationExitLabel: "Simulatie, niet opgeslagen. Stoppen",
@@ -101,6 +105,7 @@ export const playNl: typeof playEn = {
 	skipClub: "Overslaan",
 	nextTee: "Op de tee van hole {n}",
 	goToHole: "Naar hole {n}",
+	scoreBeforeNext: "Score hole {n} invoeren",
 	notNow: "Niet nu",
 	trackingTitle: "Fairway-ronde bezig",
 	trackingBody: "Houdt je afstanden paraat.",

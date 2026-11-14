@@ -63,6 +63,7 @@ export function HoleSatelliteOverlays({
 			))}
 			{(geometry.teeBoxes ?? []).map((box) => (
 				<Marker
+					{...decorative}
 					key={`tee-${box.position.lat},${box.position.lng}`}
 					coordinate={toCoord(box.position)}
 					anchor={{ x: 0.5, y: 0.5 }}
@@ -90,6 +91,7 @@ export function HoleSatelliteOverlays({
 			) : null}
 			{shots.map((shot, i) => (
 				<Marker
+					{...decorative}
 					// biome-ignore lint/suspicious/noArrayIndexKey: shots only append; a re-tee can repeat a spot
 					key={`shot-${i}`}
 					coordinate={toCoord(shot)}
@@ -109,6 +111,7 @@ export function HoleSatelliteOverlays({
 				lineCap="round"
 			/>
 			<Marker
+				{...decorative}
 				coordinate={toCoord(green)}
 				anchor={{ x: 0.5, y: 0.5 }}
 				tracksViewChanges={false}
@@ -117,6 +120,7 @@ export function HoleSatelliteOverlays({
 			</Marker>
 			{located ? (
 				<Marker
+					{...decorative}
 					coordinate={toCoord(player)}
 					anchor={{ x: 0.5, y: 0.5 }}
 					tracksViewChanges={false}
@@ -148,6 +152,7 @@ export function HoleSatelliteOverlays({
 				/>
 			))}
 			<Marker
+				{...decorative}
 				coordinate={toCoord(target)}
 				anchor={{ x: 0.5, y: 0.5 }}
 				tracksViewChanges={false}
@@ -160,6 +165,16 @@ export function HoleSatelliteOverlays({
 		</>
 	);
 }
+
+/**
+ * Map pins are drawing, not content: VoiceOver would read each as "Map pin".
+ * The same distances are in the HUD, which is accessible.
+ */
+const decorative = {
+	accessible: false,
+	accessibilityElementsHidden: true,
+	importantForAccessibility: "no-hide-descendants",
+} as const;
 
 /** Remounts when its text changes (the `key` at each call site), tracks view
  *  changes until its auto-sized pill has laid out — snapshotted earlier it
@@ -176,6 +191,7 @@ function Label({
 	const [tracking, setTracking] = useState(true);
 	return (
 		<Marker
+			{...decorative}
 			coordinate={toCoord(at)}
 			anchor={{ x: 0.5, y: 0.5 }}
 			tracksViewChanges={tracking}

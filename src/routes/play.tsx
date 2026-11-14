@@ -1,4 +1,4 @@
-import { type Club, DEFAULT_BAG } from "@fairway/core/club-suggest";
+import { type Club, effectiveBag } from "@fairway/core/club-suggest";
 import { GPS_WEAK_ACCURACY_M, type LatLng } from "@fairway/core/geo";
 import {
 	greenNumbers,
@@ -48,7 +48,7 @@ function PlayScreen() {
 		<PlayInner
 			active={active}
 			geometry={geometry ?? null}
-			bag={clubs && clubs.length > 0 ? clubs : DEFAULT_BAG}
+			bag={effectiveBag(clubs ?? [])}
 			onSetHole={(holeIndex) =>
 				setCurrentHole({ roundId: active.round._id, holeIndex })
 			}

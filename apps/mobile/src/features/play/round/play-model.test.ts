@@ -1,3 +1,4 @@
+import { effectiveBag } from "@fairway/core/club-suggest";
 import { GPS_WEAK_ACCURACY_M, haversineMeters } from "@fairway/core/geo";
 import {
 	defaultTarget,
@@ -6,6 +7,7 @@ import {
 	isOnHole,
 	legLabel,
 	lockScreenHole,
+	nextTeeAction,
 	playerPosition,
 } from "./play-model";
 
@@ -164,5 +166,42 @@ describe("lockScreenHole", () => {
 		const hole = lockScreenHole(input);
 		expect(hole?.accepts({ lat: 52.001, lng: 5 })).toBe(true);
 		expect(hole?.accepts({ lat: 51.9, lng: 5 })).toBe(false);
+	});
+});
+
+describe("nextTeeAction", () => {
+	it("asks to score the hole being left when the owner has no result", () => {
+		expect(nextTeeAction([], 1)).toBe("score");
+		// Another player's score or another hole's doesn't count.
+		expect(
+			nextTeeAction(
+				[
+					{ holeIndex: 1, playerIndex: 1, strokes: 5 },
+					{ holeIndex: 0, playerIndex: 0, strokes: 4 },
+				],
+				1,
+			),
+		).toBe("score");
+	});
+
+	it("moves on once the owner scored the hole, picked up included", () => {
+		expect(
+			nextTeeAction([{ holeIndex: 1, playerIndex: 0, strokes: 4 }], 1),
+		).toBe("advance");
+		expect(nextTeeAction([{ holeIndex: 1, playerIndex: 0, nr: true }], 1)).toBe(
+			"advance",
+		);
+	});
+});
+
+describe("a sparse bag", () => {
+	it("still suggests a driver from the tee of a 361 m par 4", () => {
+		const sparse = effectiveBag([{ name: "7 iron", carryMeters: 145 }]);
+		const far = { lat: 52 + 361 / 111_195, lng: 5.9 };
+		const target = defaultTarget(tee, far, sparse);
+		const meters = Math.round(haversineMeters(tee, target));
+		expect(meters).toBe(230);
+		expect(legLabel(meters, "m", sparse, true)).toBe("230 · Driver");
+		expect(legLabel(145, "m", sparse, true)).toBe("145 · 7 iron");
 	});
 });

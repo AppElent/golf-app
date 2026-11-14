@@ -16,7 +16,13 @@ import { AppText } from "../../../ui/text";
 import { NoActiveRound } from "../components/no-active-round";
 import { type ActiveRound, useActiveRound } from "../use-active-round";
 import { PlayerScoreForm } from "./player-score-form";
-import { initialDrafts, type ScoreDraft } from "./score-model";
+import {
+	draftUpdate,
+	editDraft,
+	initialDrafts,
+	type ScoreDraft,
+	type ScoreDraftPatch,
+} from "./score-model";
 import { ScoreSheetHeader } from "./score-sheet-header";
 
 export function ScoreSheetScreen() {
@@ -53,8 +59,7 @@ function ScoreSheet({
 	const { t } = useI18n();
 	const router = useRouter();
 	const styles = useThemedStyles(createStyles);
-	const setScore = useMutation(api.rounds.setScore);
-	const setCurrentHole = useMutation(api.rounds.setCurrentHole);
+	const saveHole = useMutation(api.rounds.saveHole);
 	const { round, holes, scores } = active;
 	const hole = holes[holeIndex];
 	const [drafts, setDrafts] = useState<ScoreDraft[]>(() =>
@@ -69,31 +74,27 @@ function ScoreSheet({
 	const advances =
 		!isLast && firstEntry && holeIndex === round.currentHoleIndex;
 
-	const update = (playerIndex: number, patch: Partial<ScoreDraft>) =>
+	const update = (playerIndex: number, patch: ScoreDraftPatch) =>
 		setDrafts((all) =>
-			all.map((d, i) => (i === playerIndex ? { ...d, ...patch } : d)),
+			all.map((d, i) =>
+				i === playerIndex ? editDraft(d, patch, hole.par) : d,
+			),
 		);
 
+	// One mutation for every player and the move to the next hole: one round
+	// trip, and the round never advances without its scores.
 	const onSave = () =>
 		submit.run(
-			async (isOpen) => {
-				await Promise.all(
-					drafts.map((draft, playerIndex) =>
-						setScore({
-							roundId: round._id,
-							holeIndex,
-							playerIndex,
-							...draft,
-						}),
-					),
-				);
-				if (advances && isOpen()) {
-					await setCurrentHole({
-						roundId: round._id,
-						holeIndex: holeIndex + 1,
-					});
-				}
-			},
+			() =>
+				saveHole({
+					roundId: round._id,
+					holeIndex,
+					scores: drafts.map((draft, playerIndex) => ({
+						playerIndex,
+						...draftUpdate(draft),
+					})),
+					...(advances ? { advanceTo: holeIndex + 1 } : {}),
+				}),
 			{
 				errorFallback: t.score.saveError,
 				onSuccess: () => {

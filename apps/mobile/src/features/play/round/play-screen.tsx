@@ -4,7 +4,7 @@
  * until there is a fix.
  */
 
-import { type Club, DEFAULT_BAG } from "@fairway/core/club-suggest";
+import { type Club, effectiveBag } from "@fairway/core/club-suggest";
 import { holeLabel, type Units } from "@fairway/core/format";
 import type { LatLng } from "@fairway/core/geo";
 import { learnedBag } from "@fairway/core/shots";
@@ -33,7 +33,7 @@ import { PlayClubTray } from "./play-club-tray";
 import { PlayDistances } from "./play-distances";
 import { PlayGpsPill } from "./play-gps-pill";
 import { PlayHoleView } from "./play-hole-view";
-import { gpsNotice, playerPosition } from "./play-model";
+import { gpsNotice, nextTeeAction, playerPosition } from "./play-model";
 import { PlayNextTeeOffer } from "./play-next-tee-offer";
 import { PlaySimulationBanner } from "./play-simulation-banner";
 import { PlaySimulationControls } from "./play-simulation-controls";
@@ -82,10 +82,7 @@ export function PlayScreen() {
 			key={active.round._id}
 			active={active}
 			detail={detail}
-			bag={learnedBag(
-				clubs && clubs.length > 0 ? clubs : DEFAULT_BAG,
-				shots ?? [],
-			)}
+			bag={learnedBag(effectiveBag(clubs ?? []), shots ?? [])}
 			units={units}
 		/>
 	);
@@ -199,7 +196,9 @@ function PlayHole({
 				shots={holeShots}
 				bag={bag}
 				units={units}
-				hudTop={hudTop}
+				// The simulation banner hangs below the top bar: frame the hole
+				// under it too, as the bottom does for the simulation panel.
+				hudTop={hudTop + (simulated ? hudLayout.gpsPillBelowBanner : 0)}
 				hudBottom={hudBottom + simulationHeight}
 			/>
 			<PlayTopBar
@@ -266,8 +265,19 @@ function PlayHole({
 				<PlayNextTeeOffer
 					bottom={hudBottom + hudLayout.trayBottom + simulationHeight}
 					nextRef={round.holeRefs[holeIndex + 1] ?? ""}
+					unscoredRef={
+						nextTeeAction(active.scores, holeIndex) === "score"
+							? (round.holeRefs[holeIndex] ?? null)
+							: null
+					}
 					onDismiss={dismissOffer}
 					onGo={() => goTo(holeIndex + 1)}
+					onScore={() =>
+						router.push({
+							pathname: "/score",
+							params: { hole: String(holeIndex) },
+						})
+					}
 				/>
 			) : null}
 			<PlayBottomBar
