@@ -17,6 +17,7 @@
 			"scripts/feature-manifest*",
 			"apps/mobile/app/**/*",
 			"apps/mobile/*.{ts,tsx,js}",
+			"apps/mobile/scripts/**/*",
 			"**/.vscode/**/*",
 			"**/vite.config.ts",
 			"!apps/mobile/expo-env.d.ts",
