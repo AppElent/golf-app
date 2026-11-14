@@ -51,9 +51,9 @@ const ADR =
 	"docs/adr/0001-the-phone-plays-rounds-and-the-web-authors-courses.md";
 
 export const FEATURES = defineFeatures([
-	// Floor. The web floor is reduced to sign-in, sign-out, privacy, account
-	// deletion and data export (ADR). Everything else on the floor is owed by
-	// the phone only.
+	// Floor. The web floor is reduced to sign-in (with sign-up and password
+	// reset), sign-out, privacy, account deletion and data export (ADR). The
+	// rest of the floor (account profile, language, theme) is owed by the phone only.
 	{
 		id: "sign-in",
 		kind: "floor",

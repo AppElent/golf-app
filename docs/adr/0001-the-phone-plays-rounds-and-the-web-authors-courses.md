@@ -42,8 +42,8 @@ gap is a follow-up, not a reason to declare it responsive.
 new play and review features go to the phone. Whether to retire them is
 Eric's call and a separate change; this ADR changes no runtime behaviour.
 
-**The web floor is reduced** to sign-in, sign-out, the privacy page, account
-deletion and data export. People manage their golf on the phone; the web is a
+**The web floor is reduced** to sign-in (with sign-up and password reset),
+sign-out, the privacy page, account deletion and data export. People manage their golf on the phone; the web is a
 tool for the few who author courses, so account editing, language and theme
 there would be cost without users. Consequences in `features.ts`:
 
@@ -53,8 +53,6 @@ there would be cost without users. Consequences in `features.ts`:
   platform edits it yet, and the checker allows only `pending-port` for a
   feature with no platforms, so it is `pending-port` until the phone ships it;
   then it becomes `exclusive` to the phone with a reason linking this ADR.
-- Sign-in, sign-up and password reset stay on both platforms: the web needs
-  them to reach course authoring.
 
 **The reduced floor is not met yet.** These are `pending-port` with follow-ups:
 
