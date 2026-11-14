@@ -2,6 +2,7 @@
 
 - `standards/` — shared standards (installed copies; never edit here).
 - `contracts/app-shell-and-access.md` — sign-in, the web shell, and per-user ownership in Convex.
+- `adr/0001-the-phone-plays-rounds-and-the-web-authors-courses.md` — which platform each feature ships on (platform parity); `packages/core/src/features.ts` lists them.
 - `runbooks/development.md` — local commands, checks, and environment files.
 - `runbooks/deploy.md` — how the web app and Convex reach staging and production.
 - `runbooks/previews.md` — PR previews and mobile PR builds.
