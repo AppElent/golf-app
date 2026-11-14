@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when running, building, or releasing the Fairway mobile app (apps/mobile).
-version: 1.1.0
+version: 1.2.0
 ---
 
 # Mobile app (Fairway)
@@ -177,6 +177,55 @@ cd .. && pnpm e2e:preview-sign-in         # maestro test .maestro/preview-sign-i
 - It covers the Preview bundle ID on the test instance. The installed
   `preview-internal` build uses the production instance, whose minimum
   versions only the owner checks in the Clerk Dashboard.
+
+- After Home appears, the flow waits up to 15 s for "Update required" before
+  it asserts the screen is absent. Clerk re-reads the minimum version after
+  sign-in, and a slow response would otherwise arrive after the check and
+  the test would pass. Maestro counts wait timeouts from the last
+  interaction, so a `waitForAnimationToEnd` right after Home restarts the
+  clock; without it a slow sign-in would use up the 15 s. A passing run takes
+  about 15 s longer.
+
+#### Why it does not run in CI
+
+It runs locally only, by decision (APP-72). A CI job would need:
+
+- **A test-instance Preview build.** No workflow produces one. Mobile Build
+  makes `development` and `preview-internal` device builds (`preview-internal`
+  uses production Clerk), not a simulator `.app` for
+  `com.appelent.fairway.preview` on the test instance. The `test` EAS profile
+  (Fairway Test) is a different bundle ID.
+- **New secrets.** The pre-filled sign-in needs `EXPO_PUBLIC_TEST_USER_EMAIL`
+  and `EXPO_PUBLIC_TEST_USER_PASSWORD` in the CI build, and they would be
+  embedded in the build artifact.
+- **macOS minutes.** Prebuild, a Release `xcodebuild` and a simulator boot
+  take tens of minutes on a `macos-26` runner per run.
+- **A live network dependency.** It signs in against the shared Clerk test
+  instance and Convex, so outages and rate limits would fail unrelated PRs.
+
+The risk it guards against changes rarely: a Clerk SDK bump (Dependabot) or a
+change to the minimum versions in the Clerk Dashboard. Run it by hand for
+those. Revisit CI if it misses a regression.
+
+#### Proving it fails on "Update required" (APP-108)
+
+Done by the Clerk Dashboard owner, on the **test** instance only:
+
+1. Build and install the Preview app as above, and run the test once. It
+   should pass. The build's version is `expo.version` in
+   `apps/mobile/app.json` (`1.0.0` today).
+2. In the Clerk Dashboard (test instance), find the iOS native app
+   `com.appelent.fairway.preview` and set its minimum app version above the
+   build's version (for example `99.0.0`). Leave the other bundle IDs alone;
+   the test instance is shared with other apps.
+3. Run `pnpm e2e:preview-sign-in` from `apps/mobile` again. It must fail,
+   and the "Update required" screen must be on the simulator when it does
+   (Maestro's failure screenshot shows it). Clerk can block before the
+   sign-in screen, at sign-in or after Home, so the failing step may be any
+   of the waits or an `Update required` assertion. A pass here means the
+   test is blind; reopen APP-72.
+4. Remove the minimum version, run the test again, and confirm it passes.
+   Record both runs (pass/fail output) on APP-108.
 
 ### TestFlight and the App Store
 
