@@ -8,7 +8,8 @@ export default defineConfig({
     exclude: [
       ...configDefaults.exclude,
       '**/.claude/**',
-      'apps/mobile/**',
+      // Jest owns the app; its node scripts' tests run here.
+      'apps/mobile/!(scripts)/**',
     ],
   },
 })

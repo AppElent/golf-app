@@ -8,8 +8,9 @@
 //   node apps/mobile/scripts/fingerprint.mjs              # this checkout, per variant
 //   node apps/mobile/scripts/fingerprint.mjs diff <base>  # Markdown: what changed vs
 //                                                         # another checkout (CI)
-//   node apps/mobile/scripts/fingerprint.mjs check        # fails when a WATCHED package
-//                                                         # is missing from a fingerprint
+//   node apps/mobile/scripts/fingerprint.mjs check        # fails when a fingerprint misses
+//                                                         # Expo's autolinked modules or a
+//                                                         # WATCHED package
 //
 // `diff` needs `<base>` installed (`pnpm install`), because native modules
 // are fingerprinted from node_modules.
@@ -25,9 +26,10 @@ export const PLATFORMS = ["ios", "android"];
 
 /**
  * Native packages behind a runtime behaviour installed builds rely on. `check`
- * fails when one drops out of a fingerprint (no longer a config plugin or
- * autolinked module), and `diff` lists their version changes, so a bump that
- * changes what installed builds do is named on the PR, not only hashed.
+ * fails when one drops out of any variant's or platform's fingerprint (no
+ * longer a config plugin or autolinked module), and `diff` lists their version
+ * changes, so a bump that changes what installed builds do is named on the
+ * PR, not only hashed.
  */
 export const WATCHED = {
 	"@clerk/expo":
@@ -63,8 +65,8 @@ function sourceKey(source) {
 		: source.filePath.replace(/^.*node_modules\//, "node_modules/");
 }
 
-/** WATCHED packages fingerprinted only as autolinked modules, not config plugins. */
-const AUTOLINKED = new Set(["expo-application"]);
+/** The source reason @expo/fingerprint gives Expo-autolinked modules, per platform. */
+const AUTOLINKING_REASON = { ios: "expoAutolinkingIos", android: "expoAutolinkingAndroid" };
 
 /** Source keys (`node_modules/<package>/…`) that belong to `name`. */
 function sourcesOf(print, name) {
@@ -86,59 +88,44 @@ function installedVersion(name, root = appRoot) {
 }
 
 /**
- * True for an Android fingerprint with no Expo-autolinked native module. That
- * is a known @expo/fingerprint gap, not an app without modules: a gradle
- * plugin published to Maven (expo-widgets' glance fork) has no `sourceDir`,
- * the Android autolinking sourcer throws on it and returns nothing, so no
- * Expo module's Android code reaches the Android fingerprint.
- */
-function androidAutolinkingGap(print, platform) {
-	return (
-		platform === "android" &&
-		!print.sources.some((s) => s.reasons.includes("expoAutolinkingAndroid"))
-	);
-}
-
-/**
- * Each WATCHED package missing from one fingerprint: an error, or a warning
- * for an AUTOLINKED package under the Android gap above, so
- * the check tightens by itself once @expo/fingerprint is fixed.
+ * Error lines for one fingerprint: no Expo-autolinked module in it at all, or
+ * a WATCHED package missing. No platform or package is exempt. The first
+ * catches @expo/fingerprint dropping a platform's whole autolinking source, as
+ * 0.21.7 did on Android when expo-widgets declared a gradle plugin published
+ * to Maven (no `sourceDir`; APP-71). An update could then reach builds
+ * without the native code it needs.
  */
 export function missingWatched(variant, platform, print) {
-	const gap = androidAutolinkingGap(print, platform);
 	const errors = [];
-	const warnings = [];
+	const autolinked = print.sources.filter(
+		(s) => s.hash !== null && s.reasons.includes(AUTOLINKING_REASON[platform]),
+	);
+	if (autolinked.length === 0) {
+		errors.push(`${variant} ${platform}: no Expo-autolinked module is in the fingerprint`);
+	}
 	for (const name of Object.keys(WATCHED)) {
-		if (sourcesOf(print, name).length > 0) continue;
-		const line = `${variant} ${platform}: ${name} is not in the fingerprint`;
-		if (gap && AUTOLINKED.has(name)) {
-			warnings.push(`${line} (no Expo autolinking sources at all; @expo/fingerprint gap)`);
-		} else {
-			errors.push(line);
+		if (sourcesOf(print, name).length === 0) {
+			errors.push(`${variant} ${platform}: ${name} is not in the fingerprint`);
 		}
 	}
-	return { errors, warnings };
+	return errors;
 }
 
 function check() {
 	const errors = [];
-	const warnings = [];
 	for (const variant of VARIANTS) {
 		for (const platform of PLATFORMS) {
-			const found = missingWatched(variant, platform, fingerprint(variant, platform));
-			errors.push(...found.errors);
-			warnings.push(...found.warnings);
+			errors.push(...missingWatched(variant, platform, fingerprint(variant, platform)));
 		}
 	}
 	for (const name of Object.keys(WATCHED)) {
 		console.log(`${name.padEnd(18)} ${installedVersion(name) ?? "not installed"}`);
 	}
-	for (const line of warnings) console.log(`::warning::${line}`);
 	if (errors.length > 0) {
 		for (const line of errors) console.log(`::error::${line}`);
 		return false;
 	}
-	console.log("Every watched package is in every fingerprint that can see it.");
+	console.log("Every fingerprint has Expo's autolinked modules and every watched package.");
 	return true;
 }
 

@@ -8,10 +8,11 @@ name: Mobile runtime
 # new build is due after merging; if not, the merge ships as an update. The
 # comparison is informational and never fails a PR for changing native code.
 #
-# `check` does fail a PR: when a package in WATCHED (apps/mobile/scripts/
-# fingerprint.mjs) drops out of a fingerprint, such as `@clerk/expo` or the
-# `expo-application` module Clerk's minimum-version check reads the build's
-# version from. The comparison also lists their version changes.
+# `check` does fail a PR: when a fingerprint has no Expo-autolinked module
+# (APP-71), or a package in WATCHED (apps/mobile/scripts/fingerprint.mjs)
+# drops out of one, such as `@clerk/expo` or the `expo-application` module
+# Clerk's minimum-version check reads the build's version from. The
+# comparison also lists their version changes.
 on:
   pull_request:
     paths:
@@ -74,5 +75,5 @@ jobs:
             }
 
       # Last, so a failure still leaves the comparison on the PR.
-      - name: Watched packages are fingerprinted
+      - name: Native modules and watched packages are fingerprinted
         run: node apps/mobile/scripts/fingerprint.mjs check
