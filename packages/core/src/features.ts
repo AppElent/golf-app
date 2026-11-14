@@ -59,9 +59,18 @@ export const FEATURES = defineFeatures([
 		kind: "floor",
 		status: "parity",
 		platforms: ["web", "mobile"],
-		// Web: Clerk's <SignIn> inside AuthGate (src/integrations/clerk), no route.
+		// Sign-in and sign-up. Web: Clerk's prebuilt <SignIn> inside AuthGate
+		// (src/integrations/clerk), no route; sign-up is that card's Clerk link.
 		// Mobile: password or emailed-code sign-in, sign-up, email verification.
 		routes: { mobile: ["(auth)/**"] },
+	},
+	{
+		id: "password-reset",
+		kind: "floor",
+		status: "pending-port",
+		platforms: ["web"],
+		reason: `Owed on the phone (${ADR}). The web's Clerk <SignIn> card has Clerk's forgot-password step; the phone has none. Emailed-code sign-in gets a user in but does not change the password.`,
+		routes: {},
 	},
 	{
 		id: "sign-out",

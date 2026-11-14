@@ -1,6 +1,6 @@
-// Copied from the platform-parity standard (AppElent/developer-home#2), rules
-// unchanged (Biome reformatted it),
-// and called from scripts/feature-manifest.test.ts. listRouteFiles lists route files under a
+// Copied from the platform-parity standard (AppElent/developer-home#2) with
+// its rules unchanged (only Biome's formatting differs), and called from
+// scripts/feature-manifest.test.ts. listRouteFiles lists route files under a
 // route root, relative and without extension, skipping tests, layouts, and
 // framework files. checkFeatureManifest returns one message per problem:
 // an unmapped route, a stale pattern, a status that contradicts the

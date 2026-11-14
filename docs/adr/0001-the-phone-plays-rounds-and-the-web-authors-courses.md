@@ -26,8 +26,10 @@ setup, play with GPS distances, scoring, the lock-screen hole view, round
 history and sharing, stats, the club bag and the simulator. A new feature
 ships on the phone only, unless it is floor or a share target.
 
-**The web authors courses.** Making a private copy of a catalog course,
-editing its tees and holes, and suggesting catalog corrections are web work.
+**The web authors courses.** Making a private copy of a catalog course and
+editing its tees and holes are web work. Suggesting a catalog correction is
+lighter and stays on both platforms (`course-suggestion`): a golfer spots the
+mistake on the course.
 `course-authoring` is `exclusive` to the web and declared
 `layout: "large-screen"`: editing a course, and later its geometry on a map,
 needs a large screen and a keyboard. The page today is still the phone-width
@@ -48,7 +50,11 @@ there would be cost without users. Consequences in `features.ts`:
 - `language` and `theme` are `exclusive` to the phone, with a reason linking
   this ADR. The web is English-only and follows the OS colour scheme.
 - `account-profile` (name, email, password) is owed by the phone only. Neither
-  platform edits it yet, so it is `pending-port` with no platforms.
+  platform edits it yet, and the checker allows only `pending-port` for a
+  feature with no platforms, so it is `pending-port` until the phone ships it;
+  then it becomes `exclusive` to the phone with a reason linking this ADR.
+- Sign-in, sign-up and password reset stay on both platforms: the web needs
+  them to reach course authoring.
 
 **The reduced floor is not met yet.** These are `pending-port` with follow-ups:
 
@@ -56,6 +62,9 @@ there would be cost without users. Consequences in `features.ts`:
 - `account-deletion`: the phone deletes the account (`convex/account.ts`
   `deleteMyData`, then the Clerk user); the web does not. A web port reuses
   the same mutation.
+- `password-reset` (phone): the web's Clerk sign-in card has Clerk's
+  forgot-password step; the phone has none. Emailed-code sign-in gets a user
+  in but does not change the password.
 - `data-export`: neither platform exports a user's data. When it lands, it
   covers every table on both platforms, including data whose screens are
   phone-only.
