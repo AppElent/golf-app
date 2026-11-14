@@ -28,7 +28,8 @@ export function initialDrafts(
 			strokes: s?.strokes ?? par,
 			putts: s?.putts ?? null,
 			fir: s?.fir ?? null,
-			gir: s?.gir ?? null,
+			// A picked-up hole has no GIR, even in rows saved before that rule.
+			gir: s?.nr ? null : (s?.gir ?? null),
 			penalties: s?.penalties ?? 0,
 			nr: s?.nr ?? false,
 		};

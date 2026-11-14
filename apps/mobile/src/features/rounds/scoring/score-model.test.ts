@@ -13,9 +13,9 @@ describe("initialDrafts", () => {
 			strokes: 6,
 			putts: 2,
 			fir: true,
-			gir: false,
+			gir: true,
 			penalties: 1,
-			nr: true,
+			nr: false,
 		};
 		const drafts = initialDrafts(
 			[
@@ -121,6 +121,16 @@ describe("GIR from strokes and putts", () => {
 			4,
 		);
 		expect(editDraft(stored, { nr: true }, 4).gir).toBeNull();
+	});
+
+	it("drops a GIR stored on a picked-up hole", () => {
+		const [stored] = initialDrafts(
+			[{ holeIndex: 0, playerIndex: 0, strokes: 6, nr: true, gir: true }],
+			0,
+			1,
+			4,
+		);
+		expect(stored.gir).toBeNull();
 	});
 
 	it("leaves GIR unknown when every stroke was a putt", () => {

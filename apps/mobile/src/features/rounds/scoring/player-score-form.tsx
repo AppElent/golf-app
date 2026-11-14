@@ -125,14 +125,17 @@ export function PlayerScoreForm({
 							/>
 						</View>
 					) : null}
-					<View style={styles.rowSurface}>
-						<FormSegmentedRow
-							label={t.score.green}
-							options={yesNoOptions}
-							value={yesNo(draft.gir)}
-							onChange={(v) => onChange({ gir: fromYesNo(v) })}
-						/>
-					</View>
+					{/* A picked-up hole has no GIR. */}
+					{draft.nr ? null : (
+						<View style={styles.rowSurface}>
+							<FormSegmentedRow
+								label={t.score.green}
+								options={yesNoOptions}
+								value={yesNo(draft.gir)}
+								onChange={(v) => onChange({ gir: fromYesNo(v) })}
+							/>
+						</View>
+					)}
 				</>
 			) : null}
 			<View style={styles.switchRow}>
