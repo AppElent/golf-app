@@ -1,5 +1,5 @@
 import { holeLabel } from "@fairway/core/format";
-import { OWNER_INDEX } from "@fairway/core/round";
+import { OWNER_INDEX, scoreAt } from "@fairway/core/round";
 import { useMutation } from "convex/react";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
@@ -16,7 +16,13 @@ import { AppText } from "../../../ui/text";
 import { NoActiveRound } from "../components/no-active-round";
 import { type ActiveRound, useActiveRound } from "../use-active-round";
 import { PlayerScoreForm } from "./player-score-form";
-import { initialDrafts, type ScoreDraft } from "./score-model";
+import {
+	draftUpdate,
+	editDraft,
+	initialDrafts,
+	type ScoreDraft,
+	type ScoreDraftPatch,
+} from "./score-model";
 import { ScoreSheetHeader } from "./score-sheet-header";
 
 export function ScoreSheetScreen() {
@@ -53,8 +59,7 @@ function ScoreSheet({
 	const { t } = useI18n();
 	const router = useRouter();
 	const styles = useThemedStyles(createStyles);
-	const setScore = useMutation(api.rounds.setScore);
-	const setCurrentHole = useMutation(api.rounds.setCurrentHole);
+	const saveHole = useMutation(api.rounds.saveHole);
 	const { round, holes, scores } = active;
 	const hole = holes[holeIndex];
 	const [drafts, setDrafts] = useState<ScoreDraft[]>(() =>
@@ -63,37 +68,34 @@ function ScoreSheet({
 	const submit = useSubmit();
 	const saving = submit.pending;
 	const isLast = holeIndex === holes.length - 1;
-	// "Next hole" only on the first entry for the hole being played; a
-	// correction (also after browsing back with the chevrons) stays put.
-	const firstEntry = !scores.some((x) => x.holeIndex === holeIndex);
+	// "Next hole" only on the first entry of your own score for the hole being
+	// played; a correction (also after browsing back with the chevrons) stays
+	// put. Guests scored first don't count, like the next-tee offer.
+	const firstEntry = !scoreAt(scores, holeIndex, OWNER_INDEX);
 	const advances =
 		!isLast && firstEntry && holeIndex === round.currentHoleIndex;
 
-	const update = (playerIndex: number, patch: Partial<ScoreDraft>) =>
+	const update = (playerIndex: number, patch: ScoreDraftPatch) =>
 		setDrafts((all) =>
-			all.map((d, i) => (i === playerIndex ? { ...d, ...patch } : d)),
+			all.map((d, i) =>
+				i === playerIndex ? editDraft(d, patch, hole.par) : d,
+			),
 		);
 
+	// One mutation for every player and the move to the next hole: one round
+	// trip, and the round never advances without its scores.
 	const onSave = () =>
 		submit.run(
-			async (isOpen) => {
-				await Promise.all(
-					drafts.map((draft, playerIndex) =>
-						setScore({
-							roundId: round._id,
-							holeIndex,
-							playerIndex,
-							...draft,
-						}),
-					),
-				);
-				if (advances && isOpen()) {
-					await setCurrentHole({
-						roundId: round._id,
-						holeIndex: holeIndex + 1,
-					});
-				}
-			},
+			() =>
+				saveHole({
+					roundId: round._id,
+					holeIndex,
+					scores: drafts.map((draft, playerIndex) => ({
+						playerIndex,
+						...draftUpdate(draft),
+					})),
+					...(advances ? { advanceTo: holeIndex + 1 } : {}),
+				}),
 			{
 				errorFallback: t.score.saveError,
 				onSuccess: () => {

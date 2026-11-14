@@ -71,7 +71,14 @@ export function ScorecardScreen() {
 		const ok = await confirm({
 			title: t.scorecard.finishTitle,
 			message: round.simulated
-				? t.scorecard.finishSimulationMessage
+				? [
+						missing > 0
+							? plural(locale, missing, t.scorecard.finishSimulationMissing)
+							: null,
+						t.scorecard.finishSimulationMessage,
+					]
+						.filter(Boolean)
+						.join(" ")
 				: missing > 0
 					? plural(locale, missing, t.scorecard.finishMissing)
 					: t.scorecard.finishMessage,

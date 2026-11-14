@@ -145,6 +145,89 @@ describe("rounds", () => {
 		expect(row.putts).toBeUndefined();
 	});
 
+	it("saves every player's score and advances in one call", async () => {
+		const { alice, course } = await setup();
+		const roundId = await alice.mutation(api.rounds.start, {
+			courseId: course.course._id,
+			teeId: course.tees[0]._id,
+			holeRefs: course.holes.slice(0, 9).flatMap((h) => (h.ref ? [h.ref] : [])),
+			format: "stroke",
+			players: [{ name: "Alice" }, { name: "Carol" }],
+		});
+		await alice.mutation(api.rounds.saveHole, {
+			roundId,
+			holeIndex: 0,
+			scores: [
+				{
+					playerIndex: 0,
+					strokes: 4,
+					putts: 2,
+					fir: true,
+					gir: true,
+					penalties: 0,
+					nr: false,
+				},
+				{ playerIndex: 1, strokes: 6, putts: null, penalties: 1, nr: false },
+			],
+			advanceTo: 1,
+		});
+		let active = await alice.query(api.rounds.active, {});
+		expect(active?.round.currentHoleIndex).toBe(1);
+		const byPlayer = (i: number) =>
+			active?.scores.find((s) => s.holeIndex === 0 && s.playerIndex === i);
+		expect(byPlayer(0)).toMatchObject({ strokes: 4, putts: 2, gir: true });
+		expect(byPlayer(1)).toMatchObject({ strokes: 6, penalties: 1 });
+
+		// A correction without advanceTo stays put and clears with null.
+		await alice.mutation(api.rounds.saveHole, {
+			roundId,
+			holeIndex: 0,
+			scores: [{ playerIndex: 0, strokes: 5, gir: null }],
+		});
+		active = await alice.query(api.rounds.active, {});
+		expect(active?.round.currentHoleIndex).toBe(1);
+		expect(byPlayer(0)).toMatchObject({ strokes: 5, putts: 2 });
+		expect(byPlayer(0)?.gir).toBeUndefined();
+		expect(active?.scores).toHaveLength(2);
+	});
+
+	it("rejects a bad saveHole without writing anything", async () => {
+		const { alice, course } = await setup();
+		const roundId = await startRound(alice, course);
+		await expect(
+			alice.mutation(api.rounds.saveHole, {
+				roundId,
+				holeIndex: 0,
+				scores: [
+					{ playerIndex: 0, strokes: 4 },
+					{ playerIndex: 3, strokes: 4 },
+				],
+				advanceTo: 1,
+			}),
+		).rejects.toThrow("playerIndex out of range.");
+		await expect(
+			alice.mutation(api.rounds.saveHole, {
+				roundId,
+				holeIndex: 0,
+				scores: [
+					{ playerIndex: 0, strokes: 4 },
+					{ playerIndex: 0, strokes: 5 },
+				],
+			}),
+		).rejects.toThrow("Duplicate playerIndex.");
+		await expect(
+			alice.mutation(api.rounds.saveHole, {
+				roundId,
+				holeIndex: 0,
+				scores: [{ playerIndex: 0, strokes: 4 }],
+				advanceTo: 99,
+			}),
+		).rejects.toThrow("holeIndex out of range.");
+		const active = await alice.query(api.rounds.active, {});
+		expect(active?.scores).toEqual([]);
+		expect(active?.round.currentHoleIndex).toBe(0);
+	});
+
 	it("hides one player's round from another", async () => {
 		const { alice, bob, course } = await setup();
 		const roundId = await startRound(alice, course);
@@ -157,6 +240,17 @@ describe("rounds", () => {
 				strokes: 1,
 			}),
 		).rejects.toThrow("Round not found.");
+		await expect(
+			bob.mutation(api.rounds.saveHole, {
+				roundId,
+				holeIndex: 0,
+				scores: [{ playerIndex: 0, strokes: 1 }],
+				advanceTo: 1,
+			}),
+		).rejects.toThrow("Round not found.");
+		expect((await alice.query(api.rounds.active, {}))?.round).toMatchObject({
+			currentHoleIndex: 0,
+		});
 		await expect(bob.mutation(api.rounds.remove, { roundId })).rejects.toThrow(
 			"Round not found.",
 		);

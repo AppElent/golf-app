@@ -92,6 +92,8 @@ export const statsEn = {
 	wouldBeHint: "From your last {count} rounds. Not an official index.",
 	wouldBeNeeds: "Needs 3 finished rounds",
 	averages: "Averages",
+	/** Stats cover the latest finished rounds only (the WHS window). */
+	averagesWindow: "Last {n} rounds",
 	rounds: "Rounds",
 	avgScore: "Score (18 holes)",
 	avgToPar: "To par (18 holes)",
@@ -125,6 +127,7 @@ export const statsNl: typeof statsEn = {
 	wouldBeHint: "Uit je laatste {count} rondes. Geen officiële handicap.",
 	wouldBeNeeds: "Vanaf 3 afgeronde rondes",
 	averages: "Gemiddelden",
+	averagesWindow: "Laatste {n} rondes",
 	rounds: "Rondes",
 	avgScore: "Score (18 holes)",
 	avgToPar: "T.o.v. par (18 holes)",
@@ -257,6 +260,9 @@ export const clubsEn = {
 	learned:
 		"Your {median} m from {count} marked shots, typically {low}–{high} m. On the course Fairway uses it once a club has 3 shots.",
 	useLearned: "Use {median} m",
+	standardBag: "Start with a standard bag",
+	standardBagHint:
+		"Adds the clubs your bag lacks, with typical carries. Edit or delete them any time.",
 };
 
 export const clubsNl: typeof clubsEn = {
@@ -279,4 +285,7 @@ export const clubsNl: typeof clubsEn = {
 	learned:
 		"Jouw {median} m uit {count} gemarkeerde slagen, meestal {low}–{high} m. Op de baan gebruikt Fairway die zodra een club 3 slagen heeft.",
 	useLearned: "Gebruik {median} m",
+	standardBag: "Begin met een standaardtas",
+	standardBagHint:
+		"Voegt de clubs toe die je tas mist, met gangbare carry's. Je kunt ze altijd aanpassen of verwijderen.",
 };

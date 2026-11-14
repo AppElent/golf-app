@@ -31,6 +31,9 @@ export function ScorecardGrid({
 	const styles = useThemedStyles(createStyles);
 	const ranges = nineRanges(holes.length);
 	const label = (i: number) => holeLabel(holes[i].ref);
+	// A read-only card (a finished round) has nothing to edit.
+	const editLabel = (i: number) =>
+		onHolePress ? fmt(t.scorecard.editHole, { n: label(i) }) : undefined;
 
 	return (
 		<View style={styles.blocks}>
@@ -59,9 +62,7 @@ export function ScorecardGrid({
 										disabled={!onHolePress}
 										onPress={() => onHolePress?.(i)}
 										accessibilityRole={onHolePress ? "button" : undefined}
-										accessibilityLabel={fmt(t.scorecard.editHole, {
-											n: label(i),
-										})}
+										accessibilityLabel={editLabel(i)}
 										style={[styles.cell, i === currentHole && styles.current]}
 									>
 										<AppText variant="label" style={styles.headText}>
@@ -70,7 +71,11 @@ export function ScorecardGrid({
 									</Pressable>
 								))}
 								<View style={[styles.cell, styles.sumCell]}>
-									<AppText variant="label" style={styles.headText}>
+									<AppText
+										variant="label"
+										numberOfLines={1}
+										style={styles.headText}
+									>
 										{totalLabel}
 									</AppText>
 								</View>
@@ -99,9 +104,7 @@ export function ScorecardGrid({
 											key={i}
 											disabled={!onHolePress}
 											onPress={() => onHolePress?.(i)}
-											accessibilityLabel={fmt(t.scorecard.editHole, {
-												n: label(i),
-											})}
+											accessibilityLabel={editLabel(i)}
 											style={styles.cell}
 										>
 											<Marked
@@ -195,7 +198,8 @@ const createStyles = (colors: Tokens) =>
 			alignItems: "center",
 			justifyContent: "center",
 		},
-		sumCell: { width: CELL + 10 },
+		// Fits "Totaal" (nl) on one line at the default text size.
+		sumCell: { width: CELL + 24 },
 		current: { backgroundColor: colors.accentDim, borderRadius: radius.sm },
 		headText: { color: colors.text, fontWeight: "700" },
 		num: { fontVariant: ["tabular-nums"], textAlign: "center" },

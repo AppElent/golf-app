@@ -6,70 +6,89 @@ import { AppText } from "../../../ui/text";
 import { HudGlass } from "../hud/hud-glass";
 import { hudStyles } from "../hud/hud-styles";
 
+/**
+ * On the next tee: move on, or first score the hole being left when it has
+ * no score yet (`unscoredRef`).
+ */
 export function PlayNextTeeOffer({
 	bottom,
 	nextRef,
+	unscoredRef,
 	onDismiss,
 	onGo,
+	onScore,
 }: {
 	bottom: number;
 	nextRef: string;
+	unscoredRef: string | null;
 	onDismiss: () => void;
 	onGo: () => void;
+	onScore: () => void;
 }) {
 	const { t } = useI18n();
 	const n = holeLabel(nextRef);
+	const actionLabel = unscoredRef
+		? fmt(t.play.scoreBeforeNext, { n: holeLabel(unscoredRef) })
+		: fmt(t.play.goToHole, { n });
 	return (
 		<View style={[hudStyles.tray, { bottom }]} pointerEvents="box-none">
 			<HudGlass capsule={false} style={styles.offer}>
 				<AppText
 					variant="control"
-					style={[hudStyles.onHud, styles.offerText]}
+					style={hudStyles.onHud}
 					accessibilityRole="alert"
 				>
 					{fmt(t.play.nextTee, { n })}
 				</AppText>
-				<Pressable
-					accessibilityRole="button"
-					onPress={onDismiss}
-					hitSlop={6}
-					style={({ pressed }) => [
-						styles.offerButton,
-						pressed && hudStyles.pressed,
-					]}
-				>
-					<AppText variant="control" style={hudStyles.onHudMuted}>
-						{t.play.notNow}
-					</AppText>
-				</Pressable>
-				<Pressable
-					accessibilityRole="button"
-					onPress={onGo}
-					hitSlop={6}
-					style={({ pressed }) => [
-						styles.offerButton,
-						styles.offerGo,
-						pressed && hudStyles.pressed,
-					]}
-				>
-					<AppText variant="control" style={styles.offerGoText}>
-						{fmt(t.play.goToHole, { n })}
-					</AppText>
-				</Pressable>
+				<View style={styles.actions}>
+					<Pressable
+						accessibilityRole="button"
+						onPress={onDismiss}
+						hitSlop={6}
+						style={({ pressed }) => [
+							styles.offerButton,
+							pressed && hudStyles.pressed,
+						]}
+					>
+						<AppText variant="control" style={hudStyles.onHudMuted}>
+							{t.play.notNow}
+						</AppText>
+					</Pressable>
+					<Pressable
+						accessibilityRole="button"
+						onPress={unscoredRef ? onScore : onGo}
+						hitSlop={6}
+						style={({ pressed }) => [
+							styles.offerButton,
+							styles.offerGo,
+							pressed && hudStyles.pressed,
+						]}
+					>
+						<AppText variant="control" style={styles.offerGoText}>
+							{actionLabel}
+						</AppText>
+					</Pressable>
+				</View>
 			</HudGlass>
 		</View>
 	);
 }
 
 const styles = StyleSheet.create({
+	// Message above, actions below: the "Score hole N" labels (Dutch most of
+	// all) leave no room for the message beside them on a phone.
 	offer: {
-		flexDirection: "row",
-		alignItems: "center",
 		gap: spacing.xs,
 		padding: spacing.xs,
 		paddingLeft: spacing.md,
+		paddingTop: spacing.sm,
 	},
-	offerText: { flex: 1 },
+	actions: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "flex-end",
+		gap: spacing.xs,
+	},
 	offerButton: {
 		minHeight: metrics.hitTarget,
 		paddingHorizontal: spacing.md,

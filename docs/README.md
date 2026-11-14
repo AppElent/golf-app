@@ -11,3 +11,4 @@
 - `runbooks/sentry.md` — error reporting for web, Worker SSR, Convex and mobile: project, policy, uploads, the Convex forwarder.
 - `brand/` — the Fairway logo and icon set.
 - `plans/golf-companion-app-overview.md` — the original product overview.
+- `reviews/2026-11-ios-competitive-review.md` — end-to-end iOS review against five competitor apps, with a recommended one-PR build scope (APP-139).

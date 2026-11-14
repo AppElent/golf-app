@@ -77,6 +77,10 @@ installed preview app) is written from `staging`: `pnpm env:apply staging --only
   workflow by hand with `force` once. Before any hand-run publish, make sure
   production Convex has the same commit: the app relies on functions and
   fields the server fills in, such as `currentHoleIndex`.
+- The score sheet saves through `rounds.saveHole` (APP-145). Production Convex
+  must have `saveHole` before any mobile build or OTA update that calls it
+  ships; an older server rejects every score save. Merging deploys Convex
+  first, so a build or update made from `main` after that deploy is safe.
 - The app checks for an update on launch and on resume (at most hourly), and
   Home shows "Update ready" once one has downloaded; tapping it restarts into
   it. It never restarts by itself.

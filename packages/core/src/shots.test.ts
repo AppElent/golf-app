@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { effectiveBag } from "./club-suggest";
 import {
 	clubDistances,
 	LEARNED_MIN_SHOTS,
@@ -88,5 +89,11 @@ describe("learnedBag", () => {
 	});
 	it("keeps the bag distance below the threshold", () => {
 		expect(learnedBag(bag, sevens([135, 140]))[0].carryMeters).toBe(150);
+	});
+	it("still overrides a sparse bag filled with defaults", () => {
+		const filled = effectiveBag([{ name: "7i", carryMeters: 150 }]);
+		const learned = learnedBag(filled, sevens([135, 140, 145]));
+		expect(learned.find((c) => c.name === "7i")?.carryMeters).toBe(140);
+		expect(learned.find((c) => c.name === "Driver")?.carryMeters).toBe(230);
 	});
 });

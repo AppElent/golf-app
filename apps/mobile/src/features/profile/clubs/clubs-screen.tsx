@@ -1,6 +1,8 @@
+import { missingDefaults } from "@fairway/core/club-suggest";
 import { formatDistance } from "@fairway/core/format";
 import { useMutation } from "convex/react";
 import { useRouter } from "expo-router";
+import { useRef, useState } from "react";
 import { ScrollView, StyleSheet } from "react-native";
 import { api, type Doc, type Id } from "../../../convex/api";
 import { convexErrorMessage } from "../../../convex/error-message";
@@ -15,6 +17,9 @@ import { SkeletonList } from "../../../ui/skeleton";
 import { useToast } from "../../../ui/toast";
 import { useUnits } from "../use-units";
 
+/** Below this many clubs the screen offers to fill the bag with defaults. */
+const SPARSE_BAG = 3;
+
 export function ClubsScreen() {
 	const { t } = useI18n();
 	const router = useRouter();
@@ -23,6 +28,10 @@ export function ClubsScreen() {
 	const clubs = useQuery(api.clubs.list);
 	const remove = useMutation(api.clubs.remove);
 	const reorder = useMutation(api.clubs.reorder);
+	const create = useMutation(api.clubs.create);
+	const [filling, setFilling] = useState(false);
+	// State alone can't refuse a second tap before the next render.
+	const fillingRef = useRef(false);
 	const units = useUnits();
 	const add = () => router.push("/profile/club");
 	const header = (
@@ -31,6 +40,30 @@ export function ClubsScreen() {
 			right={{ label: t.clubs.add, onPress: add }}
 		/>
 	);
+
+	async function run(action: () => Promise<unknown>) {
+		try {
+			await action();
+		} catch (e) {
+			toast.error(convexErrorMessage(e, t.clubs.saveError));
+		}
+	}
+
+	/** Adds the default clubs the bag lacks; one client's mutations run in order. */
+	async function fillBag(current: readonly Doc<"clubs">[]) {
+		if (fillingRef.current) return;
+		fillingRef.current = true;
+		setFilling(true);
+		await run(() =>
+			Promise.all(
+				missingDefaults(current).map((club) =>
+					create({ name: club.name, carryMeters: club.carryMeters }),
+				),
+			),
+		);
+		fillingRef.current = false;
+		setFilling(false);
+	}
 
 	if (clubs === undefined) {
 		return (
@@ -46,19 +79,14 @@ export function ClubsScreen() {
 				{header}
 				<EmptyState
 					title={t.clubs.empty}
-					body={t.clubs.emptyHint}
-					action={{ label: t.clubs.add, onPress: add }}
+					body={`${t.clubs.emptyHint} ${t.clubs.standardBagHint}`}
+					action={{
+						label: t.clubs.standardBag,
+						onPress: () => void fillBag(clubs),
+					}}
 				/>
 			</>
 		);
-	}
-
-	async function run(action: () => Promise<unknown>) {
-		try {
-			await action();
-		} catch (e) {
-			toast.error(convexErrorMessage(e, t.clubs.saveError));
-		}
 	}
 
 	function move(list: Doc<"clubs">[], from: number, to: number) {
@@ -132,6 +160,15 @@ export function ClubsScreen() {
 						/>
 					))}
 				</InsetList>
+				{clubs.length < SPARSE_BAG ? (
+					<InsetList footer={t.clubs.standardBagHint}>
+						<InsetRow
+							leading={{ symbol: "bag" }}
+							title={t.clubs.standardBag}
+							onPress={filling ? undefined : () => void fillBag(clubs)}
+						/>
+					</InsetList>
+				) : null}
 			</ScrollView>
 		</>
 	);

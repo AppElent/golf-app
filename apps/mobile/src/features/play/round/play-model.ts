@@ -7,6 +7,7 @@ import {
 	type LatLng,
 } from "@fairway/core/geo";
 import type { HazardInPlay, HoleAnchors } from "@fairway/core/hole-view";
+import { type HoleScore, OWNER_INDEX, scoreAt } from "@fairway/core/round";
 import type { LiveHole } from "../../live/hole/live-hole";
 
 /**
@@ -136,4 +137,15 @@ export function lockScreenHole({
 		url,
 		accepts: (fix) => isOnHole(fix, anchors),
 	};
+}
+
+/**
+ * What the next-tee offer asks: score the hole being left when the owner has
+ * no result on it yet (a picked-up hole counts as scored), otherwise move on.
+ */
+export function nextTeeAction(
+	scores: readonly HoleScore[],
+	holeIndex: number,
+): "score" | "advance" {
+	return scoreAt(scores, holeIndex, OWNER_INDEX) ? "advance" : "score";
 }

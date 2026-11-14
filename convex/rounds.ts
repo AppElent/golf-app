@@ -9,6 +9,7 @@ import {
 	OWNER_INDEX,
 	ownerRoundStats,
 	playerStrokes,
+	type ScoreUpdate,
 	scoreAt,
 } from "@fairway/core/round";
 import { v } from "convex/values";
@@ -272,6 +273,48 @@ export async function deleteRoundData(ctx: MutationCtx, roundId: Id<"rounds">) {
 	await ctx.db.delete(roundId);
 }
 
+/** Upsert one player's result on one active round's hole. */
+async function writeScore(
+	ctx: MutationCtx,
+	round: Doc<"rounds">,
+	holeIndex: number,
+	playerIndex: number,
+	fields: ScoreUpdate,
+) {
+	assertHoleOfRound(round, holeIndex);
+	if (playerIndex < 0 || playerIndex >= round.players.length) {
+		throw new Error("playerIndex out of range.");
+	}
+	// Values to store; a null clears the field (patch() drops undefined).
+	const set = Object.fromEntries(
+		Object.entries(fields).filter(([, value]) => value != null),
+	);
+	const cleared = Object.fromEntries(
+		Object.entries(fields)
+			.filter(([, value]) => value === null)
+			.map(([key]) => [key, undefined]),
+	);
+	const existing = await ctx.db
+		.query("holeScores")
+		.withIndex("by_round_hole_player", (q) =>
+			q
+				.eq("roundId", round._id)
+				.eq("holeIndex", holeIndex)
+				.eq("playerIndex", playerIndex),
+		)
+		.first();
+	if (existing) {
+		await ctx.db.patch(existing._id, { ...set, ...cleared });
+	} else {
+		await ctx.db.insert("holeScores", {
+			roundId: round._id,
+			holeIndex,
+			playerIndex,
+			...set,
+		});
+	}
+}
+
 /**
  * Upsert one player's result on one hole. Last write wins (single scorer).
  * Omitted fields keep their value; `null` clears putts / fairway / green.
@@ -297,38 +340,38 @@ export const setScore = mutation({
 		if (queued && (await requireOwnRound(ctx, roundId)).status !== "active") {
 			return;
 		}
-		// Values to store; a null clears the field (patch() drops undefined).
-		const set = Object.fromEntries(
-			Object.entries(args).filter(([, value]) => value != null),
-		);
-		const cleared = Object.fromEntries(
-			Object.entries(args)
-				.filter(([, value]) => value === null)
-				.map(([key]) => [key, undefined]),
-		);
 		const round = await requireActiveRound(ctx, roundId);
-		assertHoleOfRound(round, holeIndex);
-		if (playerIndex < 0 || playerIndex >= round.players.length) {
-			throw new Error("playerIndex out of range.");
+		await writeScore(ctx, round, holeIndex, playerIndex, args);
+	},
+});
+
+/**
+ * Save every player's result on one hole and, with `advanceTo`, move the
+ * round to that hole: one transaction, so the phone waits for one round trip.
+ * Same checks and per-field semantics as `setScore` + `setCurrentHole`.
+ */
+export const saveHole = mutation({
+	args: {
+		roundId: v.id("rounds"),
+		holeIndex: v.number(),
+		scores: v.array(
+			v.object({ playerIndex: v.number(), ...scoreUpdateFields }),
+		),
+		advanceTo: v.optional(v.number()),
+	},
+	handler: async (ctx, { roundId, holeIndex, scores, advanceTo }) => {
+		const round = await requireActiveRound(ctx, roundId);
+		const seen = new Set<number>();
+		for (const { playerIndex } of scores) {
+			if (seen.has(playerIndex)) throw new Error("Duplicate playerIndex.");
+			seen.add(playerIndex);
 		}
-		const existing = await ctx.db
-			.query("holeScores")
-			.withIndex("by_round_hole_player", (q) =>
-				q
-					.eq("roundId", roundId)
-					.eq("holeIndex", holeIndex)
-					.eq("playerIndex", playerIndex),
-			)
-			.first();
-		if (existing) {
-			await ctx.db.patch(existing._id, { ...set, ...cleared });
-		} else {
-			await ctx.db.insert("holeScores", {
-				roundId,
-				holeIndex,
-				playerIndex,
-				...set,
-			});
+		if (advanceTo !== undefined) assertHoleOfRound(round, advanceTo);
+		for (const { playerIndex, ...fields } of scores) {
+			await writeScore(ctx, round, holeIndex, playerIndex, fields);
+		}
+		if (advanceTo !== undefined) {
+			await ctx.db.patch(roundId, { currentHoleIndex: advanceTo });
 		}
 	},
 });

@@ -1,5 +1,5 @@
 import { distanceValue, formatDistance } from "@fairway/core/format";
-import { wouldBeFromHistory } from "@fairway/core/handicap";
+import { WHS_WINDOW, wouldBeFromHistory } from "@fairway/core/handicap";
 import { parTypeAverages, scoringDistribution } from "@fairway/core/par-stats";
 import type { ScoreMark } from "@fairway/core/scoring";
 import { aggregateStats } from "@fairway/core/stats";
@@ -98,7 +98,9 @@ export function StatsScreen() {
 				) : null}
 			</View>
 
-			<InsetList header={t.stats.averages}>
+			<InsetList
+				header={`${t.stats.averages} · ${fmt(t.stats.averagesWindow, { n: WHS_WINDOW })}`}
+			>
 				<InsetRow title={t.stats.rounds} value={String(stats.rounds)} />
 				{stats.avgScore !== null || stats.avgScore9 === null ? (
 					<>
