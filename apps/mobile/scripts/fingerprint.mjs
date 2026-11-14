@@ -9,8 +9,17 @@
 //   node apps/mobile/scripts/fingerprint.mjs diff <base>  # Markdown: what changed vs
 //                                                         # another checkout (CI)
 //   node apps/mobile/scripts/fingerprint.mjs check        # fails when a fingerprint misses
-//                                                         # Expo's autolinked modules or a
+//                                                         # an Expo-autolinked module or a
 //                                                         # WATCHED package
+//
+// `check` rule: for every variant and platform, each module that Expo
+// autolinking resolves for that platform (`expo-modules-autolinking resolve
+// --platform <p>`, the same list the native build links) must have a hashed
+// source in that platform's fingerprint with the platform's autolinking
+// reason. The expected set is per platform, so a module that only links on
+// iOS (expo-symbols) or only on Android is never expected on the other one.
+// A fingerprint with no autolinked module at all gets one error instead of
+// one per module. Every WATCHED package must also have a hashed source.
 //
 // `diff` needs `<base>` installed (`pnpm install`), because native modules
 // are fingerprinted from node_modules.
@@ -58,6 +67,31 @@ export function fingerprint(variant, platform, root = appRoot) {
 	return JSON.parse(result.stdout);
 }
 
+/**
+ * Package names Expo autolinking links for `platform` in the app at `root`:
+ * the modules every fingerprint of that platform must contain.
+ */
+export function autolinkedModules(platform, root = appRoot) {
+	const result = spawnSync(
+		"pnpm",
+		[
+			"exec",
+			"expo-modules-autolinking",
+			"resolve",
+			"--platform",
+			platform,
+			"--json",
+		],
+		{ cwd: root, encoding: "utf8", maxBuffer: 64 * 1024 * 1024 },
+	);
+	if (result.status !== 0) {
+		throw new Error(
+			`expo-modules-autolinking resolve failed in ${root} (${platform}):\n${result.stderr}`,
+		);
+	}
+	return JSON.parse(result.stdout).modules.map((m) => m.packageName);
+}
+
 /** Readable id: pnpm's store path shortened to `node_modules/<package>/…`. */
 function sourceKey(source) {
 	return source.type === "contents"
@@ -66,7 +100,10 @@ function sourceKey(source) {
 }
 
 /** The source reason @expo/fingerprint gives Expo-autolinked modules, per platform. */
-const AUTOLINKING_REASON = { ios: "expoAutolinkingIos", android: "expoAutolinkingAndroid" };
+const AUTOLINKING_REASON = {
+	ios: "expoAutolinkingIos",
+	android: "expoAutolinkingAndroid",
+};
 
 /** Source keys (`node_modules/<package>/…`) that belong to `name`. */
 function sourcesOf(print, name) {
@@ -88,20 +125,34 @@ function installedVersion(name, root = appRoot) {
 }
 
 /**
- * Error lines for one fingerprint: no Expo-autolinked module in it at all, or
- * a WATCHED package missing. No platform or package is exempt. The first
- * catches @expo/fingerprint dropping a platform's whole autolinking source, as
- * 0.21.7 did on Android when expo-widgets declared a gradle plugin published
- * to Maven (no `sourceDir`; APP-71). An update could then reach builds
+ * Error lines for one fingerprint: an `expected` autolinked module (see
+ * `autolinkedModules`) without a hashed autolinking source, no autolinked
+ * module at all, or a WATCHED package missing. No platform or package is
+ * exempt. This catches @expo/fingerprint dropping a platform's autolinking
+ * sources, as 0.21.7 did for every module on Android when expo-widgets
+ * declared a gradle plugin published to Maven (no `sourceDir`; APP-71), and
+ * the same failure for a single module. An update could then reach builds
  * without the native code it needs.
  */
-export function missingWatched(variant, platform, print) {
+export function missingWatched(variant, platform, print, expected = []) {
 	const errors = [];
+	const reason = AUTOLINKING_REASON[platform];
 	const autolinked = print.sources.filter(
-		(s) => s.hash !== null && s.reasons.includes(AUTOLINKING_REASON[platform]),
+		(s) => s.hash !== null && s.reasons.includes(reason),
 	);
 	if (autolinked.length === 0) {
-		errors.push(`${variant} ${platform}: no Expo-autolinked module is in the fingerprint`);
+		errors.push(
+			`${variant} ${platform}: no Expo-autolinked module is in the fingerprint`,
+		);
+	} else {
+		const keys = autolinked.filter((s) => s.type !== "contents").map(sourceKey);
+		for (const name of expected) {
+			if (!keys.some((key) => key.startsWith(`node_modules/${name}/`))) {
+				errors.push(
+					`${variant} ${platform}: Expo-autolinked ${name} is not in the fingerprint`,
+				);
+			}
+		}
 	}
 	for (const name of Object.keys(WATCHED)) {
 		if (sourcesOf(print, name).length === 0) {
@@ -113,19 +164,31 @@ export function missingWatched(variant, platform, print) {
 
 function check() {
 	const errors = [];
-	for (const variant of VARIANTS) {
-		for (const platform of PLATFORMS) {
-			errors.push(...missingWatched(variant, platform, fingerprint(variant, platform)));
+	for (const platform of PLATFORMS) {
+		const expected = autolinkedModules(platform);
+		for (const variant of VARIANTS) {
+			errors.push(
+				...missingWatched(
+					variant,
+					platform,
+					fingerprint(variant, platform),
+					expected,
+				),
+			);
 		}
 	}
 	for (const name of Object.keys(WATCHED)) {
-		console.log(`${name.padEnd(18)} ${installedVersion(name) ?? "not installed"}`);
+		console.log(
+			`${name.padEnd(18)} ${installedVersion(name) ?? "not installed"}`,
+		);
 	}
 	if (errors.length > 0) {
 		for (const line of errors) console.log(`::error::${line}`);
 		return false;
 	}
-	console.log("Every fingerprint has Expo's autolinked modules and every watched package.");
+	console.log(
+		"Every fingerprint has every Expo-autolinked module and every watched package.",
+	);
 	return true;
 }
 
