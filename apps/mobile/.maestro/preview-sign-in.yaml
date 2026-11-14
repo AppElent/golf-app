@@ -35,7 +35,22 @@ name: Preview sign-in
     visible:
       id: home-summary
     timeout: 60000
-# Clerk re-reads the minimum version from its environment after sign-in.
+# Clerk re-reads the minimum version from its environment after sign-in, and
+# that response can land after Home renders. Give it up to 15 s to show the
+# screen before asserting it is absent; checking straight away would pass
+# before a slow response arrives. `optional` lets the wait time out quietly;
+# if the screen appears, the wait ends early and the assertion below fails.
+#
+# Maestro shortens wait and assert timeouts by the time since the last
+# interaction (the sign-in tap; waits and asserts don't count). After a slow
+# sign-in the 15 s would already be spent. waitForAnimationToEnd counts as an
+# interaction, so the 15 s starts once Home is on screen.
+- waitForAnimationToEnd:
+    timeout: 5000
+- extendedWaitUntil:
+    visible: Update required
+    timeout: 15000
+    optional: true
 - assertNotVisible: Update required
 - assertVisible:
     id: home-summary

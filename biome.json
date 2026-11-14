@@ -14,6 +14,7 @@
 			"!convex/catalog/geometry",
 			"scripts/check-mobile-structure*",
 			"scripts/check-repo-layout*",
+			"scripts/feature-manifest*",
 			"apps/mobile/app/**/*",
 			"apps/mobile/*.{ts,tsx,js}",
 			"apps/mobile/scripts/**/*",

@@ -7,6 +7,7 @@
 	"exports": {
 		"./club-suggest": "./src/club-suggest.ts",
 		"./course-suggestion": "./src/course-suggestion.ts",
+		"./features": "./src/features.ts",
 		"./format": "./src/format.ts",
 		"./geo": "./src/geo.ts",
 		"./handicap": "./src/handicap.ts",
