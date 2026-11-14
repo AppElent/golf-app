@@ -91,14 +91,30 @@ describe("GIR from strokes and putts", () => {
 		expect(editDraft(cleared, { putts: 1 }, 4).gir).toBeNull();
 	});
 
-	it("keeps a stored GIR on a correction", () => {
+	it("keeps a stored GIR the rule disagrees with on a correction", () => {
 		const [stored] = initialDrafts(
 			[{ holeIndex: 0, playerIndex: 0, strokes: 5, putts: 2, gir: true }],
 			0,
 			1,
 			4,
 		);
+		expect(stored.girTouched).toBe(true);
 		expect(editDraft(stored, { strokes: 7 }, 4).gir).toBe(true);
+	});
+
+	it("keeps deriving a stored GIR that matches the rule", () => {
+		const [stored] = initialDrafts(
+			[{ holeIndex: 0, playerIndex: 0, strokes: 4, putts: 2, gir: true }],
+			0,
+			1,
+			4,
+		);
+		expect(stored.girTouched).toBe(false);
+		expect(editDraft(stored, { strokes: 5 }, 4).gir).toBe(false);
+	});
+
+	it("leaves GIR unknown when every stroke was a putt", () => {
+		expect(inferredGir({ strokes: 2, putts: 2, nr: false }, 4)).toBeNull();
 	});
 
 	it("saves the draft without the touched flag", () => {

@@ -2,7 +2,7 @@ import { missingDefaults } from "@fairway/core/club-suggest";
 import { formatDistance } from "@fairway/core/format";
 import { useMutation } from "convex/react";
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { ScrollView, StyleSheet } from "react-native";
 import { api, type Doc, type Id } from "../../../convex/api";
 import { convexErrorMessage } from "../../../convex/error-message";
@@ -30,6 +30,8 @@ export function ClubsScreen() {
 	const reorder = useMutation(api.clubs.reorder);
 	const create = useMutation(api.clubs.create);
 	const [filling, setFilling] = useState(false);
+	// State alone can't refuse a second tap before the next render.
+	const fillingRef = useRef(false);
 	const units = useUnits();
 	const add = () => router.push("/profile/club");
 	const header = (
@@ -49,7 +51,8 @@ export function ClubsScreen() {
 
 	/** Adds the default clubs the bag lacks; one client's mutations run in order. */
 	async function fillBag(current: readonly Doc<"clubs">[]) {
-		if (filling) return;
+		if (fillingRef.current) return;
+		fillingRef.current = true;
 		setFilling(true);
 		await run(() =>
 			Promise.all(
@@ -58,6 +61,7 @@ export function ClubsScreen() {
 				),
 			),
 		);
+		fillingRef.current = false;
 		setFilling(false);
 	}
 
@@ -75,7 +79,7 @@ export function ClubsScreen() {
 				{header}
 				<EmptyState
 					title={t.clubs.empty}
-					body={t.clubs.emptyHint}
+					body={`${t.clubs.emptyHint} ${t.clubs.standardBagHint}`}
 					action={{
 						label: t.clubs.standardBag,
 						onPress: () => void fillBag(clubs),

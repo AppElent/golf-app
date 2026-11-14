@@ -9,7 +9,7 @@ export interface ScoreDraft {
 	penalties: number;
 	/** Picked up: no score on this hole (counts 0 Stableford points). */
 	nr: boolean;
-	/** The user set GIR (or it was stored): stop deriving it. Not saved. */
+	/** The user set GIR: stop deriving it. Not saved. */
 	girTouched: boolean;
 }
 
@@ -24,15 +24,20 @@ export function initialDrafts(
 ): ScoreDraft[] {
 	return Array.from({ length: playerCount }, (_, playerIndex) => {
 		const s = scoreAt(scores, holeIndex, playerIndex);
-		return {
+		const draft = {
 			strokes: s?.strokes ?? par,
 			putts: s?.putts ?? null,
 			fir: s?.fir ?? null,
 			gir: s?.gir ?? null,
 			penalties: s?.penalties ?? 0,
 			nr: s?.nr ?? false,
-			girTouched: s?.gir != null,
 		};
+		// A stored GIR the rule would also give was (or may as well have been)
+		// filled in automatically, so it keeps following a correction. One that
+		// disagrees with the rule was set by hand and sticks.
+		const girTouched =
+			draft.gir !== null && draft.gir !== inferredGir(draft, par);
+		return { ...draft, girTouched };
 	});
 }
 
@@ -43,13 +48,16 @@ export function quickStrokes(par: number): number[] {
 
 /**
  * Green in regulation from strokes and putts: on in par − 2 or fewer.
- * Unknown without putts, and never for a picked-up hole.
+ * Unknown without putts, with no stroke before the putts, and never for a
+ * picked-up hole.
  */
 export function inferredGir(
 	draft: Pick<ScoreDraft, "strokes" | "putts" | "nr">,
 	par: number,
 ): boolean | null {
-	if (draft.nr || draft.putts === null) return null;
+	if (draft.nr || draft.putts === null || draft.putts >= draft.strokes) {
+		return null;
+	}
 	return draft.strokes - draft.putts <= par - 2;
 }
 
