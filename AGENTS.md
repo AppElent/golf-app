@@ -15,6 +15,7 @@ Before the task, read the matching project doc:
 | Running the app locally, running checks, or adding an environment variable | [Local development](docs/runbooks/development.md) |
 | Changing sign-in, the app shell, or who may read or write a user's data in Convex | [App shell and access](docs/contracts/app-shell-and-access.md) |
 | Adding or correcting a course, or handling a course suggestion | [Course catalog](docs/runbooks/course-catalog.md) |
+| Adding a feature or a web or mobile route, or deciding which platform it ships on | [Parity ADR](docs/adr/0001-the-phone-plays-rounds-and-the-web-authors-courses.md), `packages/core/src/features.ts` |
 | Touching `apps/mobile/` | [apps/mobile/AGENTS.md](apps/mobile/AGENTS.md), [Mobile](docs/runbooks/mobile.md) |
 | Adding i18n to the web app, or a locale or feature area to the mobile catalog | `add-i18n` skill (`.claude/skills/add-i18n/`) |
 | Verifying a change before you call it done | `verify` skill (`.claude/skills/verify/`) |
