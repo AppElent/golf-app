@@ -209,6 +209,16 @@ describe("rounds", () => {
 			alice.mutation(api.rounds.saveHole, {
 				roundId,
 				holeIndex: 0,
+				scores: [
+					{ playerIndex: 0, strokes: 4 },
+					{ playerIndex: 0, strokes: 5 },
+				],
+			}),
+		).rejects.toThrow("Duplicate playerIndex.");
+		await expect(
+			alice.mutation(api.rounds.saveHole, {
+				roundId,
+				holeIndex: 0,
 				scores: [{ playerIndex: 0, strokes: 4 }],
 				advanceTo: 99,
 			}),

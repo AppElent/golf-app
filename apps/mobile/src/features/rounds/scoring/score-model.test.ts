@@ -113,6 +113,16 @@ describe("GIR from strokes and putts", () => {
 		expect(editDraft(stored, { strokes: 5 }, 4).gir).toBe(false);
 	});
 
+	it("clears a stored GIR set by hand when the hole is picked up", () => {
+		const [stored] = initialDrafts(
+			[{ holeIndex: 0, playerIndex: 0, strokes: 5, putts: 2, gir: true }],
+			0,
+			1,
+			4,
+		);
+		expect(editDraft(stored, { nr: true }, 4).gir).toBeNull();
+	});
+
 	it("leaves GIR unknown when every stroke was a putt", () => {
 		expect(inferredGir({ strokes: 2, putts: 2, nr: false }, 4)).toBeNull();
 	});

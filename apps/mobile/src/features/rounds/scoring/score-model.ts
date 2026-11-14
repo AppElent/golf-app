@@ -63,7 +63,7 @@ export function inferredGir(
 
 /**
  * Apply an edit. GIR follows strokes and putts until the user sets it; from
- * then on their choice sticks.
+ * then on their choice sticks. Picking up clears GIR, set or not.
  */
 export function editDraft(
 	draft: ScoreDraft,
@@ -71,6 +71,7 @@ export function editDraft(
 	par: number,
 ): ScoreDraft {
 	const next = { ...draft, ...patch };
+	if (next.nr) return { ...next, gir: null, girTouched: false };
 	if ("gir" in patch) return { ...next, girTouched: true };
 	return next.girTouched ? next : { ...next, gir: inferredGir(next, par) };
 }
