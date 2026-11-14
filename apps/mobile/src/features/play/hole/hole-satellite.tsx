@@ -53,6 +53,10 @@ export function HoleSatellite(props: HoleCanvasProps) {
 					ref={map}
 					style={StyleSheet.absoluteFill}
 					mapType="satellite"
+					// The pins are drawing, not content: VoiceOver read ~35 "Map pin"s.
+					// The HUD carries the same distances accessibly.
+					accessibilityElementsHidden
+					importantForAccessibility="no-hide-descendants"
 					initialCamera={camera}
 					mapPadding={insets}
 					rotateEnabled={false}

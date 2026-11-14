@@ -35,52 +35,60 @@ export function PlayNextTeeOffer({
 			<HudGlass capsule={false} style={styles.offer}>
 				<AppText
 					variant="control"
-					style={[hudStyles.onHud, styles.offerText]}
+					style={hudStyles.onHud}
 					accessibilityRole="alert"
 				>
 					{fmt(t.play.nextTee, { n })}
 				</AppText>
-				<Pressable
-					accessibilityRole="button"
-					onPress={onDismiss}
-					hitSlop={6}
-					style={({ pressed }) => [
-						styles.offerButton,
-						pressed && hudStyles.pressed,
-					]}
-				>
-					<AppText variant="control" style={hudStyles.onHudMuted}>
-						{t.play.notNow}
-					</AppText>
-				</Pressable>
-				<Pressable
-					accessibilityRole="button"
-					onPress={unscoredRef ? onScore : onGo}
-					hitSlop={6}
-					style={({ pressed }) => [
-						styles.offerButton,
-						styles.offerGo,
-						pressed && hudStyles.pressed,
-					]}
-				>
-					<AppText variant="control" style={styles.offerGoText}>
-						{actionLabel}
-					</AppText>
-				</Pressable>
+				<View style={styles.actions}>
+					<Pressable
+						accessibilityRole="button"
+						onPress={onDismiss}
+						hitSlop={6}
+						style={({ pressed }) => [
+							styles.offerButton,
+							pressed && hudStyles.pressed,
+						]}
+					>
+						<AppText variant="control" style={hudStyles.onHudMuted}>
+							{t.play.notNow}
+						</AppText>
+					</Pressable>
+					<Pressable
+						accessibilityRole="button"
+						onPress={unscoredRef ? onScore : onGo}
+						hitSlop={6}
+						style={({ pressed }) => [
+							styles.offerButton,
+							styles.offerGo,
+							pressed && hudStyles.pressed,
+						]}
+					>
+						<AppText variant="control" style={styles.offerGoText}>
+							{actionLabel}
+						</AppText>
+					</Pressable>
+				</View>
 			</HudGlass>
 		</View>
 	);
 }
 
 const styles = StyleSheet.create({
+	// Message above, actions below: the "Score hole N" labels (Dutch most of
+	// all) leave no room for the message beside them on a phone.
 	offer: {
-		flexDirection: "row",
-		alignItems: "center",
 		gap: spacing.xs,
 		padding: spacing.xs,
 		paddingLeft: spacing.md,
+		paddingTop: spacing.sm,
 	},
-	offerText: { flex: 1 },
+	actions: {
+		flexDirection: "row",
+		alignItems: "center",
+		justifyContent: "flex-end",
+		gap: spacing.xs,
+	},
 	offerButton: {
 		minHeight: metrics.hitTarget,
 		paddingHorizontal: spacing.md,
