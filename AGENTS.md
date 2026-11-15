@@ -34,7 +34,7 @@ Linear (workspace `appelent`, team AppElent, key `APP`) is the source of truth. 
 
 - `ready-for-agent`: the issue has sharp, testable acceptance criteria and a blast radius, so an agent can pick it up.
 - `ready-for-human`: Eric must do or decide something. Add a comment saying what, where, and roughly how long.
-- The moment you start a T3 thread for an issue, post a Linear comment `T3 thread: <title> (<thread id>), started by <bot or fallback>` and move the issue to In Progress. An issue with such a comment is taken; do not start a second thread for it.
+- The moment you start a T3 thread for an issue, post a Linear comment `T3 thread: <title> (<thread id>), started by <hub, grok, or claude-code>` and move the issue to In Progress. An issue with such a comment is taken; do not start a second thread for it.
 
 Work in a worktree from `origin/main` on a branch `<type>/app-123-short-slug` (type: feat, fix, refactor, chore, docs, or test). Put `Fixes APP-123` in the PR description. End in a PR with tests (and a PR preview where the repo has one). Do not merge the PR yourself.
 
@@ -48,4 +48,4 @@ Blast radius (`low` / `med` / `high`, also `blast-radius:low|med|high` on the PR
 - med: data model changes with migration and rollback, new dependencies, CI/workflows, shared behaviour across several screens.
 - high: auth, payments, production config, secrets, deleting data, permissions, anything affecting other users without a way back.
 
-Agents never merge med or high PRs. Never read or change production secrets, and never approve production deployments.
+Coding agents never merge. The manager (the Claude Projects hub, the Grok fallback, or the Claude Code Chief of Staff thread) merges `low` and `med` after green CI, green QA, and council `PROCEED` (at least two reviewers ran, each 9 or higher, no blockers); `high` and the changes the [factory runbook](https://github.com/AppElent/developer-home/blob/main/RUNBOOK.md) lists as waiting for Eric stay open for Eric. Never read or change production secrets, and never approve production deployments.
