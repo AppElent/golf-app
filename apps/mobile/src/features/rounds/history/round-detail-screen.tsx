@@ -24,6 +24,7 @@ import {
 	markCounts,
 	roundTiles,
 	shareCardStats,
+	shareFileName,
 	shareMessage,
 } from "./round-detail-model";
 import { RoundRecapCard } from "./round-recap-card";
@@ -116,6 +117,7 @@ export function RoundDetailScreen() {
 				marks: recap.marks,
 				copy: t.rounds,
 			}),
+			shareFileName(course.name, new Date(round.startedAt)),
 		);
 
 	return (

@@ -102,6 +102,36 @@ export function shareCardStats({ stats }: RoundTiles): RoundTile[] {
 	return stats.slice(0, SHARE_CARD_STATS);
 }
 
+/** Longest course part of a share file name; whole words are kept. */
+const SHARE_NAME_COURSE_MAX = 40;
+
+/**
+ * `Fairway-<course>-<yyyy-mm-dd>.png` for the share image. The course is an
+ * ASCII kebab-case slug (accents dropped, anything else becomes a dash), so the
+ * name survives every share target; the date is the round's local calendar day.
+ */
+export function shareFileName(courseName: string, startedAt: Date): string {
+	const words = courseName
+		.normalize("NFKD")
+		.replace(/[̀-ͯ]/g, "")
+		.toLowerCase()
+		.split(/[^a-z0-9]+/)
+		.filter(Boolean);
+	let course = "";
+	for (const word of words) {
+		if (!course) {
+			course = word.slice(0, SHARE_NAME_COURSE_MAX);
+			continue;
+		}
+		const next = `${course}-${word}`;
+		if (next.length > SHARE_NAME_COURSE_MAX) break;
+		course = next;
+	}
+	const pad = (n: number) => String(n).padStart(2, "0");
+	const date = `${startedAt.getFullYear()}-${pad(startedAt.getMonth() + 1)}-${pad(startedAt.getDate())}`;
+	return `${["Fairway", course, date].filter(Boolean).join("-")}.png`;
+}
+
 export function shareMessage({
 	courseName,
 	detail,
