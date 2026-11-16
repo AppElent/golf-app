@@ -10,16 +10,19 @@ export interface ScoreEntry {
 export interface StorageLike {
 	getItem(key: string): string | null;
 	setItem(key: string, value: string): void;
-	removeItem(key: string): void;
 }
 
 const QUEUE_KEY = "fairway.scoreQueue";
 
 /**
  * The queue of one signed-in account, so a golfer who signs in after another
- * on this browser neither sends nor sees the first one's unsent scores. The
- * queue from before accounts were split goes to the first account to open it:
- * the web had no sign-out then, so that is the golfer who wrote it.
+ * on this browser neither sends nor sees the first one's unsent scores.
+ *
+ * The plain storage holds the queue from before accounts were split (and from
+ * a tab still on that code). It is unclaimed: nothing on this device says
+ * whose it is, so it is never moved into an account. A flush may still try its
+ * entries; Convex accepts only the owner's (`requireOwnRound`), which then
+ * leave it. Retire it once those entries can no longer exist.
  */
 export function accountQueue(
 	storage: StorageLike,
@@ -27,17 +30,10 @@ export function accountQueue(
 ): StorageLike {
 	const own = `${QUEUE_KEY}:${userId}`;
 	const scoped = (key: string) => (key === QUEUE_KEY ? own : key);
-	const queue: StorageLike = {
+	return {
 		getItem: (key) => storage.getItem(scoped(key)),
 		setItem: (key, value) => storage.setItem(scoped(key), value),
-		removeItem: (key) => storage.removeItem(scoped(key)),
 	};
-	if (storage.getItem(QUEUE_KEY) !== null) {
-		// Merged, not replaced: a tab still on the old code may have written it.
-		for (const entry of readQueue(storage)) enqueueScore(queue, entry);
-		storage.removeItem(QUEUE_KEY);
-	}
-	return queue;
 }
 
 export function keyFor(

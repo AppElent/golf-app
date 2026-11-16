@@ -18,15 +18,20 @@ import { useOnlineStatus } from "./useOnlineStatus";
 
 const FLUSH_INTERVAL_MS = 15000;
 
-/** The signed-in account's queue; none outside the browser or signed out.
- *  Only screens behind AuthGate use it, so a score is never dropped for want
- *  of an account. */
-function queueStorage(userId: string | null | undefined): StorageLike | null {
+/** The signed-in account's queue and the unclaimed one (see `accountQueue`);
+ *  none outside the browser or signed out. Only screens behind AuthGate use
+ *  it, so a score is never dropped for want of an account. */
+function queues(
+	userId: string | null | undefined,
+): { own: StorageLike; unclaimed: StorageLike } | null {
 	if (typeof window === "undefined" || !userId) return null;
-	return accountQueue(window.localStorage, userId);
+	return {
+		own: accountQueue(window.localStorage, userId),
+		unclaimed: window.localStorage,
+	};
 }
 
-function overlayFrom(store: StorageLike | null): Map<string, ScoreUpdate> {
+function overlayFrom(store: StorageLike | undefined): Map<string, ScoreUpdate> {
 	const map = new Map<string, ScoreUpdate>();
 	if (!store) return map;
 	for (const entry of readQueue(store)) map.set(keyOf(entry), entry.fields);
@@ -37,18 +42,24 @@ export function useScoreSync() {
 	const setScore = useMutation(api.rounds.setScore);
 	const online = useOnlineStatus();
 	const { userId } = useAuth();
-	const storage = useCallback(() => queueStorage(userId), [userId]);
+	const storage = useCallback(() => queues(userId), [userId]);
 	const [pending, setPending] = useState<Map<string, ScoreUpdate>>(() =>
-		overlayFrom(storage()),
+		overlayFrom(storage()?.own),
+	);
+	// Edits from before accounts were split. Shown on their own round (another
+	// account never opens it) but not counted: they may be someone else's.
+	const [unclaimed, setUnclaimed] = useState<Map<string, ScoreUpdate>>(() =>
+		overlayFrom(storage()?.unclaimed),
 	);
 	const [syncing, setSyncing] = useState(false);
 	const flushing = useRef(false);
 	const flushAgain = useRef(false);
 
-	const refresh = useCallback(
-		() => setPending(overlayFrom(storage())),
-		[storage],
-	);
+	const refresh = useCallback(() => {
+		const store = storage();
+		setPending(overlayFrom(store?.own));
+		setUnclaimed(overlayFrom(store?.unclaimed));
+	}, [storage]);
 	// Another account's queue never shows: reload it when the account changes.
 	useEffect(refresh, [refresh]);
 
@@ -65,20 +76,23 @@ export function useScoreSync() {
 		try {
 			do {
 				flushAgain.current = false;
-				for (const entry of readQueue(store)) {
-					try {
-						await setScore({
-							roundId: entry.roundId as Id<"rounds">,
-							holeIndex: entry.holeIndex,
-							playerIndex: entry.playerIndex,
-							queued: true,
-							...entry.fields,
-						});
-						removeSent(store, entry);
-						refresh();
-					} catch {
-						// Stays queued for the retry. Entries are per hole and player, so
-						// the ones behind it can still go.
+				for (const queue of [store.own, store.unclaimed]) {
+					for (const entry of readQueue(queue)) {
+						try {
+							await setScore({
+								roundId: entry.roundId as Id<"rounds">,
+								holeIndex: entry.holeIndex,
+								playerIndex: entry.playerIndex,
+								queued: true,
+								...entry.fields,
+							});
+							removeSent(queue, entry);
+							refresh();
+						} catch {
+							// Stays queued for the retry (or, unclaimed, for its owner).
+							// Entries are per hole and player, so the ones behind it can
+							// still go.
+						}
 					}
 				}
 			} while (flushAgain.current);
@@ -93,7 +107,7 @@ export function useScoreSync() {
 		(entry: ScoreEntry) => {
 			const store = storage();
 			if (!store) return;
-			enqueueScore(store, entry);
+			enqueueScore(store.own, entry);
 			refresh();
 			void flush();
 		},
@@ -120,18 +134,22 @@ export function useScoreSync() {
 			playerIndex: number,
 		): ScoreUpdate | undefined => {
 			const server = scoreAt(scores, holeIndex, playerIndex);
-			const overlay = pending.get(keyFor(roundId, holeIndex, playerIndex));
-			if (!server && !overlay) return undefined;
-			return { ...server, ...overlay };
+			const key = keyFor(roundId, holeIndex, playerIndex);
+			const own = pending.get(key);
+			const old = unclaimed.get(key);
+			if (!server && !own && !old) return undefined;
+			return { ...server, ...old, ...own };
 		},
-		[pending],
+		[pending, unclaimed],
 	);
 
 	/** The queue can hold another round's scores, so ask about one round. */
 	const hasPending = useCallback(
 		(roundId: string) =>
-			[...pending.keys()].some((key) => key.startsWith(`${roundId}:`)),
-		[pending],
+			[...pending.keys(), ...unclaimed.keys()].some((key) =>
+				key.startsWith(`${roundId}:`),
+			),
+		[pending, unclaimed],
 	);
 
 	return {

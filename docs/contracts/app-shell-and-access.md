@@ -22,7 +22,9 @@ signing in with Clerk.
   `AuthGate` shows the sign-in card on every protected path. The web score
   queue (`src/offline`) is kept per Clerk user id, so a golfer's unsent scores
   go when they sign back in, and the next golfer on that browser neither sends
-  nor sees them.
+  nor counts them. The queue from before that split stays unclaimed: any
+  account's flush may try it, Convex accepts only the owner's entries, and it
+  is never moved into an account.
 - **Public pages:** the paths in `PUBLIC_PATHS` (`src/components/LegalPage.tsx`),
   `/privacy` and `/support`, render without `AuthGate` and without the tab bar, so
   App Store Connect and the phone app can link to them. They read no user data.

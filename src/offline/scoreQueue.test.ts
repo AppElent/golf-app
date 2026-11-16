@@ -17,9 +17,6 @@ function fakeStorage(): StorageLike {
 		setItem: (k, v) => {
 			map.set(k, v);
 		},
-		removeItem: (k) => {
-			map.delete(k);
-		},
 	};
 }
 
@@ -47,7 +44,6 @@ describe("scoreQueue", () => {
 			const unreadable: StorageLike = {
 				getItem: () => stored,
 				setItem: () => {},
-				removeItem: () => {},
 			};
 			expect(readQueue(unreadable)).toEqual([]);
 		},
@@ -115,20 +111,9 @@ describe("accountQueue", () => {
 		).toEqual(["rb"]);
 	});
 
-	it("gives the queue from before accounts were split to the first account, once", () => {
-		enqueueScore(storage, entry());
-		expect(readQueue(accountQueue(storage, "user_a"))).toEqual([entry()]);
-		expect(readQueue(storage)).toEqual([]);
-		expect(readQueue(accountQueue(storage, "user_b"))).toEqual([]);
-		expect(readQueue(accountQueue(storage, "user_a"))).toEqual([entry()]);
-	});
-
-	it("merges the old queue into an account's own", () => {
-		enqueueScore(accountQueue(storage, "user_a"), entry({ roundId: "mine" }));
+	it("never moves the unclaimed queue into an account", () => {
 		enqueueScore(storage, entry({ roundId: "old" }));
-		expect(
-			readQueue(accountQueue(storage, "user_a")).map((e) => e.roundId),
-		).toEqual(["mine", "old"]);
-		expect(readQueue(storage)).toEqual([]);
+		expect(readQueue(accountQueue(storage, "user_b"))).toEqual([]);
+		expect(readQueue(storage).map((e) => e.roundId)).toEqual(["old"]);
 	});
 });
