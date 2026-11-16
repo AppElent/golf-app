@@ -85,3 +85,26 @@ export function removeSent(storage: StorageLike, sent: ScoreEntry): void {
 		),
 	);
 }
+
+/**
+ * Forget the fields a newer, sent edit of the same hole and player replaced,
+ * so an older queued edit of them can never land after it. An entry left with
+ * no fields goes.
+ */
+export function dropSuperseded(storage: StorageLike, sent: ScoreEntry): void {
+	const key = keyOf(sent);
+	const queue = readQueue(storage);
+	if (!queue.some((e) => keyOf(e) === key)) return;
+	const kept: ScoreEntry[] = [];
+	for (const e of queue) {
+		if (keyOf(e) !== key) {
+			kept.push(e);
+			continue;
+		}
+		const fields = Object.fromEntries(
+			Object.entries(e.fields).filter(([field]) => !(field in sent.fields)),
+		) as ScoreEntry["fields"];
+		if (Object.keys(fields).length > 0) kept.push({ ...e, fields });
+	}
+	writeQueue(storage, kept);
+}

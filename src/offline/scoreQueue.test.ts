@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
 	accountQueue,
+	dropSuperseded,
 	enqueueScore,
 	keyFor,
 	keyOf,
@@ -115,5 +116,28 @@ describe("accountQueue", () => {
 		enqueueScore(storage, entry({ roundId: "old" }));
 		expect(readQueue(accountQueue(storage, "user_b"))).toEqual([]);
 		expect(readQueue(storage).map((e) => e.roundId)).toEqual(["old"]);
+	});
+});
+
+describe("dropSuperseded", () => {
+	let storage: StorageLike;
+	beforeEach(() => {
+		storage = fakeStorage();
+	});
+
+	it("forgets only the fields the sent edit replaced", () => {
+		enqueueScore(storage, entry({ fields: { strokes: 5, putts: 2 } }));
+		enqueueScore(storage, entry({ holeIndex: 1 }));
+		dropSuperseded(storage, entry({ fields: { strokes: 6 } }));
+		expect(readQueue(storage)).toEqual([
+			entry({ fields: { putts: 2 } }),
+			entry({ holeIndex: 1 }),
+		]);
+	});
+
+	it("drops an entry left with nothing to send", () => {
+		enqueueScore(storage, entry());
+		dropSuperseded(storage, entry({ fields: { strokes: 6 } }));
+		expect(readQueue(storage)).toEqual([]);
 	});
 });

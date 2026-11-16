@@ -132,3 +132,18 @@ it("never retries someone else's unclaimed edits on the timer", async () => {
 		vi.useRealTimers();
 	}
 });
+
+it("never lets an unclaimed edit that failed land over the newer one", async () => {
+	enqueueScore(window.localStorage, entry("ra"));
+	enqueueScore(accountQueue(window.localStorage, "user_a"), {
+		...entry("ra"),
+		fields: { strokes: 6 },
+	});
+	// The stale edit hits a network blip; the newer one goes through.
+	mocks.setScore.mockRejectedValueOnce(new Error("offline"));
+	const a = renderHook(() => useScoreSync());
+	await waitFor(() => expect(a.result.current.syncing).toBe(false));
+	expect(readQueue(window.localStorage)).toEqual([]);
+	expect(mocks.setScore.mock.calls.at(-1)?.[0].strokes).toBe(6);
+	a.unmount();
+});

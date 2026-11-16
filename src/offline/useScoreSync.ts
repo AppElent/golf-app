@@ -6,6 +6,7 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import {
 	accountQueue,
+	dropSuperseded,
 	enqueueScore,
 	keyFor,
 	keyOf,
@@ -89,6 +90,9 @@ export function useScoreSync() {
 								...entry.fields,
 							});
 							removeSent(queue, entry);
+							// The hole proved to be this account's, so an unclaimed edit of
+							// it that failed just now must not land later over this one.
+							if (queue === store.own) dropSuperseded(store.unclaimed, entry);
 							refresh();
 						} catch {
 							// Stays queued for the retry (or, unclaimed, for its owner).
