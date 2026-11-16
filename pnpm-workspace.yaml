@@ -45,3 +45,20 @@ verifyDepsBeforeRun: install
 # which requires ^0.21.8 itself.
 overrides:
   "@expo/fingerprint": "^0.21.8"
+
+# APP-178 (2026-11-16): security floors for transitive packages flagged by
+# Dependabot (critical/high). Each stays inside the major the parent asks for.
+# Most come from eas-cli, Expo build tooling, jsdom and devtools, which run at
+# build or dev time only. Remove an entry once no parent resolves below it.
+  "tar@<7.5.21": "^7.5.21"
+  "@clerk/clerk-react@>=5 <5.61.6": "^5.61.6"
+  "@xmldom/xmldom@<0.8.15": "^0.8.15"
+  "joi@<17.13.9": "^17.13.9"
+  "js-yaml@>=4 <4.3.2": "^4.3.2"
+  "launch-editor@<2.14.2": "^2.14.2"
+  "minimatch@>=5 <5.1.8": "^5.1.8"
+  "nanoid@<3.3.18": "^3.3.18"
+  "node-forge@<1.4.1": "^1.4.1"
+  "source-map-js@<1.2.2": "^1.2.2"
+  "undici@>=7 <7.30.1": "^7.30.1"
+  "browserslist@<4.28.7": "^4.28.7"
