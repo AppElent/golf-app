@@ -26,7 +26,7 @@ import {
 	type ActiveRound,
 	useActiveRound,
 } from "../../rounds/use-active-round";
-import { useSimulationMode } from "../../simulation/mode/use-simulation-mode";
+import { useEndSimulation } from "../../simulation/mode/use-end-simulation";
 import { hudLayout } from "../hud/hud-layout";
 import { PlayBottomBar } from "./play-bottom-bar";
 import { PlayClubTray } from "./play-club-tray";
@@ -102,7 +102,7 @@ function PlayHole({
 	const { t } = useI18n();
 	const insets = useSafeAreaInsets();
 	const router = useRouter();
-	const { setSimulating } = useSimulationMode();
+	const endSimulation = useEndSimulation();
 
 	const { round, holes } = active;
 	const simulated = round.simulated === true;
@@ -214,7 +214,7 @@ function PlayHole({
 				<PlaySimulationBanner
 					top={hudTop + hudLayout.gpsPillTop}
 					onExit={() => {
-						setSimulating(false);
+						endSimulation("paused");
 						router.back();
 					}}
 				/>

@@ -1,9 +1,12 @@
 import { holeLabel } from "@fairway/core/format";
 import { wouldBeFromHistory } from "@fairway/core/handicap";
 import { playedHoles } from "@fairway/core/round";
-import { useRouter } from "expo-router";
+import { useMutation } from "convex/react";
+import { useNavigation, useRouter } from "expo-router";
+import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { api } from "../../../convex/api";
+import { convexErrorMessage } from "../../../convex/error-message";
 import { useQuery } from "../../../convex/query-cache";
 import { dateLocale, fmt, useI18n } from "../../../i18n";
 import {
@@ -13,28 +16,78 @@ import {
 	type Tokens,
 	useThemedStyles,
 } from "../../../theme";
-import { PrimaryButton } from "../../../ui/button";
+import { GhostButton, PrimaryButton } from "../../../ui/button";
+import { useConfirm } from "../../../ui/confirm-dialog";
 import { InsetList, InsetRow } from "../../../ui/inset-list";
 import { SkeletonCard } from "../../../ui/skeleton";
 import { AppText } from "../../../ui/text";
+import { useToast } from "../../../ui/toast";
 import { useAppUpdate } from "../../../updates/use-app-update";
 import { RoundRow } from "../../rounds/components/round-row";
 import { useActiveRound } from "../../rounds/use-active-round";
+import { useEndSimulation } from "../../simulation/mode/use-end-simulation";
 
 const RECENT = 3;
 
 export function HomeSummaryScreen() {
 	const router = useRouter();
+	const navigation = useNavigation();
 	const styles = useThemedStyles(createStyles);
 	const { t, locale, numbers } = useI18n();
 	const active = useActiveRound();
 	const settings = useQuery(api.settings.get);
 	const history = useQuery(api.rounds.history, {});
 	const update = useAppUpdate();
+	const confirm = useConfirm();
+	const toast = useToast();
+	const abandon = useMutation(api.rounds.abandon);
+	const endSimulation = useEndSimulation();
+	const [stopping, setStopping] = useState(false);
 
 	const wouldBe = wouldBeFromHistory(history ?? []);
 	const recent = history?.slice(0, RECENT) ?? [];
 	const index = settings?.handicapIndex ?? null;
+	const progress = active
+		? {
+				hole: holeLabel(active.holes[active.round.currentHoleIndex]?.ref ?? ""),
+				n: playedHoles(active.holes.length, active.scores).length,
+				total: active.holes.length,
+			}
+		: null;
+
+	/** A stale round blocks a new one: resume it, or stop it and start over. */
+	async function onStartNew() {
+		if (!active || !progress) return;
+		const { round, course } = active;
+		const stop = await confirm({
+			title: t.home.newRoundTitle,
+			message: fmt(t.home.newRoundMessage, {
+				course: course.name,
+				n: progress.n,
+				total: progress.total,
+			}),
+			confirmLabel: t.home.stopRound,
+			destructive: true,
+			alternative: {
+				label: t.home.resume,
+				onPress: () => router.push("/play"),
+			},
+		});
+		if (!stop) return;
+		// Not `useSubmit`: Home stays mounted under the picker, so pending
+		// must clear after a success too.
+		setStopping(true);
+		try {
+			await abandon({ roundId: round._id });
+			if (round.simulated) endSimulation();
+			// A slow stop must not yank the user away from where they went since.
+			if (navigation.isFocused()) router.push("/courses");
+		} catch (e) {
+			toast.error(convexErrorMessage(e, t.home.stopError));
+		} finally {
+			setStopping(false);
+		}
+	}
 
 	return (
 		<ScrollView
@@ -59,13 +112,7 @@ export function HomeSummaryScreen() {
 							{active.course.name}
 						</AppText>
 						<AppText variant="footnote" style={styles.onAccent}>
-							{fmt(t.home.resumeDetail, {
-								hole: holeLabel(
-									active.holes[active.round.currentHoleIndex]?.ref ?? "",
-								),
-								n: playedHoles(active.holes.length, active.scores).length,
-								total: active.holes.length,
-							})}
+							{progress ? fmt(t.home.resumeDetail, progress) : null}
 						</AppText>
 					</View>
 					<AppText variant="control" style={styles.onAccent}>
@@ -120,6 +167,12 @@ export function HomeSummaryScreen() {
 					size="lg"
 					label={t.home.startRound}
 					onPress={() => router.push("/courses")}
+				/>
+			) : active ? (
+				<GhostButton
+					label={t.home.startNewRound}
+					onPress={onStartNew}
+					loading={stopping}
 				/>
 			) : null}
 

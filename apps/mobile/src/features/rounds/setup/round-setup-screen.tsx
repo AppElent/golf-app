@@ -1,4 +1,5 @@
 import { useUser } from "@clerk/expo";
+import { formatDistance } from "@fairway/core/format";
 import {
 	parseHandicapIndex,
 	playingHandicapPreview,
@@ -29,8 +30,15 @@ import {
 import { SkeletonList } from "../../../ui/skeleton";
 import { AppText } from "../../../ui/text";
 import type { CourseDetail } from "../../courses/course-detail";
+import { useUnits } from "../../profile/use-units";
 import { useSimulationMode } from "../../simulation/mode/use-simulation-mode";
-import { toggleLoopPick } from "./round-setup-model";
+import { RoundInProgress } from "../components/round-in-progress";
+import {
+	defaultTeeId,
+	teeLengthMeters,
+	toggleLoopPick,
+	visibleTees,
+} from "./round-setup-model";
 
 interface GuestDraft {
 	key: number;
@@ -48,8 +56,17 @@ export function RoundSetupScreen({
 	const { t } = useI18n();
 	const detail = useQuery(api.courses.get, { courseId });
 	const settings = useQuery(api.settings.get);
+	// Waited for, so the tee is seeded once, with the right default.
+	const lastTeeId = useQuery(api.rounds.lastTee, { courseId });
+	// A simulation may run beside a real round; a second real round may not.
+	// Waited for too, so Start is never offered before the guard can decide.
+	const active = useQuery(api.rounds.active, simulate ? "skip" : {});
 
-	if (detail === undefined) {
+	if (
+		detail === undefined ||
+		lastTeeId === undefined ||
+		(!simulate && active === undefined)
+	) {
 		return (
 			<FormScreen>
 				<SkeletonList rows={5} />
@@ -64,6 +81,8 @@ export function RoundSetupScreen({
 			courseId={courseId}
 			simulate={simulate}
 			detail={detail}
+			lastTeeId={lastTeeId}
+			active={active ?? null}
 			settings={settings}
 		/>
 	);
@@ -73,11 +92,15 @@ function RoundSetupForm({
 	courseId,
 	simulate,
 	detail,
+	lastTeeId,
+	active,
 	settings,
 }: {
 	courseId: Id<"courses">;
 	simulate: boolean;
 	detail: CourseDetail;
+	lastTeeId: Id<"tees"> | null;
+	active: { course: { name: string } } | null;
 	settings: ReturnType<typeof useQuery<typeof api.settings.get>>;
 }) {
 	const router = useRouter();
@@ -90,6 +113,8 @@ function RoundSetupForm({
 	const loops = useMemo(() => detectLoops(detail.holes), [detail]);
 	const [picks, setPicks] = useState<number[]>([]);
 	const [teeId, setTeeId] = useState<Id<"tees"> | null>(null);
+	const [teesExpanded, setTeesExpanded] = useState(false);
+	const units = useUnits();
 	const [format, setFormat] = useState<RoundFormat>("stableford");
 	const [ownerIndex, setOwnerIndex] = useState<string | null>(null);
 	const [guests, setGuests] = useState<GuestDraft[]>([]);
@@ -100,7 +125,9 @@ function RoundSetupForm({
 	if (loops.length > 0 && picks.length === 0) {
 		setPicks(loops.length >= 2 ? [0, 1] : [0]);
 	}
-	if (teeId === null && detail.tees[0]) setTeeId(detail.tees[0]._id);
+	if (teeId === null && detail.tees[0]) {
+		setTeeId(defaultTeeId(detail.tees, lastTeeId));
+	}
 	if (settings && ownerIndex === null) {
 		setOwnerIndex(
 			settings.handicapIndex === null
@@ -159,10 +186,33 @@ function RoundSetupForm({
 		);
 	}
 
+	const teeRows = visibleTees(detail.tees, teeId, teesExpanded);
+	const teeSecondary = (x: CourseDetail["tees"][number]) => {
+		const rating = fmt(t.setup.teeDetail, {
+			cr: numbers.decimal(x.courseRating),
+			slope: x.slopeRating,
+		});
+		const length = teeLengthMeters(x, detail.holes, holeRefs);
+		return length === null
+			? rating
+			: `${formatDistance(length, units)} · ${rating}`;
+	};
+
 	const phLabel = (raw: string) => {
 		const ph = playingHandicapPreview(raw, tee, par, holeRefs.length);
 		return ph === undefined ? "" : fmt(t.setup.playingHandicap, { value: ph });
 	};
+
+	// `pending` stays true after a successful start, so the round this screen
+	// just started never shows up here as the blocking one.
+	if (active && !submit.pending) {
+		return (
+			<FormScreen>
+				<Stack.Screen options={{ title: detail.course.name }} />
+				<RoundInProgress courseName={active.course.name} />
+			</FormScreen>
+		);
+	}
 
 	return (
 		<FormScreen
@@ -217,28 +267,41 @@ function RoundSetupForm({
 						{t.setup.noTees}
 					</AppText>
 				) : (
-					detail.tees.map((x) => (
+					teeRows.rows.map((x) => (
 						<FormChoiceRow
 							key={x._id}
 							role="radio"
 							label={x.name}
 							leading={
 								x.color ? (
-									<View style={[styles.teeDot, { backgroundColor: x.color }]} />
+									<View
+										style={[
+											styles.teeDot,
+											{
+												backgroundColor: x.color,
+												borderColor: colors.borderStrong,
+											},
+										]}
+									/>
 								) : undefined
 							}
-							secondary={fmt(t.setup.teeDetail, {
-								cr: numbers.decimal(x.courseRating),
-								slope: x.slopeRating,
-							})}
+							secondary={teeSecondary(x)}
 							selected={x._id === teeId}
 							onPress={() => {
 								haptics.selectionChanged();
 								setTeeId(x._id);
+								// A long list folds back once a tee is chosen.
+								setTeesExpanded(false);
 							}}
 						/>
 					))
 				)}
+				{teeRows.folded ? (
+					<TextAction
+						label={fmt(t.setup.allTees, { count: detail.tees.length })}
+						onPress={() => setTeesExpanded(true)}
+					/>
+				) : null}
 			</FormSection>
 
 			<FormSection title={t.setup.format}>
@@ -348,7 +411,13 @@ function RoundSetupForm({
 
 const styles = StyleSheet.create({
 	inset: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-	teeDot: { width: 14, height: 14, borderRadius: 7 },
+	// The outline keeps a white tee visible on a light card.
+	teeDot: {
+		width: 14,
+		height: 14,
+		borderRadius: 7,
+		borderWidth: StyleSheet.hairlineWidth * 2,
+	},
 	guest: { flexDirection: "row", alignItems: "center" },
 	guestFields: { flex: 1 },
 	remove: { paddingHorizontal: spacing.md },
