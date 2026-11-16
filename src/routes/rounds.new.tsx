@@ -38,7 +38,7 @@ function RoundSetup() {
 		<Page>
 			<PageTitle>{simulate ? "Course simulator" : "New round"}</PageTitle>
 			{simulate ? (
-				<p className="mt-2 text-[13px] text-moss">
+				<p className="mt-2 text-label text-moss">
 					Practice the course from your couch: you set where you stand. Nothing
 					counts for your history or handicap.
 				</p>
@@ -51,7 +51,7 @@ function RoundSetup() {
 							type="button"
 							key={c._id}
 							onClick={() => setCourseId(c._id)}
-							className={`rounded-xl border px-4 py-3 text-left font-display text-[15px] font-semibold ${
+							className={`rounded-xl border px-4 py-3 text-left font-display text-body font-semibold ${
 								courseId === c._id
 									? "border-live bg-live/10 text-ink"
 									: `${SURFACE} text-ink`
@@ -59,7 +59,7 @@ function RoundSetup() {
 						>
 							{c.name}
 							{c.city ? (
-								<span className="block text-[12px] font-normal text-moss">
+								<span className="block text-footnote font-normal text-moss">
 									{c.city}
 								</span>
 							) : null}
@@ -90,10 +90,10 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 	const [error, setError] = useState<string | null>(null);
 
 	if (detail === undefined) {
-		return <p className="mt-6 text-[13px] text-stone">Loading course…</p>;
+		return <p className="mt-6 text-label text-stone">Loading course…</p>;
 	}
 	if (detail === null) {
-		return <p className="mt-6 text-[13px] text-flag">Course not found.</p>;
+		return <p className="mt-6 text-label text-flag-ink">Course not found.</p>;
 	}
 
 	const loops = detectLoops(detail.holes);
@@ -176,12 +176,12 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 						})}
 					</div>
 					{holeRefs.length > 0 ? (
-						<p className="mt-2 text-[12px] text-moss">
+						<p className="mt-2 text-footnote text-moss">
 							{holeRefs.length} holes · par {parTotal}
 						</p>
 					) : null}
 					{incomplete.length > 0 ? (
-						<p className="mt-2 flex items-start gap-1.5 text-[12px] text-flag">
+						<p className="mt-2 flex items-start gap-1.5 text-footnote text-flag-ink">
 							<TriangleAlert className="mt-0.5 size-3.5 shrink-0" />
 							<span>
 								{incomplete.length} holes missing par/stroke index.{" "}
@@ -219,7 +219,7 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 										),
 									)
 								}
-								className={`${FIELD} min-w-0 flex-1 px-3 py-2 text-[15px]`}
+								className={`${FIELD} min-w-0 flex-1 px-3 py-2 text-body`}
 							/>
 							<HiInput
 								value={g.handicapIndex}
@@ -252,7 +252,7 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 								{ id: crypto.randomUUID(), name: "", handicapIndex: "" },
 							])
 						}
-						className="mt-3 flex items-center gap-1.5 rounded-full border border-card-line px-4 py-2 font-display text-[13px] font-semibold text-ink"
+						className="mt-3 flex items-center gap-1.5 rounded-full border border-card-line px-4 py-2 font-display text-label font-semibold text-ink"
 					>
 						<Plus className="size-4" /> Add guest
 					</button>
@@ -264,7 +264,7 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 					<select
 						value={tee?._id ?? ""}
 						onChange={(e) => setTeeId(e.target.value as Id<"tees">)}
-						className={`${FIELD} w-full px-3 py-2 font-sans text-[15px]`}
+						className={`${FIELD} w-full px-3 py-2 font-sans text-body`}
 					>
 						{detail.tees.map((t) => (
 							<option key={t._id} value={t._id}>
@@ -292,7 +292,7 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 			) : null}
 
 			{invalidIndex || error ? (
-				<p className="mt-4 text-[13px] font-semibold text-flag">
+				<p className="mt-4 text-label font-semibold text-flag-ink">
 					{invalidIndex ? INVALID_INDEX_MESSAGE : error}
 				</p>
 			) : null}
@@ -301,7 +301,7 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 				type="button"
 				disabled={!canStart}
 				onClick={onStart}
-				className={`mt-8 ${CTA} text-[16px] disabled:opacity-40`}
+				className={`mt-8 ${CTA} text-control disabled:opacity-40`}
 			>
 				{simulate ? "Start simulation" : "Start round"}
 			</button>
@@ -323,7 +323,7 @@ function PlayerRow({
 	return (
 		<div className="flex items-center gap-2">
 			<span
-				className={`min-w-0 flex-1 rounded-lg border ${SURFACE} px-3 py-2 font-display text-[15px] font-semibold text-ink`}
+				className={`min-w-0 flex-1 rounded-lg border ${SURFACE} px-3 py-2 font-display text-body font-semibold text-ink`}
 			>
 				{name}
 			</span>
@@ -348,9 +348,9 @@ function HiInput({
 				placeholder="HI"
 				inputMode="decimal"
 				onChange={(e) => onChange(e.target.value)}
-				className={`${FIELD} w-16 px-2 py-2 text-center text-[15px]`}
+				className={`${FIELD} w-16 px-2 py-2 text-center text-body`}
 			/>
-			<span className="w-10 text-center font-display text-[13px] font-semibold text-live">
+			<span className="w-10 text-center font-display text-label font-semibold text-live-ink">
 				{ph !== undefined ? `PH ${ph}` : "—"}
 			</span>
 		</span>

@@ -172,7 +172,7 @@ export function SwipeableRow({
 										name={action.systemImage}
 										size={20}
 										weight="semibold"
-										tintColor="#ffffff"
+										tintColor={colors.onSwipe}
 									/>
 								</View>
 								<AppText

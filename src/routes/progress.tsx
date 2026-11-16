@@ -34,24 +34,24 @@ function ProgressScreen() {
 	return (
 		<Page>
 			<PageTitle>Progress</PageTitle>
-			<p className="mt-1 text-[13px] text-moss">
+			<p className="mt-1 text-label text-moss">
 				Would-be index from your last {rounds.length} rounds.
 			</p>
 
 			<section className={`mt-5 rounded-[22px] border ${SURFACE} p-5`}>
 				<div className="flex items-end justify-between">
 					<div>
-						<p className="text-[11px] font-semibold uppercase tracking-wide text-stone">
+						<p className="text-caption font-semibold uppercase tracking-wide text-stone">
 							Would-be index
 						</p>
-						<p className="mt-1 font-display text-[44px] leading-none font-bold text-ink">
+						<p className="mt-1 font-display text-hero leading-none font-bold text-ink">
 							{index !== null ? formatHandicapIndex(index) : "—"}
 						</p>
 					</div>
 					<Sparkline values={trend} stroke="var(--color-live)" />
 				</div>
 				{index === null ? (
-					<p className="mt-2 text-[12px] text-stone">
+					<p className="mt-2 text-footnote text-stone">
 						Finish three counting rounds to compute a would-be index.
 					</p>
 				) : null}
@@ -79,10 +79,10 @@ function ProgressScreen() {
 								key={club._id}
 								className="flex items-center justify-between px-4 py-2.5"
 							>
-								<span className="font-display text-[14px] font-semibold text-ink">
+								<span className="font-display text-callout font-semibold text-ink">
 									{club.name}
 								</span>
-								<span className="text-[13px] font-semibold text-moss">
+								<span className="text-label font-semibold text-moss">
 									{formatDistance(club.carryMeters, units)}
 								</span>
 							</div>

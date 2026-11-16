@@ -15,8 +15,8 @@ export function SyncPill({
 			: `${pendingCount} to sync`;
 	return (
 		<span
-			className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-display text-[11px] font-semibold ${
-				online ? "bg-live/15 text-live" : "bg-flag/15 text-flag"
+			className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 font-display text-caption font-semibold ${
+				online ? "bg-live/15 text-live-ink" : "bg-flag/15 text-flag-ink"
 			}`}
 		>
 			<span
