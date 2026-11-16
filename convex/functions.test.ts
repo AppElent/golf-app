@@ -122,6 +122,28 @@ describe("rounds", () => {
 		expect(history[0].differential).toBeTypeOf("number");
 	});
 
+	it("remembers the tee of the latest round on a course", async () => {
+		const { alice, bob, course } = await setup();
+		const courseId = course.course._id;
+		expect(course.lastTeeId).toBeNull();
+		const tee = course.tees[1] ?? course.tees[0];
+		const roundId = await alice.mutation(api.rounds.start, {
+			courseId,
+			teeId: tee._id,
+			holeRefs: course.holes.slice(0, 9).flatMap((h) => (h.ref ? [h.ref] : [])),
+			format: "stroke",
+			players: [{ name: "Alice" }],
+		});
+		await alice.mutation(api.rounds.finish, { roundId });
+
+		expect((await alice.query(api.courses.get, { courseId }))?.lastTeeId).toBe(
+			tee._id,
+		);
+		expect(
+			(await bob.query(api.courses.get, { courseId }))?.lastTeeId,
+		).toBeNull();
+	});
+
 	it("allows one active round at a time", async () => {
 		const { alice, course } = await setup();
 		await startRound(alice, course);

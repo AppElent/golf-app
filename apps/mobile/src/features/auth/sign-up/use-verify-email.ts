@@ -7,8 +7,10 @@ import { useSignUp } from "@clerk/expo";
 import { pickError } from "../clerk-errors";
 import { useClerkStep } from "../use-clerk-step";
 import { useResend } from "../use-resend";
+import { pendingSignUpEmail } from "./verify-email-model";
 
-export function useVerifyEmail() {
+/** `emailParam`: where the sign-up screen says the code went. */
+export function useVerifyEmail(emailParam: string | undefined) {
 	const { signUp, errors } = useSignUp();
 	const { busy, returned, run } = useClerkStep();
 	const { resend, resending, notice, clearNotice } = useResend(() =>
@@ -25,6 +27,8 @@ export function useVerifyEmail() {
 	}
 
 	return {
+		/** `null`: no sign-up is waiting for a code. */
+		email: pendingSignUpEmail(emailParam, signUp),
 		verify,
 		resend,
 		resending,

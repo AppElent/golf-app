@@ -42,6 +42,9 @@ type ConfirmOptions = {
 	confirmLabel: string;
 	/** Paints the confirm button red. On for anything that destroys data. */
 	destructive?: boolean;
+	/** A third, non-destructive way out (for example "Resume"). Choosing it
+	 *  runs `onPress` and answers "no". */
+	alternative?: { label: string; onPress: () => void };
 };
 
 type ConfirmFn = (options: ConfirmOptions) => Promise<boolean>;
@@ -77,6 +80,17 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 								style: "cancel",
 								onPress: () => finish(false),
 							},
+							...(next.alternative
+								? [
+										{
+											text: next.alternative.label,
+											onPress: () => {
+												finish(false);
+												next.alternative?.onPress();
+											},
+										},
+									]
+								: []),
 							{
 								text: next.confirmLabel,
 								style: next.destructive ? "destructive" : "default",
@@ -138,6 +152,24 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 							>
 								<AppText variant="body">{t.common.keep}</AppText>
 							</Pressable>
+
+							{options?.alternative ? (
+								<Pressable
+									accessibilityRole="button"
+									onPress={() => {
+										const run = options.alternative?.onPress;
+										settle(false);
+										run?.();
+									}}
+									style={({ pressed }) => [
+										styles.button,
+										styles.cancel,
+										pressed && { backgroundColor: colors.surface2 },
+									]}
+								>
+									<AppText variant="body">{options.alternative.label}</AppText>
+								</Pressable>
+							) : null}
 
 							<Pressable
 								accessibilityRole="button"
@@ -201,11 +233,13 @@ const createStyles = (colors: Tokens) =>
 		},
 		actions: {
 			flexDirection: "row",
+			flexWrap: "wrap",
 			gap: spacing.sm,
 			marginTop: spacing.sm,
 		},
 		button: {
-			flex: 1,
+			flexGrow: 1,
+			flexBasis: 96,
 			minHeight: metrics.hitTarget,
 			alignItems: "center",
 			justifyContent: "center",
