@@ -18,3 +18,7 @@ CLAUDE.local.md
 .appelent/env-state.json
 .appelent/env.lock/
 .dev.vars
+# Playwright smoke (pnpm test:e2e)
+/test-results
+/playwright-report
+e2e/.auth

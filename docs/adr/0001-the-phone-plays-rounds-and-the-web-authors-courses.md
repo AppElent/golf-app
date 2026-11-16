@@ -1,7 +1,7 @@
 ---
 type: decision
 description: Read before deciding which platform a feature ships on, adding or moving a web or phone route, or adding a shareable link.
-version: 1.0.0
+version: 1.0.1
 status: accepted
 date: 2026-11-14
 ---
@@ -32,9 +32,9 @@ lighter and stays on both platforms (`course-suggestion`): a golfer spots the
 mistake on the course.
 `course-authoring` is `exclusive` to the web and declared
 `layout: "large-screen"`: editing a course, and later its geometry on a map,
-needs a large screen and a keyboard. The page today is still the phone-width
-form inside the 430px web shell, with no "best on a larger screen" notice; that
-gap is a follow-up, not a reason to declare it responsive.
+needs a large screen and a keyboard. Its routes leave the 430px web shell and
+use the window's width; at phone width they show a "best on a larger screen"
+notice (`src/components/large-screen.tsx`, APP-117).
 
 **The web's round screens are legacy.** `/`, `/play`, `/card`, `/rounds/new`,
 `/progress` and `/profile` predate the phone app. They are `parity` in

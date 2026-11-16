@@ -20,6 +20,8 @@
 			"apps/mobile/scripts/**/*",
 			"**/.vscode/**/*",
 			"**/vite.config.ts",
+			"e2e/**/*.ts",
+			"playwright.config.ts",
 			"!apps/mobile/expo-env.d.ts",
 			"!apps/mobile/ios",
 			"!apps/mobile/android",

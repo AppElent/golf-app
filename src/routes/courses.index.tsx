@@ -13,7 +13,7 @@ function CoursesScreen() {
 	return (
 		<Page>
 			<PageTitle>Courses</PageTitle>
-			<p className="mt-1 text-[13px] text-moss">
+			<p className="mt-1 max-w-prose text-[13px] text-moss">
 				The course catalog is checked against each club's scorecard. Make your
 				own copy to change a course, or suggest a correction.
 			</p>
@@ -25,13 +25,13 @@ function CoursesScreen() {
 					No courses yet — run the seed action to sync the course catalog.
 				</p>
 			) : (
-				<ul className="mt-6 flex flex-col gap-3">
+				<ul className="mt-6 grid gap-3 md:grid-cols-2 xl:grid-cols-3">
 					{courses.map((course) => (
 						<li key={course._id}>
 							<Link
 								to="/courses/$courseId/edit"
 								params={{ courseId: course._id }}
-								className={`flex items-center justify-between rounded-2xl border ${SURFACE} px-4 py-4 shadow-sm`}
+								className={`flex h-full items-center justify-between rounded-2xl border ${SURFACE} px-4 py-4 shadow-sm`}
 							>
 								<span>
 									<span className="block font-display text-[17px] font-semibold text-ink">
