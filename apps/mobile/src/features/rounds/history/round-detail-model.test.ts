@@ -233,6 +233,9 @@ describe("shareFileName", () => {
 		expect(shareFileName("Łódź Æbeltoft", sat)).toBe(
 			"Fairway-lodz-aebeltoft-2026-11-14.png",
 		);
+		expect(shareFileName("Kılıç Golf", sat)).toBe(
+			"Fairway-kilic-golf-2026-11-14.png",
+		);
 	});
 
 	it("leaves the course out when nothing of it survives", () => {

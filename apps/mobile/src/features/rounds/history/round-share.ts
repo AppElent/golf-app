@@ -3,6 +3,9 @@ import type { ComponentRef, RefObject } from "react";
 import { Share, type View } from "react-native";
 import { captureRef } from "react-native-view-shot";
 
+/** A share in progress: a second tap would empty the folder the open sheet reads from. */
+let sharing = false;
+
 /**
  * Sends the card image with the text, the text alone if the capture fails.
  * `fileName` names the image the share sheet shows (see `shareFileName`).
@@ -12,16 +15,23 @@ export async function shareRound(
 	message: string,
 	fileName: string,
 ) {
-	let url: string | undefined;
+	if (sharing) return;
+	sharing = true;
 	try {
-		if (cardRef.current) {
-			url = await captureRef(cardRef, { format: "png", result: "tmpfile" });
+		let url: string | undefined;
+		try {
+			if (cardRef.current) {
+				url = await captureRef(cardRef, { format: "png", result: "tmpfile" });
+			}
+		} catch {
+			// Capture failed: the text still goes out below.
 		}
-	} catch {
-		// Capture failed: the text still goes out below.
+		if (url) url = await named(url, fileName);
+		// On iOS this resolves when the sheet closes, so the guard spans it.
+		await Share.share(url ? { url, message } : { message }).catch(() => {});
+	} finally {
+		sharing = false;
 	}
-	if (url) url = await named(url, fileName);
-	Share.share(url ? { url, message } : { message }).catch(() => {});
 }
 
 /**

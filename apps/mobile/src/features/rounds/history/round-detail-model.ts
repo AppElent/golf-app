@@ -111,6 +111,10 @@ const LATIN_LETTERS: Record<string, string> = {
 	ł: "l",
 	đ: "d",
 	þ: "th",
+	ı: "i",
+	ħ: "h",
+	ŧ: "t",
+	ŋ: "ng",
 };
 
 /** Longest course part of a share file name; whole words are kept. */
@@ -126,7 +130,7 @@ export function shareFileName(courseName: string, startedAt: Date): string {
 		.normalize("NFKD")
 		.replace(/\p{M}/gu, "")
 		.toLowerCase()
-		.replace(/[ßøæœłđþ]/g, (c) => LATIN_LETTERS[c] ?? "")
+		.replace(/[^\x20-\x7e]/g, (c) => LATIN_LETTERS[c] ?? " ")
 		.split(/[^a-z0-9]+/)
 		.filter(Boolean);
 	let course = "";
