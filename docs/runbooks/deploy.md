@@ -13,10 +13,15 @@ A merge to `main` runs **Deploy** (`.github/workflows/deploy.yml`), which calls
    Worker `golf-app-staging` on https://fairway-stg.appelent.nl, then a smoke
    check. Staging is a frontend on the production backend; it has no Convex
    deployment of its own, so a merge cannot change the production backend.
-3. **production**: waits for approval on the `production` GitHub
-   Environment (Actions → the run → *Review deployments*), then deploys
-   production Convex, syncs the course catalog, and ships the `golf-app`
+3. **production**: runs right after staging (the `production` GitHub
+   Environment only restricts deploys to `main`; it has no required reviewer),
+   deploys production Convex, syncs the course catalog, and ships the `golf-app`
    Worker on https://fairway.appelent.nl.
+
+Because a merge ships to production and mobile without a stop, the approval is
+the merge itself: a change that is `high` or could block the installed mobile
+apps waits for Eric's yes on a decision card before it merges (factory
+[runbook](https://github.com/AppElent/developer-home/blob/main/RUNBOOK.md)).
 
 Between steps 2 and 3, staging runs new frontend code against the backend
 production last shipped. A change that needs new Convex functions works on
@@ -67,8 +72,8 @@ is the preview key PR previews use.
    keys), with full permissions: the deploy also runs the internal
    `courseCatalog:sync`. It starts with `prod:`; the workflow refuses anything else. Store it
    in Infisical `prod` under `/fairway` as `convex-deploy-key`.
-2. GitHub Environments `staging` (no protection) and `production` (required
-   reviewer: you; branch: `main`), then the `env:apply` commands above.
+2. GitHub Environments `staging` (no protection) and `production` (branch:
+   `main`, no required reviewers or wait timer), then the `env:apply` commands above.
 
 ## Verify
 
@@ -76,8 +81,9 @@ is the preview key PR previews use.
 
 ## When it goes wrong
 
-- **Production never starts**: it is waiting for approval, or a newer merge
-  replaced it in the queue. Approve the newest run.
+- **Production never starts**: a newer merge replaced it in the queue, or
+  someone added a reviewer gate back to the `production` Environment. Remove
+  the gate; approvals happen before the merge, not in the Actions UI.
 - **Build targets the wrong Worker**: the Cloudflare Vite plugin writes the
   Worker name into `dist/server/wrangler.json` from `CLOUDFLARE_ENV` at build
   time, and `wrangler deploy --env` is ignored. The deploy step refuses a

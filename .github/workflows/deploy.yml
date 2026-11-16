@@ -1,9 +1,10 @@
 name: Deploy
 
-# A merge to main: checks → staging → production (waits for approval) →
-# mobile update. Production deploys the commit staging just ran, through the
-# same steps; the approval is the `production` GitHub Environment's required
-# reviewer. Releases queue rather than cancel: a newer merge waiting behind
+# A merge to main: checks → staging → production → mobile update.
+# Production deploys the commit staging just ran, through the same steps. The
+# `production` GitHub Environment only restricts deploys to main; it has no
+# required reviewer, because approval happens before the merge (decision card
+# in the Developer Home project chat). Releases queue rather than cancel: a newer merge waiting behind
 # another replaces the older waiting one.
 #
 # Each target's values are environment-scoped: the `staging` and `production`
