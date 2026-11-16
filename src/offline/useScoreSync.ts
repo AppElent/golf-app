@@ -18,7 +18,9 @@ import { useOnlineStatus } from "./useOnlineStatus";
 
 const FLUSH_INTERVAL_MS = 15000;
 
-/** The signed-in account's queue; none outside the browser or signed out. */
+/** The signed-in account's queue; none outside the browser or signed out.
+ *  Only screens behind AuthGate use it, so a score is never dropped for want
+ *  of an account. */
 function queueStorage(userId: string | null | undefined): StorageLike | null {
 	if (typeof window === "undefined" || !userId) return null;
 	return accountQueue(window.localStorage, userId);

@@ -123,12 +123,12 @@ describe("accountQueue", () => {
 		expect(readQueue(accountQueue(storage, "user_a"))).toEqual([entry()]);
 	});
 
-	it("keeps an account's own queue over the old one", () => {
+	it("merges the old queue into an account's own", () => {
 		enqueueScore(accountQueue(storage, "user_a"), entry({ roundId: "mine" }));
 		enqueueScore(storage, entry({ roundId: "old" }));
 		expect(
 			readQueue(accountQueue(storage, "user_a")).map((e) => e.roundId),
-		).toEqual(["mine"]);
+		).toEqual(["mine", "old"]);
 		expect(readQueue(storage)).toEqual([]);
 	});
 });

@@ -19,8 +19,11 @@ test("sign in, sign out, and protected paths ask to sign in", async ({
 	});
 
 	await page.getByRole("button", { name: "Sign out" }).click();
-	// Clerk's afterSignOutUrl.
-	await expect(page).toHaveURL(/\/$/, { timeout: 30_000 });
+	// Clerk's afterSignOutUrl, plus any hash the sign-in card adds.
+	const home = new URL("/", page.url()).href;
+	await expect(page).toHaveURL((url) => url.href.split("#")[0] === home, {
+		timeout: 30_000,
+	});
 	await expect(page.getByLabel(/email address/i)).toBeVisible({
 		timeout: 30_000,
 	});

@@ -26,17 +26,18 @@ export function accountQueue(
 	userId: string,
 ): StorageLike {
 	const own = `${QUEUE_KEY}:${userId}`;
-	const legacy = storage.getItem(QUEUE_KEY);
-	if (legacy !== null) {
-		if (storage.getItem(own) === null) storage.setItem(own, legacy);
-		storage.removeItem(QUEUE_KEY);
-	}
 	const scoped = (key: string) => (key === QUEUE_KEY ? own : key);
-	return {
+	const queue: StorageLike = {
 		getItem: (key) => storage.getItem(scoped(key)),
 		setItem: (key, value) => storage.setItem(scoped(key), value),
 		removeItem: (key) => storage.removeItem(scoped(key)),
 	};
+	if (storage.getItem(QUEUE_KEY) !== null) {
+		// Merged, not replaced: a tab still on the old code may have written it.
+		for (const entry of readQueue(storage)) enqueueScore(queue, entry);
+		storage.removeItem(QUEUE_KEY);
+	}
+	return queue;
 }
 
 export function keyFor(
