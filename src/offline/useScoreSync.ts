@@ -76,7 +76,9 @@ export function useScoreSync() {
 		try {
 			do {
 				flushAgain.current = false;
-				for (const queue of [store.own, store.unclaimed]) {
+				// Oldest first: an account's own edit of a hole is newer than an
+				// unclaimed one, and the server keeps the last write.
+				for (const queue of [store.unclaimed, store.own]) {
 					for (const entry of readQueue(queue)) {
 						try {
 							await setScore({

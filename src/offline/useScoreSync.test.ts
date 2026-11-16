@@ -98,3 +98,37 @@ it("shows the unclaimed edits on their own round without counting them", () => {
 	expect(a.result.current.scoreOf("ra", [], 0, 0)).toEqual({ strokes: 5 });
 	a.unmount();
 });
+
+it("sends a hole's unclaimed edit before the account's newer one", async () => {
+	enqueueScore(window.localStorage, entry("ra"));
+	// A corrected that hole offline after the split.
+	enqueueScore(accountQueue(window.localStorage, "user_a"), {
+		...entry("ra"),
+		fields: { strokes: 6 },
+	});
+	const a = renderHook(() => useScoreSync());
+	await waitFor(() => expect(a.result.current.syncing).toBe(false));
+	expect(mocks.setScore.mock.calls.map(([args]) => args.strokes)).toEqual([
+		5, 6,
+	]);
+	expect(a.result.current.scoreOf("ra", [], 0, 0)).toBeUndefined();
+	a.unmount();
+});
+
+it("never retries someone else's unclaimed edits on the timer", async () => {
+	vi.useFakeTimers();
+	try {
+		enqueueScore(window.localStorage, entry("ra"));
+		mocks.userId = "user_b";
+		const b = renderHook(() => useScoreSync());
+		await act(async () => {});
+		const afterMount = mocks.setScore.mock.calls.length;
+		await act(async () => {
+			await vi.advanceTimersByTimeAsync(60_000);
+		});
+		expect(mocks.setScore).toHaveBeenCalledTimes(afterMount);
+		b.unmount();
+	} finally {
+		vi.useRealTimers();
+	}
+});
