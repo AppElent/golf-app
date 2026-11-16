@@ -48,7 +48,7 @@ function CourseEditor() {
 		return (
 			<Page>
 				<PageTitle>{course.name}</PageTitle>
-				<p className="mt-1 text-label text-moss">
+				<p className="mt-1 max-w-prose text-label text-moss">
 					Catalog course — checked against the club's scorecard and kept the
 					same for everyone. Spot a mistake? Suggest a correction, or make your
 					own copy to change it for yourself.
@@ -62,29 +62,33 @@ function CourseEditor() {
 						Make my copy
 					</button>
 				</div>
-				<SuggestSection courseId={course._id} />
-				<TeeList tees={tees} />
-				<section className="mt-8">
-					<SectionTitle>Holes</SectionTitle>
-					<ul className="mt-3 grid grid-cols-3 gap-2">
-						{holes.map((hole) => (
-							<li
-								key={hole._id}
-								className={`rounded-xl border ${SURFACE} px-3 py-2 text-label text-ink`}
-							>
-								<span className="font-display font-semibold">
-									{hole.number}
-								</span>{" "}
-								· par {hole.par ?? "–"} · SI {hole.strokeIndex ?? "–"}
-								{hole.lengthMeters ? (
-									<span className="block text-caption text-moss">
-										{Math.round(hole.lengthMeters)} m
-									</span>
-								) : null}
-							</li>
-						))}
-					</ul>
-				</section>
+				<Columns>
+					<div>
+						<SuggestSection courseId={course._id} />
+						<TeeList tees={tees} />
+					</div>
+					<section className="mt-8 lg:mt-6">
+						<SectionTitle>Holes</SectionTitle>
+						<ul className="mt-3 grid grid-cols-3 gap-2 md:grid-cols-6 lg:grid-cols-3 xl:grid-cols-4">
+							{holes.map((hole) => (
+								<li
+									key={hole._id}
+									className={`rounded-xl border ${SURFACE} px-3 py-2 text-label text-ink`}
+								>
+									<span className="font-display font-semibold">
+										{hole.number}
+									</span>{" "}
+									· par {hole.par ?? "–"} · SI {hole.strokeIndex ?? "–"}
+									{hole.lengthMeters ? (
+										<span className="block text-caption text-moss">
+											{Math.round(hole.lengthMeters)} m
+										</span>
+									) : null}
+								</li>
+							))}
+						</ul>
+					</section>
+				</Columns>
 			</Page>
 		);
 	}
@@ -92,54 +96,63 @@ function CourseEditor() {
 	return (
 		<Page>
 			<PageTitle>Edit my copy</PageTitle>
-			<p className="mt-1 text-label text-moss">
+			<p className="mt-1 max-w-prose text-label text-moss">
 				Only you see this copy. Changes here don't touch the catalog — suggest
 				them below if everyone should have them.
 			</p>
 
-			<MetaSection
-				name={course.name}
-				city={course.city ?? ""}
-				onSave={(name, city) =>
-					updateMeta({ courseId: course._id, name, city })
-				}
-			/>
+			<Columns>
+				<div>
+					<MetaSection
+						name={course.name}
+						city={course.city ?? ""}
+						onSave={(name, city) =>
+							updateMeta({ courseId: course._id, name, city })
+						}
+					/>
 
-			<TeeSection
-				tee={tee}
-				onSave={(name, courseRating, slopeRating) =>
-					upsertTee({
-						teeId: tee?._id,
-						courseId: course._id,
-						name,
-						courseRating,
-						slopeRating,
-					})
-				}
-			/>
+					<TeeSection
+						tee={tee}
+						onSave={(name, courseRating, slopeRating) =>
+							upsertTee({
+								teeId: tee?._id,
+								courseId: course._id,
+								name,
+								courseRating,
+								slopeRating,
+							})
+						}
+					/>
+				</div>
 
-			<section className="mt-8">
-				<SectionTitle>Holes</SectionTitle>
-				<ul className="mt-3 flex flex-col gap-2">
-					{holes.map((hole) => (
-						<HoleRow
-							key={hole._id}
-							number={hole.number}
-							refLabel={hole.ref}
-							par={hole.par}
-							strokeIndex={hole.strokeIndex}
-							hasGeometry={
-								hole.ref !== undefined && refsWithGeometry.has(hole.ref)
-							}
-							onSave={(par, strokeIndex) =>
-								upsertHole({ holeId: hole._id, par, strokeIndex })
-							}
-						/>
-					))}
-				</ul>
-			</section>
+				<section className="mt-8 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-6">
+					<SectionTitle>Holes</SectionTitle>
+					<ul className="mt-3 flex flex-col gap-2">
+						{holes.map((hole) => (
+							<HoleRow
+								key={hole._id}
+								number={hole.number}
+								refLabel={hole.ref}
+								par={hole.par}
+								strokeIndex={hole.strokeIndex}
+								hasGeometry={
+									hole.ref !== undefined && refsWithGeometry.has(hole.ref)
+								}
+								onSave={(par, strokeIndex) =>
+									upsertHole({ holeId: hole._id, par, strokeIndex })
+								}
+							/>
+						))}
+					</ul>
+				</section>
 
-			{course.forkedFrom ? <SuggestSection courseId={course._id} /> : null}
+				{/* After the holes on a phone; under the tee in the left column. */}
+				{course.forkedFrom ? (
+					<div className="lg:col-start-1">
+						<SuggestSection courseId={course._id} />
+					</div>
+				) : null}
+			</Columns>
 
 			<button
 				type="button"
@@ -166,6 +179,17 @@ function CourseEditor() {
 				Delete my copy
 			</button>
 		</Page>
+	);
+}
+
+/** Side panel and main column next to each other from the `lg` breakpoint;
+ *  stacked (side panel first) below it. Only on large-screen routes, whose
+ *  shell is as wide as the window. */
+function Columns({ children }: { children: React.ReactNode }) {
+	return (
+		<div className="lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-10">
+			{children}
+		</div>
 	);
 }
 

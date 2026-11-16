@@ -8,6 +8,7 @@ import {
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import BottomNav from "../components/BottomNav";
 import { isPublicPath } from "../components/LegalPage";
+import { useLargeScreenRoute } from "../components/large-screen";
 import { ServiceWorker } from "../components/ServiceWorker";
 import { AuthGate } from "../integrations/clerk/auth-gate";
 import ClerkProvider from "../integrations/clerk/provider";
@@ -39,6 +40,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 	const isPublic = useRouterState({
 		select: (state) => isPublicPath(state.location.pathname),
 	});
+	// Large-screen features (features.ts) use the window's width; every other
+	// page stays in the 430px phone column.
+	const largeScreen = useLargeScreenRoute();
 	return (
 		<html lang="en">
 			<head>
@@ -48,11 +52,17 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<ClerkProvider>
 					<ConvexProvider>
 						<SimulationModeProvider>
-							<div className="relative mx-auto min-h-dvh w-full max-w-[430px] bg-cream shadow-2xl">
+							<div
+								className={
+									largeScreen
+										? "relative min-h-dvh w-full bg-cream"
+										: "relative mx-auto min-h-dvh w-full max-w-[430px] bg-cream shadow-2xl"
+								}
+							>
 								{isPublic ? children : <AuthGate>{children}</AuthGate>}
 							</div>
 						</SimulationModeProvider>
-						{isPublic ? null : <BottomNav />}
+						{isPublic ? null : <BottomNav wide={largeScreen} />}
 						<ServiceWorker />
 						<TanStackDevtools
 							config={{ position: "bottom-right" }}

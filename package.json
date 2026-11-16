@@ -9,6 +9,7 @@
     "build": "vite build && node scripts/remove-client-sourcemaps.mjs",
     "typecheck": "tsc --noEmit && tsc -p convex --noEmit && pnpm --filter @fairway/core typecheck && pnpm --filter @fairway/mobile typecheck",
     "test": "vitest run",
+    "test:e2e": "playwright test",
     "lint:fix": "biome check --write",
     "check": "biome check && pnpm check:mobile-structure && pnpm check:repo-layout",
     "cf-typegen": "wrangler types",
@@ -47,6 +48,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.6.4",
     "@edge-runtime/vm": "^5.0.0",
+    "@playwright/test": "^1.65.0",
     "@sentry/node": "11.10.0",
     "@sentry/vite-plugin": "11.10.0",
     "@tanstack/devtools-vite": "^0.8.6",

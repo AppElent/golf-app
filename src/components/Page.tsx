@@ -1,4 +1,17 @@
+import { LargeScreenNotice, useLargeScreenRoute } from "./large-screen";
+
+/** A page's frame. On a large-screen route it widens and, at phone width,
+ *  starts with the "best on a larger screen" notice. */
 export function Page({ children }: { children: React.ReactNode }) {
+	const largeScreen = useLargeScreenRoute();
+	if (largeScreen) {
+		return (
+			<main className="mx-auto w-full max-w-6xl px-5 pt-16 pb-[110px] md:px-10">
+				<LargeScreenNotice />
+				{children}
+			</main>
+		);
+	}
 	return <main className="px-5 pt-16 pb-[110px]">{children}</main>;
 }
 
