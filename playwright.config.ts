@@ -14,8 +14,15 @@ export default defineConfig({
 	projects: [
 		{ name: "sign-in", testMatch: /sign-in\.setup\.ts/ },
 		{
+			// Signs in and out in a session of its own (no stored state).
+			name: "sign-out",
+			testMatch: /sign-out\.spec\.ts/,
+			use: { viewport: { width: 390, height: 844 } },
+		},
+		{
 			name: "desktop",
 			dependencies: ["sign-in"],
+			testIgnore: /sign-out\.spec\.ts/,
 			use: {
 				viewport: { width: 1440, height: 900 },
 				storageState: "e2e/.auth/user.json",
@@ -24,6 +31,7 @@ export default defineConfig({
 		{
 			name: "phone",
 			dependencies: ["sign-in"],
+			testIgnore: /sign-out\.spec\.ts/,
 			use: {
 				viewport: { width: 390, height: 844 },
 				hasTouch: true,

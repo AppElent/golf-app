@@ -1,7 +1,7 @@
 ---
 type: decision
 description: Read before deciding which platform a feature ships on, adding or moving a web or phone route, or adding a shareable link.
-version: 1.0.1
+version: 1.0.2
 status: accepted
 date: 2026-11-14
 ---
@@ -56,7 +56,6 @@ there would be cost without users. Consequences in `features.ts`:
 
 **The reduced floor is not met yet.** These are `pending-port` with follow-ups:
 
-- `sign-out`: the phone has it; the web shell has no sign-out control.
 - `account-deletion`: the phone deletes the account (`convex/account.ts`
   `deleteMyData`, then the Clerk user); the web does not. A web port reuses
   the same mutation.
@@ -66,6 +65,8 @@ there would be cost without users. Consequences in `features.ts`:
 - `data-export`: neither platform exports a user's data. When it lands, it
   covers every table on both platforms, including data whose screens are
   phone-only.
+
+`sign-out` is `parity` since APP-116: both sign out from the Profile tab.
 
 `privacy` is `parity`: the web serves `/privacy` publicly, and the phone opens
 that page from the Profile tab. `support` is a web page the App Store listing

@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing sign-in, the web app shell, or who may read or write a user's data in Convex.
-version: 1.1.0
+version: 1.2.0
 status: current
 ---
 
@@ -16,6 +16,12 @@ signing in with Clerk.
   `ConvexProvider` → `AuthGate` (`src/integrations/clerk/auth-gate.tsx`). Signed
   out, the gate shows Clerk's sign-in and renders nothing behind it; signed in, it
   mounts the app once Convex has the token. There is no test-login button.
+- **Sign-out:** the Account section at the foot of `/profile`
+  (`src/integrations/clerk/account-section.tsx`) calls Clerk's `signOut()` and
+  leaves simulation mode. Clerk returns the tab to `afterSignOutUrl` (`/`), and
+  `AuthGate` shows the sign-in card on every protected path. The web score
+  queue (`src/offline`) is kept, so the same golfer's unsent scores still go
+  after they sign back in.
 - **Public pages:** the paths in `PUBLIC_PATHS` (`src/components/LegalPage.tsx`),
   `/privacy` and `/support`, render without `AuthGate` and without the tab bar, so
   App Store Connect and the phone app can link to them. They read no user data.

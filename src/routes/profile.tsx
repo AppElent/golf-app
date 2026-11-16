@@ -15,6 +15,7 @@ import { INVALID_INDEX_MESSAGE } from "../components/copy";
 import { Page, PageNote, PageTitle, Section } from "../components/Page";
 import { PillToggle } from "../components/PillToggle";
 import { StatCard } from "../components/StatCard";
+import { AccountSection } from "../integrations/clerk/account-section";
 import { useSimulationMode } from "../play/simulation";
 
 export const Route = createFileRoute("/profile")({ component: ProfileScreen });
@@ -158,6 +159,8 @@ function ProfileScreen() {
 			<Section title="Club bag">
 				<ClubBag clubs={clubs ?? []} units={units} />
 			</Section>
+
+			<AccountSection />
 		</Page>
 	);
 }
