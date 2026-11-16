@@ -226,6 +226,15 @@ describe("shareFileName", () => {
 		);
 	});
 
+	it("spells out letters that have no accent to drop", () => {
+		expect(shareFileName("Großer Golfclub Søllerød", sat)).toBe(
+			"Fairway-grosser-golfclub-sollerod-2026-11-14.png",
+		);
+		expect(shareFileName("Łódź Æbeltoft", sat)).toBe(
+			"Fairway-lodz-aebeltoft-2026-11-14.png",
+		);
+	});
+
 	it("leaves the course out when nothing of it survives", () => {
 		expect(shareFileName("", sat)).toBe("Fairway-2026-11-14.png");
 		expect(shareFileName("ゴルフ場 ⛳", sat)).toBe("Fairway-2026-11-14.png");

@@ -102,6 +102,17 @@ export function shareCardStats({ stats }: RoundTiles): RoundTile[] {
 	return stats.slice(0, SHARE_CARD_STATS);
 }
 
+/** Latin letters NFKD does not split into a base letter and an accent. */
+const LATIN_LETTERS: Record<string, string> = {
+	ß: "ss",
+	ø: "o",
+	æ: "ae",
+	œ: "oe",
+	ł: "l",
+	đ: "d",
+	þ: "th",
+};
+
 /** Longest course part of a share file name; whole words are kept. */
 const SHARE_NAME_COURSE_MAX = 40;
 
@@ -113,8 +124,9 @@ const SHARE_NAME_COURSE_MAX = 40;
 export function shareFileName(courseName: string, startedAt: Date): string {
 	const words = courseName
 		.normalize("NFKD")
-		.replace(/[̀-ͯ]/g, "")
+		.replace(/\p{M}/gu, "")
 		.toLowerCase()
+		.replace(/[ßøæœłđþ]/g, (c) => LATIN_LETTERS[c] ?? "")
 		.split(/[^a-z0-9]+/)
 		.filter(Boolean);
 	let course = "";
