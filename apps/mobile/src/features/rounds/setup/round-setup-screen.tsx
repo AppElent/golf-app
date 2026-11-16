@@ -58,8 +58,15 @@ export function RoundSetupScreen({
 	const settings = useQuery(api.settings.get);
 	// Waited for, so the tee is seeded once, with the right default.
 	const lastTeeId = useQuery(api.rounds.lastTee, { courseId });
+	// A simulation may run beside a real round; a second real round may not.
+	// Waited for too, so Start is never offered before the guard can decide.
+	const active = useQuery(api.rounds.active, simulate ? "skip" : {});
 
-	if (detail === undefined || lastTeeId === undefined) {
+	if (
+		detail === undefined ||
+		lastTeeId === undefined ||
+		(!simulate && active === undefined)
+	) {
 		return (
 			<FormScreen>
 				<SkeletonList rows={5} />
@@ -75,6 +82,7 @@ export function RoundSetupScreen({
 			simulate={simulate}
 			detail={detail}
 			lastTeeId={lastTeeId}
+			active={active ?? null}
 			settings={settings}
 		/>
 	);
@@ -85,12 +93,14 @@ function RoundSetupForm({
 	simulate,
 	detail,
 	lastTeeId,
+	active,
 	settings,
 }: {
 	courseId: Id<"courses">;
 	simulate: boolean;
 	detail: CourseDetail;
 	lastTeeId: Id<"tees"> | null;
+	active: { course: { name: string } } | null;
 	settings: ReturnType<typeof useQuery<typeof api.settings.get>>;
 }) {
 	const router = useRouter();
@@ -109,8 +119,6 @@ function RoundSetupForm({
 	const [ownerIndex, setOwnerIndex] = useState<string | null>(null);
 	const [guests, setGuests] = useState<GuestDraft[]>([]);
 	const submit = useSubmit();
-	// A simulation may run beside a real round; a second real round may not.
-	const active = useQuery(api.rounds.active, simulate ? "skip" : {});
 
 	// Seeded during render, so the form never paints unseeded; the query results
 	// can still fill in later, and an edit is never overwritten.

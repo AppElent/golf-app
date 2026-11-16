@@ -462,7 +462,7 @@ export function FormChoiceRow({
 		<Pressable
 			onPress={onPress}
 			accessibilityRole={role}
-			accessibilityLabel={label}
+			accessibilityLabel={secondary ? `${label}, ${secondary}` : label}
 			accessibilityState={{ checked: selected }}
 			style={({ pressed }) => ({
 				minHeight: 52,

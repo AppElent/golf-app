@@ -123,7 +123,7 @@ describe("rounds", () => {
 	});
 
 	it("remembers the tee of the latest real round on a course", async () => {
-		const { alice, bob, course } = await setup();
+		const { t, alice, bob, course } = await setup();
 		const courseId = course.course._id;
 		const holeRefs = course.holes
 			.slice(0, 9)
@@ -156,6 +156,10 @@ describe("rounds", () => {
 			second.teeId,
 		);
 		expect(await bob.query(api.rounds.lastTee, { courseId })).toBeNull();
+
+		// A retired tee falls back to the app's default.
+		await t.run((ctx) => ctx.db.patch(second.teeId, { retired: true }));
+		expect(await alice.query(api.rounds.lastTee, { courseId })).toBeNull();
 	});
 
 	it("allows one active round at a time", async () => {

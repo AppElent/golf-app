@@ -2,7 +2,7 @@ import { holeLabel } from "@fairway/core/format";
 import { wouldBeFromHistory } from "@fairway/core/handicap";
 import { playedHoles } from "@fairway/core/round";
 import { useMutation } from "convex/react";
-import { useRouter } from "expo-router";
+import { useNavigation, useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { api } from "../../../convex/api";
@@ -31,6 +31,7 @@ const RECENT = 3;
 
 export function HomeSummaryScreen() {
 	const router = useRouter();
+	const navigation = useNavigation();
 	const styles = useThemedStyles(createStyles);
 	const { t, locale, numbers } = useI18n();
 	const active = useActiveRound();
@@ -79,7 +80,8 @@ export function HomeSummaryScreen() {
 		try {
 			await abandon({ roundId: round._id });
 			if (round.simulated) endSimulation();
-			router.push("/courses");
+			// A slow stop must not yank the user away from where they went since.
+			if (navigation.isFocused()) router.push("/courses");
 		} catch (e) {
 			toast.error(convexErrorMessage(e, t.home.stopError));
 		} finally {
