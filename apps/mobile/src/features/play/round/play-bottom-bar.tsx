@@ -1,7 +1,7 @@
 import { useRouter } from "expo-router";
 import { Pressable, StyleSheet, View } from "react-native";
 import { fmt, useI18n } from "../../../i18n";
-import { course, spacing } from "../../../theme";
+import { course, radius, spacing } from "../../../theme";
 import { AppText } from "../../../ui/text";
 import { HudButton } from "../hud/hud-button";
 import { hudLayout } from "../hud/hud-layout";
@@ -81,7 +81,7 @@ const styles = StyleSheet.create({
 	scoreButton: {
 		flex: 1,
 		minHeight: hudLayout.barMinHeight,
-		borderRadius: 26,
+		borderRadius: radius.pill,
 		backgroundColor: course.target,
 		alignItems: "center",
 		justifyContent: "center",

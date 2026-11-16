@@ -19,6 +19,16 @@ export const homeEn = {
 	noRoundsHint: "Your finished rounds show up here.",
 	updateReady: "Update ready",
 	updateReadyHint: "Tap to restart Fairway with the new version.",
+	startNewRound: "Start a new round",
+	newRoundTitle: "Round in progress",
+	newRoundMessage:
+		"{course}, {n} of {total} played. Resume it, or stop it to start a new round. Stopping deletes its scores.",
+	stopRound: "Stop round",
+	stopError: "Could not stop the round.",
+	inProgressTitle: "A round is in progress",
+	inProgressBody:
+		"Finish or stop your round at {course} before you start another.",
+	resumeRound: "Resume round",
 };
 
 export const homeNl: typeof homeEn = {
@@ -41,6 +51,16 @@ export const homeNl: typeof homeEn = {
 	noRoundsHint: "Je afgeronde rondes verschijnen hier.",
 	updateReady: "Update klaar",
 	updateReadyHint: "Tik om Fairway met de nieuwe versie te herstarten.",
+	startNewRound: "Nieuwe ronde starten",
+	newRoundTitle: "Ronde bezig",
+	newRoundMessage:
+		"{course}, {n} van {total} gespeeld. Hervat hem, of stop hem om een nieuwe ronde te starten. Stoppen verwijdert de scores.",
+	stopRound: "Ronde stoppen",
+	stopError: "De ronde kon niet worden gestopt.",
+	inProgressTitle: "Er loopt al een ronde",
+	inProgressBody:
+		"Rond je ronde op {course} af of stop hem voordat je een nieuwe start.",
+	resumeRound: "Ronde hervatten",
 };
 
 export const coursesEn = {
@@ -82,6 +102,7 @@ export const setupEn = {
 		"Holes {holes} are missing par or stroke index. Complete them on the web first.",
 	tee: "Tee",
 	teeDetail: "CR {cr} · slope {slope}",
+	allTees: "Show all {count} tees",
 	format: "Format",
 	stableford: "Stableford",
 	stroke: "Stroke play",
@@ -124,6 +145,7 @@ export const setupNl: typeof setupEn = {
 		"Bij holes {holes} ontbreekt par of strokeindex. Vul ze eerst aan op het web.",
 	tee: "Tee",
 	teeDetail: "CR {cr} · slope {slope}",
+	allTees: "Alle {count} tees tonen",
 	format: "Spelvorm",
 	stableford: "Stableford",
 	stroke: "Strokeplay",
@@ -164,6 +186,9 @@ export const simulatorEn = {
 	running: "Simulation in progress",
 	resume: "Resume",
 	pickCourse: "Start on a course",
+	ended: "Simulation ended, nothing saved",
+	paused:
+		"Simulation paused, nothing saved. Resume it from the course simulator.",
 };
 
 export const simulatorNl: typeof simulatorEn = {
@@ -173,4 +198,7 @@ export const simulatorNl: typeof simulatorEn = {
 	running: "Simulatie bezig",
 	resume: "Hervatten",
 	pickCourse: "Starten op een baan",
+	ended: "Simulatie beëindigd, niets opgeslagen",
+	paused:
+		"Simulatie gepauzeerd, niets opgeslagen. Hervat hem in de baansimulator.",
 };

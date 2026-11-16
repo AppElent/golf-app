@@ -48,7 +48,7 @@ function CourseEditor() {
 		return (
 			<Page>
 				<PageTitle>{course.name}</PageTitle>
-				<p className="mt-1 max-w-prose text-[13px] text-moss">
+				<p className="mt-1 max-w-prose text-label text-moss">
 					Catalog course — checked against the club's scorecard and kept the
 					same for everyone. Spot a mistake? Suggest a correction, or make your
 					own copy to change it for yourself.
@@ -57,7 +57,7 @@ function CourseEditor() {
 					<button
 						type="button"
 						onClick={makeCopy}
-						className="rounded-full bg-pine px-5 py-2 font-display text-[13px] font-semibold text-cream"
+						className="rounded-full bg-pine px-5 py-2 font-display text-label font-semibold text-cream"
 					>
 						Make my copy
 					</button>
@@ -73,14 +73,14 @@ function CourseEditor() {
 							{holes.map((hole) => (
 								<li
 									key={hole._id}
-									className={`rounded-xl border ${SURFACE} px-3 py-2 text-[13px] text-ink`}
+									className={`rounded-xl border ${SURFACE} px-3 py-2 text-label text-ink`}
 								>
 									<span className="font-display font-semibold">
 										{hole.number}
 									</span>{" "}
 									· par {hole.par ?? "–"} · SI {hole.strokeIndex ?? "–"}
 									{hole.lengthMeters ? (
-										<span className="block text-[11px] text-moss">
+										<span className="block text-caption text-moss">
 											{Math.round(hole.lengthMeters)} m
 										</span>
 									) : null}
@@ -96,7 +96,7 @@ function CourseEditor() {
 	return (
 		<Page>
 			<PageTitle>Edit my copy</PageTitle>
-			<p className="mt-1 max-w-prose text-[13px] text-moss">
+			<p className="mt-1 max-w-prose text-label text-moss">
 				Only you see this copy. Changes here don't touch the catalog — suggest
 				them below if everyone should have them.
 			</p>
@@ -174,7 +174,7 @@ function CourseEditor() {
 					}
 					navigate({ to: "/courses" });
 				}}
-				className="mt-8 rounded-full border border-flag/40 px-5 py-2 font-display text-[13px] font-semibold text-flag"
+				className="mt-8 rounded-full border border-flag/40 px-5 py-2 font-display text-label font-semibold text-flag-ink"
 			>
 				Delete my copy
 			</button>
@@ -209,7 +209,7 @@ function TeeList({
 			<SectionTitle>Tees</SectionTitle>
 			<ul className="mt-2 flex flex-col gap-1.5">
 				{tees.map((t) => (
-					<li key={t._id} className="flex items-center gap-2 text-[14px]">
+					<li key={t._id} className="flex items-center gap-2 text-callout">
 						<span
 							className="size-3 rounded-full border border-card-line"
 							style={{ backgroundColor: t.color }}
@@ -241,7 +241,7 @@ function SuggestSection({ courseId }: { courseId: Id<"courses"> }) {
 				rows={3}
 				maxLength={MAX_SUGGESTION_LENGTH}
 				placeholder="For example: hole 7 is par 4 since the 2025 card."
-				className={`${FIELD} mt-2 w-full px-3 py-2 font-sans text-[15px]`}
+				className={`${FIELD} mt-2 w-full px-3 py-2 font-sans text-body`}
 			/>
 			<div className="mt-2 flex items-center gap-3">
 				<button
@@ -256,16 +256,16 @@ function SuggestSection({ courseId }: { courseId: Id<"courses"> }) {
 							setState("error");
 						}
 					}}
-					className="rounded-full bg-live px-4 py-1.5 font-display text-[12px] font-semibold text-white disabled:opacity-40"
+					className="rounded-full bg-live px-4 py-1.5 font-display text-footnote font-semibold text-white disabled:opacity-40"
 				>
 					Send suggestion
 				</button>
 				{state === "sent" ? (
-					<span className="text-[12px] text-moss">
+					<span className="text-footnote text-moss">
 						Thanks — we'll check it.
 					</span>
 				) : state === "error" ? (
-					<span className="text-[12px] text-flag">
+					<span className="text-footnote text-flag-ink">
 						Couldn't send. Try again.
 					</span>
 				) : null}
@@ -287,26 +287,26 @@ function MetaSection({
 	const [c, setC] = useState(city);
 	return (
 		<section className={`mt-6 rounded-2xl border ${SURFACE} p-4`}>
-			<label className="block text-[11px] font-semibold uppercase tracking-wide text-moss">
+			<label className="block text-caption font-semibold uppercase tracking-wide text-moss">
 				Name
 				<input
 					value={n}
 					onChange={(e) => setN(e.target.value)}
-					className={`${FIELD} mt-1 w-full px-3 py-2 font-sans text-[15px]`}
+					className={`${FIELD} mt-1 w-full px-3 py-2 font-sans text-body`}
 				/>
 			</label>
-			<label className="mt-3 block text-[11px] font-semibold uppercase tracking-wide text-moss">
+			<label className="mt-3 block text-caption font-semibold uppercase tracking-wide text-moss">
 				City
 				<input
 					value={c}
 					onChange={(e) => setC(e.target.value)}
-					className={`${FIELD} mt-1 w-full px-3 py-2 font-sans text-[15px]`}
+					className={`${FIELD} mt-1 w-full px-3 py-2 font-sans text-body`}
 				/>
 			</label>
 			<button
 				type="button"
 				onClick={() => onSave(n, c)}
-				className="mt-4 rounded-full bg-pine px-5 py-2 font-display text-[13px] font-semibold text-cream"
+				className="mt-4 rounded-full bg-pine px-5 py-2 font-display text-label font-semibold text-cream"
 			>
 				Save details
 			</button>
@@ -340,7 +340,7 @@ function TeeSection({
 			<button
 				type="button"
 				onClick={() => onSave(name, Number(cr), Number(slope))}
-				className="mt-4 rounded-full bg-pine px-5 py-2 font-display text-[13px] font-semibold text-cream"
+				className="mt-4 rounded-full bg-pine px-5 py-2 font-display text-label font-semibold text-cream"
 			>
 				Save tee
 			</button>
@@ -360,13 +360,13 @@ function Field({
 	inputMode?: "numeric" | "decimal";
 }) {
 	return (
-		<label className="block text-[11px] font-semibold uppercase tracking-wide text-moss">
+		<label className="block text-caption font-semibold uppercase tracking-wide text-moss">
 			{label}
 			<input
 				value={value}
 				inputMode={inputMode}
 				onChange={(e) => onChange(e.target.value)}
-				className={`${FIELD} mt-1 w-full px-3 py-2 font-sans text-[15px]`}
+				className={`${FIELD} mt-1 w-full px-3 py-2 font-sans text-body`}
 			/>
 		</label>
 	);
@@ -400,29 +400,29 @@ function HoleRow({
 		<li
 			className={`flex items-center gap-3 rounded-xl border ${SURFACE} px-3 py-2`}
 		>
-			<span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-pine font-display text-[13px] font-semibold text-cream">
+			<span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-pine font-display text-label font-semibold text-cream">
 				{refLabel || number}
 			</span>
-			<label className="text-[11px] font-semibold uppercase tracking-wide text-moss">
+			<label className="text-caption font-semibold uppercase tracking-wide text-moss">
 				Par
 				<input
 					value={p}
 					inputMode="numeric"
 					onChange={(e) => setP(e.target.value)}
-					className={`${FIELD} mt-0.5 w-14 px-2 py-1.5 font-sans text-[15px]`}
+					className={`${FIELD} mt-0.5 w-14 px-2 py-1.5 font-sans text-body`}
 				/>
 			</label>
-			<label className="text-[11px] font-semibold uppercase tracking-wide text-moss">
+			<label className="text-caption font-semibold uppercase tracking-wide text-moss">
 				SI
 				<input
 					value={si}
 					inputMode="numeric"
 					onChange={(e) => setSi(e.target.value)}
-					className={`${FIELD} mt-0.5 w-14 px-2 py-1.5 font-sans text-[15px]`}
+					className={`${FIELD} mt-0.5 w-14 px-2 py-1.5 font-sans text-body`}
 				/>
 			</label>
 			{!hasGeometry ? (
-				<span className="ml-auto rounded-full bg-flag/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-wide text-flag">
+				<span className="ml-auto rounded-full bg-flag/10 px-2 py-1 text-micro font-semibold uppercase tracking-wide text-flag-ink">
 					No map
 				</span>
 			) : null}
@@ -432,7 +432,7 @@ function HoleRow({
 				onClick={() =>
 					onSave(p === "" ? null : Number(p), si === "" ? null : Number(si))
 				}
-				className="ml-auto rounded-full bg-live px-3 py-1.5 font-display text-[12px] font-semibold text-white disabled:opacity-40"
+				className="ml-auto rounded-full bg-live px-3 py-1.5 font-display text-footnote font-semibold text-white disabled:opacity-40"
 			>
 				Save
 			</button>

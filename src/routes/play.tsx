@@ -38,7 +38,7 @@ function PlayScreen() {
 		return (
 			<Centered>
 				No active round.{" "}
-				<Link to="/rounds/new" className="text-live underline">
+				<Link to="/rounds/new" className="text-live-ink underline">
 					Start one
 				</Link>
 			</Centered>
@@ -120,7 +120,7 @@ function PlayInner({
 	return (
 		<main className="min-h-dvh bg-pine px-4 pt-14 pb-[110px]">
 			{simulated ? (
-				<div className="mb-3 flex items-center justify-between rounded-full bg-flag/90 py-1.5 pr-1.5 pl-4 text-[13px] font-semibold text-white">
+				<div className="mb-3 flex items-center justify-between rounded-full bg-flag/90 py-1.5 pr-1.5 pl-4 text-label font-semibold text-white">
 					<span>Simulation — not saved</span>
 					<button
 						type="button"
@@ -148,7 +148,7 @@ function PlayInner({
 					<p className="font-display text-3xl font-bold leading-none">
 						Hole {idx + 1}
 					</p>
-					<p className="text-[12px] text-mint-soft">
+					<p className="text-footnote text-mint-soft">
 						Par {holeMeta?.par ?? "—"} · SI {holeMeta?.strokeIndex ?? "—"}
 						{holeMeta?.lengthMeters
 							? ` · ${Math.round(holeMeta.lengthMeters)} m`
@@ -172,7 +172,7 @@ function PlayInner({
 						type="button"
 						key={v}
 						onClick={() => setVariant(v)}
-						className={`rounded-full px-3 py-1 font-display text-[11px] font-semibold uppercase tracking-wide ${
+						className={`rounded-full px-3 py-1 font-display text-caption font-semibold uppercase tracking-wide ${
 							variant === v
 								? "bg-live text-white"
 								: "bg-pine-light text-mint-soft"
@@ -207,7 +207,7 @@ function PlayInner({
 				{geo ? (
 					// The hole layouts come from OpenStreetMap; its licence requires
 					// this credit wherever the data is shown.
-					<p className="mt-1 text-right text-[11px] text-stone">
+					<p className="mt-1 text-right text-caption text-mint-soft">
 						© OpenStreetMap contributors
 					</p>
 				) : null}
@@ -244,7 +244,7 @@ function PlayInner({
 				</div>
 			) : null}
 			{hitFailed ? (
-				<p className="mt-2 text-center text-[13px] font-semibold text-flag">
+				<p className="mt-2 text-center text-label font-semibold text-flag-soft">
 					Could not mark the shot.
 				</p>
 			) : null}
@@ -258,7 +258,7 @@ function PlayInner({
 				/>
 			) : null}
 
-			<p className="mt-2 text-center text-[11px] text-mint-soft">
+			<p className="mt-2 text-center text-caption text-mint-soft">
 				{simulated
 					? "Simulated position"
 					: gps
@@ -271,7 +271,7 @@ function PlayInner({
 			<button
 				type="button"
 				onClick={() => navigate({ to: "/card" })}
-				className={`mt-5 ${CTA} text-[15px]`}
+				className={`mt-5 ${CTA} text-body`}
 			>
 				Enter score for hole {idx + 1}
 			</button>
@@ -296,7 +296,7 @@ function SimButton({
 			onClick={onClick}
 			aria-pressed={active}
 			disabled={disabled}
-			className={`rounded-xl px-2 py-2.5 font-display text-[13px] font-semibold disabled:opacity-40 ${
+			className={`rounded-xl px-2 py-2.5 font-display text-label font-semibold disabled:opacity-40 ${
 				active ? "bg-live text-white" : "bg-pine-light text-cream"
 			}`}
 		>
@@ -316,10 +316,8 @@ function HazardList({ hazards }: { hazards: HazardInPlay[] }) {
 	if (hazards.length === 0) return null;
 	return (
 		<section className="mt-3 rounded-2xl bg-pine-light px-3 py-2 text-cream">
-			<h2 className="text-[10px] uppercase tracking-wide opacity-70">
-				Hazards
-			</h2>
-			<ul className="mt-1 flex flex-col gap-1 text-[13px]">
+			<h2 className="text-micro uppercase tracking-wide opacity-70">Hazards</h2>
+			<ul className="mt-1 flex flex-col gap-1 text-label">
 				{hazards.map((h) => (
 					<li
 						key={`${h.kind}-${h.at.lat},${h.at.lng}`}
@@ -345,7 +343,7 @@ function HazardList({ hazards }: { hazards: HazardInPlay[] }) {
 
 function Centered({ children }: { children: React.ReactNode }) {
 	return (
-		<main className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center text-[14px] text-mint-soft">
+		<main className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center text-callout text-moss">
 			{children}
 		</main>
 	);
@@ -364,10 +362,10 @@ function Chip({
 		<div
 			className={`rounded-2xl px-3 py-2 text-center ${accent ? "bg-live text-white" : "bg-pine-light text-cream"}`}
 		>
-			<p className="text-[10px] uppercase tracking-wide opacity-70">{label}</p>
+			<p className="text-micro uppercase tracking-wide opacity-70">{label}</p>
 			<p className="font-display text-2xl font-bold">
 				{value}
-				<span className="text-[11px] opacity-70"> m</span>
+				<span className="text-caption opacity-70"> m</span>
 			</p>
 		</div>
 	);
@@ -385,11 +383,13 @@ function SchematicFallback({
 			<p className="font-display text-lg font-bold text-cream">
 				No map for this hole
 			</p>
-			<p className="mt-1 text-[12px]">
+			<p className="mt-1 text-footnote">
 				Par {par ?? "—"}
 				{lengthMeters ? ` · ${Math.round(lengthMeters)} m` : ""}
 			</p>
-			<p className="mt-1 text-[11px] opacity-70">Geometry incomplete in OSM.</p>
+			<p className="mt-1 text-caption opacity-70">
+				Geometry incomplete in OSM.
+			</p>
 		</div>
 	);
 }

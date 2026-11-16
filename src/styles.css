@@ -8,14 +8,23 @@
 	/* greens */
 	--color-pine: #0f3d2a;
 	--color-pine-light: #144d34;
-	--color-live: #2e9e63;
+	/* live: selected PillToggle fill under white text, and green text on cream */
+	--color-live: #247a4d;
+	/* live-ink: green text on cream or on a live/15 tint */
+	--color-live-ink: #1f6b43;
 	--color-mint: #7fe0a6;
 	--color-mint-soft: #9fc7ae;
 	/* accents & ink */
-	--color-flag: #e0532f;
+	/* flag: the CTA fill under white text */
+	--color-flag: #c93f1d;
+	/* flag-ink: orange-red text (errors, offline) on cream or a flag tint */
+	--color-flag-ink: #a73619;
+	/* flag-soft: orange-red text on pine (the web Play screen) */
+	--color-flag-soft: #ffa48a;
 	--color-ink: #16241c;
 	--color-moss: #5e6e64;
-	--color-stone: #8a968d;
+	/* stone: labels, hints, inactive tabs; 4.5:1 on cream and on white/60 cards */
+	--color-stone: #636e66;
 	--color-sand: #eadfb8;
 	--color-water: #8fbfd0;
 	--color-muted: var(--muted);
@@ -25,10 +34,29 @@
 	--color-map-fairway: #c6da9c;
 	--color-map-green: #6fc188;
 	--color-map-green-edge: #4fa76c;
-	/* type: Manrope isn't in the font import above, so browsers fall through to
-	   the system stack unless it's installed locally */
-	--font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+	--color-map-green-light: #8fd6a2;
+	--color-map-fairway-edge: #d8e7b4;
+	--color-map-fairway-stripe: #cee0a6;
+	--color-map-water-edge: #6fa9bd;
+	--color-map-water-light: #a9d3e0;
+	--color-map-sand-edge: #cdbd84;
+	/* type: body text in Hanken Grotesk, titles and numbers in Space Grotesk;
+	   both come from the font import above */
+	--font-sans: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
 	--font-display: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+	/* type scale: use these, never text-[Npx] */
+	--text-nano: 9px;
+	--text-micro: 10px;
+	--text-caption: 11px;
+	--text-footnote: 12px;
+	--text-label: 13px;
+	--text-callout: 14px;
+	--text-body: 15px;
+	--text-control: 16px;
+	--text-row: 17px;
+	--text-title-sm: 22px;
+	--text-hero: 44px;
+	--text-jumbo: 56px;
 	/* radius */
 	--radius-md: calc(0.625rem - 2px);
 	--radius-lg: 0.625rem;
@@ -43,7 +71,9 @@
 	--focus-ring: oklch(0.871 0.006 286.286);
 
 	--page-ink: #173a40;
-	--page-link: #328f97;
+	/* Links sit on the always-light app column, so the link colour is not themed. */
+	--page-link: #246f76;
+	--page-link-hover: #1b575d;
 	--page-sand: #e7f0e8;
 	--page-foam: #f3faf5;
 	--page-base: #e7f3ec;
@@ -58,7 +88,6 @@
 		--focus-ring: oklch(0.442 0.017 285.786);
 
 		--page-ink: #d7ece8;
-		--page-link: #8de5db;
 		--page-sand: #0f1a1e;
 		--page-foam: #101d22;
 		--page-base: #0a1418;
@@ -74,8 +103,23 @@
 	}
 }
 
-/* The rules below are unlayered, so they beat every Tailwind utility: a text-*
-   class on a link has no effect, and neither would a bg-* class on <body>. */
+/* Links live in the base layer, so a text-* class on a link wins (BottomNav,
+   the inline links on Play and Home). A bare link takes --page-link. */
+@layer base {
+	a {
+		color: var(--page-link);
+		text-decoration-color: color-mix(in oklab, var(--page-link) 40%, transparent);
+		text-decoration-thickness: 1px;
+		text-underline-offset: 2px;
+	}
+
+	a:hover {
+		color: var(--page-link-hover);
+	}
+}
+
+/* The rules below are unlayered, so they beat every Tailwind utility: a bg-*
+   class on <body> has no effect. */
 
 html,
 body {
@@ -124,16 +168,6 @@ body::after {
 	mask-image: radial-gradient(circle at 50% 30%, black, transparent 78%);
 }
 
-a {
-	color: var(--page-link);
-	text-decoration-color: rgba(50, 143, 151, 0.4);
-	text-decoration-thickness: 1px;
-	text-underline-offset: 2px;
-}
-
-a:hover {
-	color: #246f76;
-}
 
 button,
 a {

@@ -20,7 +20,7 @@ export function PillToggle({
 		<button
 			type="button"
 			onClick={onClick}
-			className={`rounded-full border px-4 py-2 font-display text-[13px] font-semibold ${
+			className={`rounded-full border px-4 py-2 font-display text-label font-semibold ${
 				selected ? SELECTED[tone] : `${SURFACE} text-ink`
 			}`}
 		>

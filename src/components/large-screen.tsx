@@ -45,7 +45,7 @@ export function LargeScreenNotice() {
 	return (
 		<p
 			role="note"
-			className={`mb-6 flex items-start gap-2.5 rounded-2xl border ${SURFACE} px-4 py-3 text-[13px] text-moss md:hidden`}
+			className={`mb-6 flex items-start gap-2.5 rounded-2xl border ${SURFACE} px-4 py-3 text-label text-moss md:hidden`}
 		>
 			<Monitor aria-hidden className="mt-0.5 size-4 shrink-0 text-pine" />
 			<span>

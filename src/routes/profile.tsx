@@ -27,14 +27,14 @@ function SimulatorEntry() {
 			<Link
 				to="/play"
 				onClick={() => setSimulating(true)}
-				className={`${CTA} block text-center text-[15px]`}
+				className={`${CTA} block text-center text-body`}
 			>
 				Resume simulation
 			</Link>
 			<Link
 				to="/rounds/new"
 				search={{ simulate: true }}
-				className="text-center text-[13px] text-moss underline"
+				className="text-center text-label text-moss underline"
 			>
 				Start over on another course
 			</Link>
@@ -43,7 +43,7 @@ function SimulatorEntry() {
 		<Link
 			to="/rounds/new"
 			search={{ simulate: true }}
-			className={`${CTA} block text-center text-[15px]`}
+			className={`${CTA} block text-center text-body`}
 		>
 			Start a simulation
 		</Link>
@@ -133,7 +133,7 @@ function ProfileScreen() {
 									homeCourseId: settings.homeCourseId === c._id ? null : c._id,
 								})
 							}
-							className={`rounded-xl border px-4 py-2.5 text-left font-display text-[14px] font-semibold ${
+							className={`rounded-xl border px-4 py-2.5 text-left font-display text-callout font-semibold ${
 								settings.homeCourseId === c._id
 									? "border-live bg-live/10 text-ink"
 									: `${SURFACE} text-ink`
@@ -147,7 +147,7 @@ function ProfileScreen() {
 
 			<Section title="GPS accuracy">
 				<p
-					className={`rounded-xl border ${SURFACE} px-4 py-3 text-[12.5px] text-moss`}
+					className={`rounded-xl border ${SURFACE} px-4 py-3 text-label text-moss`}
 				>
 					On the Play screen your position shows a live dot. When accuracy is
 					worse than {GPS_WEAK_ACCURACY_M} m a soft halo appears around it — the
@@ -188,18 +188,18 @@ function HandicapEditor({
 					placeholder="e.g. 18.4"
 					inputMode="decimal"
 					onChange={(e) => setDraft(e.target.value)}
-					className={`${FIELD} w-28 px-3 py-2 text-center text-[15px]`}
+					className={`${FIELD} w-28 px-3 py-2 text-center text-body`}
 				/>
 				<button
 					type="button"
 					onClick={save}
-					className="rounded-full bg-pine px-5 py-2 font-display text-[13px] font-semibold text-cream"
+					className="rounded-full bg-pine px-5 py-2 font-display text-label font-semibold text-cream"
 				>
 					Save
 				</button>
 			</div>
 			{invalid ? (
-				<p className="mt-2 text-[13px] font-semibold text-flag">
+				<p className="mt-2 text-label font-semibold text-flag-ink">
 					{INVALID_INDEX_MESSAGE}
 				</p>
 			) : null}
@@ -263,7 +263,7 @@ function ClubBag({
 								const v = e.target.value.trim();
 								if (v && v !== club.name) update({ clubId: club._id, name: v });
 							}}
-							className={`${FIELD} w-16 px-2 py-1.5 font-display text-[14px] font-semibold`}
+							className={`${FIELD} w-16 px-2 py-1.5 font-display text-callout font-semibold`}
 						/>
 						<input
 							defaultValue={String(club.carryMeters)}
@@ -273,23 +273,23 @@ function ClubBag({
 								if (!Number.isNaN(n) && n !== club.carryMeters)
 									update({ clubId: club._id, carryMeters: n });
 							}}
-							className={`${FIELD} w-16 px-2 py-1.5 text-center text-[14px]`}
+							className={`${FIELD} w-16 px-2 py-1.5 text-center text-callout`}
 						/>
-						<span className="min-w-[52px] text-[12px] text-moss">
+						<span className="min-w-[52px] text-footnote text-moss">
 							{formatDistance(club.carryMeters, units)}
 						</span>
 						<button
 							type="button"
 							aria-label={`Delete ${club.name}`}
 							onClick={() => remove({ clubId: club._id })}
-							className="ml-auto text-flag"
+							className="ml-auto text-flag-ink"
 						>
 							<Trash2 className="size-4" />
 						</button>
 					</div>
 				))}
 				{clubs.length === 0 ? (
-					<p className="px-4 py-3 text-[12.5px] text-stone">
+					<p className="px-4 py-3 text-label text-stone">
 						No clubs yet — add your bag below.
 					</p>
 				) : null}
@@ -300,14 +300,14 @@ function ClubBag({
 					value={name}
 					placeholder="Club (7i)"
 					onChange={(e) => setName(e.target.value)}
-					className={`${FIELD} w-24 px-3 py-2 text-[14px]`}
+					className={`${FIELD} w-24 px-3 py-2 text-callout`}
 				/>
 				<input
 					value={carry}
 					placeholder="Carry m"
 					inputMode="numeric"
 					onChange={(e) => setCarry(e.target.value)}
-					className={`${FIELD} w-24 px-3 py-2 text-center text-[14px]`}
+					className={`${FIELD} w-24 px-3 py-2 text-center text-callout`}
 				/>
 				<button
 					type="button"
@@ -322,7 +322,7 @@ function ClubBag({
 						setName("");
 						setCarry("");
 					}}
-					className="flex items-center gap-1 rounded-full bg-flag px-4 py-2 font-display text-[13px] font-semibold text-white disabled:opacity-40"
+					className="flex items-center gap-1 rounded-full bg-flag px-4 py-2 font-display text-label font-semibold text-white disabled:opacity-40"
 				>
 					<Plus className="size-4" /> Add
 				</button>

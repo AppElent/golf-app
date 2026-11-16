@@ -37,8 +37,18 @@ const HoleActivity = (
 	environment: LiveActivityEnvironment,
 ) => {
 	"widget";
-	const accent = environment.isLuminanceReduced ? "#FFFFFF" : "#F5D90A";
-	const muted = "#9AA59E";
+	// The widget runtime cannot import the app's tokens, so the palette is
+	// declared here. `target` is the course yellow (`course.target` in
+	// src/theme/tokens.ts); keep them equal.
+	const palette = {
+		target: "#ffd60a",
+		reducedLuminance: "#ffffff",
+		muted: "#9aa59e",
+	};
+	const accent = environment.isLuminanceReduced
+		? palette.reducedLuminance
+		: palette.target;
+	const muted = palette.muted;
 	const side = (label: string, value: string) => (
 		<VStack spacing={0}>
 			<Text

@@ -20,7 +20,7 @@ import { FormScreen } from "../../../ui/form";
 import { NavHeader } from "../../../ui/nav-header";
 import { SkeletonList } from "../../../ui/skeleton";
 import { AppText } from "../../../ui/text";
-import { useSimulationMode } from "../../simulation/mode/use-simulation-mode";
+import { useEndSimulation } from "../../simulation/mode/use-end-simulation";
 import { NoActiveRound } from "../components/no-active-round";
 import { ScorecardGrid } from "../components/scorecard-grid";
 import { cardRows } from "../components/scorecard-model";
@@ -33,7 +33,7 @@ export function ScorecardScreen() {
 	const styles = useThemedStyles(createStyles);
 	const confirm = useConfirm();
 	const active = useActiveRound();
-	const { setSimulating } = useSimulationMode();
+	const endSimulation = useEndSimulation();
 	const finish = useMutation(api.rounds.finish);
 	const abandon = useMutation(api.rounds.abandon);
 	const submit = useSubmit();
@@ -91,7 +91,7 @@ export function ScorecardScreen() {
 			onSuccess: () => {
 				haptics.saveConfirmed();
 				if (round.simulated) {
-					setSimulating(false);
+					endSimulation();
 					router.dismissAll();
 					return;
 				}
@@ -116,7 +116,7 @@ export function ScorecardScreen() {
 		await submit.run(() => abandon({ roundId }), {
 			errorFallback: t.scorecard.abandonError,
 			onSuccess: () => {
-				if (round.simulated) setSimulating(false);
+				if (round.simulated) endSimulation();
 				router.dismissAll();
 			},
 		});

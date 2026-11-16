@@ -14,6 +14,7 @@ import { SkeletonList } from "../../../ui/skeleton";
 import { AppText } from "../../../ui/text";
 import { useCurrentPosition } from "../../location/position/use-current-position";
 import { useUnits } from "../../profile/use-units";
+import { RoundInProgress } from "../../rounds/components/round-in-progress";
 import { pickerCourses } from "./course-picker-model";
 
 export function CoursePickerScreen() {
@@ -21,6 +22,8 @@ export function CoursePickerScreen() {
 	const { t } = useI18n();
 	const courses = useQuery(api.courses.list);
 	const settings = useQuery(api.settings.get);
+	// The real round, whatever simulation mode shows: only it blocks a start.
+	const active = useQuery(api.rounds.active);
 	const { state, request } = useCurrentPosition();
 	const [query, setQuery] = useState("");
 
@@ -30,6 +33,18 @@ export function CoursePickerScreen() {
 	const rows = courses
 		? pickerCourses(courses, { query, position, homeCourseId })
 		: undefined;
+
+	if (active) {
+		return (
+			<ScrollView
+				contentInsetAdjustmentBehavior="automatic"
+				contentContainerStyle={styles.content}
+			>
+				<Stack.Screen options={{ title: t.courses.title }} />
+				<RoundInProgress courseName={active.course.name} />
+			</ScrollView>
+		);
+	}
 
 	return (
 		<ScrollView

@@ -1,16 +1,20 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { Redirect, useLocalSearchParams, useRouter } from "expo-router";
 import { EmailCodeForm } from "../components/email-code-form";
 import { useVerifyEmail } from "./use-verify-email";
 
-/** The address param only says where the code went. */
+/** Reached from sign-up with a code in flight; anything else starts over. */
 export function VerifyEmailScreen() {
 	const router = useRouter();
-	const { email } = useLocalSearchParams<{ email?: string }>();
-	const { verify, resend, resending, busy, notice, error } = useVerifyEmail();
+	const params = useLocalSearchParams<{ email?: string }>();
+	const { email, verify, resend, resending, busy, notice, error } =
+		useVerifyEmail(params.email);
+
+	// `busy` holds after a successful verify, while the sign-in takes over.
+	if (email === null && !busy) return <Redirect href="/sign-up" />;
 
 	return (
 		<EmailCodeForm
-			email={email}
+			email={email ?? undefined}
 			busy={busy}
 			error={error}
 			notice={notice}

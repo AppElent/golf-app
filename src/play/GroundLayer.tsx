@@ -1,6 +1,10 @@
 import type { LatLng } from "@fairway/core/geo";
 import type { Projector } from "@fairway/core/hole-projection";
 import type { HoleGeometry } from "@fairway/core/hole-view";
+import {
+	TEE_MARKER_COLORS,
+	TEE_MARKER_FALLBACK,
+} from "@fairway/core/tee-colors";
 import { MAP_HEIGHT, MAP_WIDTH } from "./defs";
 
 /** Rings have no ids in the data, so the key comes from their coordinates. */
@@ -9,14 +13,6 @@ function ringKey(ring: ReadonlyArray<LatLng>): string {
 	const first = ring[0];
 	return `${first.lat.toFixed(6)},${first.lng.toFixed(6)}`;
 }
-
-const TEE_FILL: Readonly<Record<string, string>> = {
-	white: "#ffffff",
-	yellow: "#ffd400",
-	blue: "#2f8fff",
-	red: "#ff3b30",
-	orange: "#ff9500",
-};
 
 function toPath(ring: ReadonlyArray<LatLng>, proj: Projector): string {
 	if (ring.length === 0) return "";
@@ -53,7 +49,7 @@ export function GroundLayer({
 					key={`fw-${ringKey(ring)}`}
 					d={toPath(ring, proj)}
 					fill="url(#hm-mow)"
-					stroke="#d8e7b4"
+					stroke="var(--color-map-fairway-edge)"
 					strokeWidth={2}
 					strokeLinejoin="round"
 				/>
@@ -64,7 +60,7 @@ export function GroundLayer({
 					key={`wa-${ringKey(ring)}`}
 					d={toPath(ring, proj)}
 					fill="url(#hm-water)"
-					stroke="#6fa9bd"
+					stroke="var(--color-map-water-edge)"
 					strokeWidth={1.5}
 				/>
 			))}
@@ -74,7 +70,7 @@ export function GroundLayer({
 					key={`bk-${ringKey(ring)}`}
 					d={toPath(ring, proj)}
 					fill="var(--color-sand)"
-					stroke="#cdbd84"
+					stroke="var(--color-map-sand-edge)"
 					strokeWidth={1.5}
 					strokeLinejoin="round"
 				/>
@@ -89,7 +85,7 @@ export function GroundLayer({
 						cx={at.x}
 						cy={at.y}
 						r={4.5}
-						fill={TEE_FILL[box.colors[0]] ?? "#ffffff"}
+						fill={TEE_MARKER_COLORS[box.colors[0]] ?? TEE_MARKER_FALLBACK}
 						stroke="var(--color-ink)"
 						strokeWidth={1}
 					/>

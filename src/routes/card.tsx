@@ -37,10 +37,10 @@ function CardScreen() {
 		return (
 			<Page>
 				<PageTitle>Scorecard</PageTitle>
-				<p className="mt-1 text-[13px] text-moss">No active round.</p>
+				<p className="mt-1 text-label text-moss">No active round.</p>
 				<Link
 					to="/rounds/new"
-					className={`mt-6 block ${CTA} text-center text-[16px]`}
+					className={`mt-6 block ${CTA} text-center text-control`}
 				>
 					Start a round
 				</Link>
@@ -115,7 +115,7 @@ function RoundCard({
 			<header className="flex items-baseline justify-between">
 				<PageTitle>{course.name}</PageTitle>
 				<div className="flex flex-col items-end gap-1">
-					<span className="text-[12px] text-moss">{round.loopLabel}</span>
+					<span className="text-footnote text-moss">{round.loopLabel}</span>
 					<SyncPill
 						online={online}
 						pendingCount={pendingCount}
@@ -124,7 +124,7 @@ function RoundCard({
 				</div>
 			</header>
 			{round.simulated ? (
-				<p className="mt-1 text-[12px] font-semibold text-flag">
+				<p className="mt-1 text-footnote font-semibold text-flag-ink">
 					Simulation — not saved
 				</p>
 			) : null}
@@ -136,7 +136,7 @@ function RoundCard({
 							type="button"
 							key={key}
 							onClick={() => setPlayerIndex(i)}
-							className={`rounded-full border px-3 py-1.5 font-display text-[12px] font-semibold ${
+							className={`rounded-full border px-3 py-1.5 font-display text-footnote font-semibold ${
 								playerIndex === i
 									? "border-pine bg-pine text-cream"
 									: `${SURFACE} text-ink`
@@ -166,14 +166,14 @@ function RoundCard({
 									selected === holeIndex ? "bg-pine/10 ring-1 ring-pine" : ""
 								}`}
 							>
-								<span className="text-[10px] font-semibold text-stone">
+								<span className="text-micro font-semibold text-stone">
 									{holeIndex + 1}
 								</span>
 								<MarkCell
 									mark={scoreMark(hole.par, strokes)}
 									strokes={s?.nr ? "NR" : (strokes ?? "·")}
 								/>
-								<span className="text-[9px] text-stone">{hole.par}</span>
+								<span className="text-nano text-stone">{hole.par}</span>
 							</button>
 						);
 					})}
@@ -196,11 +196,11 @@ function RoundCard({
 				<div className="flex items-baseline justify-between">
 					<h2 className="font-display text-lg font-bold text-ink">
 						Hole {selected + 1}
-						<span className="ml-2 text-[12px] font-semibold text-moss">
+						<span className="ml-2 text-footnote font-semibold text-moss">
 							par {selHole.par} · SI {selHole.strokeIndex}
 						</span>
 					</h2>
-					<span className="text-[11px] uppercase tracking-wide text-stone">
+					<span className="text-caption uppercase tracking-wide text-stone">
 						{player.name}
 					</span>
 				</div>
@@ -247,7 +247,7 @@ function RoundCard({
 						type="button"
 						disabled={selected === 0}
 						onClick={() => setSelected((s) => s - 1)}
-						className="rounded-full border border-card-line px-4 py-2 font-display text-[13px] font-semibold text-ink disabled:opacity-40"
+						className="rounded-full border border-card-line px-4 py-2 font-display text-label font-semibold text-ink disabled:opacity-40"
 					>
 						← Prev
 					</button>
@@ -255,7 +255,7 @@ function RoundCard({
 						type="button"
 						disabled={selected === holes.length - 1}
 						onClick={() => setSelected((s) => s + 1)}
-						className="rounded-full border border-card-line px-4 py-2 font-display text-[13px] font-semibold text-ink disabled:opacity-40"
+						className="rounded-full border border-card-line px-4 py-2 font-display text-label font-semibold text-ink disabled:opacity-40"
 					>
 						Next →
 					</button>
@@ -264,7 +264,7 @@ function RoundCard({
 
 			{confirmFinish ? (
 				<div className="mt-6 rounded-2xl border border-flag/40 bg-flag/5 p-4">
-					<p className="text-[13px] font-semibold text-ink">
+					<p className="text-label font-semibold text-ink">
 						{round.simulated
 							? "End this simulation? It is deleted: nothing counts for your history or handicap."
 							: "Finish this round? Your differential is saved if the card is complete and you have a handicap."}
@@ -274,14 +274,14 @@ function RoundCard({
 							type="button"
 							onClick={onFinish}
 							disabled={hasPending(data.round._id)}
-							className="flex-1 rounded-full bg-flag px-4 py-3 font-display text-[14px] font-bold text-white disabled:opacity-40"
+							className="flex-1 rounded-full bg-flag px-4 py-3 font-display text-callout font-bold text-white disabled:opacity-40"
 						>
 							{hasPending(data.round._id) ? "Saving scores…" : "Finish round"}
 						</button>
 						<button
 							type="button"
 							onClick={() => setConfirmFinish(false)}
-							className="rounded-full border border-card-line px-4 py-3 font-display text-[14px] font-semibold text-ink"
+							className="rounded-full border border-card-line px-4 py-3 font-display text-callout font-semibold text-ink"
 						>
 							Cancel
 						</button>
@@ -292,7 +292,7 @@ function RoundCard({
 					<button
 						type="button"
 						onClick={() => setConfirmFinish(true)}
-						className="flex-1 rounded-full bg-pine px-4 py-3 font-display text-[14px] font-bold text-cream"
+						className="flex-1 rounded-full bg-pine px-4 py-3 font-display text-callout font-bold text-cream"
 					>
 						Finish round
 					</button>
@@ -302,7 +302,7 @@ function RoundCard({
 							await abandon({ roundId: round._id });
 							if (round.simulated) setSimulating(false);
 						}}
-						className="rounded-full border border-card-line px-4 py-3 font-display text-[13px] font-semibold text-moss"
+						className="rounded-full border border-card-line px-4 py-3 font-display text-label font-semibold text-moss"
 					>
 						Abandon
 					</button>
@@ -321,7 +321,7 @@ function MarkCell({
 	strokes: number | string;
 }) {
 	const base =
-		"flex size-7 items-center justify-center font-display text-[13px] font-bold";
+		"flex size-7 items-center justify-center font-display text-label font-bold";
 	switch (mark) {
 		case "eagle":
 			return (
@@ -363,11 +363,11 @@ function Total({
 }) {
 	return (
 		<span className="flex flex-col items-center">
-			<span className="text-[10px] uppercase tracking-wide text-stone">
+			<span className="text-micro uppercase tracking-wide text-stone">
 				{label}
 			</span>
 			<span
-				className={`font-display text-[17px] font-bold ${accent ? "text-live" : "text-ink"}`}
+				className={`font-display text-row font-bold ${accent ? "text-live-ink" : "text-ink"}`}
 			>
 				{value}
 			</span>
@@ -388,7 +388,7 @@ function Stepper({
 }) {
 	return (
 		<div className="mt-3 flex items-center justify-between">
-			<span className="text-[13px] font-semibold text-moss">{label}</span>
+			<span className="text-label font-semibold text-moss">{label}</span>
 			<span className="flex items-center gap-3">
 				<button
 					type="button"
@@ -430,7 +430,7 @@ function Toggle({
 		<button
 			type="button"
 			onClick={onToggle}
-			className={`rounded-full border px-4 py-2 font-display text-[12px] font-bold ${
+			className={`rounded-full border px-4 py-2 font-display text-footnote font-bold ${
 				on
 					? flag
 						? "border-flag bg-flag text-white"
