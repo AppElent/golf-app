@@ -10,7 +10,7 @@ import { useSimulationMode } from "../../play/simulation";
 export function AccountSection() {
 	const { user } = useUser();
 	const { signOut } = useClerk();
-	const { setSimulating } = useSimulationMode();
+	const { simulating, setSimulating } = useSimulationMode();
 	const [signingOut, setSigningOut] = useState(false);
 	const [failed, setFailed] = useState(false);
 	const email = user?.primaryEmailAddress?.emailAddress;
@@ -18,11 +18,14 @@ export function AccountSection() {
 	async function onSignOut() {
 		setSigningOut(true);
 		setFailed(false);
+		// Simulation mode is per tab; the next account starts in its real round.
+		// Off before Clerk navigates away, back on if this golfer stays.
+		const wasSimulating = simulating;
+		setSimulating(false);
 		try {
-			// Simulation mode is per tab; the next account starts in its real round.
-			setSimulating(false);
 			await signOut();
 		} catch {
+			setSimulating(wasSimulating);
 			setFailed(true);
 			setSigningOut(false);
 		}

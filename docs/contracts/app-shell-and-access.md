@@ -20,8 +20,9 @@ signing in with Clerk.
   (`src/integrations/clerk/account-section.tsx`) calls Clerk's `signOut()` and
   leaves simulation mode. Clerk returns the tab to `afterSignOutUrl` (`/`), and
   `AuthGate` shows the sign-in card on every protected path. The web score
-  queue (`src/offline`) is kept, so the same golfer's unsent scores still go
-  after they sign back in.
+  queue (`src/offline`) is kept per Clerk user id, so a golfer's unsent scores
+  go when they sign back in, and the next golfer on that browser neither sends
+  nor sees them.
 - **Public pages:** the paths in `PUBLIC_PATHS` (`src/components/LegalPage.tsx`),
   `/privacy` and `/support`, render without `AuthGate` and without the tab bar, so
   App Store Connect and the phone app can link to them. They read no user data.

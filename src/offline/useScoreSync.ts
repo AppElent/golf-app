@@ -1,9 +1,11 @@
+import { useAuth } from "@clerk/react";
 import { type HoleScore, type ScoreUpdate, scoreAt } from "@fairway/core/round";
 import { useMutation } from "convex/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import {
+	accountQueue,
 	enqueueScore,
 	keyFor,
 	keyOf,
@@ -16,9 +18,10 @@ import { useOnlineStatus } from "./useOnlineStatus";
 
 const FLUSH_INTERVAL_MS = 15000;
 
-function storage(): StorageLike | null {
-	if (typeof window === "undefined") return null;
-	return window.localStorage;
+/** The signed-in account's queue; none outside the browser or signed out. */
+function queueStorage(userId: string | null | undefined): StorageLike | null {
+	if (typeof window === "undefined" || !userId) return null;
+	return accountQueue(window.localStorage, userId);
 }
 
 function overlayFrom(store: StorageLike | null): Map<string, ScoreUpdate> {
@@ -31,6 +34,8 @@ function overlayFrom(store: StorageLike | null): Map<string, ScoreUpdate> {
 export function useScoreSync() {
 	const setScore = useMutation(api.rounds.setScore);
 	const online = useOnlineStatus();
+	const { userId } = useAuth();
+	const storage = useCallback(() => queueStorage(userId), [userId]);
 	const [pending, setPending] = useState<Map<string, ScoreUpdate>>(() =>
 		overlayFrom(storage()),
 	);
@@ -38,7 +43,12 @@ export function useScoreSync() {
 	const flushing = useRef(false);
 	const flushAgain = useRef(false);
 
-	const refresh = useCallback(() => setPending(overlayFrom(storage())), []);
+	const refresh = useCallback(
+		() => setPending(overlayFrom(storage())),
+		[storage],
+	);
+	// Another account's queue never shows: reload it when the account changes.
+	useEffect(refresh, [refresh]);
 
 	const flush = useCallback(async () => {
 		const store = storage();
@@ -75,7 +85,7 @@ export function useScoreSync() {
 			flushing.current = false;
 			setSyncing(false);
 		}
-	}, [setScore, refresh]);
+	}, [setScore, refresh, storage]);
 
 	const submit = useCallback(
 		(entry: ScoreEntry) => {
@@ -85,7 +95,7 @@ export function useScoreSync() {
 			refresh();
 			void flush();
 		},
-		[flush, refresh],
+		[flush, refresh, storage],
 	);
 
 	useEffect(() => {

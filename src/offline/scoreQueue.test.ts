@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
+	accountQueue,
 	enqueueScore,
 	keyFor,
 	keyOf,
@@ -15,6 +16,9 @@ function fakeStorage(): StorageLike {
 		getItem: (k) => map.get(k) ?? null,
 		setItem: (k, v) => {
 			map.set(k, v);
+		},
+		removeItem: (k) => {
+			map.delete(k);
 		},
 	};
 }
@@ -43,6 +47,7 @@ describe("scoreQueue", () => {
 			const unreadable: StorageLike = {
 				getItem: () => stored,
 				setItem: () => {},
+				removeItem: () => {},
 			};
 			expect(readQueue(unreadable)).toEqual([]);
 		},
@@ -90,5 +95,40 @@ describe("scoreQueue", () => {
 		const queued = entry({ holeIndex: 3, playerIndex: 2 });
 		expect(keyFor("r1", 3, 2)).toBe(keyOf(queued));
 		expect(keyFor("r1", 2, 3)).not.toBe(keyOf(queued));
+	});
+});
+
+describe("accountQueue", () => {
+	let storage: StorageLike;
+	beforeEach(() => {
+		storage = fakeStorage();
+	});
+
+	it("keeps each account's unsent scores apart", () => {
+		enqueueScore(accountQueue(storage, "user_a"), entry());
+		const b = accountQueue(storage, "user_b");
+		expect(readQueue(b)).toEqual([]);
+		enqueueScore(b, entry({ roundId: "rb" }));
+		expect(readQueue(accountQueue(storage, "user_a"))).toEqual([entry()]);
+		expect(
+			readQueue(accountQueue(storage, "user_b")).map((e) => e.roundId),
+		).toEqual(["rb"]);
+	});
+
+	it("gives the queue from before accounts were split to the first account, once", () => {
+		enqueueScore(storage, entry());
+		expect(readQueue(accountQueue(storage, "user_a"))).toEqual([entry()]);
+		expect(readQueue(storage)).toEqual([]);
+		expect(readQueue(accountQueue(storage, "user_b"))).toEqual([]);
+		expect(readQueue(accountQueue(storage, "user_a"))).toEqual([entry()]);
+	});
+
+	it("keeps an account's own queue over the old one", () => {
+		enqueueScore(accountQueue(storage, "user_a"), entry({ roundId: "mine" }));
+		enqueueScore(storage, entry({ roundId: "old" }));
+		expect(
+			readQueue(accountQueue(storage, "user_a")).map((e) => e.roundId),
+		).toEqual(["mine"]);
+		expect(readQueue(storage)).toEqual([]);
 	});
 });

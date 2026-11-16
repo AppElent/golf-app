@@ -10,9 +10,34 @@ export interface ScoreEntry {
 export interface StorageLike {
 	getItem(key: string): string | null;
 	setItem(key: string, value: string): void;
+	removeItem(key: string): void;
 }
 
 const QUEUE_KEY = "fairway.scoreQueue";
+
+/**
+ * The queue of one signed-in account, so a golfer who signs in after another
+ * on this browser neither sends nor sees the first one's unsent scores. The
+ * queue from before accounts were split goes to the first account to open it:
+ * the web had no sign-out then, so that is the golfer who wrote it.
+ */
+export function accountQueue(
+	storage: StorageLike,
+	userId: string,
+): StorageLike {
+	const own = `${QUEUE_KEY}:${userId}`;
+	const legacy = storage.getItem(QUEUE_KEY);
+	if (legacy !== null) {
+		if (storage.getItem(own) === null) storage.setItem(own, legacy);
+		storage.removeItem(QUEUE_KEY);
+	}
+	const scoped = (key: string) => (key === QUEUE_KEY ? own : key);
+	return {
+		getItem: (key) => storage.getItem(scoped(key)),
+		setItem: (key, value) => storage.setItem(scoped(key), value),
+		removeItem: (key) => storage.removeItem(scoped(key)),
+	};
+}
 
 export function keyFor(
 	roundId: string,

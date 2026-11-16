@@ -1,4 +1,10 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+	act,
+	cleanup,
+	fireEvent,
+	render,
+	screen,
+} from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
@@ -47,14 +53,19 @@ it("signs out through Clerk once and leaves simulation mode", async () => {
 	);
 	render(<AccountSection />);
 	fireEvent.click(button());
-	expect(mocks.setSimulating).toHaveBeenCalledWith(false);
 	expect(mocks.signOut).toHaveBeenCalledTimes(1);
+	// Simulation mode is off before Clerk navigates away.
+	expect(mocks.setSimulating).toHaveBeenCalledWith(false);
+	expect(mocks.setSimulating.mock.invocationCallOrder[0]).toBeLessThan(
+		mocks.signOut.mock.invocationCallOrder[0],
+	);
 	// While Clerk works, the button cannot send a second request.
 	expect(button().textContent).toBe("Signing out…");
 	expect((button() as HTMLButtonElement).disabled).toBe(true);
 	fireEvent.click(button());
 	expect(mocks.signOut).toHaveBeenCalledTimes(1);
-	finish();
+	await act(async () => finish());
+	expect(mocks.setSimulating).toHaveBeenCalledTimes(1);
 });
 
 it("says so and allows a retry when sign-out fails", async () => {
@@ -65,7 +76,9 @@ it("says so and allows a retry when sign-out fails", async () => {
 		/couldn't sign out/i,
 	);
 	expect((button() as HTMLButtonElement).disabled).toBe(false);
-	fireEvent.click(button());
+	// Still signed in, so back in simulation mode.
+	expect(mocks.setSimulating).toHaveBeenLastCalledWith(true);
+	await act(async () => fireEvent.click(button()));
 	expect(mocks.signOut).toHaveBeenCalledTimes(2);
 });
 

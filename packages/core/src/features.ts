@@ -79,7 +79,7 @@ export const FEATURES = defineFeatures([
 		platforms: ["web", "mobile"],
 		// Both sign out from the Profile tab. Web: the Account section of the
 		// profile page (src/integrations/clerk/account-section.tsx).
-		routes: { web: ["profile"] },
+		routes: { web: ["profile"], mobile: ["(app)/(tabs)/profile/index"] },
 	},
 	{
 		id: "account-deletion",
