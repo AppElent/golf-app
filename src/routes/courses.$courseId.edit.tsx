@@ -123,11 +123,9 @@ function CourseEditor() {
 							})
 						}
 					/>
-
-					{course.forkedFrom ? <SuggestSection courseId={course._id} /> : null}
 				</div>
 
-				<section className="mt-8 lg:mt-6">
+				<section className="mt-8 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-6">
 					<SectionTitle>Holes</SectionTitle>
 					<ul className="mt-3 flex flex-col gap-2">
 						{holes.map((hole) => (
@@ -147,6 +145,13 @@ function CourseEditor() {
 						))}
 					</ul>
 				</section>
+
+				{/* After the holes on a phone; under the tee in the left column. */}
+				{course.forkedFrom ? (
+					<div className="lg:col-start-1">
+						<SuggestSection courseId={course._id} />
+					</div>
+				) : null}
 			</Columns>
 
 			<button
@@ -182,7 +187,7 @@ function CourseEditor() {
  *  shell is as wide as the window. */
 function Columns({ children }: { children: React.ReactNode }) {
 	return (
-		<div className="lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:items-start lg:gap-10">
+		<div className="lg:grid lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] lg:grid-rows-[auto_1fr] lg:items-start lg:gap-x-10">
 			{children}
 		</div>
 	);

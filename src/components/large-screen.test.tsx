@@ -49,6 +49,19 @@ describe("large-screen routes", () => {
 		}
 	});
 
+	it("each resolve to a route file in the flat routes folder", () => {
+		// routeFileOf assumes flat (dot-separated) route files; a nested folder
+		// would silently leave its pages in the phone column.
+		const nested = fs
+			.readdirSync(routesDir, { withFileTypes: true })
+			.filter((entry) => entry.isDirectory());
+		expect(nested.map((entry) => entry.name)).toEqual([]);
+		const files = new Set(routeFiles.map(({ file }) => file));
+		for (const file of LARGE_SCREEN_ROUTE_FILES) {
+			expect(files.has(file), file).toBe(true);
+		}
+	});
+
 	it("map every route id back to its route file", () => {
 		expect(routeFiles.length).toBeGreaterThan(5);
 		for (const { file, id } of routeFiles) {

@@ -37,15 +37,16 @@ pnpm courses:sync     # write the course catalog into the dev deployment
 pnpm env:plan|env:apply|env:check <local|preview|staging|production>
 ```
 
-One test file: `pnpm exec vitest run path/to/file.test.ts`.
+One test file: `pnpm exec vitest run path/to/file.test.ts`. CI's `check` job
+also runs `node scripts/check-project.mjs --strict`.
 
 `pnpm test:e2e` (Playwright, `e2e/`) drives a running app in Chromium at 1440 and
 390px wide. It is not part of `pnpm verify` or CI: it needs a live backend and
 signs in as the Clerk development test user. Set `E2E_BASE_URL` (default
 `http://localhost:3000`, or a PR preview URL), `E2E_USER_EMAIL` and
 `E2E_USER_PASSWORD` (the `test-user-*` values), and run
-`pnpm exec playwright install chromium` once. Screenshots land in `test-results/`. CI's `check` job
-also runs `node scripts/check-project.mjs --strict`.
+`pnpm exec playwright install chromium` once. Screenshots land in
+`test-results/`.
 
 Demo rounds for one user:
 `pnpm exec convex run seed:seedDummyData --identity '{"subject":"user_…"}'`.

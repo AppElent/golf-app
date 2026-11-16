@@ -50,8 +50,8 @@ export function LargeScreenNotice() {
 			<Monitor aria-hidden className="mt-0.5 size-4 shrink-0 text-pine" />
 			<span>
 				<span className="font-semibold text-ink">Best on a larger screen.</span>{" "}
-				Course editing works here, but it's easier on a tablet or computer with
-				a keyboard.
+				Courses work here, but editing them is easier on a tablet or computer
+				with a keyboard.
 			</span>
 		</p>
 	);
