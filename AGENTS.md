@@ -46,8 +46,8 @@ End your report with a **Leftover work** heading listing everything found but le
 
 Blast radius (`low` / `med` / `high`, also `blast-radius:low|med|high` on the PR):
 
-- low: UI, copy, tests, refactors within one module, docs.
-- med: data model changes with migration and rollback, new dependencies, CI/workflows, shared behaviour across several screens.
-- high: auth, payments, production config, secrets, deleting data, permissions, anything affecting other users without a way back.
+- low: copy, styling, small fixes, tests, refactors within one module, docs.
+- med: new features (for example a game), UI flows, new dependencies, shared behaviour across several screens.
+- high: Convex schema, data migrations, deleting data, auth, permissions, payments, production config, secrets, CI or deploy config, and anything that can break the installed mobile apps or affect other users without a way back.
 
 Coding agents never merge. The manager (the Claude Projects hub, the Grok fallback, or the Claude Code Chief of Staff thread) merges `low` and `med` after green CI, green QA, and the tier's review `PROCEED`; `high` and the changes the [factory runbook](https://github.com/AppElent/developer-home/blob/main/RUNBOOK.md) lists as waiting for Eric stay open for Eric. Never read or change production secrets, and never approve production deployments.
