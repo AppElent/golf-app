@@ -187,6 +187,8 @@ export const simulatorEn = {
 	resume: "Resume",
 	pickCourse: "Start on a course",
 	ended: "Simulation ended, nothing saved",
+	paused:
+		"Simulation paused, nothing saved. Resume it from the course simulator.",
 };
 
 export const simulatorNl: typeof simulatorEn = {
@@ -197,4 +199,6 @@ export const simulatorNl: typeof simulatorEn = {
 	resume: "Hervatten",
 	pickCourse: "Starten op een baan",
 	ended: "Simulatie beëindigd, niets opgeslagen",
+	paused:
+		"Simulatie gepauzeerd, niets opgeslagen. Hervat hem in de baansimulator.",
 };

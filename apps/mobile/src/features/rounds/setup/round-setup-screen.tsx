@@ -56,8 +56,10 @@ export function RoundSetupScreen({
 	const { t } = useI18n();
 	const detail = useQuery(api.courses.get, { courseId });
 	const settings = useQuery(api.settings.get);
+	// Waited for, so the tee is seeded once, with the right default.
+	const lastTeeId = useQuery(api.rounds.lastTee, { courseId });
 
-	if (detail === undefined) {
+	if (detail === undefined || lastTeeId === undefined) {
 		return (
 			<FormScreen>
 				<SkeletonList rows={5} />
@@ -72,6 +74,7 @@ export function RoundSetupScreen({
 			courseId={courseId}
 			simulate={simulate}
 			detail={detail}
+			lastTeeId={lastTeeId}
 			settings={settings}
 		/>
 	);
@@ -81,11 +84,13 @@ function RoundSetupForm({
 	courseId,
 	simulate,
 	detail,
+	lastTeeId,
 	settings,
 }: {
 	courseId: Id<"courses">;
 	simulate: boolean;
 	detail: CourseDetail;
+	lastTeeId: Id<"tees"> | null;
 	settings: ReturnType<typeof useQuery<typeof api.settings.get>>;
 }) {
 	const router = useRouter();
@@ -113,7 +118,7 @@ function RoundSetupForm({
 		setPicks(loops.length >= 2 ? [0, 1] : [0]);
 	}
 	if (teeId === null && detail.tees[0]) {
-		setTeeId(defaultTeeId(detail.tees, detail.lastTeeId));
+		setTeeId(defaultTeeId(detail.tees, lastTeeId));
 	}
 	if (settings && ownerIndex === null) {
 		setOwnerIndex(

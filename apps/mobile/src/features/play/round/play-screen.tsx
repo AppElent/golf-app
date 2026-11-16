@@ -214,7 +214,7 @@ function PlayHole({
 				<PlaySimulationBanner
 					top={hudTop + hudLayout.gpsPillTop}
 					onExit={() => {
-						endSimulation();
+						endSimulation("paused");
 						router.back();
 					}}
 				/>

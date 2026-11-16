@@ -43,7 +43,7 @@ type ConfirmOptions = {
 	/** Paints the confirm button red. On for anything that destroys data. */
 	destructive?: boolean;
 	/** A third, non-destructive way out (for example "Resume"). Choosing it
-	 *  runs `onPress` and answers "no". */
+	 *  runs `onPress` and answers "no"; "Keep" then reads "Cancel". */
 	alternative?: { label: string; onPress: () => void };
 };
 
@@ -76,7 +76,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 						next.message,
 						[
 							{
-								text: t.common.keep,
+								text: next.alternative ? t.common.cancel : t.common.keep,
 								style: "cancel",
 								onPress: () => finish(false),
 							},
@@ -104,7 +104,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 				}
 			});
 		},
-		[t.common.keep],
+		[t.common.keep, t.common.cancel],
 	);
 
 	useEffect(
@@ -150,7 +150,9 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 									pressed && { backgroundColor: colors.surface2 },
 								]}
 							>
-								<AppText variant="body">{t.common.keep}</AppText>
+								<AppText variant="body">
+									{options?.alternative ? t.common.cancel : t.common.keep}
+								</AppText>
 							</Pressable>
 
 							{options?.alternative ? (

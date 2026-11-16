@@ -241,6 +241,33 @@ export const start = mutation({
 	},
 });
 
+/**
+ * The tee of the user's latest real round on this course, for round setup to
+ * preselect. Its own query, so the course detail Play subscribes to doesn't
+ * re-run on every round write. `null` without one, or when that tee is retired.
+ */
+export const lastTee = query({
+	args: { courseId: v.id("courses") },
+	handler: async (ctx, { courseId }) => {
+		const userId = await getUserId(ctx);
+		// Newest first: a round is inserted when it starts.
+		const round = await ctx.db
+			.query("rounds")
+			.withIndex("by_user", (q) => q.eq("userId", userId))
+			.order("desc")
+			.filter((q) =>
+				q.and(
+					q.eq(q.field("courseId"), courseId),
+					q.neq(q.field("simulated"), true),
+				),
+			)
+			.first();
+		if (!round) return null;
+		const tee = await ctx.db.get(round.teeId);
+		return tee && !tee.retired ? tee._id : null;
+	},
+});
+
 /** The user's active round, assembled for the scorecard/play screens. */
 export const active = query({
 	args: {},

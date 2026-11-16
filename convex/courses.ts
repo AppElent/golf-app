@@ -20,29 +20,6 @@ async function viewerId(ctx: QueryCtx): Promise<string | null> {
 	return (await ctx.auth.getUserIdentity())?.subject ?? null;
 }
 
-/** The tee of the user's latest real round on this course, if any. */
-async function lastTeeOn(
-	ctx: QueryCtx,
-	userId: string,
-	courseId: Id<"courses">,
-): Promise<Id<"tees"> | null> {
-	const rounds = await ctx.db
-		.query("rounds")
-		.withIndex("by_user", (q) => q.eq("userId", userId))
-		.filter((q) =>
-			q.and(
-				q.eq(q.field("courseId"), courseId),
-				q.neq(q.field("simulated"), true),
-			),
-		)
-		.collect();
-	let latest: Doc<"rounds"> | null = null;
-	for (const round of rounds) {
-		if (!latest || round.startedAt > latest.startedAt) latest = round;
-	}
-	return latest?.teeId ?? null;
-}
-
 /** The tables whose rows belong to one course: copied and deleted with it. */
 const COURSE_CHILD_TABLES = ["tees", "holes", "holeGeometry"] as const;
 
@@ -129,9 +106,8 @@ export const get = query({
 	args: { courseId: v.id("courses") },
 	handler: async (ctx, { courseId }) => {
 		const course = await ctx.db.get(courseId);
-		const userId = await viewerId(ctx);
-		if (!course || !canSee(course, userId)) return null;
-		const [tees, holes, geometry, lastTeeId] = await Promise.all([
+		if (!course || !canSee(course, await viewerId(ctx))) return null;
+		const [tees, holes, geometry] = await Promise.all([
 			ctx.db
 				.query("tees")
 				.withIndex("by_course", (q) => q.eq("courseId", courseId))
@@ -144,14 +120,10 @@ export const get = query({
 				.query("holeGeometry")
 				.withIndex("by_course", (q) => q.eq("courseId", courseId))
 				.collect(),
-			userId ? lastTeeOn(ctx, userId, courseId) : null,
 		]);
-		const liveTees = tees.filter((t) => !t.retired);
 		return {
 			course,
-			tees: liveTees,
-			// Round setup preselects it; a retired tee can't be played again.
-			lastTeeId: liveTees.some((t) => t._id === lastTeeId) ? lastTeeId : null,
+			tees: tees.filter((t) => !t.retired),
 			holes: holes
 				.filter((h) => !h.retired)
 				.sort((a, b) => a.number - b.number),

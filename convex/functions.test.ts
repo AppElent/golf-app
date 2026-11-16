@@ -122,26 +122,40 @@ describe("rounds", () => {
 		expect(history[0].differential).toBeTypeOf("number");
 	});
 
-	it("remembers the tee of the latest round on a course", async () => {
+	it("remembers the tee of the latest real round on a course", async () => {
 		const { alice, bob, course } = await setup();
 		const courseId = course.course._id;
-		expect(course.lastTeeId).toBeNull();
-		const tee = course.tees[1] ?? course.tees[0];
-		const roundId = await alice.mutation(api.rounds.start, {
-			courseId,
-			teeId: tee._id,
-			holeRefs: course.holes.slice(0, 9).flatMap((h) => (h.ref ? [h.ref] : [])),
-			format: "stroke",
-			players: [{ name: "Alice" }],
-		});
-		await alice.mutation(api.rounds.finish, { roundId });
+		const holeRefs = course.holes
+			.slice(0, 9)
+			.flatMap((h) => (h.ref ? [h.ref] : []));
+		const play = async (teeIndex: number, simulated?: boolean) => {
+			const tee = course.tees[teeIndex] ?? course.tees[0];
+			const roundId = await alice.mutation(api.rounds.start, {
+				courseId,
+				teeId: tee._id,
+				holeRefs,
+				format: "stroke",
+				players: [{ name: "Alice" }],
+				simulated,
+			});
+			return { roundId, teeId: tee._id };
+		};
+		expect(await alice.query(api.rounds.lastTee, { courseId })).toBeNull();
+		expect(course.tees.length).toBeGreaterThan(1);
 
-		expect((await alice.query(api.courses.get, { courseId }))?.lastTeeId).toBe(
-			tee._id,
+		const first = await play(0);
+		await alice.mutation(api.rounds.finish, { roundId: first.roundId });
+		const second = await play(course.tees.length - 1);
+		expect(await alice.query(api.rounds.lastTee, { courseId })).toBe(
+			second.teeId,
 		);
-		expect(
-			(await bob.query(api.courses.get, { courseId }))?.lastTeeId,
-		).toBeNull();
+
+		// A simulation beside it doesn't count.
+		await play(0, true);
+		expect(await alice.query(api.rounds.lastTee, { courseId })).toBe(
+			second.teeId,
+		);
+		expect(await bob.query(api.rounds.lastTee, { courseId })).toBeNull();
 	});
 
 	it("allows one active round at a time", async () => {
