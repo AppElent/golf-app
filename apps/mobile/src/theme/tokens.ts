@@ -3,9 +3,11 @@
  *
  * System / Light / Dark is resolved by AppearanceProvider. Static palettes are
  * used only for token definitions and UIKit trait-adaptive chrome. Components
- * read useTokens(). accentFill is the lime fill; accent and accentInk are
- * legible foreground colors in either scheme.
+ * read useTokens(). accentFill is the green fill behind onAccent text; accent
+ * and accentInk are legible foreground colors in either scheme. Every text pair
+ * reaches 4.5:1 in both schemes (see DESIGN_SYSTEM.md, Contrast).
  */
+import { TEE_MARKER_COLORS } from "@fairway/core/tee-colors";
 import { type ColorValue, DynamicColorIOS, Platform } from "react-native";
 
 /** Every colour the app is allowed to use, dark scheme. */
@@ -21,6 +23,8 @@ export const darkColors = {
 	text: "#f1f5f0",
 	textMuted: "#9aaa9f",
 	swipeNeutral: "#7d8478",
+	/** Glyph on a swipe-action capsule (swipeNeutral or danger). */
+	onSwipe: "#ffffff",
 	textFaint: "#919789",
 	border: "rgba(255, 255, 255, 0.07)",
 	borderStrong: "rgba(255, 255, 255, 0.14)",
@@ -32,7 +36,7 @@ export const darkColors = {
 	accentFill: "#3fbf7a",
 	onDanger: "#08130d",
 	scrim: "rgba(0, 0, 0, 0.6)",
-	/** The system orange per scheme. */
+	/** Eagle chart fill: a mark, so at least 3:1 against bg, surface and surface2. */
 	eagle: "#ff9f0a",
 } as const;
 
@@ -41,14 +45,16 @@ export const lightColors: Tokens = {
 	bg: "#f3f4ef",
 	surface: "#ffffff",
 	surface2: "#e7ebe3",
-	accent: "#1c7a4c",
-	accentPressed: "#2e9e63",
-	accentDim: "rgba(28, 122, 76, 0.10)",
+	accent: "#1a7348",
+	accentPressed: "#135a37",
+	accentDim: "rgba(26, 115, 72, 0.10)",
 	onAccent: "#ffffff",
 	accentInk: "#1c6b45",
 	text: "#16241c",
 	textMuted: "#506157",
 	swipeNeutral: "#7d8478",
+	/** Glyph on a swipe-action capsule (swipeNeutral or danger). */
+	onSwipe: "#ffffff",
 	textFaint: "#606b57",
 	border: "rgba(26, 32, 21, 0.12)",
 	borderStrong: "rgba(26, 32, 21, 0.25)",
@@ -57,10 +63,10 @@ export const lightColors: Tokens = {
 	warn: "#865500",
 	warnSoft: "rgba(134, 85, 0, 0.09)",
 	warnBorder: "rgba(134, 85, 0, 0.25)",
-	accentFill: "#2e9e63",
+	accentFill: "#1a7348",
 	onDanger: "#ffffff",
 	scrim: "rgba(0, 0, 0, 0.4)",
-	eagle: "#ff9500",
+	eagle: "#c07000",
 };
 
 /** On-course overlay palette: drawn over satellite imagery, so every value
@@ -95,13 +101,7 @@ export const course = {
 	waterOverlay: "rgba(63, 143, 191, 0.4)",
 	bunkerOverlay: "rgba(233, 216, 166, 0.45)",
 	/** Tee markers, by the color a tee plays from. */
-	teeMarker: {
-		white: "#ffffff",
-		yellow: "#ffd400",
-		blue: "#2f8fff",
-		red: "#ff3b30",
-		orange: "#ff9500",
-	} as Record<string, string>,
+	teeMarker: TEE_MARKER_COLORS as Record<string, string>,
 	birdie: "#e0532f",
 } as const;
 
@@ -200,7 +200,7 @@ function dynamic(dark: string, light: string): ColorValue {
  * On iOS 26 Liquid Glass decides the tab bar's trait on its own from the
  * content under it — even in a dev build with `userInterfaceStyle` baked into
  * Info.plist the bar comes up light for a moment. A static hex is therefore
- * wrong half the time (a lime icon on light glass). These resolve on the UIKit
+ * wrong half the time (a light-green icon on light glass). These resolve on the UIKit
  * side, so the bar is legible whichever way it flips, and they are the reason
  * `accentInk` has a light value at all. Stack headers do NOT use these: their
  * trait resolves light while the ground is dark, so they take the static

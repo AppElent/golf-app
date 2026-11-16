@@ -42,8 +42,8 @@ function HomeScreen() {
 		<Page>
 			<div className="mb-6 flex items-center justify-between">
 				<div>
-					<p className="text-[13px] font-medium text-moss">Welcome back</p>
-					<h1 className="font-display text-[22px] font-bold tracking-tight text-ink">
+					<p className="text-label font-medium text-moss">Welcome back</p>
+					<h1 className="font-display text-title-sm font-bold tracking-tight text-ink">
 						Fairway
 					</h1>
 				</div>
@@ -59,13 +59,13 @@ function HomeScreen() {
 				<div className="pointer-events-none absolute -top-8 -right-8 h-36 w-36 rounded-full bg-live/15" />
 				<div className="flex items-start justify-between">
 					<div>
-						<p className="text-[12.5px] font-semibold tracking-[0.14em] uppercase opacity-70">
+						<p className="text-label font-semibold tracking-[0.14em] uppercase opacity-70">
 							Handicap Index
 						</p>
-						<p className="mt-1 font-display text-[56px] leading-none font-bold tracking-tight">
+						<p className="mt-1 font-display text-jumbo leading-none font-bold tracking-tight">
 							{heroIndex !== null ? formatHandicapIndex(heroIndex) : "—"}
 						</p>
-						<p className="mt-2 text-[12.5px] opacity-65">
+						<p className="mt-2 text-label opacity-65">
 							{delta !== null
 								? `${delta <= 0 ? "▾" : "▴"} ${Math.abs(delta).toFixed(1)} vs last round`
 								: "Play three rounds to see your trend"}
@@ -85,7 +85,7 @@ function HomeScreen() {
 					<span className="block font-display text-lg font-bold text-white">
 						Start a round
 					</span>
-					<span className="block text-[13px] text-white/80">
+					<span className="block text-label text-white">
 						{mostPlayed
 							? `Back to ${mostPlayed}?`
 							: "Pick a course and tee off"}
@@ -100,17 +100,17 @@ function HomeScreen() {
 				<Section title="Last round">
 					<div className={`rounded-2xl border ${SURFACE} p-4`}>
 						<div className="flex items-baseline justify-between">
-							<p className="font-display text-[15px] font-semibold text-ink">
+							<p className="font-display text-body font-semibold text-ink">
 								{last.courseName}
 							</p>
 							<p className="font-display text-2xl font-bold text-ink">
 								{last.owner.strokes || "—"}
-								<span className="ml-2 text-[13px] font-semibold text-live">
+								<span className="ml-2 text-label font-semibold text-live-ink">
 									{last.owner.strokes ? formatVsPar(last.owner.vsPar) : ""}
 								</span>
 							</p>
 						</div>
-						<div className="mt-3 flex gap-4 text-[12px] text-moss">
+						<div className="mt-3 flex gap-4 text-footnote text-moss">
 							<Stat
 								label="Putts"
 								value={
@@ -146,10 +146,10 @@ function HomeScreen() {
 								key={club._id}
 								className={`flex shrink-0 flex-col items-center rounded-xl border ${SURFACE} px-3 py-2`}
 							>
-								<span className="font-display text-[13px] font-bold text-ink">
+								<span className="font-display text-label font-bold text-ink">
 									{club.name}
 								</span>
-								<span className="text-[11px] text-moss">
+								<span className="text-caption text-moss">
 									{formatDistance(club.carryMeters, units)}
 								</span>
 							</div>

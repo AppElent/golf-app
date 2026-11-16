@@ -14,7 +14,7 @@ export function PageTitle({ children }: { children: React.ReactNode }) {
 export function PageNote({ children }: { children: React.ReactNode }) {
 	return (
 		<Page>
-			<p className="text-[13px] text-stone">{children}</p>
+			<p className="text-label text-stone">{children}</p>
 		</Page>
 	);
 }
@@ -39,7 +39,7 @@ export function Section({
 	return (
 		<section className="mt-6">
 			<SectionTitle>{title}</SectionTitle>
-			{hint ? <p className="mt-0.5 text-[12px] text-stone">{hint}</p> : null}
+			{hint ? <p className="mt-0.5 text-footnote text-stone">{hint}</p> : null}
 			<div className="mt-3">{children}</div>
 		</section>
 	);

@@ -28,7 +28,7 @@ export default function BottomNav() {
 					inactiveProps={{ className: "text-stone" }}
 				>
 					<Icon size={23} strokeWidth={1.9} />
-					<span className="text-[10.5px] font-semibold">{label}</span>
+					<span className="text-caption font-semibold">{label}</span>
 				</Link>
 			))}
 		</nav>

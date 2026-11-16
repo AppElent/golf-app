@@ -14,7 +14,7 @@ export function StatCard({
 			className={`rounded-2xl border ${SURFACE} py-3 ${compact ? "px-3 text-center" : "px-4"}`}
 		>
 			<p
-				className={`${compact ? "text-[10px]" : "text-[11px]"} font-semibold uppercase tracking-wide text-stone`}
+				className={`${compact ? "text-micro" : "text-caption"} font-semibold uppercase tracking-wide text-stone`}
 			>
 				{label}
 			</p>
