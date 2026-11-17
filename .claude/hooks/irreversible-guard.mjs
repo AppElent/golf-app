@@ -52,8 +52,11 @@ export function parse(source) {
   // Here-strings (`bash <<< 'eas submit'`): a shell recipient runs the word.
   const hereStrings = [];
   let hereString = false;
+  // A redirect target is not an argument, but its $(…) and backticks still run.
+  let redirectTarget = false;
   const endWord = () => {
-    if (inWord && hereString) hereStrings.push(word);
+    if (inWord && redirectTarget) redirectTarget = false;
+    else if (inWord && hereString) hereStrings.push(word);
     else if (inWord) words.push(word);
     if (inWord) hereString = false;
     word = "";
@@ -62,6 +65,7 @@ export function parse(source) {
   const endCommand = () => {
     endWord();
     hereString = false;
+    redirectTarget = false;
     if (hereStrings.length) {
       const recipient = words.length ? unwrap(words).words?.[0] : undefined;
       if (recipient !== undefined && SHELLS.has(programName(recipient))) for (const body of hereStrings) commands.push(...parse(body));
@@ -185,9 +189,7 @@ export function parse(source) {
       i++;
       while (source[i] === ">" || source[i] === "&") i++;
       while (source[i] === " " || source[i] === "\t") i++;
-      let j = i;
-      while (j < source.length && !" \t\n;&|()".includes(source[j])) j++;
-      i = j;
+      redirectTarget = true;
     } else if (c === " " || c === "\t") {
       endWord();
       i++;
@@ -375,8 +377,10 @@ function checkGit(args, context) {
   const refspecs = positional.slice(repoOption ? 0 : 1);
   if ((force || remove) && refspecs.some((ref) => ref.includes("$"))) ask("could not tell which branch this force push or delete targets.");
   if (refspecs.some((ref) => ref.startsWith("+"))) force = true;
-  if (refspecs.some((ref) => ref.startsWith(":"))) remove = true;
+  if (refspecs.some((ref) => ref.startsWith(":") && ref !== ":")) remove = true;
   if (!force && !remove) return;
+  // `+:` pushes every matching branch; `refs/heads/*:refs/heads/*` every branch.
+  if (refspecs.some((ref) => { const spec = ref.replace(/^\+/, ""); return spec === ":" || spec.includes("*"); })) all = true;
   if (all) deny("A force push or delete of all branches can overwrite main.");
   const targets = refspecs.map((ref) => branchName(ref.includes(":") ? ref.slice(ref.indexOf(":") + 1) : ref));
   if (!refspecs.length || targets.includes("HEAD")) {
