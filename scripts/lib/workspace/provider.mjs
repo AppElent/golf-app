@@ -1,4 +1,5 @@
-import { mkdir, rm } from "node:fs/promises";
+import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
+import { homedir } from "node:os";
 import { join } from "node:path";
 import { readEnvValues, readProjectText, removeEnvNames, setEnvName, writeProjectText, } from "./dotenv.mjs";
 import { deriveDeploymentReference } from "./identity.mjs";
@@ -15,6 +16,22 @@ export const DEPLOYMENT_ENV_NAMES = new Set([
     "EXPO_PUBLIC_CONVEX_URL",
 ]);
 export const PROVIDER_ENV_REMOVALS = [...DEPLOYMENT_ENV_NAMES];
+/**
+ * The Convex CLI looks for a package.json from its working directory upward and
+ * exits without one, so every provider staging directory outside the checkout
+ * gets a minimal manifest. The CLI binary still resolves from the project root.
+ */
+export async function stageProviderDirectory(path, { reset = true } = {}) {
+    if (reset)
+        await rm(path, { recursive: true, force: true });
+    await mkdir(path, { recursive: true });
+    await writeFile(join(path, "package.json"), `${JSON.stringify({ private: true, dependencies: { convex: "*" } })}\n`, { encoding: "utf8", mode: 0o600 });
+}
+function quotaHint(message) {
+    return /quota/iu.test(message)
+        ? `${message}. Reclaim deployments of removed worktrees with \`node scripts/workspace.mjs gc --apply\`, or prepare this worktree with \`--backend none\``
+        : message;
+}
 async function invoke(run, request) {
     const result = await run({
         tool: "convex",
@@ -71,10 +88,8 @@ export async function prepareBackend(request) {
     const staging = policy.backend.mode === "local"
         ? root
         : join(request.isolationRoot, "provider");
-    if (policy.backend.mode !== "local") {
-        await rm(staging, { recursive: true, force: true });
-        await mkdir(staging, { recursive: true });
-    }
+    if (policy.backend.mode !== "local")
+        await stageProviderDirectory(staging);
     try {
         const reference = policy.backend.mode === "cloud"
             ? `${policy.backend.project}:${deriveDeploymentReference(identity, request.editor)}`
@@ -115,12 +130,17 @@ export async function prepareBackend(request) {
                     policy.backend.expiration,
                 ]
                 : ["deployment", "create", reference, "--select"];
-            await invoke(run, {
-                root,
-                cwd: staging,
-                args,
-                label: "Backend creation",
-            });
+            try {
+                await invoke(run, {
+                    root,
+                    cwd: staging,
+                    args,
+                    label: "Backend creation",
+                });
+            }
+            catch (error) {
+                throw new Error(quotaHint(error.message));
+            }
             created = true;
             await request.checkpoint({
                 kind: "convex-deployment",
@@ -203,8 +223,7 @@ export async function prepareBackend(request) {
 }
 export async function createScopedCredential(request) {
     const staging = join(request.isolationRoot, "provider-token");
-    await rm(staging, { recursive: true, force: true });
-    await mkdir(staging, { recursive: true });
+    await stageProviderDirectory(staging);
     try {
         const tokenName = `appelent-${request.identity.id}`;
         const resource = {
@@ -280,7 +299,7 @@ export async function writeClientOutputs(root, policy, publicUrl) {
         },
     ];
 }
-export async function cleanupProviderResource(packageRoot, isolationRoot, resource, run, now = new Date()) {
+export async function cleanupProviderResource(packageRoot, isolationRoot, resource, run, now = new Date(), platform = {}) {
     if (!resource.owned ||
         resource.status === "removed" ||
         resource.status === "absent")
@@ -289,7 +308,7 @@ export async function cleanupProviderResource(packageRoot, isolationRoot, resour
         const deployment = String(resource.metadata?.deployment ?? "");
         if (!deployment)
             return { ...resource, status: "inaccessible" };
-        await mkdir(isolationRoot, { recursive: true });
+        await stageProviderDirectory(isolationRoot, { reset: false });
         const result = await run({
             tool: "convex",
             args: [
@@ -314,11 +333,14 @@ export async function cleanupProviderResource(packageRoot, isolationRoot, resour
     if (resource.kind === "convex-deployment") {
         if (resource.cleanup !== "expiry")
             return { ...resource, status: "retained" };
-        if (!resource.expiresAt ||
-            new Date(resource.expiresAt).getTime() > now.getTime())
+        const expired = Boolean(resource.expiresAt) &&
+            new Date(resource.expiresAt).getTime() <= now.getTime();
+        const recordedName = String(resource.metadata?.deploymentName ?? "");
+        // Without a recorded deployment name there is nothing to delete safely;
+        // an unexpired deployment then waits for its expiry as before.
+        if (!expired && !recordedName)
             return { ...resource, status: "pending-expiry" };
-        await rm(isolationRoot, { recursive: true, force: true });
-        await mkdir(isolationRoot, { recursive: true });
+        await stageProviderDirectory(isolationRoot);
         const result = await run({
             tool: "convex",
             args: ["deployment", "select", resource.id],
@@ -328,9 +350,23 @@ export async function cleanupProviderResource(packageRoot, isolationRoot, resour
         });
         if (result.status === "not-found")
             return { ...resource, status: "absent" };
-        if (result.status === "ok")
-            return { ...resource, status: "pending-expiry" };
-        return { ...resource, status: "inaccessible" };
+        if (result.status !== "ok")
+            return { ...resource, status: expired ? "inaccessible" : "pending-expiry" };
+        // Delete only when the reference still resolves to the deployment this
+        // workspace created, so quota is freed when the worktree goes away.
+        const selected = readEnvValues(await readProjectText(isolationRoot, ".env.local")).CONVEX_DEPLOYMENT;
+        if (recordedName.startsWith("dev:") && selected === recordedName) {
+            const deleted = await deleteOwnedCloudDeployment({
+                name: recordedName.slice("dev:".length),
+                reference: resource.id.split(":").slice(2).join(":"),
+                ...platform,
+            });
+            if (deleted === "removed" || deleted === "absent")
+                return { ...resource, status: deleted };
+            if (deleted === "refused")
+                return { ...resource, status: "inaccessible" };
+        }
+        return { ...resource, status: "pending-expiry" };
     }
     if (resource.kind === "port")
         return { ...resource, status: "removed" };
@@ -349,4 +385,67 @@ export async function cleanupProviderResource(packageRoot, isolationRoot, resour
         }
     }
     return resource;
+}
+async function readAccessToken(environ, home) {
+    if (environ.CONVEX_OVERRIDE_ACCESS_TOKEN)
+        return environ.CONVEX_OVERRIDE_ACCESS_TOKEN;
+    try {
+        const parsed = JSON.parse(await readFile(join(home, ".convex", "config.json"), "utf8"));
+        return typeof parsed.accessToken === "string" && parsed.accessToken
+            ? parsed.accessToken
+            : null;
+    }
+    catch {
+        return null;
+    }
+}
+/**
+ * Deletes a workspace-owned cloud dev deployment through the Convex Management
+ * API with the signed-in CLI's access token (the CLI has no delete command).
+ * Refuses anything that is not a non-default dev deployment with the recorded
+ * reference. Returns removed, absent, refused, or unavailable (try again later
+ * or let it expire).
+ */
+export async function deleteOwnedCloudDeployment({ name, reference, fetch: fetchImpl = globalThis.fetch, environ = process.env, home = homedir(), timeoutMs = 30_000, }) {
+    if (!/^[a-z0-9-]+$/u.test(name) || !reference.startsWith("dev/"))
+        return "refused";
+    const token = await readAccessToken(environ, home);
+    if (!token || typeof fetchImpl !== "function")
+        return "unavailable";
+    const host = (environ.CONVEX_PROVISION_HOST ?? "https://api.convex.dev").replace(/\/+$/u, "");
+    if (!host.startsWith("https://") && !/^http:\/\/(?:127\.0\.0\.1|localhost)(?::\d+)?$/u.test(host))
+        return "unavailable";
+    const base = `${host}/v1/deployments/${encodeURIComponent(name)}`;
+    const headers = { Authorization: `Bearer ${token}` };
+    try {
+        const lookup = await fetchImpl(base, {
+            headers,
+            signal: AbortSignal.timeout(timeoutMs),
+        });
+        if (lookup.status === 404)
+            return "absent";
+        if (!lookup.ok)
+            return "unavailable";
+        const details = await lookup.json().catch(() => null);
+        // Every ownership field must be present and match; a response that
+        // cannot establish them keeps the deployment until it expires.
+        if (!details ||
+            details.name !== name ||
+            details.deploymentType !== "dev" ||
+            details.reference !== reference ||
+            details.isDefault !== false ||
+            (details.kind !== undefined && details.kind !== "cloud"))
+            return "refused";
+        const removal = await fetchImpl(`${base}/delete`, {
+            method: "POST",
+            headers,
+            signal: AbortSignal.timeout(timeoutMs),
+        });
+        if (removal.status === 404)
+            return "absent";
+        return removal.ok ? "removed" : "unavailable";
+    }
+    catch {
+        return "unavailable";
+    }
 }

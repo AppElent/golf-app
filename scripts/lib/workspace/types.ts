@@ -155,6 +155,12 @@ export type WorkspaceDependencies = {
 		runCommand: WorkspaceCommandRunner;
 	}) => Promise<{ exitCode: number }>;
 	isPortAvailable?: (port: number) => Promise<boolean>;
+	/** Convex Management API access for deleting owned cloud deployments. */
+	platform?: {
+		fetch?: typeof fetch;
+		environ?: Readonly<Record<string, string | undefined>>;
+		home?: string;
+	};
 };
 
 export type RunWorkspaceCliOptions = {

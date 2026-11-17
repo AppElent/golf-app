@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when adding, moving, or reviewing documentation or agent instructions.
-version: 3.1.0
+version: 4.0.0
 applies_to: [all]
 ---
 
@@ -60,7 +60,8 @@ file from its folder and frontmatter.
 
 - Write a record only when a contract or decision needs its evidence. Plans, specs,
   and reviews otherwise live in the issue or PR.
-- Pending acceptance and follow-ups are GitHub issues, linked from the record or
+- Pending acceptance and follow-ups are Linear issues (workspace appelent, team APP) with
+  the app label and a blast-radius label, linked from the record or
   contract that needs them; a record never tracks them itself. Records are frozen when written; new evidence is a new record.
 - **Default:** evidence is screenshots and text. Do not commit video; link it instead.
 
@@ -100,3 +101,8 @@ file from its folder and frontmatter.
 - Each changed rule has one owner, and every new document is reachable from AGENTS.md
   routing.
 - Every record is cited by a contract or decision; no record has an open-items section.
+
+## Migration
+
+From 3.x: file new follow-ups in Linear. Move an open GitHub follow-up issue to Linear
+when you touch it, and close the GitHub issue with a link to the Linear one.

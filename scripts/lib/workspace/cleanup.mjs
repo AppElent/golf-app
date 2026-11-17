@@ -96,7 +96,7 @@ async function cleanLedger(ledger, stateRoot, dependencies) {
             for (const resource of [...ledger.resources].sort((a, b) => order[a.kind] - order[b.kind])) {
                 const updated = await cleanupProviderResource(worktreePresent
                     ? ledger.workspace.worktreePath
-                    : ledger.workspace.repositoryPath, join(safeRuntimePath(stateRoot, ledger.workspace.id), "cleanup"), resource, run, dependencies.now?.() ?? new Date());
+                    : ledger.workspace.repositoryPath, join(safeRuntimePath(stateRoot, ledger.workspace.id), "cleanup"), resource, run, dependencies.now?.() ?? new Date(), dependencies.platform);
                 ledger.resources = ledger.resources.map((item) => item.kind === resource.kind && item.id === resource.id
                     ? updated
                     : item);
@@ -231,6 +231,9 @@ export async function gcWorkspaces(options) {
     const stale = [];
     const inaccessible = [];
     for (const ledger of ledgers) {
+        if (options.repositoryFingerprint &&
+            ledger.workspace.repositoryFingerprint !== options.repositoryFingerprint)
+            continue;
         const state = await pathState(ledger.workspace.worktreePath);
         if (state === "missing" && ledger.status !== "clean")
             stale.push(ledger);

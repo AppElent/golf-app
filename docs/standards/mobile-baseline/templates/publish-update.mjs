@@ -21,12 +21,14 @@
 // - The maps come from the exact `dist/` just published; never rebuild in
 //   between, or the debug IDs no longer match.
 //
-// Production refuses to publish without SENTRY_AUTH_TOKEN. Preview publishes
+// Production refuses to publish without SENTRY_AUTH_TOKEN. Preview and test publish
 // without it and says so, so the pipeline can be tried without the token.
 import { spawnSync } from "node:child_process";
 import { appRoot, fingerprint, PLATFORMS } from "./fingerprint.mjs";
 
-const CHANNELS = ["preview", "production"];
+// Channel → EAS environment. `test` builds run on the development backend.
+const ENVIRONMENTS = { preview: "preview", production: "production", test: "development" };
+const CHANNELS = Object.keys(ENVIRONMENTS);
 
 const [channel, ...rest] = process.argv.slice(2);
 if (!CHANNELS.includes(channel)) {
@@ -123,6 +125,6 @@ if (!uploadOnly && !withoutBuild) {
 }
 
 if (!uploadOnly) {
-	run("eas", ["update", "--channel", channel, "--environment", channel, ...easArgs]);
+	run("eas", ["update", "--channel", channel, "--environment", ENVIRONMENTS[channel], ...easArgs]);
 }
 if (upload) run("sentry-expo-upload-sourcemaps", ["dist"]);

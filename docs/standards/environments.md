@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when adding, routing, or checking environment variables and secrets.
-version: 4.0.0
+version: 4.1.0
 applies_to: [all]
 ---
 
@@ -107,6 +107,26 @@ lands each value in the same destination, from one data-only manifest.
   inspection while it runs; applying a Worker secret may publish a Worker version.
   A provider that times out is killed with its whole process tree before the env
   lock is released.
+
+### Agent permissions
+
+- Each app's `.claude/settings.json` lets agents run these without a prompt:
+  `pnpm env:check`, `pnpm env:check:*`, `pnpm env:plan:*`, `pnpm env:generate`, and
+  `pnpm env:apply <environment>:*` for `local`, `dev`, `preview`, `staging`, and
+  `production` (approved by the owner, 2026-11-17). Values go from Infisical straight to
+  the destination; the agent never sees them.
+- A `PreToolUse` hook, [`env-guard.mjs`](environments/env-guard.mjs) in
+  `.claude/hooks/`, registered as `node "$CLAUDE_PROJECT_DIR/.claude/hooks/env-guard.mjs"`
+  with matcher `Bash`, keeps those rules to plain shapes: an environment name plus
+  `--only <kind>`, `--pr <n>`, `--json`, `--dry-run` (apply) or `--ci` (check), and
+  `generate` with `--dry-run`/`--json`. Anything else (`--prune`, `--yes`, `--path`,
+  `apply --ci`, `--`, quoting, chaining, unreadable input) goes back to a normal
+  permission prompt, and so does an `env:` script anywhere but at the start of the
+  command (a compound command or a wrapper such as `timeout`, whose subcommands the
+  allow rules also match). The allow rules are only safe together with this hook; add both or
+  neither.
+- `env:exec` is never allowed: it runs an arbitrary command with the secrets in its
+  environment.
 
 ## Implementation
 

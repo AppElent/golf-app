@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when getting an iOS build onto a phone, choosing between internal distribution and TestFlight, building in CI, or publishing an over-the-air update.
-version: 2.0.0
+version: 2.3.0
 applies_to: [mobile]
 ---
 
@@ -16,10 +16,13 @@ Your own phone runs a standalone build within minutes of a change, without Apple
 
 - **Default:** internal first. The owner's daily-driver build is `preview-internal`: an ad hoc (`distribution: "internal"`) build of the Preview variant on the `preview` update channel. JavaScript and asset changes reach it as updates; rebuild only when the runtime fingerprint changes.
 - **Default:** use TestFlight only for testers whose devices you don't want to register, or as the release-candidate gate before an App Store release, through the store-distribution `preview` profile with its own App Store Connect app. An app already on TestFlight keeps it; `preview-internal` stays its daily driver.
-- The daily-driver build uses the production backend, because development deployments are reseeded and wiped. A temporary profile on a development backend (for example, to test an unmerged backend change) is named as such and removed once the change is live.
-- **Default:** production, preview and development install side by side. `app.config.ts` picks the name (`<App> Preview`, `<App> Dev`), scheme, bundle ID suffix (`.preview`, `.dev`) and icon from `APP_VARIANT`, which each `eas.json` profile sets. Unset means development, so a local run never replaces another install. Preview and dev icons carry a badge (a blue PREVIEW or orange DEV band on iOS; a pill inside Android's adaptive-icon safe zone) baked into the image files, because a launcher icon changes only with a rebuild.
+- The daily-driver build uses the production backend, because development deployments are reseeded and wiped. The Preview variant (name, bundle ID, icon) always means production: never point a Preview build at a development backend.
+- **Optional:** a Test variant (`APP_VARIANT=test`, profile and update channel `test`) is a bundled, ad hoc build on the development backend and auth test instance, for trying unmerged backend changes away from the Mac. It has its own name (`<App> Test`), scheme, bundle ID suffix (`.test`) and badge (a lilac TEST band), so it installs beside Preview and is never mistaken for it. Its EAS environment is `development`.
+- **Default:** production, preview and development (and test, where used) install side by side. `app.config.ts` picks the name (`<App> Preview`, `<App> Dev`, `<App> Test`), scheme, bundle ID suffix (`.preview`, `.dev`, `.test`) and icon from `APP_VARIANT`, which each `eas.json` profile sets. Unset means development, so a local run never replaces another install. Preview, dev and test icons carry a badge (a blue PREVIEW, orange DEV or lilac TEST band on iOS; a pill inside Android's adaptive-icon safe zone) baked into the image files, because a launcher icon changes only with a rebuild.
+- Native sign-in (for example Sign in with Apple through the auth provider's native API) checks the bundle ID, and in-app-browser SSO returns to `<scheme>://<callback>`. Register each variant's bundle ID and allowlist its callback on the auth instance that variant uses: Preview and production on the live instance; Dev and Test on the test instance. A variant missing there fails social sign-in while email sign-in still works.
 - Native dependency, config-plugin, entitlement, or runtime changes need a new build. Store submission, signing, production rollout, and device acceptance are separate release tasks.
 - **Default:** build locally (`eas build --local`, or the CI build below) to save EAS Build credits. Use cloud builds when the local toolchain can't build the profile.
+- **Default:** on the owner's Mac, run local builds through the hub's builds tool: `node ~/Developer/developer-home/tools/builds.mjs build <app> <profile> <platform>` (`--submit` sends a store build on to TestFlight). EAS records only cloud builds, so the tool keeps each local binary in `~/Developer/.builds/<app>/<profile>/<platform>/` (the newest five) with a record of its version, build number, channel, runtime fingerprint and commit. `pnpm builds status` in developer-home shows, per app, channel and platform, the newest build, its newest update, and whether main ships as an update or needs a rebuild; it writes `~/Developer/.builds/STATUS.md` and `index.html`. A binary built another way is added with `builds.mjs record`.
 - Every profile built on EAS's macOS image sets `SHARP_IGNORE_GLOBAL_LIBVIPS=1` when `sharp` is in the workspace (for example through wrangler or miniflare). The image ships Homebrew libvips, so sharp's install check chooses a from-source build that has no `node-gyp`, and `pnpm install` fails.
 - A profile whose EAS environment has no `SENTRY_AUTH_TOKEN` sets `SENTRY_DISABLE_AUTO_UPLOAD=true`, or the Release build fails at the upload step. Profiles that report errors keep the upload; see [Sentry monitoring](sentry-monitoring.md).
 - **Default:** CI builds are opt-in, through PR labels `build:ios` / `build:android` or a manual run of the [caller](mobile-baseline/templates/mobile-build.yml) and [reusable build](mobile-baseline/templates/eas-local-build.yml) workflows: `eas build --local` on the runner, with the binary as a workflow artifact. Gate each platform at job level so an unlabelled push never starts a macOS runner. Pin `eas-cli` as a dev dependency so CI and local builds match.
@@ -34,12 +37,14 @@ Your own phone runs a standalone build within minutes of a change, without Apple
 - **Default:** add a root `.easignore` when the workspace holds local-only files (caches, exports, signing files). It replaces `.gitignore` for uploads, so repeat the ignores that matter.
 - **Default:** add the [mobile runtime workflow](mobile-baseline/templates/mobile-runtime.yml). It comments on each PR whether merging needs new builds or can ship as an update, and never fails a PR.
 - **Default:** CI publishes the daily-driver channel's update after a merge, once the backend that channel's builds call has deployed. Publishing earlier ships JavaScript that calls functions the backend does not have yet. Gate each platform on the runtime fingerprint (`expo-updates runtimeversion:resolve`): publish only when an earlier update or a finished EAS build on the channel has the same fingerprint; otherwise report in the run summary that a rebuild is due. Skip the publish when nothing the app bundles changed, for example by diffing against a tag the job moves after each publish.
+- The `production` channel gets a daily, gated update and store builds ship only for native changes; cadence, gates and versioning are in [releases](releases.md).
 - **Default:** the app offers a restart once an update has downloaded: `useUpdates().isUpdatePending` shows the prompt and `Updates.reloadAsync()` restarts. It also checks again on resume (`checkForUpdateAsync`, then `fetchUpdateAsync`), at most hourly. expo-updates applies a download only on the next cold start, and a phone that is never force-quit may not cold-start for weeks. The app never restarts by itself, because a reload interrupts the user.
 
 | Need | Profile | Distribution | Install |
 | --- | --- | --- | --- |
 | Live reload from the Mac | `development` | internal (dev client) | `devicectl` or EAS link |
 | Own phone, daily use | `preview-internal` | internal (ad hoc) + EAS Update | `devicectl` or EAS link |
+| Own phone, unmerged backend change (optional) | `test` | internal (ad hoc) + EAS Update on `test` | `devicectl` or EAS link |
 | Testers without registered devices; release candidate | `preview` | App Store Connect → TestFlight | TestFlight |
 | Store release | `production` | App Store | App Store |
 
@@ -73,5 +78,11 @@ Your own phone runs a standalone build within minutes of a change, without Apple
 - After a test update, a cold start followed by a second cold start shows the change; or resuming shows the restart prompt, and tapping it shows the change.
 
 ## Migration
+
+From 2.2: add the daily production update job from [releases](releases.md).
+
+From 2.1: build locally through the hub's builds tool instead of a bare `eas build --local`.
+
+From 2.0: a profile that builds the Preview variant against a development backend becomes the `test` variant: add the identity and badge to `app.config.ts`, rename the profile and channel to `test`, run one interactive build for the new bundle ID, and register it with the auth test instance. Add `test` to the publish wrapper's channels if you copied it before 2.1.
 
 From 1.x: keep existing profiles and TestFlight, add what this standard lists that the app lacks, and replace raw `eas update` publishing with the wrapper.
