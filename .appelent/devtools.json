@@ -4,7 +4,7 @@
   "scope": "project",
   "ref": "main",
   "commit": "local",
-  "manifestHash": "d248197443c10494bdc9c0cadbefaf7a35662548d1cf449bd80e6caee4ec811a",
+  "manifestHash": "7df8aee1360f0c2a437c29cbebc9cfbe8c4fe6eea9138c2b6275061226a2d82a",
   "files": {
     "docs/adr/.template.md": {
       "sha256": "f28b286102fb1a00512455a06896e5da3c47d67a14b0ee6c08fa84258af24adf",
@@ -498,7 +498,7 @@
       "version": "1.0.0"
     },
     "docs/standards/agent-permissions/irreversible-guard.mjs": {
-      "sha256": "a11922b807f4c8f8076e7fad5a379727a42db53225e7443d91d60bc2dafaaef3"
+      "sha256": "bab9cf1e167c563ab6b02442ca7ce13f39137ee77b6b3cd0e0e92746ab866a64"
     },
     "scripts/lib/project/agent-permissions.mjs": {
       "sha256": "3676673615c25e7ceb75fa7534b68dcdbe99856c715fb79a11c4bafab99e4ea6"
