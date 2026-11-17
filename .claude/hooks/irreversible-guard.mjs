@@ -338,7 +338,9 @@ function unwrap(words) {
         if (["-C", "--dir", "--prefix", "--cwd"].includes(globals[j])) chdir.push(globals[j + 1]);
       }
       rest.splice(0, packageCommandIndex(rest) + 1);
-      const call = shellCall(rest);
+      // `pnpm -c exec 'eas submit'`: shell mode set before `exec`.
+      const globalShell = globals.some((word) => word === "-c" || word === "--shell-mode");
+      const call = globalShell ? rest.filter((word) => !word.startsWith("-")).join(" ") : shellCall(rest);
       if (call !== undefined) return { env, nested: parse(call), subshell: true, chdir };
       skipFlags(rest, PACKAGE_VALUE_FLAGS);
     } else if (rest[0] === "--") {
@@ -400,7 +402,11 @@ function checkGit(args, context) {
   let configured = false;
   while (i < args.length && args[i].startsWith("-")) {
     const flag = args[i++];
-    if (flag === "-C") dir = context.resolvePath(args[i++]) ?? dir;
+    // Each relative -C builds on the previous one (`git -C sub -C child`).
+    if (flag === "-C") {
+      const next = args[i++] ?? "";
+      dir = isAbsolute(next) || /^[~$]/.test(next) ? context.resolvePath(next) : dir === undefined ? undefined : join(dir, next);
+    }
     else if (flag === "-c") { if (/^(remote\..*\.push|push\.)/i.test(args[i] ?? "")) configured = true; i++; }
     else if (/^--config-env/.test(flag) || /^-c./.test(flag)) configured = true;
     else if (flag === "--git-dir" || flag === "--work-tree" || flag === "--namespace") i++;
