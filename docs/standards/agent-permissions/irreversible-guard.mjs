@@ -129,6 +129,27 @@ export function parse(source) {
         i++;
       }
       i++;
+    } else if (c === "$" && source[i + 1] === "'") {
+      // ANSI-C quoting: `$'eas'` is the word eas.
+      let j = i + 2;
+      let text = "";
+      while (j < source.length && source[j] !== "'") {
+        if (source[j] === "\\" && j + 1 < source.length) {
+          const rest = source.slice(j + 1);
+          const hex = /^x([0-9a-fA-F]{1,2})/.exec(rest);
+          const uni = /^[uU]([0-9a-fA-F]{1,8})/.exec(rest);
+          const oct = /^([0-7]{1,3})/.exec(rest);
+          const simple = { n: "\n", t: "\t", r: "\r", a: "\x07", b: "\b", e: "\x1b", E: "\x1b", f: "\f", v: "\v" };
+          if (hex) { text += String.fromCharCode(parseInt(hex[1], 16)); j += 1 + hex[0].length; }
+          else if (uni) { text += String.fromCodePoint(Math.min(parseInt(uni[1], 16), 0x10ffff)); j += 1 + uni[0].length; }
+          else if (oct) { text += String.fromCharCode(parseInt(oct[1], 8)); j += 1 + oct[0].length; }
+          else if (source[j + 1] in simple) { text += simple[source[j + 1]]; j += 2; }
+          else { text += source[j + 1]; j += 2; }
+        } else text += source[j++];
+      }
+      word += text;
+      inWord = true;
+      i = j + 1;
     } else if (c === "$" && source[i + 1] === "(") {
       const end = closeParen(i + 2);
       commands.push(...parse(source.slice(i + 2, end)));
@@ -284,7 +305,7 @@ function unwrap(words) {
       rest.shift();
       while (rest.length && (rest[0].startsWith("-") || ASSIGNMENT.test(rest[0]))) {
         const token = rest.shift();
-        if (token === "-S" || token === "--split-string") return { nested: parse(rest.join(" ")), subshell: true, chdir };
+        if (token === "-S" || token === "--split-string") return { env, nested: parse(rest.join(" ")), subshell: true, chdir };
         if (token === "-C" || token === "--chdir") chdir.push(rest.shift());
         else if (token.startsWith("--chdir=")) chdir.push(token.slice("--chdir=".length));
         else if (token === "-u" || token === "--unset") rest.shift();
@@ -322,9 +343,9 @@ function unwrap(words) {
       const flagIndex = rest.findIndex((word, index) => index > 0 && /^-[a-z]*c[a-z]*$/.test(word));
       if (flagIndex === -1) return { env, words: rest, chdir };
       const script = rest[flagIndex + 1];
-      return { nested: script === undefined ? [] : parse(script), subshell: true, chdir };
+      return { env, nested: script === undefined ? [] : parse(script), subshell: true, chdir };
     } else if (program === "eval") {
-      return { nested: parse(rest.slice(1).join(" ")), chdir };
+      return { env, nested: parse(rest.slice(1).join(" ")), chdir };
     } else {
       return { env, words: rest, chdir };
     }
@@ -607,20 +628,23 @@ export function check(command, options) {
   let cdSeen = false;
   const context = { get cwd() { return cwd; }, get cdSeen() { return cdSeen; }, resolvePath, isDeletable, isRoot };
 
-  const visit = (commands) => {
+  // `inherited` holds variables set for a wrapping command (`KEY=x sh -c '…'`).
+  const visit = (commands, inherited = {}) => {
     for (const raw of commands) {
       const unwrapped = unwrap(raw);
+      const scoped = { ...inherited, ...(unwrapped.env ?? {}) };
       const saved = cwd;
       for (const dir of unwrapped.chdir ?? []) cwd = dir === undefined ? undefined : resolvePath(dir);
       // A child shell or a wrapper's directory change does not reach the
       // commands after it; `eval` runs in the current shell, so its `cd` does.
       const restore = unwrapped.subshell || (unwrapped.chdir ?? []).length > 0;
       if (unwrapped.nested) {
-        visit(unwrapped.nested);
+        visit(unwrapped.nested, scoped);
         if (restore) cwd = saved;
         continue;
       }
-      const { env, words } = unwrapped;
+      const { words } = unwrapped;
+      const env = scoped;
       if (!words.length) { if (restore) cwd = saved; continue; }
       const program = programName(words[0]);
       const args = words.slice(1);
