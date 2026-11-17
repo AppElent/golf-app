@@ -1,7 +1,7 @@
 import { SURFACE } from "./classes";
 
 const SELECTED = {
-	pine: "border-pine bg-pine text-cream",
+	pine: "border-pine-fill bg-pine-fill text-cream",
 	live: "border-live bg-live text-white",
 };
 

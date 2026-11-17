@@ -196,7 +196,7 @@ function HandicapEditor({
 				<button
 					type="button"
 					onClick={save}
-					className="rounded-full bg-pine px-5 py-2 font-display text-label font-semibold text-cream"
+					className="rounded-full bg-pine-fill px-5 py-2 font-display text-label font-semibold text-cream"
 				>
 					Save
 				</button>

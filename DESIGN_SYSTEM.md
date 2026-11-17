@@ -81,9 +81,21 @@ Designers and coding agents start from it; product decisions below still bind th
   hues uses `flag-ink` and `live-ink`, which pass on cream and on a `/15` tint.
   On the pine Play screen, error text is `flag-soft` and quiet text `mint-soft`;
   `stone` and `moss` are for cream and white cards only.
-- **Links:** the app column is always cream, so `--page-link` is not themed
-  (`#246f76`, hover `--page-link-hover`). The link rule sits in the base layer,
-  so a `text-*` class on a link (bottom nav, inline links) applies.
+- **Links:** `--page-link` is themed with the app column (light `#246f76`,
+  hover `--page-link-hover`; dark `#6fcfc6`). The link rule sits in the base
+  layer, so a `text-*` class on a link (bottom nav, inline links) applies.
+- **Dark theme** (APP-191) follows the system setting; there is no toggle. The
+  app column takes the phone's dark palette (`apps/mobile` tokens) through the
+  themed tokens in `src/styles.css`: `canvas` (column background), `surface`
+  (cards, unselected controls), `field` (inputs), `bar` (tab bar),
+  `card-line`, `ink`, `moss`, `stone`, `on-stone`, `live-ink`, `flag-ink`,
+  `pine-ink` (pine text, icons and rings, mint in dark) and `pine-fill` (a pine
+  button under cream text, lifted in dark so it stands off the canvas). Never
+  `bg-cream`, `bg-white/N` or `text-pine` in the column. The brand fills
+  (`pine` and `pine-light` for the Play screen, `flag`, `live`, `mint`) and the
+  `map-*` colours, including `map-ink` for hole-map labels, are not themed.
+  `src/theme.test.ts` checks every text token against every ground in both
+  themes.
 - **Map colours** in `src/play/` use `--color-map-*` tokens and the shared tee
   marker colours, never hex.
 
@@ -115,6 +127,12 @@ composited over their ground. Pairs changed in APP-184 (bold = failed before):
 | Web: bottom-nav inactive tab (link colour → `stone`) | dark | **1.44** | 5.24 |
 | Web: bottom-nav active tab (link colour → `pine`) | light | **3.76** | 12.04 |
 | Web: bottom-nav active tab (link colour → `pine`) | dark | **1.44** | 12.04 |
+| Web: `ink` / `moss` / `stone` on `canvas` (APP-191; before, the column stayed cream) | dark | cream column | 17.18 / 7.77 / 6.30 |
+| Web: `stone` on `field`, the lowest dark text pair (APP-191) | dark | cream column | 4.89 |
+| Web: `live-ink` / `flag-ink` / `pine-ink` on `canvas` (APP-191) | dark | cream column | 11.82 / 9.85 / 11.82 |
+| Web: link on `canvas` (APP-191) | dark | 5.06 (cream column) | 10.29 |
+| Web: cream on `pine-fill` (APP-191) | dark | 10.62 (`pine`) | 5.25 |
+| Web: bottom-nav active (`pine-ink`) vs inactive (`stone`), each other (APP-191) | dark | 2.30 (cream column) | 1.88; each ≥ 5.67 on `bar` |
 | Phone: `onAccent` on `accentFill` (primary button, selected segment) | light | **3.39** | 5.85 |
 | Phone: `onAccent` on `accentPressed` | light | **3.39** | 8.25 |
 | Phone: `accent` on `bg` | light | 4.82 | 5.29 |

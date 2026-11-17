@@ -138,7 +138,7 @@ function RoundCard({
 							onClick={() => setPlayerIndex(i)}
 							className={`rounded-full border px-3 py-1.5 font-display text-footnote font-semibold ${
 								playerIndex === i
-									? "border-pine bg-pine text-cream"
+									? "border-pine-fill bg-pine-fill text-cream"
 									: `${SURFACE} text-ink`
 							}`}
 						>
@@ -163,7 +163,9 @@ function RoundCard({
 								key={hole.ref}
 								onClick={() => setSelected(holeIndex)}
 								className={`flex flex-col items-center rounded-lg py-1.5 ${
-									selected === holeIndex ? "bg-pine/10 ring-1 ring-pine" : ""
+									selected === holeIndex
+										? "bg-pine-ink/10 ring-1 ring-pine-ink"
+										: ""
 								}`}
 							>
 								<span className="text-micro font-semibold text-stone">
@@ -292,7 +294,7 @@ function RoundCard({
 					<button
 						type="button"
 						onClick={() => setConfirmFinish(true)}
-						className="flex-1 rounded-full bg-pine px-4 py-3 font-display text-callout font-bold text-cream"
+						className="flex-1 rounded-full bg-pine-fill px-4 py-3 font-display text-callout font-bold text-cream"
 					>
 						Finish round
 					</button>
@@ -343,7 +345,7 @@ function MarkCell({
 			);
 		case "double":
 			return (
-				<span className={`${base} rounded-md bg-stone text-white`}>
+				<span className={`${base} rounded-md bg-stone text-on-stone`}>
 					{strokes}
 				</span>
 			);

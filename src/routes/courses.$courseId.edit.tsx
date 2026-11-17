@@ -57,7 +57,7 @@ function CourseEditor() {
 					<button
 						type="button"
 						onClick={makeCopy}
-						className="rounded-full bg-pine px-5 py-2 font-display text-label font-semibold text-cream"
+						className="rounded-full bg-pine-fill px-5 py-2 font-display text-label font-semibold text-cream"
 					>
 						Make my copy
 					</button>
@@ -306,7 +306,7 @@ function MetaSection({
 			<button
 				type="button"
 				onClick={() => onSave(n, c)}
-				className="mt-4 rounded-full bg-pine px-5 py-2 font-display text-label font-semibold text-cream"
+				className="mt-4 rounded-full bg-pine-fill px-5 py-2 font-display text-label font-semibold text-cream"
 			>
 				Save details
 			</button>
@@ -340,7 +340,7 @@ function TeeSection({
 			<button
 				type="button"
 				onClick={() => onSave(name, Number(cr), Number(slope))}
-				className="mt-4 rounded-full bg-pine px-5 py-2 font-display text-label font-semibold text-cream"
+				className="mt-4 rounded-full bg-pine-fill px-5 py-2 font-display text-label font-semibold text-cream"
 			>
 				Save tee
 			</button>
@@ -400,7 +400,7 @@ function HoleRow({
 		<li
 			className={`flex items-center gap-3 rounded-xl border ${SURFACE} px-3 py-2`}
 		>
-			<span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-pine font-display text-label font-semibold text-cream">
+			<span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-pine-fill font-display text-label font-semibold text-cream">
 				{refLabel || number}
 			</span>
 			<label className="text-caption font-semibold uppercase tracking-wide text-moss">
