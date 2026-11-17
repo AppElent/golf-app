@@ -30,7 +30,12 @@ async function openRound(page: Page) {
 			.getByRole("button")
 			.first()
 			.click();
-		await page.getByRole("button", { name: "Start simulation" }).click();
+		// A course with loops needs one picked before the round can start.
+		const loop = page.getByRole("button", { name: /^\d+–\d+$/ }).first();
+		const start = page.getByRole("button", { name: "Start simulation" });
+		await expect(start.or(loop).first()).toBeVisible();
+		if (await loop.isVisible()) await loop.click();
+		await start.click();
 		await page.waitForURL("**/play");
 		await page.goto("/card");
 	}
