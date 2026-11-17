@@ -154,7 +154,9 @@ export function parse(source) {
           lines.push(line);
         }
         const body = lines.join("\n");
-        if (doc.words.length && SHELLS.has(programName(doc.words[0]))) commands.push(...parse(body));
+        // The recipient may sit behind a wrapper (`env bash <<EOF`).
+        const recipient = doc.words.length ? unwrap(doc.words).words?.[0] : undefined;
+        if (recipient !== undefined && SHELLS.has(programName(recipient))) commands.push(...parse(body));
         // An unquoted body still runs its $(…) and backticks.
         else if (!doc.quoted) commands.push(...parse(`"${body.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`));
       }
@@ -384,6 +386,8 @@ function checkRm(args, context) {
   if (!recursive) return;
   for (const target of targets) {
     const globAt = target.search(/[*?[]/);
+    // `apps/*/../../x` climbs out after the wildcard; the prefix proves nothing.
+    if (globAt !== -1 && target.slice(globAt).split("/").includes("..")) ask(`could not tell where the rm target "${target}" ends up.`);
     const literal = globAt === -1 ? target : dirname(target.slice(0, globAt) + "x");
     const path = context.resolvePath(literal);
     if (path === undefined) ask(`could not resolve the rm target "${target}".`);
