@@ -32,7 +32,7 @@ export function OfflinePlay({
 	const insets = useSafeAreaInsets();
 	return (
 		<View style={styles.root}>
-			<OfflineBanner message={t.play.offlineBanner} />
+			<OfflineBanner message={t.play.offlineBanner} onCourse />
 			{/* The banner already clears the status bar. */}
 			<SafeAreaInsetsContext.Provider value={{ ...insets, top: 0 }}>
 				<OfflineCopyBoundary fallback={fallback}>
