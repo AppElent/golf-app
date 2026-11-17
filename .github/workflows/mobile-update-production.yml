@@ -88,11 +88,10 @@ jobs:
           set -o pipefail
           cutoff=$(date -u -d "-$SOAK_HOURS hours" +%s)
           for offset in 0 50 100 150; do
-            groups=$(pnpm exec eas update:list --branch "$SOURCE_CHANNEL" --platform "$PLATFORM" \
-              --limit 50 --offset "$offset" --json --non-interactive \
-              | jq -r '.currentPage[]? | select(.isRollBackToEmbedded | not) | .group')
-            [ -n "$groups" ] || break
-            count=$(wc -w <<<"$groups")
+            page=$(pnpm exec eas update:list --branch "$SOURCE_CHANNEL" --platform "$PLATFORM" \
+              --limit 50 --offset "$offset" --json --non-interactive)
+            count=$(jq '[.currentPage[]?] | length' <<<"$page")
+            groups=$(jq -r '.currentPage[]? | select(.isRollBackToEmbedded | not) | .group' <<<"$page")
             for group in $groups; do
               view=$(pnpm exec eas update:view "$group" --json)
               created=$(jq -r --arg p "$PLATFORM" '[.[] | select((.platform | ascii_downcase) == $p) | .createdAt][0] // empty' <<<"$view")
