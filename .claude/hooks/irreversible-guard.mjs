@@ -340,7 +340,7 @@ function unwrap(words) {
       rest.splice(0, packageCommandIndex(rest) + 1);
       // `pnpm -c exec 'eas submit'`: shell mode set before `exec`.
       const globalShell = globals.some((word) => word === "-c" || word === "--shell-mode");
-      const call = globalShell ? rest.filter((word) => !word.startsWith("-")).join(" ") : shellCall(rest);
+      const call = globalShell ? rest.join(" ") : shellCall(rest);
       if (call !== undefined) return { env, nested: parse(call), subshell: true, chdir };
       skipFlags(rest, PACKAGE_VALUE_FLAGS);
     } else if (rest[0] === "--") {
@@ -365,7 +365,8 @@ function shellCall(words) {
   const at = words.findIndex((word) => word === "-c" || word === "--call" || word === "--shell-mode" || word.startsWith("--call="));
   if (at === -1) return undefined;
   const flag = words[at];
-  const tail = words.slice(at + 1).filter((word) => !/^-/.test(word));
+  // Keep the command's own flags (`--prod`): they belong to the script.
+  const tail = words.slice(at + 1);
   return flag.startsWith("--call=") ? flag.slice(7) : tail.join(" ");
 }
 
@@ -396,7 +397,7 @@ function pushMapped(dir) {
   }
 }
 
-function checkGit(args, context) {
+function checkGit(args, context, env = {}) {
   let dir = context.cwd;
   let i = 0;
   let configured = false;
@@ -409,7 +410,9 @@ function checkGit(args, context) {
     }
     else if (flag === "-c") { if (/^(remote\..*\.push|push\.)/i.test(args[i] ?? "")) configured = true; i++; }
     else if (/^--config-env/.test(flag) || /^-c./.test(flag)) configured = true;
-    else if (flag === "--git-dir" || flag === "--work-tree" || flag === "--namespace") i++;
+    else if (flag === "--git-dir" || flag === "--work-tree") { configured = true; i++; }
+    else if (flag.startsWith("--git-dir=") || flag.startsWith("--work-tree=")) configured = true;
+    else if (flag === "--namespace") i++;
   }
   if (args[i] !== "push") return;
   const rest = args.slice(i + 1);
@@ -444,7 +447,9 @@ function checkGit(args, context) {
   const targets = refspecs.map((ref) => branchName(ref.includes(":") ? ref.slice(ref.indexOf(":") + 1) : ref));
   if (!refspecs.length || targets.includes("HEAD")) {
     // `-c remote.origin.push=HEAD:main` or a saved push mapping can redirect it.
-    if (!refspecs.length && (configured || !dir || pushMapped(dir))) ask("could not tell which branch this force push targets: a push mapping may apply.");
+    // --git-dir/--work-tree or GIT_DIR point at another repository.
+    const elsewhere = configured || ["GIT_DIR", "GIT_WORK_TREE"].some((name) => env[name] ?? exported[name]);
+    if (elsewhere || (!refspecs.length && (!dir || pushMapped(dir)))) ask("could not tell which branch this force push targets: another repository or a push mapping may apply.");
     const branch = dir ? currentBranch(dir) : null;
     if (branch === null) ask("could not tell which branch this force push targets.");
     targets.push(branch);
@@ -687,7 +692,7 @@ export function check(command, options) {
   };
   const dispatch = (program, args, env) => {
     if (program === "rm") checkRm(args, context);
-    else if (program === "git") checkGit(args, context);
+    else if (program === "git") checkGit(args, context, env);
     else if (program === "convex") checkConvex(args, env);
     else if (program === "eas" || program === "eas-cli") checkEas(args);
     else if (program === "wrangler") checkWrangler(args);
