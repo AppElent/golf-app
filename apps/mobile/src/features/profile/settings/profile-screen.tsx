@@ -1,8 +1,10 @@
 import { useAuth, useUser } from "@clerk/expo";
 import type { Units } from "@fairway/core/format";
 import { useMutation } from "convex/react";
+import * as Application from "expo-application";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
+import * as Updates from "expo-updates";
 import { openBrowserAsync } from "expo-web-browser";
 import { useState } from "react";
 import { Alert, ScrollView, StyleSheet, Switch, View } from "react-native";
@@ -10,6 +12,7 @@ import { api } from "../../../convex/api";
 import { convexErrorMessage } from "../../../convex/error-message";
 import { useQuery } from "../../../convex/query-cache";
 import { fmt, type Locale, plural, useI18n } from "../../../i18n";
+import { buildLabel } from "../../../monitoring/release";
 import { openProblemReport } from "../../../monitoring/report-problem";
 import {
 	type AppearancePreference,
@@ -194,7 +197,13 @@ export function ProfileScreen() {
 			<InsetList
 				header={t.profile.account}
 				footer={fmt(t.profile.version, {
-					v: Constants.expoConfig?.version ?? "–",
+					v: buildLabel({
+						version: Constants.expoConfig?.version,
+						build: Application.nativeBuildVersion,
+						channel: Updates.channel,
+						updateId: Updates.updateId,
+						embedded: Updates.isEmbeddedLaunch,
+					}),
 				})}
 			>
 				{user?.primaryEmailAddress ? (

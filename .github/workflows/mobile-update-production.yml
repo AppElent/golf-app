@@ -1,0 +1,187 @@
+name: Mobile Update (production)
+
+# Once a day, publishes to the `production` update channel (the store app) the
+# newest code that soaked on `preview` for a day. Releases standard,
+# developer-home standards/releases.md "Production app updates (daily)".
+#
+# Per platform, it publishes only when all of these hold:
+# - soaked: the commit is the newest `preview` update group that is at least
+#   SOAK_HOURS old and includes this platform (the owner ran it for a day);
+# - changed: something the app bundles changed since the `ota-production` tag;
+# - backend: the commit is in a Deploy run on main that succeeded, so
+#   production Convex has its functions (preview updates are only published
+#   after that deploy, so this holds unless preview was force-published);
+# - fingerprint: an update or a finished EAS build on `production` has the
+#   commit's production runtime fingerprint. Otherwise it publishes nothing
+#   and the summary says a store build is due.
+#
+# No decision card per daily update. A forced publish on a fingerprint
+# mismatch has no input here on purpose: it can crash installed store builds
+# and waits for the owner. Roll back a bad update with
+# `eas update:rollback` (docs/runbooks/mobile.md#production-updates).
+on:
+  schedule:
+    # 06:23 CET / 07:23 CEST, before the owner's day starts.
+    - cron: "23 5 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: mobile-update-production
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    # Scheduled runs only on the main repository's default branch.
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      # Moves the ota-production tag.
+      contents: write
+      # Reads Deploy runs for the backend gate.
+      actions: read
+    env:
+      # The Expo account token (repository scope); the EAS `production`
+      # environment supplies the app's values, as for a production build.
+      EXPO_TOKEN: ${{ secrets.PREVIEW_EXPO_TOKEN }}
+      GH_TOKEN: ${{ github.token }}
+      APP_VARIANT: production
+      CHANNEL: production
+      SOURCE_CHANNEL: preview
+      TAG: ota-production
+      SOAK_HOURS: "24"
+    defaults:
+      run:
+        working-directory: apps/mobile
+    steps:
+      - name: Check Expo token
+        working-directory: .
+        run: |
+          if [ -z "$EXPO_TOKEN" ]; then
+            echo "::error::PREVIEW_EXPO_TOKEN is not set. Store expo-token in Infisical and run pnpm env:apply preview --only github."
+            exit 1
+          fi
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: ./.github/actions/setup
+
+      # The newest preview update group older than the soak window, read
+      # from EAS: `update:list` gives groups newest first, `update:view` each
+      # group's time, commit and platforms.
+      - name: Pick soaked commit
+        id: soaked
+        run: |
+          cutoff=$(date -u -d "-$SOAK_HOURS hours" +%s)
+          groups=$(pnpm exec eas update:list --branch "$SOURCE_CHANNEL" --limit 50 --json --non-interactive \
+            | jq -r '.currentPage[]? | select(.isRollBackToEmbedded | not) | .group')
+          for group in $groups; do
+            view=$(pnpm exec eas update:view "$group" --json --non-interactive)
+            created=$(jq -r '[.[].createdAt] | min' <<<"$view")
+            if [ "$(date -u -d "$created" +%s)" -le "$cutoff" ]; then
+              commit=$(jq -r '[.[].gitCommitHash | select(. != null)][0] // empty' <<<"$view")
+              platforms=$(jq -r '[.[].platform] | unique | join(" ")' <<<"$view")
+              if [ -z "$commit" ]; then
+                echo "::error::Preview update group $group has no git commit; cannot tell what soaked."
+                exit 1
+              fi
+              echo "commit=$commit" >> "$GITHUB_OUTPUT"
+              echo "platforms=$platforms" >> "$GITHUB_OUTPUT"
+              echo "Soaked on \`$SOURCE_CHANNEL\` since $created: \`${commit:0:7}\` ($platforms), group \`$group\`." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+          done
+          echo "Skipped: no \`$SOURCE_CHANNEL\` update is $SOAK_HOURS hours old yet." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Changed and deployed
+        id: gate
+        if: steps.soaked.outputs.commit != ''
+        working-directory: .
+        env:
+          COMMIT: ${{ steps.soaked.outputs.commit }}
+        run: |
+          git cat-file -e "$COMMIT^{commit}" 2>/dev/null || {
+            echo "::error::Soaked commit $COMMIT is not in this repository's history."
+            exit 1
+          }
+          if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
+            if git merge-base --is-ancestor "$COMMIT" "$TAG" &&
+              git diff --quiet "$TAG" "$COMMIT" -- apps/mobile packages/core pnpm-lock.yaml; then
+              echo "Skipped: nothing the app bundles changed between \`$TAG\` and \`${COMMIT:0:7}\`." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            if ! git merge-base --is-ancestor "$TAG" "$COMMIT"; then
+              echo "Skipped: \`$TAG\` is not behind the soaked commit \`${COMMIT:0:7}\`; production already has newer code." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+          fi
+          deployed=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/deploy.yml/runs?branch=main&status=success&per_page=1" \
+            --jq '.workflow_runs[0].head_sha // empty')
+          if [ -z "$deployed" ] || ! git merge-base --is-ancestor "$COMMIT" "$deployed"; then
+            echo "Skipped: no successful Deploy on main includes \`${COMMIT:0:7}\` yet." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          echo "ok=true" >> "$GITHUB_OUTPUT"
+
+      # Fingerprints and the bundle come from the soaked commit, not main.
+      - name: Check out soaked commit
+        if: steps.gate.outputs.ok == 'true'
+        working-directory: .
+        env:
+          COMMIT: ${{ steps.soaked.outputs.commit }}
+        run: |
+          git checkout --quiet "$COMMIT"
+          pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Fingerprints cover native modules
+        if: steps.gate.outputs.ok == 'true'
+        run: node scripts/fingerprint.mjs check
+
+      - name: Match fingerprints
+        id: match
+        if: steps.gate.outputs.ok == 'true'
+        env:
+          SOAKED_PLATFORMS: ${{ steps.soaked.outputs.platforms }}
+        run: |
+          publish=()
+          for platform in ios android; do
+            if [[ " $SOAKED_PLATFORMS " != *" $platform "* ]]; then
+              echo "- $platform: skipped, not in the soaked \`$SOURCE_CHANNEL\` update" >> "$GITHUB_STEP_SUMMARY"
+              continue
+            fi
+            runtime=$(pnpm exec expo-updates runtimeversion:resolve --platform "$platform" | jq -r .runtimeVersion)
+            updates=$(pnpm exec eas update:list --branch "$CHANNEL" --runtime-version "$runtime" \
+              --limit 50 --json --non-interactive 2>/dev/null \
+              | jq --arg p "$platform" '[.currentPage[]? | select(.platforms | contains($p))] | length' || echo 0)
+            builds=$(pnpm exec eas build:list --platform "$platform" --channel "$CHANNEL" \
+              --runtime-version "$runtime" --status finished --limit 1 --json --non-interactive 2>/dev/null \
+              | jq length || echo 0)
+            if [ "${updates:-0}" -gt 0 ] || [ "${builds:-0}" -gt 0 ]; then
+              publish+=("$platform")
+              echo "- $platform \`${runtime:0:12}\`: publishing" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "- $platform \`${runtime:0:12}\`: **store build due** (no update or build on \`$CHANNEL\` has this fingerprint)" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done
+          echo "platforms=${publish[*]}" >> "$GITHUB_OUTPUT"
+
+      - name: eas update
+        if: steps.match.outputs.platforms != ''
+        env:
+          # Source maps for updates are not uploaded yet (as on preview).
+          SENTRY_DISABLE_AUTO_UPLOAD: "true"
+          # Inlined by Metro: fairway@<version>+<short sha> in Sentry.
+          EXPO_PUBLIC_COMMIT_SHA: ${{ steps.soaked.outputs.commit }}
+          COMMIT: ${{ steps.soaked.outputs.commit }}
+        run: |
+          message=$(git log -1 --format=%s "$COMMIT")
+          for platform in ${{ steps.match.outputs.platforms }}; do
+            pnpm exec eas update --channel "$CHANNEL" --environment production \
+              --platform "$platform" --non-interactive --message "$message"
+          done
+          git tag -f "$TAG" "$COMMIT"
+          git push -f origin "refs/tags/$TAG"
+          version=$(jq -r .expo.version app.json)
+          echo "Published \`fairway@$version+${COMMIT:0:7}\` to \`$CHANNEL\`. Check Sentry for this release." >> "$GITHUB_STEP_SUMMARY"

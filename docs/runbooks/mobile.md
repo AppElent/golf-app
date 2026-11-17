@@ -70,7 +70,7 @@ installed preview app) is written from `staging`: `pnpm env:apply staging --only
   submits.
 - Updates: after each production deploy, **Deploy** runs **Mobile Update**
   (`.github/workflows/mobile-update.yml`). When the app changed since the
-  `mobile-ota/preview` tag, it publishes to channel `preview` per platform if
+  `ota-preview` tag (formerly `mobile-ota/preview`), it publishes to channel `preview` per platform if
   an earlier update or a finished EAS build there has the same runtime
   fingerprint; otherwise the run summary says a `preview-internal` rebuild is
   due. A local build is not recorded on EAS: after installing one, run the
@@ -84,6 +84,64 @@ installed preview app) is written from `staging`: `pnpm env:apply staging --only
 - The app checks for an update on launch and on resume (at most hourly), and
   Home shows "Update ready" once one has downloaded; tapping it restarts into
   it. It never restarts by itself.
+
+### Production updates
+
+The store app follows channel `production`. **Mobile Update (production)**
+(`.github/workflows/mobile-update-production.yml`) runs every morning at 06:23
+CET (07:23 CEST) and publishes, per platform, the newest code that ran on
+`preview` for at least 24 hours, following the
+[releases standard](https://github.com/AppElent/developer-home/blob/main/standards/releases.md).
+It publishes only when that commit changed what the app bundles since the
+`ota-production` tag, a successful Deploy on `main` includes it, and an update
+or finished EAS build on `production` has the same runtime fingerprint. It
+builds with `APP_VARIANT=production` and the EAS `production` environment, then
+moves `ota-production` to the commit. The run summary says per platform:
+published, skipped (with the reason), or **store build due**.
+
+- No decision card per daily update. It never forces past a fingerprint
+  mismatch: a native change waits for a store build.
+- After a publish, check Sentry for the release `fairway@<version>+<sha>`.
+- Roll back a bad update and fix forward:
+  `pnpm exec eas update:rollback` (pick channel `production`), or republish
+  the previous group with `eas update:republish --group <id> --destination-branch production`.
+- Run it by hand from the Actions tab (on `main`) to publish sooner than the
+  schedule; the same gates apply.
+
+### Store builds
+
+A native change (new native module, config plugin, entitlement, Expo SDK
+upgrade) changes the fingerprint; the PR's runtime comment says so. It merges
+as usual and needs a new `preview-internal` build; the store app keeps getting
+updates for its own fingerprint until the next store build.
+
+- Native changes are bundled into one store build, at most every two weeks
+  unless a fix cannot wait. The manager proposes it to Eric on a decision card
+  with the changelog (merged PR titles since the previous `v` tag); nothing is
+  submitted before his yes.
+- Before building, bump `expo.version` in `app.json` in its own PR: `MINOR`
+  for a store build, `PATCH` for a hotfix build, `MAJOR` only for a deliberate
+  break. Build numbers stay with EAS (`autoIncrement`). OTA updates and web
+  deploys never bump the version.
+- After the build, tag its commit `v<version>`, push the tag, and create the
+  GitHub release with the same changelog. The `production` channel's daily
+  updates then resume on the new fingerprint.
+
+### Versions
+
+`expo.version` in `app.json` is the app's one SemVer; web reads it too
+([deploy](deploy.md#versions)). Profile's footer shows the version, the build
+number, the channel, and the running update's ID (none when the bundled code
+runs). Updates published by CI report to Sentry as `fairway@<version>+<short sha>`
+(`EXPO_PUBLIC_COMMIT_SHA`, `src/monitoring/release.ts`); a store or local
+build's bundled code keeps the SDK's default release, the name its source
+maps are uploaded under.
+
+| Tag | Moved by | Points at |
+| --- | --- | --- |
+| `ota-preview` | Mobile Update | Last `preview` publish |
+| `ota-production` | Mobile Update (production) | Last `production` publish |
+| `v<version>` | The manager, per store build | The store build's commit |
 
 ### On your own iPhone
 

@@ -110,3 +110,28 @@ jobs:
             exit 1
           fi
           curl -fsS --retry 5 --retry-delay 3 --retry-all-errors -o /dev/null -w "%{http_code} $URL\n" "$URL"
+
+      # The page answering is not enough: the Worker must be the build this
+      # job made (releases standard). A stale Worker or a failed flip fails here,
+      # before production follows staging.
+      - name: Version check
+        env:
+          URL: ${{ steps.worker.outputs.url }}
+        run: |
+          # A new Worker version can take a few seconds to reach every edge.
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            info=$(curl -fsS --retry 5 --retry-delay 3 --retry-all-errors "${URL%/}/version")
+            commit=$(jq -r .commit <<<"$info")
+            [ "$commit" = "$GITHUB_SHA" ] && break
+            echo "Attempt $attempt: $URL/version reports $commit; waiting for $GITHUB_SHA."
+            sleep 6
+          done
+          echo "$info"
+          if [ "$commit" != "$GITHUB_SHA" ]; then
+            echo "::error::$URL/version reports commit $commit, expected $GITHUB_SHA."
+            exit 1
+          fi
+          {
+            echo "### ${{ inputs.environment }}"
+            echo "\`$(jq -r '"fairway@\(.version)+\(.commit[0:7])"' <<<"$info")\` on $URL"
+          } >> "$GITHUB_STEP_SUMMARY"

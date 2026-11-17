@@ -6,7 +6,7 @@ name: Mobile Update
 # the update must not land before the functions it calls.
 #
 # Skipped when nothing the app bundles changed since the last publish (the
-# `mobile-ota/preview` tag), so a web-only release does not show "Update
+# `ota-preview` tag, formerly `mobile-ota/preview`), so a web-only release does not show "Update
 # ready" for nothing.
 #
 # Gated by the runtime fingerprint, per platform: an update is published only
@@ -20,6 +20,9 @@ name: Mobile Update
 #
 # Local builds (`eas build --local`) are not recorded on EAS, so after
 # installing one, run this workflow by hand with `force` to seed the channel.
+#
+# The `production` channel is published once a day from what soaked here:
+# mobile-update-production.yml.
 on:
   workflow_call:
   workflow_dispatch:
@@ -38,14 +41,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
-      # Moves the mobile-ota/preview tag.
+      # Moves the ota-preview tag.
       contents: write
     env:
       # Repository scope, written by `pnpm env:apply preview --only github`.
       EXPO_TOKEN: ${{ secrets.PREVIEW_EXPO_TOKEN }}
       APP_VARIANT: preview
       CHANNEL: preview
-      TAG: mobile-ota/preview
+      TAG: ota-preview
+      # Read when ota-preview does not exist yet; the first publish replaces it.
+      LEGACY_TAG: mobile-ota/preview
       FORCE: ${{ inputs.force && 'true' || 'false' }}
     defaults:
       run:
@@ -67,9 +72,11 @@ jobs:
         id: changed
         working-directory: .
         run: |
-          if [ "$FORCE" != true ] && git rev-parse -q --verify "refs/tags/$TAG" >/dev/null &&
-            git diff --quiet "$TAG" HEAD -- apps/mobile packages/core pnpm-lock.yaml; then
-            echo "Nothing the app bundles changed since \`$TAG\`; no update published." >> "$GITHUB_STEP_SUMMARY"
+          base=$TAG
+          git rev-parse -q --verify "refs/tags/$base" >/dev/null || base=$LEGACY_TAG
+          if [ "$FORCE" != true ] && git rev-parse -q --verify "refs/tags/$base" >/dev/null &&
+            git diff --quiet "$base" HEAD -- apps/mobile packages/core pnpm-lock.yaml; then
+            echo "Nothing the app bundles changed since \`$base\`; no update published." >> "$GITHUB_STEP_SUMMARY"
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
@@ -114,6 +121,9 @@ jobs:
           # The preview environment's Sentry token is for builds; source maps
           # for updates are not uploaded yet.
           SENTRY_DISABLE_AUTO_UPLOAD: "true"
+          # Inlined by Metro: the update reports to Sentry as
+          # fairway@<version>+<short sha> (src/monitoring/release.ts).
+          EXPO_PUBLIC_COMMIT_SHA: ${{ github.sha }}
         run: |
           message=$(git log -1 --format=%s)
           for platform in ${{ steps.match.outputs.platforms }}; do

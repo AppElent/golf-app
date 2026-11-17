@@ -49,3 +49,30 @@ it("reports nothing for a deployed page that renders", async () => {
 	expect(await server.fetch(new Request(deployed), {}, ctx)).toBe(response);
 	expect(mocks.captureMessage).not.toHaveBeenCalled();
 });
+
+it("answers /version without rendering the app", async () => {
+	const response = await server.fetch(
+		new Request("https://fairway.appelent.nl/version"),
+		{ environment_name: "staging" },
+		ctx,
+	);
+
+	expect(mocks.startFetch).not.toHaveBeenCalled();
+	expect(response.headers.get("cache-control")).toBe("no-store");
+	expect(await response.json()).toMatchObject({
+		app: "fairway",
+		environment: "staging",
+	});
+});
+
+it("leaves other methods on /version to the app", async () => {
+	const response = new Response("ok");
+	mocks.startFetch.mockResolvedValue(response);
+
+	await server.fetch(
+		new Request("https://fairway.appelent.nl/version", { method: "POST" }),
+		{},
+		ctx,
+	);
+	expect(mocks.startFetch).toHaveBeenCalledTimes(1);
+});
