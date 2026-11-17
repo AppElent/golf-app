@@ -262,6 +262,9 @@ function unwrap(words) {
     const program = programName(rest[0]);
     if (KEYWORDS.has(rest[0])) {
       rest.shift();
+    } else if (rest[0] === "function") {
+      // `function name { body; }`: the body's first command follows the name.
+      rest.splice(0, 2);
     } else if (rest[0] === "export" || rest[0] === "declare" || rest[0] === "local" || rest[0] === "readonly") {
       // `export NAME=value` keeps NAME for the rest of the call.
       rest.shift();
@@ -389,9 +392,9 @@ function checkGit(args, context) {
     } else if (!word.startsWith("-")) positional.push(word);
   }
   const refspecs = positional.slice(repoOption ? 0 : 1);
-  if ((force || remove) && refspecs.some((ref) => ref.includes("$"))) ask("could not tell which branch this force push or delete targets.");
   if (refspecs.some((ref) => ref.startsWith("+"))) force = true;
   if (refspecs.some((ref) => ref.startsWith(":") && ref !== ":")) remove = true;
+  if ((force || remove) && refspecs.some((ref) => ref.includes("$"))) ask("could not tell which branch this force push or delete targets.");
   if (!force && !remove) return;
   // `+:` pushes every matching branch; `refs/heads/*:refs/heads/*` every branch.
   if (refspecs.some((ref) => { const spec = ref.replace(/^\+/, ""); return spec === ":" || spec.includes("*"); })) all = true;
