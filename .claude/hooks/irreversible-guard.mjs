@@ -293,6 +293,9 @@ function unwrap(words) {
         if (ASSIGNMENT.test(token)) {
           const [name, ...value] = token.split("=");
           exported[name] = value.join("=");
+        } else if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(token)) {
+          // `X=…; export X`: the value was set earlier; treat it as present.
+          exported[token] = exported[token] || "(set earlier)";
         }
       }
       return { env, words: [], chdir };
