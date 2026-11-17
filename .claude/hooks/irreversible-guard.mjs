@@ -637,7 +637,13 @@ export function check(command, options) {
   };
   const realRoot = (root) => { try { return realpathSync(root); } catch { return resolve(root); } };
   const roots = [project, ...extraRoots, ...tempRoots].filter(Boolean).map(realRoot);
-  const isDeletable = (path) => roots.some((root) => inside(real(path), root));
+  // A root itself or a folder holding one (a checkout under /tmp) is never
+  // deletable, even when another allowed root contains it.
+  const isDeletable = (path) => {
+    const target = real(path);
+    if (roots.some((root) => root === target || inside(root, target))) return false;
+    return roots.some((root) => inside(target, root));
+  };
   const isRoot = (path) => roots.some((root) => root === real(path));
   let cdSeen = false;
   const context = { get cwd() { return cwd; }, get cdSeen() { return cdSeen; }, resolvePath, isDeletable, isRoot };
