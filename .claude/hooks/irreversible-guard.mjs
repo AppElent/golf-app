@@ -279,7 +279,11 @@ function unwrap(words) {
       const [name, ...value] = rest.shift().split("=");
       env[name] = value.join("=");
     }
-    if (!rest.length) return { env, words: rest, chdir };
+    if (!rest.length) {
+      // A bare `CDPATH=/x` sets a shell variable that later `cd`s use.
+      if (env.CDPATH !== undefined) exported.CDPATH = env.CDPATH;
+      return { env, words: rest, chdir };
+    }
     const program = programName(rest[0]);
     if (KEYWORDS.has(rest[0])) {
       // `time -p cmd`: drop the keyword's own options too.
@@ -694,6 +698,7 @@ export function check(command, options) {
   };
   const isRoot = (path) => roots.some((root) => root === real(path));
   let cdSeen = false;
+  const hasSubshell = /[()`]/.test(command);
   const context = { get cwd() { return cwd; }, get cdSeen() { return cdSeen; }, resolvePath, isDeletable, isRoot };
 
   // `inherited` holds variables set for a wrapping command (`KEY=x sh -c '…'`).
@@ -719,7 +724,14 @@ export function check(command, options) {
       if (program === "cd") {
         cdSeen = true;
         const target = args.find((word) => !word.startsWith("-"));
-        cwd = restore ? saved : target === undefined ? home : resolvePath(target);
+        // CDPATH can send a relative `cd build` to /elsewhere/build.
+        const cdpath = env.CDPATH ?? exported.CDPATH ?? options.cdpath;
+        const searched = cdpath && target !== undefined && !isAbsolute(target) && !/^\.\.?(\/|$)/.test(target);
+        if (restore) cwd = saved;
+        // The parser flattens `( … )`, `$( … )` and backticks, so with any of
+        // them in the command a cd may or may not reach later commands.
+        else if (searched || hasSubshell) cwd = undefined;
+        else cwd = target === undefined ? home : resolvePath(target);
         continue;
       }
       dispatch(program, args, env);
@@ -797,5 +809,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     additionalDirectories: additionalDirectories(projectDir),
     tempRoots: [...new Set(temp.map((dir) => resolve(dir)))].filter((dir) => dir !== sep),
     tmpdir: tmpdir(),
+    cdpath: process.env.CDPATH,
   }));
 }
