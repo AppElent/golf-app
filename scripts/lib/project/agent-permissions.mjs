@@ -95,8 +95,9 @@ export function agentPermissionFindings({ settingsText, guardText, sourceText })
   const allow = Array.isArray(settings?.permissions?.allow) ? settings.permissions.allow : [];
   const shadowed = allow.filter(rule => BASELINE_DENY.includes(rule));
   if (shadowed.length) findings.push({ level: 'warn', message: `.claude/settings.json: allow repeats denied rule(s): ${shadowed.join(', ')}` });
-  const registered = (settings?.hooks?.PreToolUse ?? []).some(entry =>
-    entry?.matcher === 'Bash' && (entry.hooks ?? []).some(hook => hook?.type === 'command' && hook.command === GUARD_COMMAND));
+  const entries = Array.isArray(settings?.hooks?.PreToolUse) ? settings.hooks.PreToolUse : [];
+  const registered = entries.some(entry =>
+    entry?.matcher === 'Bash' && Array.isArray(entry.hooks) && entry.hooks.some(hook => hook?.type === 'command' && hook.command === GUARD_COMMAND));
   findings.push(registered
     ? { level: 'pass', message: `.claude/settings.json: ${GUARD_FILE} runs as a Bash PreToolUse hook` }
     : { level: 'fail', message: `.claude/settings.json: register ${GUARD_COMMAND} as a Bash PreToolUse hook` });

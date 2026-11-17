@@ -48,6 +48,7 @@ export function parse(source) {
   let words = [];
   let word = "";
   let inWord = false;
+  const heredocs = [];
   const endWord = () => {
     if (inWord) words.push(word);
     word = "";
@@ -125,9 +126,37 @@ export function parse(source) {
       word += "$";
       inWord = true;
       i = stop + 1;
-    } else if (";&|()\n".includes(c)) {
+    } else if (";&|()\n".includes(c) && !(c === "\n" && heredocs.length)) {
       endCommand();
       i++;
+    } else if (c === "<" && source[i + 1] === "<" && source[i + 2] !== "<") {
+      // Heredoc: its body is data (a commit message, a PR body), except when
+      // a shell reads it as a script (`sh <<EOF`).
+      endWord();
+      i += 2;
+      if (source[i] === "-") i++;
+      while (source[i] === " " || source[i] === "\t") i++;
+      let j = i;
+      while (j < source.length && !" \t\n;&|()<>".includes(source[j])) j++;
+      heredocs.push({ delimiter: source.slice(i, j).replace(/["'\\]/g, ""), words });
+      i = j;
+    } else if (c === "\n" && heredocs.length) {
+      // Skip each pending heredoc body up to its delimiter line.
+      let at = i + 1;
+      for (const doc of heredocs) {
+        const lines = [];
+        while (at <= source.length) {
+          const end = source.indexOf("\n", at);
+          const line = source.slice(at, end === -1 ? source.length : end);
+          at = end === -1 ? source.length + 1 : end + 1;
+          if (line.replace(/^\t+/, "") === doc.delimiter) break;
+          lines.push(line);
+        }
+        if (doc.words.length && SHELLS.has(programName(doc.words[0]))) commands.push(...parse(lines.join("\n")));
+      }
+      heredocs.length = 0;
+      endCommand();
+      i = at;
     } else if (c === "<" || c === ">") {
       // A redirect and its target (and a leading fd number) are not arguments.
       if (inWord && /^\d+$/.test(word)) { word = ""; inWord = false; }
@@ -157,6 +186,40 @@ const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
 // `/usr/bin/rm` -> rm, `eas-cli@latest` -> eas-cli.
 const programName = (word) => basename(word).replace(/(.)@[^/]*$/, "$1");
 const SHELLS = new Set(["sh", "bash", "zsh", "dash", "ksh"]);
+// Words that start a compound or negated command; the command follows them.
+const KEYWORDS = new Set(["if", "then", "elif", "else", "while", "until", "do", "!", "{", "}", "time"]);
+const WRAPPER_VALUE_FLAGS = {
+  sudo: ["-u", "-g", "-C", "-D", "-h", "-p", "-r", "-t", "-U", "--user", "--group"],
+  doas: ["-u", "-C"],
+  nice: ["-n", "--adjustment"],
+  nohup: [],
+  command: [],
+  exec: ["-a"],
+  caffeinate: ["-t", "-w"],
+};
+const PACKAGE_MANAGERS = new Set(["pnpm", "npm", "yarn", "bun"]);
+const PACKAGE_VALUE_FLAGS = ["--filter", "-F", "-C", "--dir", "--prefix", "--workspace", "--cwd", "--reporter", "--loglevel"];
+// Variables named by `export NAME=value` earlier in the same Bash call.
+let exported = {};
+
+// Drops leading flags; a flag in `valueFlags` also drops its value.
+function skipFlags(rest, valueFlags) {
+  while (rest.length && rest[0].startsWith("-") && rest[0] !== "--") {
+    const flag = rest.shift();
+    if (valueFlags.includes(flag)) rest.shift();
+  }
+  if (rest[0] === "--") rest.shift();
+}
+
+// Index of the subcommand after a package manager's global flags.
+function packageCommandIndex(words) {
+  let j = 1;
+  while (j < words.length && words[j].startsWith("-")) {
+    if (PACKAGE_VALUE_FLAGS.includes(words[j]) && !(programName(words[0]) === "pnpm" && words[j] === "-w")) j++;
+    j++;
+  }
+  return j;
+}
 
 // Strips assignments and wrappers. Returns { env, words } for the real command,
 // or a list of nested commands for `sh -c` / `eval`.
@@ -170,21 +233,35 @@ function unwrap(words) {
     }
     if (!rest.length) return { env, words: rest };
     const program = programName(rest[0]);
-    if (["sudo", "nohup", "time", "command", "exec", "nice", "caffeinate", "doas"].includes(program)) {
+    if (KEYWORDS.has(rest[0])) {
       rest.shift();
-      while (rest.length && rest[0].startsWith("-")) rest.shift();
+    } else if (rest[0] === "export" || rest[0] === "declare" || rest[0] === "local" || rest[0] === "readonly") {
+      // `export NAME=value` keeps NAME for the rest of the call.
+      rest.shift();
+      for (const token of rest) {
+        if (ASSIGNMENT.test(token)) {
+          const [name, ...value] = token.split("=");
+          exported[name] = value.join("=");
+        }
+      }
+      return { env, words: [] };
+    } else if (WRAPPER_VALUE_FLAGS[program]) {
+      rest.shift();
+      skipFlags(rest, WRAPPER_VALUE_FLAGS[program]);
     } else if (program === "env") {
       rest.shift();
       while (rest.length && (rest[0].startsWith("-") || ASSIGNMENT.test(rest[0]))) {
         const token = rest.shift();
-        if (ASSIGNMENT.test(token)) {
+        if (token === "-S" || token === "--split-string") return { nested: parse(rest.join(" ")) };
+        if (["-u", "--unset", "-C", "--chdir"].includes(token)) rest.shift();
+        else if (ASSIGNMENT.test(token)) {
           const [name, ...value] = token.split("=");
           env[name] = value.join("=");
         }
       }
     } else if (program === "timeout") {
       rest.shift();
-      while (rest.length && rest[0].startsWith("-")) rest.shift();
+      skipFlags(rest, ["-s", "--signal", "-k", "--kill-after"]);
       rest.shift(); // duration
     } else if (program === "xargs") {
       rest.shift();
@@ -198,9 +275,9 @@ function unwrap(words) {
         const flag = rest.shift();
         if (flag === "-p" || flag === "--package") rest.shift();
       }
-    } else if (["pnpm", "npm", "yarn", "bun"].includes(program) && ["exec", "dlx", "x"].includes(rest[1])) {
-      rest.splice(0, 2);
-      while (rest.length && rest[0].startsWith("-")) rest.shift();
+    } else if (PACKAGE_MANAGERS.has(program) && ["exec", "dlx", "x"].includes(rest[packageCommandIndex(rest)])) {
+      rest.splice(0, packageCommandIndex(rest) + 1);
+      skipFlags(rest, PACKAGE_VALUE_FLAGS);
     } else if (rest[0] === "--") {
       rest.shift();
     } else if (SHELLS.has(program)) {
@@ -261,6 +338,7 @@ function checkGit(args, context) {
     } else if (!word.startsWith("-")) positional.push(word);
   }
   const refspecs = positional.slice(1);
+  if ((force || remove) && refspecs.some((ref) => ref.includes("$"))) ask("could not tell which branch this force push or delete targets.");
   if (refspecs.some((ref) => ref.startsWith("+"))) force = true;
   if (refspecs.some((ref) => ref.startsWith(":"))) remove = true;
   if (!force && !remove) return;
@@ -300,11 +378,12 @@ function checkRm(args, context) {
 }
 
 function checkConvex(args, env) {
-  const key = env.CONVEX_DEPLOY_KEY;
+  const key = env.CONVEX_DEPLOY_KEY ?? exported.CONVEX_DEPLOY_KEY;
   if (key) deny("A Convex command with CONVEX_DEPLOY_KEY targets a cloud deployment.");
   const sub = args.find((word) => !word.startsWith("-"));
   if (sub === "deploy") deny("convex deploy ships the backend; merges deploy it through CI.");
-  if (args.some((word) => word === "--prod" || word.startsWith("--prod="))) deny("Convex commands against the production deployment are not run by agents.");
+  const name = optionValue(args, ["--deployment-name", "--deployment"]);
+  if (args.some((word) => word === "--prod" || word.startsWith("--prod=")) || (name && /^prod/.test(name))) deny("Convex commands against the production deployment are not run by agents.");
 }
 
 function optionValue(args, names) {
@@ -321,6 +400,7 @@ function checkEas(args) {
   const sub = args.find((word) => !word.startsWith("-")) ?? "";
   if (sub === "submit" || sub.startsWith("submit:")) deny("eas submit uploads to the App Store or Play Store; that stays with Eric.");
   if (args.some((word) => word === "--auto-submit" || word.startsWith("--auto-submit-with-profile"))) deny("--auto-submit uploads to the App Store or Play Store; that stays with Eric.");
+  if (sub === "deploy" && args.some((word) => word === "--prod" || word === "--production")) deny("eas deploy --prod ships the production web app.");
   if (sub === "build") {
     if (args.includes("--local")) return;
     const profile = optionValue(args, ["--profile", "-e"]);
@@ -348,16 +428,18 @@ function checkWrangler(args) {
 const SHIP_SCRIPT = /^(deploy|ship)(:(?!dev$).+)?$|(^|:)(prod|production)$/;
 
 function checkScript(program, args) {
-  let j = 0;
-  const valueFlags = new Set(["--filter", "-F", "-C", "--dir", "--prefix", "--workspace", "-w", "--cwd"]);
-  while (j < args.length && args[j].startsWith("-")) {
-    if (valueFlags.has(args[j]) && !(program === "pnpm" && args[j] === "-w")) j++;
-    j++;
-  }
+  const skip = (from) => {
+    let j = from;
+    while (j < args.length && args[j].startsWith("-")) {
+      if ((PACKAGE_VALUE_FLAGS.includes(args[j]) || (program !== "pnpm" && args[j] === "-w")) ) j++;
+      j++;
+    }
+    return j;
+  };
+  let j = skip(0);
   let script = args[j];
   if (script === "run" || script === "run-script") {
-    j++;
-    while (j < args.length && args[j].startsWith("-")) j++;
+    j = skip(j + 1);
     script = args[j];
   } else if (program === "npm") return undefined; // npm runs scripts only through `run`
   if (program === "yarn" && script === "workspace") script = args[j + 2];
@@ -376,11 +458,14 @@ export function check(command, options) {
   const extraRoots = options.additionalDirectories ?? [];
   const tempRoots = options.tempRoots ?? [];
   let cwd = cwdStart;
+  exported = {};
 
   const resolvePath = (raw) => {
     let path = raw;
     if (path === "~" || path.startsWith("~/")) path = home + path.slice(1);
     path = path.replace(/^\$\{?HOME\}?(?=\/|$)/, home);
+    if (cwd !== undefined) path = path.replace(/^\$\{?PWD\}?(?=\/|$)/, cwd);
+    if (options.tmpdir) path = path.replace(/^\$\{?TMPDIR\}?(?=\/|$)/, options.tmpdir);
     if (/[$~`]/.test(path)) return undefined;
     if (isAbsolute(path)) return resolve(path);
     if (cwd === undefined) return undefined;
@@ -481,5 +566,6 @@ if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.ur
     projectDir,
     additionalDirectories: additionalDirectories(projectDir),
     tempRoots: [...new Set(temp.map((dir) => resolve(dir)))].filter((dir) => dir !== sep),
+    tmpdir: tmpdir(),
   }));
 }
