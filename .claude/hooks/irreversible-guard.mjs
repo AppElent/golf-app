@@ -345,13 +345,26 @@ function currentBranch(dir) {
   }
 }
 
+// True when push destinations may come from config (`remote.<name>.push`)
+// rather than the current branch name.
+function pushMapped(dir) {
+  try {
+    return execFileSync("git", ["-C", dir, "config", "--get-regexp", "^remote\\..*\\.push$"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() !== "";
+  } catch {
+    return false; // exit 1: no such key
+  }
+}
+
 function checkGit(args, context) {
   let dir = context.cwd;
   let i = 0;
+  let configured = false;
   while (i < args.length && args[i].startsWith("-")) {
     const flag = args[i++];
     if (flag === "-C") dir = context.resolvePath(args[i++]) ?? dir;
-    else if (flag === "-c" || flag === "--git-dir" || flag === "--work-tree" || flag === "--namespace") i++;
+    else if (flag === "-c") { if (/^(remote\..*\.push|push\.)/i.test(args[i] ?? "")) configured = true; i++; }
+    else if (/^--config-env/.test(flag) || /^-c./.test(flag)) configured = true;
+    else if (flag === "--git-dir" || flag === "--work-tree" || flag === "--namespace") i++;
   }
   if (args[i] !== "push") return;
   const rest = args.slice(i + 1);
@@ -385,6 +398,8 @@ function checkGit(args, context) {
   if (all) deny("A force push or delete of all branches can overwrite main.");
   const targets = refspecs.map((ref) => branchName(ref.includes(":") ? ref.slice(ref.indexOf(":") + 1) : ref));
   if (!refspecs.length || targets.includes("HEAD")) {
+    // `-c remote.origin.push=HEAD:main` or a saved push mapping can redirect it.
+    if (!refspecs.length && (configured || !dir || pushMapped(dir))) ask("could not tell which branch this force push targets: a push mapping may apply.");
     const branch = dir ? currentBranch(dir) : null;
     if (branch === null) ask("could not tell which branch this force push targets.");
     targets.push(branch);
