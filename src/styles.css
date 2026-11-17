@@ -15,6 +15,9 @@
 	/* bar: the bottom tab bar */
 	--color-bar: rgb(255 255 255 / 0.9);
 	--color-card-line: #e9e2d2;
+	/* control-line: the edge of a field. Light keeps the card line; dark
+	   strengthens it to 3:1 against the field and the ground around it. */
+	--color-control-line: #e9e2d2;
 	/* cream: text on pine fills; not themed */
 	--color-cream: #f3efe4;
 	/* greens */
@@ -123,6 +126,7 @@
 		--color-field: #1a2c23;
 		--color-bar: rgb(17 32 26 / 0.9);
 		--color-card-line: rgb(255 255 255 / 0.14);
+		--color-control-line: #6b7a71;
 		--color-pine-fill: #22704a;
 		--color-pine-ink: #7fe0a6;
 		--color-ink: #f1f5f0;

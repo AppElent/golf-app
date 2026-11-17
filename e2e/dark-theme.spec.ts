@@ -50,13 +50,31 @@ async function openCourseEditor(page: Page) {
 	await page.getByRole("heading", { name: "Holes" }).waitFor();
 }
 
-const PAGES: Record<string, (page: Page) => Promise<void>> = {
+/** Opens an owned copy of a catalog course, so its fields are editable.
+ *  Returns the step that deletes the copy again. */
+async function openOwnedCopy(page: Page) {
+	await openCourseEditor(page);
+	await page.getByRole("button", { name: "Make my copy" }).click();
+	const remove = page.getByRole("button", { name: "Delete my copy" });
+	await remove.waitFor();
+	await expect(page.locator("main input").first()).toBeVisible();
+	return async () => {
+		page.once("dialog", (dialog) => dialog.accept());
+		await remove.click();
+		await page.waitForURL("**/courses");
+	};
+}
+
+type Open = (page: Page) => Promise<void | (() => Promise<void>)>;
+
+const PAGES: Record<string, Open> = {
 	home: async (page) => {
 		await page.goto("/");
 		await page.locator("main").waitFor();
 	},
 	round: openRound,
 	editor: openCourseEditor,
+	copy: openOwnedCopy,
 };
 
 for (const scheme of ["light", "dark"] as const) {
@@ -65,7 +83,7 @@ for (const scheme of ["light", "dark"] as const) {
 
 		for (const [name, open] of Object.entries(PAGES)) {
 			test(name, async ({ page }, info) => {
-				await open(page);
+				const cleanUp = await open(page);
 				await page.waitForLoadState("networkidle");
 
 				const canvas = await shell(page).evaluate(
@@ -98,7 +116,30 @@ for (const scheme of ["light", "dark"] as const) {
 					path: info.outputPath(`${name}-${info.project.name}-${scheme}.png`),
 					fullPage: true,
 				});
+				await cleanUp?.();
 			});
 		}
+
+		test.describe("signed out", () => {
+			test.use({ storageState: { cookies: [], origins: [] } });
+
+			test("sign-in", async ({ page }, info) => {
+				await page.goto("/");
+				const email = page.getByLabel(/email address/i);
+				await email.waitFor();
+				const field = await email.evaluate(
+					(el) => getComputedStyle(el).backgroundColor,
+				);
+				if (scheme === "dark") {
+					expect(luminance(field)).toBeLessThan(0.05);
+				} else {
+					expect(luminance(field)).toBeGreaterThan(0.7);
+				}
+				await page.screenshot({
+					path: info.outputPath(`sign-in-${info.project.name}-${scheme}.png`),
+					fullPage: true,
+				});
+			});
+		});
 	});
 }

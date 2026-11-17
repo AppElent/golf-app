@@ -1,7 +1,10 @@
 /** Colors of a card or an unselected control. Pair with `border`. */
 export const SURFACE = "border-card-line bg-surface";
 
-export const FIELD = "rounded-lg border border-card-line bg-field text-ink";
+/** A text input, select or textarea. Placeholders use `stone` (4.5:1), not
+ *  the browser's half-transparent text colour. */
+export const FIELD =
+	"rounded-lg border border-control-line bg-field text-ink placeholder:text-stone";
 
 export const CTA =
 	"w-full rounded-full bg-flag px-6 py-4 font-display font-bold text-white shadow-lg shadow-flag/25";

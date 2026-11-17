@@ -168,14 +168,21 @@ function RoundCard({
 										: ""
 								}`}
 							>
-								<span className="text-micro font-semibold text-stone">
+								<span
+									className={`text-micro font-semibold ${selected === holeIndex ? "text-ink" : "text-stone"}`}
+								>
 									{holeIndex + 1}
 								</span>
 								<MarkCell
 									mark={scoreMark(hole.par, strokes)}
 									strokes={s?.nr ? "NR" : (strokes ?? "·")}
 								/>
-								<span className="text-nano text-stone">{hole.par}</span>
+								{/* stone misses 4.5:1 on the selected tint, so the selected hole uses ink */}
+								<span
+									className={`text-nano ${selected === holeIndex ? "text-ink" : "text-stone"}`}
+								>
+									{hole.par}
+								</span>
 							</button>
 						);
 					})}

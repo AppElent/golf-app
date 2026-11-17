@@ -88,14 +88,17 @@ Designers and coding agents start from it; product decisions below still bind th
   app column takes the phone's dark palette (`apps/mobile` tokens) through the
   themed tokens in `src/styles.css`: `canvas` (column background), `surface`
   (cards, unselected controls), `field` (inputs), `bar` (tab bar),
-  `card-line`, `ink`, `moss`, `stone`, `on-stone`, `live-ink`, `flag-ink`,
+  `card-line`, `control-line` (field edges), `ink`, `moss`, `stone`,
+  `on-stone`, `live-ink`, `flag-ink`,
   `pine-ink` (pine text, icons and rings, mint in dark) and `pine-fill` (a pine
   button under cream text, lifted in dark so it stands off the canvas). Never
   `bg-cream`, `bg-white/N` or `text-pine` in the column. The brand fills
   (`pine` and `pine-light` for the Play screen, `flag`, `live`, `mint`) and the
   `map-*` colours, including `map-ink` for hole-map labels, are not themed.
-  `src/theme.test.ts` checks every text token against every ground in both
-  themes.
+  `src/theme.test.ts` checks every text token against every ground and tint
+  in both themes. Field placeholders are `stone`. Clerk's sign-in card takes
+  the same tokens in dark mode through `appearance` variables
+  (`src/integrations/clerk/appearance.ts`) and keeps Clerk's own look in light.
 - **Map colours** in `src/play/` use `--color-map-*` tokens and the shared tee
   marker colours, never hex.
 
@@ -103,7 +106,11 @@ Designers and coding agents start from it; product decisions below still bind th
 
 Every text pair reaches 4.5:1 in both themes; marks (chart fills, control
 edges) reach 3:1. Ratios are WCAG 2 relative luminance, with translucent colours
-composited over their ground. Pairs changed in APP-184 (bold = failed before):
+composited over their ground. Pairs changed in APP-184 and APP-191 (bold =
+failed before). The APP-184 web rows were measured when the app column was
+cream in both themes; since APP-191 the dark column has its own rows below
+them. Known gap: light-mode field edges (`control-line` = `card-line`,
+1.12:1 on cream) stay as they were, because APP-191 keeps light mode unchanged.
 
 | Pair | Theme | Old | New |
 | --- | --- | --- | --- |
@@ -133,6 +140,9 @@ composited over their ground. Pairs changed in APP-184 (bold = failed before):
 | Web: link on `canvas` (APP-191) | dark | 5.06 (cream column) | 10.29 |
 | Web: cream on `pine-fill` (APP-191) | dark | 10.62 (`pine`) | 5.25 |
 | Web: bottom-nav active (`pine-ink`) vs inactive (`stone`), each other (APP-191) | dark | 2.30 (cream column) | 1.88; each ≥ 5.67 on `bar` |
+| Web: field placeholder (ink at 50% → `stone`) on `field` (APP-191) | light / dark | **3.09** / n/a | 4.62 / 4.89 |
+| Web: dark field edge (`control-line`) on `field` / `surface` (3:1) (APP-191) | dark | n/a | 3.25 / 3.73 |
+| Web: selected scorecard hole number (`stone` → `ink`) on `pine-ink/10` (APP-191) | light / dark | **3.88** / n/a | 11.77 / 14.19 |
 | Phone: `onAccent` on `accentFill` (primary button, selected segment) | light | **3.39** | 5.85 |
 | Phone: `onAccent` on `accentPressed` | light | **3.39** | 8.25 |
 | Phone: `accent` on `bg` | light | 4.82 | 5.29 |
