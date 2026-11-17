@@ -28,6 +28,11 @@ Project decisions below bind these standards to product components, identity, an
 Conform, improve, or differ as described in [working with standards](CODING_STANDARDS.md#working-with-standards).
 <!-- appelent-standards:end -->
 
+## Design System artifact
+
+The canvas design system is the [Fairway Design System artifact](https://claude.ai/artifact/7wJEEjq25dsdd5zmmxiwpN).
+Designers and coding agents start from it; product decisions below still bind the code.
+
 ## Project decisions
 
 ### Mobile (`apps/mobile`)
