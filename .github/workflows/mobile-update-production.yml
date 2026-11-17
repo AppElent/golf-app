@@ -92,12 +92,13 @@ jobs:
               --limit 50 --offset "$offset" --json --non-interactive \
               | jq -r '.currentPage[]? | select(.isRollBackToEmbedded | not) | .group')
             [ -n "$groups" ] || break
+            count=$(wc -w <<<"$groups")
             for group in $groups; do
               view=$(pnpm exec eas update:view "$group" --json)
-              created=$(jq -r --arg p "$PLATFORM" '[.[] | select(.platform == $p) | .createdAt][0] // empty' <<<"$view")
+              created=$(jq -r --arg p "$PLATFORM" '[.[] | select((.platform | ascii_downcase) == $p) | .createdAt][0] // empty' <<<"$view")
               [ -n "$created" ] || continue
               if [ "$(date -u -d "$created" +%s)" -le "$cutoff" ]; then
-                commit=$(jq -r --arg p "$PLATFORM" '[.[] | select(.platform == $p) | .gitCommitHash | select(. != null)][0] // empty' <<<"$view")
+                commit=$(jq -r --arg p "$PLATFORM" '[.[] | select((.platform | ascii_downcase) == $p) | .gitCommitHash | select(. != null)][0] // empty' <<<"$view")
                 if [ -z "$commit" ]; then
                   echo "::error::Preview update group $group has no git commit; cannot tell what soaked."
                   exit 1
@@ -107,6 +108,8 @@ jobs:
                 exit 0
               fi
             done
+            # A short page is the last one; asking past it can error.
+            [ "$count" -ge 50 ] || break
           done
           echo "- $PLATFORM: skipped, no \`$SOURCE_CHANNEL\` update is $SOAK_HOURS hours old yet" >> "$GITHUB_STEP_SUMMARY"
 
@@ -124,8 +127,7 @@ jobs:
             exit 0
           }
           if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
-            if git merge-base --is-ancestor "$COMMIT" "$TAG" &&
-              git diff --quiet "$TAG" "$COMMIT" -- apps/mobile packages/core pnpm-lock.yaml; then
+            if git diff --quiet "$TAG" "$COMMIT" -- apps/mobile packages/core pnpm-lock.yaml; then
               echo "- $PLATFORM: skipped, nothing the app bundles changed between \`$TAG\` and \`${COMMIT:0:7}\`" >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
@@ -169,12 +171,21 @@ jobs:
         run: |
           set -o pipefail
           runtime=$(pnpm exec expo-updates runtimeversion:resolve --platform "$PLATFORM" | jq -r .runtimeVersion)
-          updates=$(pnpm exec eas update:list --branch "$CHANNEL" --platform "$PLATFORM" --runtime-version "$runtime" \
-            --limit 1 --json --non-interactive 2>/dev/null \
-            | jq '[.currentPage[]?] | length' || echo 0)
+          # EAS errors fail the step: "store build due" must mean no match,
+          # not an API hiccup. Only a missing `production` branch (no update
+          # ever published there) counts as "no update".
+          if list=$(pnpm exec eas update:list --branch "$CHANNEL" --platform "$PLATFORM" --runtime-version "$runtime" \
+            --limit 1 --json --non-interactive 2>"$RUNNER_TEMP/update-list.err"); then
+            updates=$(jq '[.currentPage[]?] | length' <<<"$list")
+          elif grep -q "Could not find branch" "$RUNNER_TEMP/update-list.err"; then
+            updates=0
+          else
+            cat "$RUNNER_TEMP/update-list.err"
+            exit 1
+          fi
           builds=$(pnpm exec eas build:list --platform "$PLATFORM" --channel "$CHANNEL" \
-            --runtime-version "$runtime" --status finished --limit 1 --json --non-interactive 2>/dev/null \
-            | jq length || echo 0)
+            --runtime-version "$runtime" --status finished --limit 1 --json --non-interactive \
+            | jq length)
           if [ "${updates:-0}" -gt 0 ] || [ "${builds:-0}" -gt 0 ]; then
             echo "publish=true" >> "$GITHUB_OUTPUT"
             echo "- $PLATFORM \`${runtime:0:12}\`: publishing" >> "$GITHUB_STEP_SUMMARY"
