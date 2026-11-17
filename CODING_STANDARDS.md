@@ -25,6 +25,7 @@ Read only what the task needs; never preload every standard.
 | Native builds, getting one onto a phone, TestFlight, OTA updates, or releases | [Mobile distribution](docs/standards/mobile-distribution.md) |
 | Reporting work as done, verified, or accepted | [Verification](docs/standards/verification.md), then the project's check commands |
 | Environment variables, secrets, `env.manifest.ts`, or `env:*` scripts | [Environments](docs/standards/environments.md) |
+| Claude Code settings, hooks, allow or deny rules, or a command the deny list blocked | [Agent permissions](docs/standards/agent-permissions.md) |
 | Creating, preparing, or cleaning a worktree | [Workspaces](docs/standards/workspaces.md) |
 | Authentication | [Auth](docs/standards/auth.md) |
 | Convex functions, schema, migrations, seeds, tests, or account deletion and export | [Convex backend](docs/standards/convex.md) |
