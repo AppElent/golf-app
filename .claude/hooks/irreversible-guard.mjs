@@ -316,6 +316,10 @@ function unwrap(words) {
       while (rest.length && (rest[0].startsWith("-") || ASSIGNMENT.test(rest[0]))) {
         const token = rest.shift();
         if (token === "-S" || token === "--split-string") return { env, nested: parse(rest.join(" ")), subshell: true, chdir };
+        // Attached forms: `--split-string='eas submit'`, `-S'eas submit'`, `-iS…`.
+        if (token.startsWith("--split-string=")) return { env, nested: parse([token.slice(15), ...rest].join(" ")), subshell: true, chdir };
+        const cluster = /^-[a-zA-Z]*S(.*)$/.exec(token);
+        if (cluster && !token.startsWith("--")) return { env, nested: parse((cluster[1] ? [cluster[1], ...rest] : rest).join(" ")), subshell: true, chdir };
         if (token === "-C" || token === "--chdir") chdir.push(rest.shift());
         else if (token.startsWith("--chdir=")) chdir.push(token.slice("--chdir=".length));
         else if (token === "-u" || token === "--unset") rest.shift();
@@ -397,14 +401,30 @@ function currentBranch(dir) {
   }
 }
 
+function gitConfig(dir, ...args) {
+  try {
+    return execFileSync("git", ["-C", dir, "config", ...args], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim();
+  } catch {
+    return ""; // exit 1: no such key
+  }
+}
+
 // True when push destinations may come from config (`remote.<name>.push`)
 // rather than the current branch name.
 function pushMapped(dir) {
-  try {
-    return execFileSync("git", ["-C", dir, "config", "--get-regexp", "^remote\\..*\\.push$"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() !== "";
-  } catch {
-    return false; // exit 1: no such key
+  return gitConfig(dir, "--get-regexp", "^remote\\..*\\.push$") !== "";
+}
+
+// Where a refspec-less push goes under the saved push.default:
+// "all" for matching, the upstream branch for upstream/tracking, else the branch itself.
+function implicitTarget(dir, branch) {
+  const mode = gitConfig(dir, "--get", "push.default").toLowerCase();
+  if (mode === "matching") return "all";
+  if (mode === "upstream" || mode === "tracking") {
+    const merge = gitConfig(dir, "--get", `branch.${branch}.merge`);
+    return merge ? branchName(merge) : branch;
   }
+  return branch;
 }
 
 function checkGit(args, context, env = {}) {
@@ -458,11 +478,17 @@ function checkGit(args, context, env = {}) {
   if (!refspecs.length || targets.includes("HEAD")) {
     // `-c remote.origin.push=HEAD:main` or a saved push mapping can redirect it.
     // --git-dir/--work-tree or GIT_DIR point at another repository.
-    const elsewhere = configured || ["GIT_DIR", "GIT_WORK_TREE"].some((name) => env[name] ?? exported[name]);
+    const elsewhere = configured || ["GIT_DIR", "GIT_WORK_TREE", "GIT_CONFIG_COUNT", "GIT_CONFIG_PARAMETERS", "GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM"].some((name) => env[name] ?? exported[name]);
     if (elsewhere || (!refspecs.length && (!dir || pushMapped(dir)))) ask("could not tell which branch this force push targets: another repository or a push mapping may apply.");
     const branch = dir ? currentBranch(dir) : null;
     if (branch === null) ask("could not tell which branch this force push targets.");
     targets.push(branch);
+    // Without a refspec, push.default decides: `matching` pushes every branch, `upstream` the tracked one.
+    if (!refspecs.length) {
+      const implicit = implicitTarget(dir, branch);
+      if (implicit === "all") deny("A force push under push.default=matching pushes every branch, main too.");
+      targets.push(implicit);
+    }
   }
   const hit = targets.find((target) => PROTECTED_BRANCHES.has(target));
   if (hit) deny(`${remove ? "Deleting" : "Force pushing"} ${hit} rewrites shared history.`);
