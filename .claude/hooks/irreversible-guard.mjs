@@ -326,6 +326,8 @@ function unwrap(words) {
       }
     } else if (program === "npx" || program === "bunx") {
       rest.shift();
+      const call = shellCall(rest);
+      if (call !== undefined) return { env, nested: parse(call), subshell: true, chdir };
       while (rest.length && rest[0].startsWith("-")) {
         const flag = rest.shift();
         if (flag === "-p" || flag === "--package") rest.shift();
@@ -336,6 +338,8 @@ function unwrap(words) {
         if (["-C", "--dir", "--prefix", "--cwd"].includes(globals[j])) chdir.push(globals[j + 1]);
       }
       rest.splice(0, packageCommandIndex(rest) + 1);
+      const call = shellCall(rest);
+      if (call !== undefined) return { env, nested: parse(call), subshell: true, chdir };
       skipFlags(rest, PACKAGE_VALUE_FLAGS);
     } else if (rest[0] === "--") {
       rest.shift();
@@ -350,6 +354,16 @@ function unwrap(words) {
       return { env, words: rest, chdir };
     }
   }
+}
+
+// `npm exec -c 'eas submit'`, `npx --call …`, `pnpm exec -c eas submit` run
+// their argument through a shell. Returns that script, or undefined.
+function shellCall(words) {
+  const at = words.findIndex((word) => word === "-c" || word === "--call" || word === "--shell-mode" || word.startsWith("--call="));
+  if (at === -1) return undefined;
+  const flag = words[at];
+  const tail = words.slice(at + 1).filter((word) => !/^-/.test(word));
+  return flag.startsWith("--call=") ? flag.slice(7) : tail.join(" ");
 }
 
 // ----------------------------------------------------------------- checks
