@@ -1,5 +1,8 @@
 {
   "hooks": {
+    "PreToolUse": [
+      { "matcher": "Bash", "hooks": [ { "type": "command", "command": "node .claude/hooks/convex-local-guard.mjs" } ] }
+    ],
     "SessionStart": [
       { "hooks": [ { "type": "command", "command": "node .claude/hooks/session-start.mjs" } ] }
     ]
@@ -11,7 +14,17 @@
       "Bash(pnpm run typecheck)", "Bash(pnpm run lint)", "Bash(pnpm run lint:fix)",
       "Bash(pnpm run seed)", "Bash(pnpm build)", "Bash(pnpm install:*)",
       "Bash(pnpm exec convex dev --once)", "Bash(pnpm exec tsr generate)",
-      "Bash(git status:*)", "Bash(git diff:*)", "Bash(git log:*)"
+      "Bash(git status:*)", "Bash(git diff:*)", "Bash(git log:*)",
+      "Bash(CONVEX_AGENT_MODE=anonymous npx convex dev)",
+      "Bash(CONVEX_AGENT_MODE=anonymous npx convex dev:*)",
+      "Bash(CONVEX_AGENT_MODE=anonymous npx convex env set:*)",
+      "Bash(CONVEX_AGENT_MODE=anonymous npx convex env get:*)",
+      "Bash(CONVEX_AGENT_MODE=anonymous npx convex env list)",
+      "Bash(CONVEX_AGENT_MODE=anonymous pnpm exec convex dev)",
+      "Bash(CONVEX_AGENT_MODE=anonymous pnpm exec convex dev:*)",
+      "Bash(CONVEX_AGENT_MODE=anonymous pnpm exec convex env set:*)",
+      "Bash(CONVEX_AGENT_MODE=anonymous pnpm exec convex env get:*)",
+      "Bash(CONVEX_AGENT_MODE=anonymous pnpm exec convex env list)"
     ]
   }
 }
