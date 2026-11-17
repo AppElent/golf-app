@@ -7,21 +7,32 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const PREFIX = /^\s*CONVEX_AGENT_MODE=anonymous\s+(?:npx|pnpm\s+exec)\s+convex\b/;
-const FORBIDDEN = /(?:^|\s)(?:deploy|--prod|--deployment|--deployment-name|--url|--admin-key|--cloud|--preview-name|--env-file)(?=[=\s]|$)/;
+const FORBIDDEN_FLAGS = [
+  "--prod",
+  "--deployment",
+  "--deployment-name",
+  "--url",
+  "--admin-key",
+  "--cloud",
+  "--preview-name",
+  "--env-file",
+];
 const LOCAL = /^(?:anonymous|local):/;
 
-function deny(reason) {
+function decide(permissionDecision, reason) {
   process.stdout.write(
     JSON.stringify({
       hookSpecificOutput: {
         hookEventName: "PreToolUse",
-        permissionDecision: "deny",
+        permissionDecision,
         permissionDecisionReason: `convex-local-guard: ${reason}`,
       },
     }),
   );
   process.exit(0);
 }
+
+const deny = (reason) => decide("deny", reason);
 
 // Variables that select or authenticate a cloud or self-hosted target. Any of
 // them can win over CONVEX_DEPLOYMENT, so their presence means "not local".
@@ -54,11 +65,18 @@ try {
 const command = input?.tool_input?.command;
 if (typeof command !== "string" || !PREFIX.test(command)) process.exit(0);
 
-// Only one plain command: no chaining, pipes, subshells or redirects.
-if (/[;&|`<>]|\$\(|\n/.test(command)) deny("chained or redirected Convex commands are not auto-allowed; run the command on its own.");
+// Only one plain command whose words the shell passes through unchanged: no
+// chaining, pipes, subshells, redirects, quoting, escapes, expansions or globs.
+// Anything else could hide a flag from the checks below, so it falls back to
+// a normal permission prompt.
+if (/[;&|`<>'"\\$(){}*?\[\]~!#\n]/.test(command)) {
+  decide("ask", "only plain, unquoted Convex commands are auto-allowed.");
+}
 
-const rest = command.replace(PREFIX, "");
-if (FORBIDDEN.test(rest)) deny("deploy, --prod and deployment-selecting flags are never auto-allowed. Ask Eric.");
+const words = command.replace(PREFIX, "").trim().split(/\s+/).filter(Boolean);
+if (words[0] === "deploy") deny("convex deploy is never auto-allowed. Ask Eric.");
+const flag = words.find((word) => FORBIDDEN_FLAGS.some((f) => word === f || word.startsWith(`${f}=`)));
+if (flag) deny(`${flag} can select a cloud deployment and is never auto-allowed. Ask Eric.`);
 
 const cwd = typeof input.cwd === "string" ? input.cwd : process.cwd();
 for (const [source, env] of [
