@@ -78,7 +78,7 @@ Off the tee, Approach, Around the green, Putting · "Strokes gained · vs scratc
 1. Baseline table: pick the published scratch amateur table, confirm its licence allows embedding; record source in core.
 2. Pin position is unknown; green centre is the default. Acceptable error for putting SG is part of the unit tests' documented tolerance.
 3. Does a shot marked on the green skip the club question (always putter)?
-4. Shot positions are marked where the ball lies before the shot; confirm against `shots.mark` usage so the first mark of a hole is the tee.
+4. Shot positions are marked where the ball lies before the shot; confirm against how Mark shot fills `shots.position` so the first mark of a hole is the tee.
 
 ## Verify
 
