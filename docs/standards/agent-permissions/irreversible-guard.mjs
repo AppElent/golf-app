@@ -68,7 +68,8 @@ export function parse(source) {
     redirectTarget = false;
     if (hereStrings.length) {
       const recipient = words.length ? unwrap(words).words?.[0] : undefined;
-      if (recipient !== undefined && SHELLS.has(programName(recipient))) for (const body of hereStrings) commands.push(...parse(body));
+      // Checked as `<recipient> -c <body>`, so wrappers such as `env -C` apply.
+      if (recipient !== undefined && SHELLS.has(programName(recipient))) for (const body of hereStrings) commands.push([...words, "-c", body]);
       hereStrings.length = 0;
     }
     if (words.length) commands.push(words);
@@ -175,7 +176,7 @@ export function parse(source) {
         const body = lines.join("\n");
         // The recipient may sit behind a wrapper (`env bash <<EOF`).
         const recipient = doc.words.length ? unwrap(doc.words).words?.[0] : undefined;
-        if (recipient !== undefined && SHELLS.has(programName(recipient))) commands.push(...parse(body));
+        if (recipient !== undefined && SHELLS.has(programName(recipient))) commands.push([...doc.words, "-c", body]);
         // An unquoted body still runs its $(…) and backticks.
         else if (!doc.quoted) commands.push(...parse(`"${body.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`));
       }
@@ -399,6 +400,8 @@ function expand(pattern) {
   let paths = ["/"];
   for (const segment of pattern.split("/").filter(Boolean)) {
     if (!/[*?[]/.test(segment)) { paths = paths.map((path) => join(path, segment)); continue; }
+    // Character classes (`[!a]`, `[[:alpha:]]`) are not translated; ask instead.
+    if (segment.includes("[")) return undefined;
     const regex = toRegex(segment);
     const next = [];
     for (const path of paths) {
