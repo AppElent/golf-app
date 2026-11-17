@@ -112,7 +112,9 @@ failed before). The APP-184 web rows were measured when the app column was
 cream in both themes; since APP-191 the dark column has its own rows below
 them. Known gap: light-mode control edges (fields, bordered buttons and
 toggles: `control-line` = `card-line`, 1.12:1 on cream) stay as they were,
-because APP-191 keeps light mode unchanged.
+because APP-191 keeps light mode unchanged. Its deliberate light-mode changes are
+contrast fixes only: field placeholders, the selected scorecard hole's labels
+and the "Connecting…" note (`text-muted`, near-white, → `stone`).
 
 | Pair | Theme | Old | New |
 | --- | --- | --- | --- |
@@ -140,7 +142,7 @@ because APP-191 keeps light mode unchanged.
 | Web: `stone` on `field`, the lowest dark text pair (APP-191) | dark | cream column | 4.89 |
 | Web: `live-ink` / `flag-ink` / `pine-ink` on `canvas` (APP-191) | dark | cream column | 11.82 / 9.85 / 11.82 |
 | Web: link on `canvas` (APP-191) | dark | 5.06 (cream column) | 10.29 |
-| Web: cream on `pine-fill` (APP-191) | dark | 10.62 (`pine`) | 5.25 |
+| Web: cream on `pine-fill` (APP-191); the fill itself is 3.14:1 on `canvas`, 2.80:1 on `surface`, carried by its label | dark | 10.62 (`pine`) | 5.25 |
 | Web: bottom-nav tabs in the dark column: each on `bar`; active (`pine-ink`, mint) against inactive (`stone`) (APP-191) | dark | cream column | each ≥ 5.67; 1.88 apart, plus the hue change |
 | Web: field placeholder (ink at 50% → `stone`) on `field` (APP-191) | light / dark | **3.09** / n/a | 4.62 / 4.89 |
 | Web: dark control edge (`control-line`: fields, buttons, toggles) on `field` / `surface` / `canvas` (3:1) (APP-191) | dark | **1.53** (`card-line`) | 3.25 / 3.73 / 4.19 |

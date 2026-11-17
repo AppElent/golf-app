@@ -211,7 +211,7 @@ function TeeList({
 				{tees.map((t) => (
 					<li key={t._id} className="flex items-center gap-2 text-callout">
 						<span
-							className="size-3 rounded-full border border-card-line"
+							className="size-3 rounded-full border border-control-line"
 							style={{ backgroundColor: t.color }}
 						/>
 						<span className="text-ink">{t.name}</span>
