@@ -229,13 +229,16 @@ function packageCommandIndex(words) {
 // or a list of nested commands for `sh -c` / `eval`.
 function unwrap(words) {
   const env = {};
+  // Directories a wrapper switches to before running the command
+  // (`env -C dir`, `sudo -D dir`, `pnpm -C dir exec`).
+  const chdir = [];
   let rest = [...words];
   for (;;) {
     while (rest.length && ASSIGNMENT.test(rest[0])) {
       const [name, ...value] = rest.shift().split("=");
       env[name] = value.join("=");
     }
-    if (!rest.length) return { env, words: rest };
+    if (!rest.length) return { env, words: rest, chdir };
     const program = programName(rest[0]);
     if (KEYWORDS.has(rest[0])) {
       rest.shift();
@@ -248,16 +251,20 @@ function unwrap(words) {
           exported[name] = value.join("=");
         }
       }
-      return { env, words: [] };
+      return { env, words: [], chdir };
     } else if (WRAPPER_VALUE_FLAGS[program]) {
       rest.shift();
+      const dirIndex = rest.findIndex((word, index) => index < rest.length - 1 && (word === "-D" || word === "--chdir"));
+      if (program === "sudo" && dirIndex !== -1 && rest.slice(0, dirIndex).every((word) => word.startsWith("-"))) chdir.push(rest[dirIndex + 1]);
       skipFlags(rest, WRAPPER_VALUE_FLAGS[program]);
     } else if (program === "env") {
       rest.shift();
       while (rest.length && (rest[0].startsWith("-") || ASSIGNMENT.test(rest[0]))) {
         const token = rest.shift();
-        if (token === "-S" || token === "--split-string") return { nested: parse(rest.join(" ")) };
-        if (["-u", "--unset", "-C", "--chdir"].includes(token)) rest.shift();
+        if (token === "-S" || token === "--split-string") return { nested: parse(rest.join(" ")), subshell: true, chdir };
+        if (token === "-C" || token === "--chdir") chdir.push(rest.shift());
+        else if (token.startsWith("--chdir=")) chdir.push(token.slice("--chdir=".length));
+        else if (token === "-u" || token === "--unset") rest.shift();
         else if (ASSIGNMENT.test(token)) {
           const [name, ...value] = token.split("=");
           env[name] = value.join("=");
@@ -280,19 +287,23 @@ function unwrap(words) {
         if (flag === "-p" || flag === "--package") rest.shift();
       }
     } else if (PACKAGE_MANAGERS.has(program) && ["exec", "dlx", "x"].includes(rest[packageCommandIndex(rest)])) {
+      const globals = rest.slice(1, packageCommandIndex(rest));
+      for (let j = 0; j < globals.length; j++) {
+        if (["-C", "--dir", "--prefix", "--cwd"].includes(globals[j])) chdir.push(globals[j + 1]);
+      }
       rest.splice(0, packageCommandIndex(rest) + 1);
       skipFlags(rest, PACKAGE_VALUE_FLAGS);
     } else if (rest[0] === "--") {
       rest.shift();
     } else if (SHELLS.has(program)) {
       const flagIndex = rest.findIndex((word, index) => index > 0 && /^-[a-z]*c[a-z]*$/.test(word));
-      if (flagIndex === -1) return { env, words: rest };
+      if (flagIndex === -1) return { env, words: rest, chdir };
       const script = rest[flagIndex + 1];
-      return { nested: script === undefined ? [] : parse(script) };
+      return { nested: script === undefined ? [] : parse(script), subshell: true, chdir };
     } else if (program === "eval") {
-      return { nested: parse(rest.slice(1).join(" ")) };
+      return { nested: parse(rest.slice(1).join(" ")), chdir };
     } else {
-      return { env, words: rest };
+      return { env, words: rest, chdir };
     }
   }
 }
@@ -504,17 +515,27 @@ export function check(command, options) {
   const visit = (commands) => {
     for (const raw of commands) {
       const unwrapped = unwrap(raw);
-      if (unwrapped.nested) { visit(unwrapped.nested); continue; }
+      const saved = cwd;
+      for (const dir of unwrapped.chdir ?? []) cwd = dir === undefined ? undefined : resolvePath(dir);
+      // A child shell or a wrapper's directory change does not reach the
+      // commands after it; `eval` runs in the current shell, so its `cd` does.
+      const restore = unwrapped.subshell || (unwrapped.chdir ?? []).length > 0;
+      if (unwrapped.nested) {
+        visit(unwrapped.nested);
+        if (restore) cwd = saved;
+        continue;
+      }
       const { env, words } = unwrapped;
-      if (!words.length) continue;
+      if (!words.length) { if (restore) cwd = saved; continue; }
       const program = programName(words[0]);
       const args = words.slice(1);
       if (program === "cd") {
         const target = args.find((word) => !word.startsWith("-"));
-        cwd = target === undefined ? home : resolvePath(target);
+        cwd = restore ? saved : target === undefined ? home : resolvePath(target);
         continue;
       }
       dispatch(program, args, env);
+      if (restore) cwd = saved;
     }
   };
   const dispatch = (program, args, env) => {
