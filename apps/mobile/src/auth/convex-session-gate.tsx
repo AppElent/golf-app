@@ -25,11 +25,11 @@
  * account Clerk restored, and Convex last confirmed that account here, the
  * gate draws the play screen from it, display only (`features/play/offline`).
  * It stays up until Convex authenticates; then the real screens mount and
- * open the live play screen where the golfer was.
+ * open the live play screen (on the hole the server has).
  */
 import { useAuth } from "@clerk/expo";
 import { useConvexAuth } from "convex/react";
-import { useRouter } from "expo-router";
+import { usePathname, useRouter } from "expo-router";
 import {
 	createContext,
 	type ReactNode,
@@ -102,14 +102,16 @@ export function ConvexSessionGate({ children }: { children: ReactNode }) {
 export function ResumePlayAfterOffline() {
 	const { resume, done } = useContext(ResumePlayContext);
 	const router = useRouter();
+	const pathname = usePathname();
 	useEffect(() => {
 		if (!resume) return;
 		const frame = requestAnimationFrame(() => {
 			done();
-			router.push("/play");
+			// Already there (a notification opened it): no second copy.
+			if (pathname !== "/play") router.push("/play");
 		});
 		return () => cancelAnimationFrame(frame);
-	}, [resume, done, router]);
+	}, [resume, done, router, pathname]);
 	return null;
 }
 

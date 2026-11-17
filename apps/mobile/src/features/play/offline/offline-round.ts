@@ -40,9 +40,11 @@ function isActiveRound(value: unknown): value is ActiveRound {
 		isRecord(round) &&
 		typeof round._id === "string" &&
 		typeof round.courseId === "string" &&
-		typeof round.currentHoleIndex === "number" &&
 		Array.isArray(round.holeRefs) &&
-		round.holeRefs.length > 0 &&
+		typeof round.currentHoleIndex === "number" &&
+		Number.isInteger(round.currentHoleIndex) &&
+		round.currentHoleIndex >= 0 &&
+		round.currentHoleIndex < round.holeRefs.length &&
 		isRecord(course) &&
 		typeof course.name === "string" &&
 		isRecord(tee) &&

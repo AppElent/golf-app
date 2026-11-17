@@ -25,7 +25,6 @@ import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { publishableKey } from "../src/auth/config";
-import { clearLastKnown } from "../src/convex/last-known";
 import { AppConvexProvider } from "../src/convex/provider";
 // Defines the background location task at module scope (see the module).
 import "../src/features/location/background/background-location";
@@ -106,14 +105,8 @@ function ThemedRoot() {
 
 function RootNavigator({ windowReady }: { windowReady: boolean }) {
 	const colors = useTokens();
-	const { isLoaded, isSignedIn } = useAuth();
+	const { isLoaded } = useAuth();
 	useNavigationBreadcrumbs();
-
-	// Confirmed sign-out (and account deletion, which signs out) deletes the
-	// saved copy and the confirmed-account marker together.
-	useEffect(() => {
-		if (isLoaded && !isSignedIn) clearLastKnown();
-	}, [isLoaded, isSignedIn]);
 
 	useEffect(() => {
 		if (isLoaded && windowReady) SplashScreen.hideAsync();

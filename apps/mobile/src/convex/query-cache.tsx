@@ -25,7 +25,7 @@ import {
 	type OptionalRestArgsOrSkip,
 	useConvexAuth,
 	useConvexConnectionState,
-	useQuery as useConvexQuery,
+	useQueries as useConvexQueries,
 } from "convex/react";
 import type { FunctionReference, FunctionReturnType } from "convex/server";
 import { getFunctionName } from "convex/server";
@@ -75,6 +75,10 @@ function cacheKey(
 	}
 }
 
+/** The value last written per key, so several readers of one live answer
+ *  write it once (values of one subscription share a reference). */
+const lastWritten = new Map<string, unknown>();
+
 /** Live-only: retained subscriptions, never disk values. For forms, and for
  *  state that must be current before a write. */
 export function useLiveQuery<Q extends FunctionReference<"query">>(
@@ -99,7 +103,10 @@ export function useQuery<Q extends FunctionReference<"query">>(
 	);
 	const cached = useMemo(() => (key ? readEntry(key) : undefined), [key]);
 	useEffect(() => {
-		if (key && live !== undefined) writeEntry(key, live as Value);
+		if (!key || live === undefined || Object.is(lastWritten.get(key), live))
+			return;
+		lastWritten.set(key, live);
+		writeEntry(key, live as Value);
 	}, [key, live]);
 	return (live === undefined ? cached : live) as
 		| FunctionReturnType<Q>
@@ -112,13 +119,13 @@ function DiskScope({
 	account,
 	children,
 }: {
-	account: string;
+	account: string | undefined;
 	children: ReactNode;
 }) {
 	const { isWebSocketConnected } = useConvexConnectionState();
 	return (
 		<DiskScopeContext.Provider
-			value={isWebSocketConnected ? diskScope(account) : undefined}
+			value={isWebSocketConnected && account ? diskScope(account) : undefined}
 		>
 			{children}
 		</DiskScopeContext.Provider>
@@ -141,11 +148,15 @@ export function AppQueryCacheProvider({
 }) {
 	const { isAuthenticated } = useConvexAuth();
 	// The live backend identity, never a cached or local one.
-	const viewer = useConvexQuery(
-		api.account.viewer,
-		isAuthenticated ? {} : "skip",
-	);
-	const ready = isAuthenticated && viewer === account;
+	// Read as a batch so an error (a backend without `account.viewer`) comes
+	// back as a value instead of throwing: the app then runs as before, with
+	// retention only and no disk copy, rather than failing at launch.
+	const viewer = useConvexQueries(
+		isAuthenticated ? { viewer: { query: api.account.viewer, args: {} } } : {},
+	).viewer;
+	const viewerFailed = viewer instanceof Error;
+	const confirmed = isAuthenticated && !viewerFailed && viewer === account;
+	const ready = confirmed || (isAuthenticated && viewerFailed);
 	const [foreground, setForeground] = useState(
 		() => AppState.currentState === "active",
 	);
@@ -158,11 +169,11 @@ export function AppQueryCacheProvider({
 	// Before any child's effect can write: remember the confirmed account for
 	// the offline fallback, and drop every other account's or bundle's copy.
 	useLayoutEffect(() => {
-		if (ready) confirmAccount(account);
-	}, [ready, account]);
+		if (confirmed) confirmAccount(account);
+	}, [confirmed, account]);
 	if (!ready) return fallback;
 	return (
-		<DiskScope account={account}>
+		<DiskScope account={confirmed ? account : undefined}>
 			<ConvexQueryCacheProvider
 				key={account}
 				expiration={foreground ? EXPIRATION_MS : 0}

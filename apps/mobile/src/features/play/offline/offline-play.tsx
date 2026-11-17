@@ -14,6 +14,7 @@ import {
 } from "react-native-safe-area-context";
 import { OfflineBanner } from "../../../convex/offline-banner";
 import { useI18n } from "../../../i18n";
+import { reportError } from "../../../monitoring/report";
 import { course } from "../../../theme";
 import { PlayHole } from "../round/play-screen";
 import type { OfflineRound } from "./offline-round";
@@ -57,6 +58,9 @@ class OfflineCopyBoundary extends Component<
 	state = { failed: false };
 	static getDerivedStateFromError() {
 		return { failed: true };
+	}
+	componentDidCatch(error: unknown) {
+		reportError(error);
 	}
 	render() {
 		return this.state.failed ? this.props.fallback : this.props.children;

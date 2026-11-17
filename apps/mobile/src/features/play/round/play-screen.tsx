@@ -26,6 +26,7 @@ import { useUnits } from "../../profile/use-units";
 import { NoActiveRound } from "../../rounds/components/no-active-round";
 import {
 	type ActiveRound,
+	useActiveRound,
 	useDisplayedActiveRound,
 } from "../../rounds/use-active-round";
 import { useEndSimulation } from "../../simulation/mode/use-end-simulation";
@@ -55,7 +56,12 @@ import {
 export function PlayScreen() {
 	useKeepAwake();
 	const { t } = useI18n();
-	const active = useDisplayedActiveRound();
+	// Writes (hole changes, marked shots) only ever start from the live round.
+	// Until it arrives, the saved copy is drawn display-only, like offline.
+	const live = useActiveRound();
+	const displayed = useDisplayedActiveRound();
+	const fromCopy = live === undefined && !!displayed;
+	const active = live !== undefined ? live : displayed;
 	const detail = useQuery(
 		api.courses.get,
 		active ? { courseId: active.round.courseId } : "skip",
@@ -81,8 +87,9 @@ export function PlayScreen() {
 	}
 	return (
 		<PlayHole
-			key={active.round._id}
+			key={`${fromCopy ? "copy" : "live"}:${active.round._id}`}
 			active={active}
+			offline={fromCopy}
 			detail={detail}
 			bag={learnedBag(effectiveBag(clubs ?? []), shots ?? [])}
 			units={units}
