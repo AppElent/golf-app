@@ -1,7 +1,7 @@
 {
   "hooks": {
     "PreToolUse": [
-      { "matcher": "Bash", "hooks": [ { "type": "command", "command": "node .claude/hooks/convex-local-guard.mjs" } ] }
+      { "matcher": "Bash", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/convex-local-guard.mjs\"" } ] }
     ],
     "SessionStart": [
       { "hooks": [ { "type": "command", "command": "node .claude/hooks/session-start.mjs" } ] }
