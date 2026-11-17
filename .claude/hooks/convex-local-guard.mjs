@@ -1,23 +1,28 @@
 #!/usr/bin/env node
 // PreToolUse guard for local Convex commands (developer-home standards/convex.md).
 // The allow rules in .claude/settings.json only cover commands prefixed with
-// CONVEX_AGENT_MODE=anonymous. This hook denies such a command when it could
-// reach a cloud deployment, so the allow rules stay local-only.
+// CONVEX_AGENT_MODE=anonymous. This hook keeps them local-only: it lets through
+// an allowlisted command shape against a local or anonymous deployment, sends
+// any other shape back to a normal permission prompt, and denies commands that
+// would reach a cloud deployment.
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 const PREFIX = /^\s*CONVEX_AGENT_MODE=anonymous\s+(?:npx|pnpm\s+exec)\s+convex\b/;
-const FORBIDDEN_FLAGS = [
-  "--prod",
-  "--deployment",
-  "--deployment-name",
-  "--url",
-  "--admin-key",
-  "--cloud",
-  "--preview-name",
-  "--env-file",
-];
 const LOCAL = /^(?:anonymous|local):/;
+// Variables that select or authenticate a cloud or self-hosted target. Any of
+// them can win over CONVEX_DEPLOYMENT, so their presence means "not local".
+const CREDENTIALS = [
+  "CONVEX_DEPLOY_KEY",
+  "CONVEX_DEPLOYMENT_TOKEN",
+  "CONVEX_SELF_HOSTED_URL",
+  "CONVEX_SELF_HOSTED_ADMIN_KEY",
+  "CONVEX_OVERRIDE_ACCESS_TOKEN",
+];
+// `convex dev` flags that only change local behaviour. Anything else (for
+// example --configure, --prod, --env-file, --start, --run-sh) needs a prompt.
+const DEV_FLAGS = /^--(?:once|until-success|verbose|tail-logs(?:=[a-z-]+)?|typecheck=(?:enable|try|disable)|codegen=(?:enable|disable))$/;
+const NAME = /^[A-Za-z_][A-Za-z0-9_]*$/;
 
 function decide(permissionDecision, reason) {
   process.stdout.write(
@@ -31,29 +36,38 @@ function decide(permissionDecision, reason) {
   );
   process.exit(0);
 }
-
 const deny = (reason) => decide("deny", reason);
+const ask = (reason) => decide("ask", reason);
 
-// Variables that select or authenticate a cloud or self-hosted target. Any of
-// them can win over CONVEX_DEPLOYMENT, so their presence means "not local".
-const CREDENTIALS = [
-  "CONVEX_DEPLOY_KEY",
-  "CONVEX_DEPLOYMENT_TOKEN",
-  "CONVEX_SELF_HOSTED_URL",
-  "CONVEX_SELF_HOSTED_ADMIN_KEY",
-  "CONVEX_OVERRIDE_ACCESS_TOKEN",
-];
+function allowedShape(words) {
+  const [command, sub, ...rest] = words;
+  if (command === "dev") return words.slice(1).every((word) => DEV_FLAGS.test(word));
+  if (command !== "env") return false;
+  if (sub === "list") return rest.length === 0;
+  if (sub === "get") return rest.length === 1 && NAME.test(rest[0]);
+  if (sub === "set") return rest.length === 2 && NAME.test(rest[0]) && !rest[1].startsWith("-");
+  return false;
+}
 
-function readEnvFile(dir, file) {
-  const values = {};
+// Fails closed: a dotenv file is only read line by line with the forms dotenv
+// accepts (`=` or `:`); any mention of a credential, or of a CONVEX_DEPLOYMENT
+// that is not plainly local, counts as a cloud target.
+function checkEnvFile(dir, file) {
+  let text;
   try {
-    for (const line of readFileSync(join(dir, file), "utf8").split(/\r?\n/)) {
-      const match = /^\s*(?:export\s+)?([A-Z0-9_]+)\s*=(.*)$/.exec(line);
-      if (!match) continue;
-      values[match[1]] = match[2].split("#")[0].trim().replace(/^["']|["']$/g, "");
+    text = readFileSync(join(dir, file), "utf8");
+  } catch {
+    return;
+  }
+  for (const line of text.split(/\r?\n/)) {
+    if (/^\s*(?:#|$)/.test(line)) continue;
+    const credential = CREDENTIALS.find((name) => new RegExp(`\\b${name}\\b`).test(line));
+    if (credential) deny(`${credential} appears in ${file}; it can point the CLI at a cloud deployment. Remove it for local work, or ask Eric.`);
+    if (/\bCONVEX_DEPLOYMENT\b/.test(line)) {
+      const local = /^\s*(?:export\s+)?CONVEX_DEPLOYMENT\s*[=:]\s*["'`]?(?:anonymous|local):[\w-]+["'`]?\s*(?:#.*)?$/.test(line);
+      if (!local) deny(`CONVEX_DEPLOYMENT in ${file} is not a local or anonymous deployment. Use a worktree without a cloud .env.local, or ask Eric.`);
     }
-  } catch {}
-  return values;
+  }
 }
 
 let input;
@@ -65,32 +79,20 @@ try {
 const command = input?.tool_input?.command;
 if (typeof command !== "string" || !PREFIX.test(command)) process.exit(0);
 
-// Only one plain command whose words the shell passes through unchanged: no
-// chaining, pipes, subshells, redirects, quoting, escapes, expansions or globs.
-// Anything else could hide a flag from the checks below, so it falls back to
-// a normal permission prompt.
-if (/[;&|`<>'"\\$(){}*?\[\]~!#\n]/.test(command)) {
-  decide("ask", "only plain, unquoted Convex commands are auto-allowed.");
-}
+// Only plain words the shell passes through unchanged: no chaining, pipes,
+// subshells, redirects, quoting, escapes, expansions or globs.
+if (/[;&|`<>'"\\$(){}*?[\]~!#\n]/.test(command)) ask("only plain, unquoted Convex commands are auto-allowed.");
 
 const words = command.replace(PREFIX, "").trim().split(/\s+/).filter(Boolean);
 if (words[0] === "deploy") deny("convex deploy is never auto-allowed. Ask Eric.");
-const flag = words.find((word) => FORBIDDEN_FLAGS.some((f) => word === f || word.startsWith(`${f}=`)));
-if (flag) deny(`${flag} can select a cloud deployment and is never auto-allowed. Ask Eric.`);
+if (!allowedShape(words)) ask("only `dev` with local-only flags and `env list|get NAME|set NAME VALUE` are auto-allowed.");
+
+const deployment = process.env.CONVEX_DEPLOYMENT;
+if (deployment && !LOCAL.test(deployment)) deny(`CONVEX_DEPLOYMENT in the shell is "${deployment}", not a local or anonymous deployment. Ask Eric.`);
+const credential = CREDENTIALS.find((name) => name in process.env);
+if (credential) deny(`${credential} is set in the shell; it can point the CLI at a cloud deployment. Unset it for local work, or ask Eric.`);
 
 const cwd = typeof input.cwd === "string" ? input.cwd : process.cwd();
-for (const [source, env] of [
-  ["the shell", process.env],
-  [".env.local", readEnvFile(cwd, ".env.local")],
-  [".env", readEnvFile(cwd, ".env")],
-]) {
-  const deployment = env.CONVEX_DEPLOYMENT;
-  if (deployment && !LOCAL.test(deployment)) {
-    deny(`CONVEX_DEPLOYMENT in ${source} is "${deployment}", not a local or anonymous deployment. Use a worktree without a cloud .env.local, or ask Eric.`);
-  }
-  const credential = CREDENTIALS.find((name) => env[name]);
-  if (credential) {
-    deny(`${credential} is set in ${source}; it can point the CLI at a cloud deployment. Unset it for local work, or ask Eric.`);
-  }
-}
+checkEnvFile(cwd, ".env.local");
+checkEnvFile(cwd, ".env");
 process.exit(0);
