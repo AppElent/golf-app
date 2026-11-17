@@ -120,8 +120,9 @@ jobs:
         run: |
           # A new Worker version can take a few seconds to reach every edge.
           for attempt in 1 2 3 4 5 6 7 8 9 10; do
-            info=$(curl -fsS --retry 5 --retry-delay 3 --retry-all-errors "${URL%/}/version")
-            commit=$(jq -r .commit <<<"$info")
+            info=$(curl -fsS --retry 5 --retry-delay 3 --retry-all-errors "${URL%/}/version" || true)
+            # An old Worker answers /version with the app's HTML: keep waiting.
+            commit=$(jq -r '.commit // empty' <<<"$info" 2>/dev/null || true)
             [ "$commit" = "$GITHUB_SHA" ] && break
             echo "Attempt $attempt: $URL/version reports $commit; waiting for $GITHUB_SHA."
             sleep 6

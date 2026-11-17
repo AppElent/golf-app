@@ -4,13 +4,18 @@ name: Mobile Update (production)
 # newest code that soaked on `preview` for a day. Releases standard,
 # developer-home standards/releases.md "Production app updates (daily)".
 #
-# Per platform, it publishes only when all of these hold:
-# - soaked: the commit is the newest `preview` update group that is at least
-#   SOAK_HOURS old and includes this platform (the owner ran it for a day);
-# - changed: something the app bundles changed since the `ota-production` tag;
-# - backend: the commit is in a Deploy run on main that succeeded, so
-#   production Convex has its functions (preview updates are only published
-#   after that deploy, so this holds unless preview was force-published);
+# Each platform runs on its own (matrix), because preview publishes one update
+# group per platform and the two can differ. Per platform, it publishes only
+# when all of these hold:
+# - soaked: the commit is that platform's newest `preview` update that is at
+#   least SOAK_HOURS old (the owner ran it for a day);
+# - changed: something the app bundles changed since that platform's
+#   `ota-production-<platform>` tag (per platform, so a platform waiting for a
+#   store build never hides changes from the other);
+# - backend: the commit is in a Deploy run on main whose production job
+#   succeeded, so production Convex has its functions (preview updates are
+#   only published after that job, so this holds unless preview was
+#   force-published);
 # - fingerprint: an update or a finished EAS build on `production` has the
 #   commit's production runtime fingerprint. Otherwise it publishes nothing
 #   and the summary says a store build is due.
@@ -33,10 +38,14 @@ jobs:
   publish:
     # Scheduled runs only on the main repository's default branch.
     if: github.ref == 'refs/heads/main'
+    strategy:
+      fail-fast: false
+      matrix:
+        platform: [ios, android]
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      # Moves the ota-production tag.
+      # Moves the ota-production-<platform> tag.
       contents: write
       # Reads Deploy runs for the backend gate.
       actions: read
@@ -48,7 +57,8 @@ jobs:
       APP_VARIANT: production
       CHANNEL: production
       SOURCE_CHANNEL: preview
-      TAG: ota-production
+      PLATFORM: ${{ matrix.platform }}
+      TAG: ota-production-${{ matrix.platform }}
       SOAK_HOURS: "24"
     defaults:
       run:
@@ -68,32 +78,37 @@ jobs:
 
       - uses: ./.github/actions/setup
 
-      # The newest preview update group older than the soak window, read
-      # from EAS: `update:list` gives groups newest first, `update:view` each
-      # group's time, commit and platforms.
+      # This platform's newest preview update older than the soak window,
+      # read from EAS: `update:list` gives groups newest first (paged),
+      # `update:view` a group's time and commit.
       - name: Pick soaked commit
         id: soaked
         run: |
+          # A failed EAS call must fail the run, not read as "nothing soaked".
+          set -o pipefail
           cutoff=$(date -u -d "-$SOAK_HOURS hours" +%s)
-          groups=$(pnpm exec eas update:list --branch "$SOURCE_CHANNEL" --limit 50 --json --non-interactive \
-            | jq -r '.currentPage[]? | select(.isRollBackToEmbedded | not) | .group')
-          for group in $groups; do
-            view=$(pnpm exec eas update:view "$group" --json --non-interactive)
-            created=$(jq -r '[.[].createdAt] | min' <<<"$view")
-            if [ "$(date -u -d "$created" +%s)" -le "$cutoff" ]; then
-              commit=$(jq -r '[.[].gitCommitHash | select(. != null)][0] // empty' <<<"$view")
-              platforms=$(jq -r '[.[].platform] | unique | join(" ")' <<<"$view")
-              if [ -z "$commit" ]; then
-                echo "::error::Preview update group $group has no git commit; cannot tell what soaked."
-                exit 1
+          for offset in 0 50 100 150; do
+            groups=$(pnpm exec eas update:list --branch "$SOURCE_CHANNEL" --platform "$PLATFORM" \
+              --limit 50 --offset "$offset" --json --non-interactive \
+              | jq -r '.currentPage[]? | select(.isRollBackToEmbedded | not) | .group')
+            [ -n "$groups" ] || break
+            for group in $groups; do
+              view=$(pnpm exec eas update:view "$group" --json)
+              created=$(jq -r --arg p "$PLATFORM" '[.[] | select(.platform == $p) | .createdAt][0] // empty' <<<"$view")
+              [ -n "$created" ] || continue
+              if [ "$(date -u -d "$created" +%s)" -le "$cutoff" ]; then
+                commit=$(jq -r --arg p "$PLATFORM" '[.[] | select(.platform == $p) | .gitCommitHash | select(. != null)][0] // empty' <<<"$view")
+                if [ -z "$commit" ]; then
+                  echo "::error::Preview update group $group has no git commit; cannot tell what soaked."
+                  exit 1
+                fi
+                echo "commit=$commit" >> "$GITHUB_OUTPUT"
+                echo "- $PLATFORM: soaked on \`$SOURCE_CHANNEL\` since $created: \`${commit:0:7}\` (group \`$group\`)" >> "$GITHUB_STEP_SUMMARY"
+                exit 0
               fi
-              echo "commit=$commit" >> "$GITHUB_OUTPUT"
-              echo "platforms=$platforms" >> "$GITHUB_OUTPUT"
-              echo "Soaked on \`$SOURCE_CHANNEL\` since $created: \`${commit:0:7}\` ($platforms), group \`$group\`." >> "$GITHUB_STEP_SUMMARY"
-              exit 0
-            fi
+            done
           done
-          echo "Skipped: no \`$SOURCE_CHANNEL\` update is $SOAK_HOURS hours old yet." >> "$GITHUB_STEP_SUMMARY"
+          echo "- $PLATFORM: skipped, no \`$SOURCE_CHANNEL\` update is $SOAK_HOURS hours old yet" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Changed and deployed
         id: gate
@@ -102,30 +117,39 @@ jobs:
         env:
           COMMIT: ${{ steps.soaked.outputs.commit }}
         run: |
+          set -o pipefail
+          # A preview publish from a since-deleted branch: not main's code.
           git cat-file -e "$COMMIT^{commit}" 2>/dev/null || {
-            echo "::error::Soaked commit $COMMIT is not in this repository's history."
-            exit 1
+            echo "- $PLATFORM: skipped, soaked commit \`${COMMIT:0:7}\` is not in main's history" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
           }
           if git rev-parse -q --verify "refs/tags/$TAG" >/dev/null; then
             if git merge-base --is-ancestor "$COMMIT" "$TAG" &&
               git diff --quiet "$TAG" "$COMMIT" -- apps/mobile packages/core pnpm-lock.yaml; then
-              echo "Skipped: nothing the app bundles changed between \`$TAG\` and \`${COMMIT:0:7}\`." >> "$GITHUB_STEP_SUMMARY"
+              echo "- $PLATFORM: skipped, nothing the app bundles changed between \`$TAG\` and \`${COMMIT:0:7}\`" >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
             if ! git merge-base --is-ancestor "$TAG" "$COMMIT"; then
-              echo "Skipped: \`$TAG\` is not behind the soaked commit \`${COMMIT:0:7}\`; production already has newer code." >> "$GITHUB_STEP_SUMMARY"
+              echo "- $PLATFORM: skipped, \`$TAG\` is not behind \`${COMMIT:0:7}\` (production already has newer code)" >> "$GITHUB_STEP_SUMMARY"
               exit 0
             fi
           fi
-          deployed=$(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/deploy.yml/runs?branch=main&status=success&per_page=1" \
-            --jq '.workflow_runs[0].head_sha // empty')
+          # The newest Deploy run on main whose production job succeeded (a
+          # failed mobile job later in the run does not count against it).
+          deployed=""
+          for run in $(gh api "repos/$GITHUB_REPOSITORY/actions/workflows/deploy.yml/runs?branch=main&status=completed&per_page=20" \
+            --jq '.workflow_runs[] | "\(.id):\(.head_sha)"'); do
+            ok=$(gh api "repos/$GITHUB_REPOSITORY/actions/runs/${run%%:*}/jobs" \
+              --jq '[.jobs[] | select(.name | startswith("production")) | .conclusion] | (length > 0 and all(. == "success"))')
+            if [ "$ok" = true ]; then deployed=${run#*:}; break; fi
+          done
           if [ -z "$deployed" ] || ! git merge-base --is-ancestor "$COMMIT" "$deployed"; then
-            echo "Skipped: no successful Deploy on main includes \`${COMMIT:0:7}\` yet." >> "$GITHUB_STEP_SUMMARY"
+            echo "- $PLATFORM: skipped, no successful production deploy on main includes \`${COMMIT:0:7}\` yet" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
           echo "ok=true" >> "$GITHUB_OUTPUT"
 
-      # Fingerprints and the bundle come from the soaked commit, not main.
+      # Fingerprint and bundle come from the soaked commit, not main.
       - name: Check out soaked commit
         if: steps.gate.outputs.ok == 'true'
         working-directory: .
@@ -139,36 +163,27 @@ jobs:
         if: steps.gate.outputs.ok == 'true'
         run: node scripts/fingerprint.mjs check
 
-      - name: Match fingerprints
+      - name: Match fingerprint
         id: match
         if: steps.gate.outputs.ok == 'true'
-        env:
-          SOAKED_PLATFORMS: ${{ steps.soaked.outputs.platforms }}
         run: |
-          publish=()
-          for platform in ios android; do
-            if [[ " $SOAKED_PLATFORMS " != *" $platform "* ]]; then
-              echo "- $platform: skipped, not in the soaked \`$SOURCE_CHANNEL\` update" >> "$GITHUB_STEP_SUMMARY"
-              continue
-            fi
-            runtime=$(pnpm exec expo-updates runtimeversion:resolve --platform "$platform" | jq -r .runtimeVersion)
-            updates=$(pnpm exec eas update:list --branch "$CHANNEL" --runtime-version "$runtime" \
-              --limit 50 --json --non-interactive 2>/dev/null \
-              | jq --arg p "$platform" '[.currentPage[]? | select(.platforms | contains($p))] | length' || echo 0)
-            builds=$(pnpm exec eas build:list --platform "$platform" --channel "$CHANNEL" \
-              --runtime-version "$runtime" --status finished --limit 1 --json --non-interactive 2>/dev/null \
-              | jq length || echo 0)
-            if [ "${updates:-0}" -gt 0 ] || [ "${builds:-0}" -gt 0 ]; then
-              publish+=("$platform")
-              echo "- $platform \`${runtime:0:12}\`: publishing" >> "$GITHUB_STEP_SUMMARY"
-            else
-              echo "- $platform \`${runtime:0:12}\`: **store build due** (no update or build on \`$CHANNEL\` has this fingerprint)" >> "$GITHUB_STEP_SUMMARY"
-            fi
-          done
-          echo "platforms=${publish[*]}" >> "$GITHUB_OUTPUT"
+          set -o pipefail
+          runtime=$(pnpm exec expo-updates runtimeversion:resolve --platform "$PLATFORM" | jq -r .runtimeVersion)
+          updates=$(pnpm exec eas update:list --branch "$CHANNEL" --platform "$PLATFORM" --runtime-version "$runtime" \
+            --limit 1 --json --non-interactive 2>/dev/null \
+            | jq '[.currentPage[]?] | length' || echo 0)
+          builds=$(pnpm exec eas build:list --platform "$PLATFORM" --channel "$CHANNEL" \
+            --runtime-version "$runtime" --status finished --limit 1 --json --non-interactive 2>/dev/null \
+            | jq length || echo 0)
+          if [ "${updates:-0}" -gt 0 ] || [ "${builds:-0}" -gt 0 ]; then
+            echo "publish=true" >> "$GITHUB_OUTPUT"
+            echo "- $PLATFORM \`${runtime:0:12}\`: publishing" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- $PLATFORM \`${runtime:0:12}\`: **store build due** (no update or build on \`$CHANNEL\` has this fingerprint)" >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: eas update
-        if: steps.match.outputs.platforms != ''
+        if: steps.match.outputs.publish == 'true'
         env:
           # Source maps for updates are not uploaded yet (as on preview).
           SENTRY_DISABLE_AUTO_UPLOAD: "true"
@@ -177,11 +192,9 @@ jobs:
           COMMIT: ${{ steps.soaked.outputs.commit }}
         run: |
           message=$(git log -1 --format=%s "$COMMIT")
-          for platform in ${{ steps.match.outputs.platforms }}; do
-            pnpm exec eas update --channel "$CHANNEL" --environment production \
-              --platform "$platform" --non-interactive --message "$message"
-          done
+          pnpm exec eas update --channel "$CHANNEL" --environment production \
+            --platform "$PLATFORM" --non-interactive --message "$message"
           git tag -f "$TAG" "$COMMIT"
           git push -f origin "refs/tags/$TAG"
           version=$(jq -r .expo.version app.json)
-          echo "Published \`fairway@$version+${COMMIT:0:7}\` to \`$CHANNEL\`. Check Sentry for this release." >> "$GITHUB_STEP_SUMMARY"
+          echo "- $PLATFORM: published \`fairway@$version+${COMMIT:0:7}\` to \`$CHANNEL\`. Check Sentry for this release." >> "$GITHUB_STEP_SUMMARY"

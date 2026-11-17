@@ -89,14 +89,18 @@ installed preview app) is written from `staging`: `pnpm env:apply staging --only
 
 The store app follows channel `production`. **Mobile Update (production)**
 (`.github/workflows/mobile-update-production.yml`) runs every morning at 06:23
-CET (07:23 CEST) and publishes, per platform, the newest code that ran on
-`preview` for at least 24 hours, following the
+CET (07:23 CEST) and publishes, per platform (one matrix job each), the
+newest code that ran on that platform's `preview` channel for at least 24 hours, following the
 [releases standard](https://github.com/AppElent/developer-home/blob/main/standards/releases.md).
 It publishes only when that commit changed what the app bundles since the
-`ota-production` tag, a successful Deploy on `main` includes it, and an update
+platform's `ota-production-<platform>` tag, a Deploy on `main` whose production
+job succeeded includes it, and an update
 or finished EAS build on `production` has the same runtime fingerprint. It
 builds with `APP_VARIANT=production` and the EAS `production` environment, then
-moves `ota-production` to the commit. The run summary says per platform:
+moves `ota-production-<platform>` to the commit. Before the first publish
+there is no tag; the first soaked commit publishes, still fingerprint-gated.
+Production updates have no Sentry source maps yet, so their stack traces are
+minified. The run summary says per platform:
 published, skipped (with the reason), or **store build due**.
 
 - No decision card per daily update. It never forces past a fingerprint
@@ -140,7 +144,7 @@ maps are uploaded under.
 | Tag | Moved by | Points at |
 | --- | --- | --- |
 | `ota-preview` | Mobile Update | Last `preview` publish |
-| `ota-production` | Mobile Update (production) | Last `production` publish |
+| `ota-production-ios`, `ota-production-android` | Mobile Update (production) | Last `production` publish per platform (the standard's `ota-production`, split because each platform publishes on its own) |
 | `v<version>` | The manager, per store build | The store build's commit |
 
 ### On your own iPhone
