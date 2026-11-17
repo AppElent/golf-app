@@ -49,8 +49,14 @@ try {
   ask("could not read the tool input."); // fail closed
 }
 const command = input?.tool_input?.command;
-const match = typeof command === "string" ? ENV_SCRIPT.exec(command) : null;
-if (!match) process.exit(0);
+if (typeof command !== "string") process.exit(0);
+const match = ENV_SCRIPT.exec(command);
+// The allow rules also match subcommands of a compound command (`a && b`) or a
+// wrapper (`timeout 5 ...`), so any other mention of these scripts needs a prompt.
+if (!match) {
+  if (/env:(?:apply|plan|check|generate)/.test(command)) ask("env commands are auto-allowed only as a standalone command.");
+  process.exit(0);
+}
 if (/[;&|`<>'"\\$(){}*?[\]~!#\n]/.test(command)) ask("only plain, unquoted env commands are auto-allowed.");
 const words = command.slice(match[0].length).trim().split(/\s+/).filter(Boolean);
 if (!allowedShape(match[1], words)) ask(`this env:${match[1]} shape is not auto-allowed; --prune, --yes, --path and apply --ci need a prompt.`);

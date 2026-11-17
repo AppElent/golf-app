@@ -73,10 +73,16 @@ let input;
 try {
   input = JSON.parse(readFileSync(0, "utf8"));
 } catch {
-  process.exit(0);
+  ask("could not read the tool input."); // fail closed
 }
 const command = input?.tool_input?.command;
-if (typeof command !== "string" || !PREFIX.test(command)) process.exit(0);
+if (typeof command !== "string") process.exit(0);
+// The allow rules also match subcommands of a compound command (`a && b`) or a
+// wrapper (`timeout 5 ...`), so any other mention of the prefix needs a prompt.
+if (!PREFIX.test(command)) {
+  if (/CONVEX_AGENT_MODE=anonymous/.test(command)) ask("local Convex commands are auto-allowed only as a standalone command.");
+  process.exit(0);
+}
 
 // Only plain words the shell passes through unchanged: no chaining, pipes,
 // subshells, redirects, quoting, escapes, expansions or globs.
