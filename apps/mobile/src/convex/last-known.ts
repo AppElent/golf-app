@@ -83,22 +83,24 @@ export function readEntry(key: string): Value | undefined {
  *  reference). Forgotten whenever entries are deleted. */
 const lastWritten = new Map<string, unknown>();
 
-/** `writeEntry`, unless this exact value was the last one written here. */
+/** `writeEntry`, unless this exact value was the last one written here.
+ *  Remembers only what is on disk, so it holds at most `MAX_ENTRIES`. */
 export function writeEntryOnce(key: string, value: Value) {
 	if (Object.is(lastWritten.get(key), value)) return;
-	lastWritten.set(key, value);
-	writeEntry(key, value);
+	if (writeEntry(key, value)) lastWritten.set(key, value);
+	else lastWritten.delete(key);
 }
 
 /** The play screen's round outlives any eviction: the offline view needs it. */
 const isPinned = (key: string) => key.includes("|rounds:active|");
 
-export function writeEntry(key: string, value: Value) {
+/** True when the value is now on disk. */
+export function writeEntry(key: string, value: Value): boolean {
 	try {
 		const raw = JSON.stringify(convexToJson(value));
 		if (raw.length > MAX_VALUE_LENGTH) {
 			Storage.removeItemSync(key);
-			return;
+			return false;
 		}
 		const others = cacheKeys().filter(
 			(k) => k !== key && k !== MARKER && !isPinned(k),
@@ -107,14 +109,18 @@ export function writeEntry(key: string, value: Value) {
 		for (const old of others.slice(
 			0,
 			Math.max(0, others.length - MAX_ENTRIES + 1),
-		))
+		)) {
 			Storage.removeItemSync(old);
+			lastWritten.delete(old);
+		}
 		// A screen still mounted during sign-out can write after the clear. That
 		// entry is unreadable offline (the marker is gone), and the clear on
 		// confirmed sign-out, or the next account's confirmation, removes it.
 		Storage.setItemSync(key, raw);
+		return true;
 	} catch {
 		// A miss next time, nothing worse.
+		return false;
 	}
 }
 
