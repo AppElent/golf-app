@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when running, building, or releasing the Fairway mobile app (apps/mobile).
-version: 1.2.0
+version: 1.3.0
 ---
 
 # Mobile app (Fairway)
@@ -34,6 +34,11 @@ pnpm test:mobile                                      # Jest (mobile only)
 pnpm check && pnpm typecheck && pnpm test             # repo-wide
 ```
 
+- Local iOS builds (`expo run:ios`, `expo prebuild`, `eas build --local`) run
+  `pod install`, which crashes with a Ruby `Encoding::CompatibilityError` unless
+  the terminal's locale is UTF-8. Run
+  `export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8` first (or put it in your shell
+  profile).
 - Native folders (`ios/`, `android/`) are generated and gitignored. Rebuild the dev
   client after adding a native module or changing `app.json` plugins.
 - Install Expo packages with `pnpm --filter @fairway/mobile exec expo install <pkg>`.
@@ -231,6 +236,7 @@ build.
 
 ```bash
 pnpm env:apply local --only file          # or copy apps/mobile/.env.local from the main checkout
+export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8   # pod install crashes without a UTF-8 locale
 cd apps/mobile
 APP_VARIANT=preview pnpm exec expo prebuild -p ios --clean   # --clean: ios/ may hold another variant
 cd ios && APP_VARIANT=preview SENTRY_DISABLE_AUTO_UPLOAD=true xcodebuild \
