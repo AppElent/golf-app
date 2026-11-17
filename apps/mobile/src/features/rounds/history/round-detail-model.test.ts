@@ -3,6 +3,7 @@ import {
 	markCounts,
 	roundTiles,
 	shareCardStats,
+	shareFileName,
 	shareMessage,
 } from "./round-detail-model";
 
@@ -194,5 +195,64 @@ describe("shareMessage", () => {
 			"",
 			"Shared from Fairway",
 		]);
+	});
+});
+
+describe("shareFileName", () => {
+	// Local-time dates: the name carries the round's day where it was played.
+	const sat = new Date(2026, 10, 14, 9, 30);
+
+	it("names the image after the course and the round's day", () => {
+		expect(shareFileName("De Oosterhoutse", sat)).toBe(
+			"Fairway-de-oosterhoutse-2026-11-14.png",
+		);
+	});
+
+	it("pads month and day and uses the local day, not UTC", () => {
+		expect(shareFileName("Welderen", new Date(2026, 0, 5, 23, 59))).toBe(
+			"Fairway-welderen-2026-01-05.png",
+		);
+		expect(shareFileName("Welderen", new Date(2026, 0, 6, 0, 1))).toBe(
+			"Fairway-welderen-2026-01-06.png",
+		);
+	});
+
+	it("drops accents and turns punctuation and spaces into single dashes", () => {
+		expect(
+			shareFileName("  Golfclub Ŝ-Hertogenbosch / Nine 'Zuid'  ", sat),
+		).toBe("Fairway-golfclub-s-hertogenbosch-nine-zuid-2026-11-14.png");
+		expect(shareFileName("Château d'Augerville", sat)).toBe(
+			"Fairway-chateau-d-augerville-2026-11-14.png",
+		);
+	});
+
+	it("spells out letters that have no accent to drop", () => {
+		expect(shareFileName("Großer Golfclub Søllerød", sat)).toBe(
+			"Fairway-grosser-golfclub-sollerod-2026-11-14.png",
+		);
+		expect(shareFileName("Łódź Æbeltoft", sat)).toBe(
+			"Fairway-lodz-aebeltoft-2026-11-14.png",
+		);
+		expect(shareFileName("Kılıç Golf", sat)).toBe(
+			"Fairway-kilic-golf-2026-11-14.png",
+		);
+	});
+
+	it("leaves the course out when nothing of it survives", () => {
+		expect(shareFileName("", sat)).toBe("Fairway-2026-11-14.png");
+		expect(shareFileName("ゴルフ場 ⛳", sat)).toBe("Fairway-2026-11-14.png");
+	});
+
+	it("caps the course part at 40 characters on a word boundary", () => {
+		const name = shareFileName(
+			"The Royal and Ancient Golf Club of Saint Andrews Old Course",
+			sat,
+		);
+		expect(name).toBe(
+			"Fairway-the-royal-and-ancient-golf-club-of-saint-2026-11-14.png",
+		);
+		expect(shareFileName("x".repeat(60), sat)).toBe(
+			`Fairway-${"x".repeat(40)}-2026-11-14.png`,
+		);
 	});
 });
