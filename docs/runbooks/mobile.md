@@ -103,6 +103,8 @@ Production updates have no Sentry source maps yet, so their stack traces are
 minified. The run summary says per platform:
 published, skipped (with the reason), or **store build due**.
 
+- A rollback on `preview` to the embedded bundle blocks promotion: the job
+  publishes nothing older than it until a newer preview update has soaked.
 - No decision card per daily update. It never forces past a fingerprint
   mismatch: a native change waits for a store build.
 - After a publish, check Sentry for the release `fairway@<version>+<sha>`.

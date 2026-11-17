@@ -91,8 +91,15 @@ jobs:
             page=$(pnpm exec eas update:list --branch "$SOURCE_CHANNEL" --platform "$PLATFORM" \
               --limit 50 --offset "$offset" --json --non-interactive)
             count=$(jq '[.currentPage[]?] | length' <<<"$page")
-            groups=$(jq -r '.currentPage[]? | select(.isRollBackToEmbedded | not) | .group' <<<"$page")
+            # Newest first. A rollback to the embedded bundle is a barrier: the
+            # updates behind it are what was rolled back, so nothing older may
+            # be promoted until a newer update has soaked.
+            groups=$(jq -r '.currentPage[]? | if .isRollBackToEmbedded then "ROLLBACK" else .group end' <<<"$page")
             for group in $groups; do
+              if [ "$group" = ROLLBACK ]; then
+                echo "- $PLATFORM: skipped, \`$SOURCE_CHANNEL\` was rolled back to the embedded bundle; waiting for a newer update to soak" >> "$GITHUB_STEP_SUMMARY"
+                exit 0
+              fi
               view=$(pnpm exec eas update:view "$group" --json)
               created=$(jq -r --arg p "$PLATFORM" '[.[] | select((.platform | ascii_downcase) == $p) | .createdAt][0] // empty' <<<"$view")
               [ -n "$created" ] || continue
