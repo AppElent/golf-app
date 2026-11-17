@@ -3,7 +3,7 @@
   "repository": "AppElent/developer-home",
   "scope": "project",
   "ref": "main",
-  "commit": "local",
+  "commit": "eeb996b72c5490332ca5a61bd02ab950f37812f3",
   "manifestHash": "bebe6a2d1000634144f517d202b99ee257421b8a11a17dd20b9b7a5a5a0c24fe",
   "files": {
     "docs/adr/.template.md": {
