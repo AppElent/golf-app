@@ -282,7 +282,8 @@ function unwrap(words) {
     if (!rest.length) return { env, words: rest, chdir };
     const program = programName(rest[0]);
     if (KEYWORDS.has(rest[0])) {
-      rest.shift();
+      // `time -p cmd`: drop the keyword's own options too.
+      if (rest.shift() === "time") while (rest[0] === "-p" || rest[0] === "--") rest.shift();
     } else if (rest[0] === "function") {
       // `function name { body; }`: the body's first command follows the name.
       rest.splice(0, 2);
