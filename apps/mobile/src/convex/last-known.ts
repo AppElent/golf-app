@@ -78,6 +78,21 @@ export function readEntry(key: string): Value | undefined {
 	}
 }
 
+/** The value last written per key in this process, so several readers of
+ *  one live answer write it once (values of one subscription share a
+ *  reference). Forgotten whenever entries are deleted. */
+const lastWritten = new Map<string, unknown>();
+
+/** `writeEntry`, unless this exact value was the last one written here. */
+export function writeEntryOnce(key: string, value: Value) {
+	if (Object.is(lastWritten.get(key), value)) return;
+	lastWritten.set(key, value);
+	writeEntry(key, value);
+}
+
+/** The play screen's round outlives any eviction: the offline view needs it. */
+const isPinned = (key: string) => key.includes("|rounds:active|");
+
 export function writeEntry(key: string, value: Value) {
 	try {
 		const raw = JSON.stringify(convexToJson(value));
@@ -85,7 +100,9 @@ export function writeEntry(key: string, value: Value) {
 			Storage.removeItemSync(key);
 			return;
 		}
-		const others = cacheKeys().filter((k) => k !== key && k !== MARKER);
+		const others = cacheKeys().filter(
+			(k) => k !== key && k !== MARKER && !isPinned(k),
+		);
 		// Any eviction will do for a disposable copy; no LRU bookkeeping.
 		for (const old of others.slice(
 			0,
@@ -107,6 +124,7 @@ export function writeEntry(key: string, value: Value) {
  */
 export function confirmAccount(account: string) {
 	try {
+		lastWritten.clear();
 		const keep = diskScope(account);
 		for (const key of cacheKeys())
 			if (key !== MARKER && !key.startsWith(keep)) Storage.removeItemSync(key);
@@ -127,6 +145,7 @@ export function confirmedAccount(): string | null {
 
 /** Confirmed sign-out: delete the marker and every entry. */
 export function clearLastKnown() {
+	lastWritten.clear();
 	try {
 		for (const key of cacheKeys()) Storage.removeItemSync(key);
 	} catch {

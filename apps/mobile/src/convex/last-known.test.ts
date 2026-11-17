@@ -87,3 +87,12 @@ describe("last-known copy", () => {
 		expect(readOfflineEntry("alice", "rounds:active", {})).toBeUndefined();
 	});
 });
+
+describe("eviction", () => {
+	it("never evicts the active round", () => {
+		writeEntry(key("alice", "rounds:active"), 1);
+		for (let i = 0; i < MAX_ENTRIES + 10; i++)
+			writeEntry(key("alice", "courses:get", { courseId: `c${i}` }), i);
+		expect(readEntry(key("alice", "rounds:active"))).toBe(1);
+	});
+});

@@ -50,7 +50,7 @@ import {
 	diskScope,
 	entryKey,
 	readEntry,
-	writeEntry,
+	writeEntryOnce,
 } from "./last-known";
 import { PERSISTED } from "./persisted";
 
@@ -74,10 +74,6 @@ function cacheKey(
 		return undefined;
 	}
 }
-
-/** The value last written per key, so several readers of one live answer
- *  write it once (values of one subscription share a reference). */
-const lastWritten = new Map<string, unknown>();
 
 /** Live-only: retained subscriptions, never disk values. For forms, and for
  *  state that must be current before a write. */
@@ -103,10 +99,7 @@ export function useQuery<Q extends FunctionReference<"query">>(
 	);
 	const cached = useMemo(() => (key ? readEntry(key) : undefined), [key]);
 	useEffect(() => {
-		if (!key || live === undefined || Object.is(lastWritten.get(key), live))
-			return;
-		lastWritten.set(key, live);
-		writeEntry(key, live as Value);
+		if (key && live !== undefined) writeEntryOnce(key, live as Value);
 	}, [key, live]);
 	return (live === undefined ? cached : live) as
 		| FunctionReturnType<Q>
