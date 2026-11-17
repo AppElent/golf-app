@@ -19,7 +19,7 @@
 // unreadable hook input asks. Approved irreversible steps run in their CI
 // workflow or by Eric himself, never through this agent.
 import { execFileSync } from "node:child_process";
-import { existsSync, readFileSync, realpathSync } from "node:fs";
+import { lstatSync, readdirSync, readFileSync, realpathSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -373,6 +373,30 @@ function checkGit(args, context) {
   if (hit) deny(`${remove ? "Deleting" : "Force pushing"} ${hit} rewrites shared history.`);
 }
 
+// Expands an absolute glob the way bash does, following symlinked folders.
+// Returns undefined when there are too many matches to check.
+function expand(pattern) {
+  const toRegex = (segment) => new RegExp(`^${segment.replace(/[.+^${}()|\\]/g, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".")}$`);
+  let paths = ["/"];
+  for (const segment of pattern.split("/").filter(Boolean)) {
+    if (!/[*?[]/.test(segment)) { paths = paths.map((path) => join(path, segment)); continue; }
+    const regex = toRegex(segment);
+    const next = [];
+    for (const path of paths) {
+      let entries = [];
+      try { entries = readdirSync(path); } catch { continue; }
+      for (const entry of entries) {
+        if (entry.startsWith(".") && !segment.startsWith(".")) continue;
+        if (regex.test(entry)) next.push(join(path, entry));
+      }
+    }
+    if (next.length > 2000) return undefined;
+    paths = next;
+  }
+  // Bash keeps only matches that exist.
+  return paths.filter((path) => { try { lstatSync(path); return true; } catch { return false; } });
+}
+
 function checkRm(args, context) {
   let recursive = false;
   const targets = [];
@@ -389,8 +413,21 @@ function checkRm(args, context) {
     // `apps/*/../../x` climbs out after the wildcard; the prefix proves nothing.
     if (globAt !== -1 && target.slice(globAt).split("/").includes("..")) ask(`could not tell where the rm target "${target}" ends up.`);
     const literal = globAt === -1 ? target : dirname(target.slice(0, globAt) + "x");
+    // A `cd` inside `( … )` or `$( … )` does not move this shell, so after any
+    // `cd` a target that climbs with `..` cannot be placed reliably.
+    if (context.cdSeen && !isAbsolute(target) && target.split("/").includes("..")) ask(`could not tell where the rm target "${target}" ends up after a cd.`);
     const path = context.resolvePath(literal);
     if (path === undefined) ask(`could not resolve the rm target "${target}".`);
+    if (globAt !== -1) {
+      // Check every match too: a wildcard can pass through a symlinked folder.
+      let matches;
+      matches = expand(context.resolvePath(target));
+      if (matches === undefined) ask(`could not expand the rm target "${target}".`);
+      for (const match of matches) {
+        const full = isAbsolute(match) ? match : join(context.cwd ?? "/", match);
+        if (!context.isDeletable(full)) deny(`Recursive rm of "${target}" reaches ${full}, outside the project.`);
+      }
+    }
     // `rm -rf dist*` in a root only reaches named children; `rm -rf *` or `.*`
     // reaches everything in it, which counts as deleting the root.
     const named = globAt !== -1 && !target.slice(0, globAt).includes("/") && !/^[.*?]*$/.test(basename(target));
@@ -489,9 +526,9 @@ export function check(command, options) {
     if (cwd !== undefined) path = path.replace(/^\$\{?PWD\}?(?=\/|$)/, cwd);
     if (options.tmpdir) path = path.replace(/^\$\{?TMPDIR\}?(?=\/|$)/, options.tmpdir);
     if (/[$~`]/.test(path)) return undefined;
-    if (isAbsolute(path)) return resolve(path);
+    if (isAbsolute(path)) return path;
     if (cwd === undefined) return undefined;
-    return resolve(cwd, path);
+    return `${cwd}/${path}`;
   };
   const inside = (path, root) => {
     const rel = relative(root, path);
@@ -500,21 +537,30 @@ export function check(command, options) {
   // Compares real locations: a symlinked folder inside the project that points
   // elsewhere does not make its target deletable. The last part stays as is,
   // since `rm -rf link` removes only the link.
+  // Walks the path in filesystem order, so `linked/../x` climbs from the
+  // symlink's target the way the kernel does.
   const real = (path) => {
-    let base = dirname(path);
-    const rest = [basename(path)];
-    while (!existsSync(base) && dirname(base) !== base) {
-      rest.unshift(basename(base));
-      base = dirname(base);
+    const parts = path.split("/").filter((part) => part !== "" && part !== ".");
+    const last = parts.pop();
+    let current = "/";
+    for (const part of parts) {
+      if (part === "..") { current = dirname(current); continue; }
+      const next = join(current, part);
+      let link = false;
+      try { link = lstatSync(next).isSymbolicLink(); } catch { /* missing: keep lexical */ }
+      if (link) {
+        try { current = realpathSync(next); } catch { current = next; }
+      } else current = next;
     }
-    try { base = realpathSync(base); } catch { /* keep the lexical path */ }
-    return join(base, ...rest);
+    if (last === undefined) return current;
+    return last === ".." ? dirname(current) : join(current, last);
   };
   const realRoot = (root) => { try { return realpathSync(root); } catch { return resolve(root); } };
   const roots = [project, ...extraRoots, ...tempRoots].filter(Boolean).map(realRoot);
   const isDeletable = (path) => roots.some((root) => inside(real(path), root));
   const isRoot = (path) => roots.some((root) => root === real(path));
-  const context = { get cwd() { return cwd; }, resolvePath, isDeletable, isRoot };
+  let cdSeen = false;
+  const context = { get cwd() { return cwd; }, get cdSeen() { return cdSeen; }, resolvePath, isDeletable, isRoot };
 
   const visit = (commands) => {
     for (const raw of commands) {
@@ -534,6 +580,7 @@ export function check(command, options) {
       const program = programName(words[0]);
       const args = words.slice(1);
       if (program === "cd") {
+        cdSeen = true;
         const target = args.find((word) => !word.startsWith("-"));
         cwd = restore ? saved : target === undefined ? home : resolvePath(target);
         continue;
