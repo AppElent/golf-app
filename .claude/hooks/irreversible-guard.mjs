@@ -49,13 +49,24 @@ export function parse(source) {
   let word = "";
   let inWord = false;
   const heredocs = [];
+  // Here-strings (`bash <<< 'eas submit'`): a shell recipient runs the word.
+  const hereStrings = [];
+  let hereString = false;
   const endWord = () => {
-    if (inWord) words.push(word);
+    if (inWord && hereString) hereStrings.push(word);
+    else if (inWord) words.push(word);
+    if (inWord) hereString = false;
     word = "";
     inWord = false;
   };
   const endCommand = () => {
     endWord();
+    hereString = false;
+    if (hereStrings.length) {
+      const recipient = words.length ? unwrap(words).words?.[0] : undefined;
+      if (recipient !== undefined && SHELLS.has(programName(recipient))) for (const body of hereStrings) commands.push(...parse(body));
+      hereStrings.length = 0;
+    }
     if (words.length) commands.push(words);
     words = [];
   };
@@ -129,7 +140,11 @@ export function parse(source) {
     } else if (";&|()\n".includes(c) && !(c === "\n" && heredocs.length)) {
       endCommand();
       i++;
-    } else if (c === "<" && source[i + 1] === "<" && source[i + 2] !== "<") {
+    } else if (c === "<" && source[i + 1] === "<" && source[i + 2] === "<") {
+      endWord();
+      hereString = true;
+      i += 3;
+    } else if (c === "<" && source[i + 1] === "<") {
       // Heredoc: its body is data (a commit message, a PR body), except when
       // a shell reads it as a script (`sh <<EOF`).
       endWord();
@@ -409,6 +424,8 @@ function checkRm(args, context) {
   }
   if (!recursive) return;
   for (const target of targets) {
+    // Bash splits `{a,b}` and `{1..3}` into separate targets.
+    if (/\{[^}]*(,|\.\.)[^}]*\}/.test(target)) ask(`could not tell which folders the rm target "${target}" expands to.`);
     const globAt = target.search(/[*?[]/);
     // `apps/*/../../x` climbs out after the wildcard; the prefix proves nothing.
     if (globAt !== -1 && target.slice(globAt).split("/").includes("..")) ask(`could not tell where the rm target "${target}" ends up.`);
@@ -422,6 +439,8 @@ function checkRm(args, context) {
       // Check every match too: a wildcard can pass through a symlinked folder.
       let matches;
       matches = expand(context.resolvePath(target));
+      // `apps/*/` follows a matched symlink, like `linked/` below.
+      if (matches && /\/\.?$/.test(target)) matches = matches.map((match) => `${match}/`);
       if (matches === undefined) ask(`could not expand the rm target "${target}".`);
       for (const match of matches) {
         const full = isAbsolute(match) ? match : join(context.cwd ?? "/", match);
@@ -539,9 +558,10 @@ export function check(command, options) {
   // since `rm -rf link` removes only the link.
   // Walks the path in filesystem order, so `linked/../x` climbs from the
   // symlink's target the way the kernel does.
+  // A trailing slash (`linked/`) makes rm follow the last part too.
   const real = (path) => {
     const parts = path.split("/").filter((part) => part !== "" && part !== ".");
-    const last = parts.pop();
+    const last = /\/\.?$/.test(path) ? undefined : parts.pop();
     let current = "/";
     for (const part of parts) {
       if (part === "..") { current = dirname(current); continue; }
