@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when creating, preparing, or cleaning a worktree and its backend resources.
-version: 3.0.0
+version: 3.1.0
 applies_to: [all]
 ---
 
@@ -27,11 +27,17 @@ every app and editor, and cleans up what it created.
   with a `team:project` and a finite `expiration`) when a change needs its own
   backend: schema migrations, seeds, destructive data work. The script provisions it,
   applies its Convex values, writes client URLs, seeds, and records it for cleanup.
+  Each cloud worktree costs one deployment of the team quota, so before creating one,
+  `prepare` first reconciles this repository's workspaces whose checkout is gone.
 - Cleanup removes only what the ledger owns: scoped credentials, unchanged generated
-  files, and expired or deleted deployments it can prove absent. Modified or unowned
-  files stay; the checkout is never deleted. A failed cleanup is outstanding work,
-  not permission to erase the ledger.
-- Provider commands drop inherited deployment selectors and credentials. Keep Convex
+  files, and the cloud deployments it created. `clean` and `gc --apply` delete an
+  owned deployment through the Convex Management API with the signed-in CLI's token,
+  only after its reference still selects the recorded deployment and the API reports
+  it as a non-default dev deployment with that reference; otherwise it waits for its
+  expiry. Modified or unowned files stay; the checkout is never deleted. A failed
+  cleanup is outstanding work, not permission to erase the ledger.
+- Provider commands drop inherited deployment selectors and credentials and run from
+  a staging directory with a minimal `package.json`, which the Convex CLI requires. Keep Convex
   selectors out of any unmanaged `.env` a package script could load.
 - After a successful `clean`, `prepare` starts over and accepts a changed policy;
   after an interrupted `clean`, finish `clean` first. A failed `prepare` names the
@@ -76,7 +82,8 @@ application state directory, outside the checkout, and never hold secret values.
 - `prepare` resumes after an interrupted run; `clean` then leaves no owned files, and
   `gc --dry-run` reports nothing outstanding.
 - With `cloud`: the worktree's Convex URL differs from the dev deployment, and the
-  deployment is gone or expired after `clean`.
+  deployment is deleted after `clean` (or after `gc --apply` once the worktree is
+  removed).
 
 ## Migration
 

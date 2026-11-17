@@ -7,6 +7,7 @@ import { loadEnvironmentManifest } from "../env/manifest.mjs";
 import { runProcess as runEnvironmentProcess } from "../env/process.mjs";
 import { loadManifest, MANIFEST_FILE } from "../project/manifest.mjs";
 import { digestText, readEnvValues, readProjectText } from "./dotenv.mjs";
+import { gcWorkspaces } from "./cleanup.mjs";
 import { resolveWorkspaceIdentity } from "./identity.mjs";
 import { defaultWorkspaceStateRoot, readWorkspaceLedger, withWorkspaceLock, writeWorkspaceLedger, } from "./ledger.mjs";
 import { readWorkspacePolicy } from "./policy.mjs";
@@ -58,6 +59,32 @@ async function exists(path) {
     }
     catch {
         return false;
+    }
+}
+/**
+ * Before a new cloud deployment is created, reconcile this repository's
+ * workspaces whose checkout is gone, so their owned deployments are deleted
+ * instead of holding team quota until they expire. Failures stay as warnings;
+ * the stale ledgers are retained for `gc --apply`.
+ */
+async function reclaimRemovedWorktrees(stateRoot, identity, dependencies, findings) {
+    try {
+        const result = await gcWorkspaces({
+            apply: true,
+            repositoryFingerprint: identity.repositoryFingerprint,
+            dependencies: { ...dependencies, identity: undefined, stateRoot },
+        });
+        for (const finding of result.findings)
+            findings.push({ ...finding, level: finding.level === "error" ? "warning" : finding.level });
+        return result.operations;
+    }
+    catch {
+        findings.push({
+            level: "warning",
+            code: "workspace.reclaim.unavailable",
+            message: "Removed worktrees could not be reconciled; run gc --apply later",
+        });
+        return [];
     }
 }
 async function defaultPrepareEnvironment(request) {
@@ -379,6 +406,9 @@ export async function prepareWorkspace(options) {
                 });
             });
             await step("backend", async () => {
+                const existing = ledger.resources.find((item) => item.kind === "convex-deployment" && item.id === backendReference);
+                if (policy.backend.mode === "cloud" && !existing)
+                    operations.push(...(await reclaimRemovedWorktrees(stateRoot, identity, dependencies, findings)));
                 const backend = await prepareBackend({
                     root: options.root,
                     isolationRoot: join(stateRoot, "runtime", identity.id),
@@ -387,7 +417,7 @@ export async function prepareWorkspace(options) {
                     run,
                     editor: options.editor ?? "workspace",
                     now: now(),
-                    existing: ledger.resources.find((item) => item.kind === "convex-deployment" && item.id === backendReference),
+                    existing,
                     checkpoint,
                 });
                 if (backend) {

@@ -16,6 +16,7 @@ Read only what the task needs; never preload every standard.
 | Task | Read |
 | --- | --- |
 | Adding, moving, or naming native files | [Mobile structure](docs/standards/mobile-structure.md) |
+| Deciding which platforms a feature ships on, adding or moving a web or mobile route, or shareable links | [Platform parity](docs/standards/platform-parity.md) |
 | Repository, package manager, formatter, types, tests, CI, or toolkit sync | [Baseline](docs/standards/baseline.md) |
 | Top-level folders, workspace packages, or shared code between web, Convex, and mobile | [Repository layout](docs/standards/repo-layout.md) |
 | Dependabot or automated dependency PRs | [Dependency updates](docs/standards/dependency-updates.md) |
@@ -33,6 +34,7 @@ Read only what the task needs; never preload every standard.
 | In-app problem reports | [Issue reporting](docs/standards/issue-reporting.md) |
 | Pull-request previews | [Previews](docs/standards/previews.md) |
 | Staging or production deploys, deploy workflows, or branch rules | [Deployments](docs/standards/deployments.md) |
+| When a change ships where, release cadence, versioning, tags, or rollback | [Releases](docs/standards/releases.md) |
 | Web manifest, installability, or service worker | [PWA](docs/standards/pwa.md) |
 | Application CLI or browser login for it | [App CLI](docs/standards/app-cli.md) |
 | MCP server or tools | [MCP](docs/standards/mcp.md) |

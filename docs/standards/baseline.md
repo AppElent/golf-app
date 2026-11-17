@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when setting up or changing repository, package-manager, formatter, type, test, or CI configuration, or when installing or updating the toolkit.
-version: 2.3.0
+version: 2.3.2
 applies_to: [all]
 ---
 
@@ -34,7 +34,7 @@ Every JavaScript/TypeScript repository uses the same package manager, checks, an
 
 ### Toolkit
 
-- Install and update the toolkit with `scripts/sync-devtools.mjs` (Node 22.15+, GitHub CLI authenticated for AppElent/developer-tools). Commit installed files and `.appelent/devtools.json`.
+- Install and update the toolkit with `scripts/sync-devtools.mjs` (Node 22.15+, GitHub CLI authenticated for AppElent/developer-home). Commit installed files and `.appelent/devtools.json`.
 - Never edit toolkit-owned files in the project: change them upstream.
 - Sync never runs downloaded code, provisions resources, enables a capability, or migrates application code. Review changed scripts before running them.
 - After an update, apply the migration notes of changed standards you use, then run the app's checks.
@@ -62,7 +62,7 @@ Run from the repository root.
    node scripts/sync-devtools.mjs --dry-run   # preview upstream changes
    node scripts/sync-devtools.mjs             # install or update everything
    node scripts/sync-devtools.mjs --check     # offline drift check
-   npx skills add https://github.com/AppElent/developer-tools/tree/main/skills --skill '*' -a codex claude-code -g
+   npx skills add https://github.com/AppElent/developer-home/tree/main/skills --skill '*' -a codex claude-code -g
    npx skills update
    ```
 
