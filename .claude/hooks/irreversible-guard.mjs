@@ -346,7 +346,8 @@ function unwrap(words) {
     } else if (SHELLS.has(program)) {
       const flagIndex = rest.findIndex((word, index) => index > 0 && /^-[a-z]*c[a-z]*$/.test(word));
       if (flagIndex === -1) return { env, words: rest, chdir };
-      const script = rest[flagIndex + 1];
+      // `bash -c -- 'script'`: the terminator comes before the script.
+      const script = rest[flagIndex + 1] === "--" ? rest[flagIndex + 2] : rest[flagIndex + 1];
       return { env, nested: script === undefined ? [] : parse(script), subshell: true, chdir };
     } else if (program === "eval") {
       return { env, nested: parse(rest.slice(1).join(" ")), chdir };
