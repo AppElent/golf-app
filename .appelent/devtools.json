@@ -3,8 +3,8 @@
   "repository": "AppElent/developer-home",
   "scope": "project",
   "ref": "main",
-  "commit": "8fda322fade9c6a6046cee122a932c3dc80ee7e8",
-  "manifestHash": "4ccc98c74a7383e876c9f3df13390d773c81c5dbac03e992a3edad5737c3e8aa",
+  "commit": "eeb996b72c5490332ca5a61bd02ab950f37812f3",
+  "manifestHash": "bebe6a2d1000634144f517d202b99ee257421b8a11a17dd20b9b7a5a5a0c24fe",
   "files": {
     "docs/adr/.template.md": {
       "sha256": "f28b286102fb1a00512455a06896e5da3c47d67a14b0ee6c08fa84258af24adf",
@@ -335,7 +335,7 @@
       "sha256": "6336676db6dcd2e4801992cc1b878ffafa65719314a27861247a6c8f73fd0c04"
     },
     "scripts/check-project.mjs": {
-      "sha256": "9fa2d5a2ad31cd1d068f4bd5c2a7d2762fb03f23119e224aca553bf579c925af"
+      "sha256": "fe0e2ed0f2c7ea49a32bd5492e1152db45e7eaca24f1bca8cecd369656b71163"
     },
     "scripts/env.mjs": {
       "sha256": "9347b3602296c5d9d31b7fab503e2ef696886f2f3de4c9899d44b459e8add087"
@@ -492,12 +492,22 @@
     "docs/standards/releases.md": {
       "sha256": "dc48a53f206a96e1c943f1d934bbf7f1db7d2182f77787eaa463fe06bdc727ed",
       "version": "1.0.0"
+    },
+    "docs/standards/agent-permissions.md": {
+      "sha256": "5329fc74806b87dca35be6e451e2ed916dfeb95b2229eb64478d99ae4b87396f",
+      "version": "1.0.0"
+    },
+    "docs/standards/agent-permissions/irreversible-guard.mjs": {
+      "sha256": "d94151bd82633d47deef0a285dc5284339a76241f978bb4b1244a50d5e0d9e69"
+    },
+    "scripts/lib/project/agent-permissions.mjs": {
+      "sha256": "3676673615c25e7ceb75fa7534b68dcdbe99856c715fb79a11c4bafab99e4ea6"
     }
   },
   "blocks": {
     "AGENTS.md": "5dd11c522805ab3041f27582a641d667534c3594f06ab023a435219f3894dcea",
     "CLAUDE.md": "3a539a9496d276ff97cbc761a98a6db988880a0939a61e78fb156b237927cb24",
-    "CODING_STANDARDS.md": "d52a42848d8675a82fef9860d95f06f6c6f51d5d1c11a52a4984d4df4fc374e4",
+    "CODING_STANDARDS.md": "f531c435e4c2910a6a6b26c7099ffae329c789b840622e6a6168f1462cb61942",
     "DESIGN_SYSTEM.md": "0b84f92d183be259e69372bff87939bdedda2ed81c215f3c1214d02d7f83de9a"
   }
 }

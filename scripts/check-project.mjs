@@ -4,6 +4,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { assertSafeProjectPath } from './lib/env/files.mjs';
 import { manifestWarnings, validateManifest } from './lib/project/manifest.mjs';
+import { agentPermissionFindings, GUARD_FILE, GUARD_SOURCE } from './lib/project/agent-permissions.mjs';
 
 export async function checkProject(root) {
   root = await realpath(root);
@@ -33,6 +34,11 @@ export async function checkProject(root) {
       if (!warnings.length) add('pass', 'appelent.json matches the current schema');
     } catch (error) { add('fail', error.issues ? error.message : 'Invalid appelent.json: file is not valid JSON'); }
   }
+  for (const finding of agentPermissionFindings({
+    settingsText: await read('.claude/settings.json'),
+    guardText: await read(GUARD_FILE),
+    sourceText: await read(GUARD_SOURCE),
+  })) add(finding.level, finding.message);
   if (await read('env.manifest.ts') !== null) add('info', 'Environment manifest exists; use env.mjs check for trusted execution and validation');
   if (text) {
     for (const path of await packagePaths(root, read, add)) {
