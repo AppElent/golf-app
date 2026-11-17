@@ -1,7 +1,7 @@
 {
   "hooks": {
     "PreToolUse": [
-      { "matcher": "Bash", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/convex-local-guard.mjs\"" } ] }
+      { "matcher": "Bash", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/convex-local-guard.mjs\"" }, { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/env-guard.mjs\"" } ] }
     ],
     "SessionStart": [
       { "hooks": [ { "type": "command", "command": "node .claude/hooks/session-start.mjs" } ] }
@@ -24,7 +24,16 @@
       "Bash(CONVEX_AGENT_MODE=anonymous pnpm exec convex dev:*)",
       "Bash(CONVEX_AGENT_MODE=anonymous pnpm exec convex env set:*)",
       "Bash(CONVEX_AGENT_MODE=anonymous pnpm exec convex env get:*)",
-      "Bash(CONVEX_AGENT_MODE=anonymous pnpm exec convex env list)"
+      "Bash(CONVEX_AGENT_MODE=anonymous pnpm exec convex env list)",
+      "Bash(pnpm env:check)",
+      "Bash(pnpm env:check:*)",
+      "Bash(pnpm env:plan:*)",
+      "Bash(pnpm env:generate)",
+      "Bash(pnpm env:apply local:*)",
+      "Bash(pnpm env:apply dev:*)",
+      "Bash(pnpm env:apply preview:*)",
+      "Bash(pnpm env:apply staging:*)",
+      "Bash(pnpm env:apply production:*)"
     ]
   }
 }
