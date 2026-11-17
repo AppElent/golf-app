@@ -69,10 +69,13 @@ export function sanitizeBreadcrumb(breadcrumb: Breadcrumb): Breadcrumb | null {
 export function buildSentryOptions(config: {
 	dsn: string;
 	environment: SentryEnvironment;
+	/** Unset keeps the SDK's `<bundle id>@<version>+<build>`. */
+	release?: string;
 }) {
 	return {
 		dsn: config.dsn,
 		environment: config.environment,
+		...(config.release ? { release: config.release } : {}),
 		sendDefaultPii: false,
 		attachStacktrace: true,
 		maxBreadcrumbs: 30,

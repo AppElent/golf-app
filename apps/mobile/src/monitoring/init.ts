@@ -8,12 +8,14 @@
  * `EXPO_PUBLIC_*` textually at bundle time.
  */
 import * as Sentry from "@sentry/react-native";
+import Constants from "expo-constants";
 import * as Updates from "expo-updates";
 import {
 	buildSentryOptions,
 	environmentFromChannel,
 	shouldInitSentry,
 } from "./options";
+import { sentryRelease } from "./release";
 
 const dsn = process.env.EXPO_PUBLIC_SENTRY_DSN;
 
@@ -32,6 +34,10 @@ if (dsn && sentryEnabled) {
 		buildSentryOptions({
 			dsn,
 			environment: environmentFromChannel(Updates.channel, __DEV__),
+			release: sentryRelease(
+				Constants.expoConfig?.version,
+				process.env.EXPO_PUBLIC_COMMIT_SHA,
+			),
 		}),
 	);
 }

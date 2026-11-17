@@ -11,6 +11,7 @@ import {
 	sentryEnvironment,
 	sharedSentryOptions,
 } from "./lib/observability/config";
+import { isVersionRequest, versionResponse } from "./lib/release/version";
 
 type SentryEnv = {
 	/** Runtime override of the build-time DSN. */
@@ -50,6 +51,14 @@ const instrumentedHandler = Sentry.withSentry(
 
 export default {
 	fetch(request: Request, env: SentryEnv, ctx: ExecutionContext) {
+		// Answered before Start and Sentry: cheap, uncached, never an error.
+		if (isVersionRequest(request)) {
+			return versionResponse(
+				sentryEnvironment(
+					env.environment_name || import.meta.env.VITE_SENTRY_ENVIRONMENT,
+				),
+			);
+		}
 		if (isLocalReportingUrl(request.url)) return handler.fetch(request);
 		return instrumentedHandler.fetch(request, env, ctx);
 	},

@@ -38,8 +38,11 @@ Revisit if a surface's volume or alerting needs to diverge.
   that deploys: `staging` and `production` (deploy-web.yml), `preview` (preview.yml, which also sets the Worker's `environment_name`), `ci`
   (ci.yml's check build). A build without it reports
   as `unknown`.
-- **Release** = `SENTRY_RELEASE`, else the git commit; one value is inlined in
-  the browser bundle and the Worker and names the uploaded maps.
+- **Release** = `SENTRY_RELEASE`, else `fairway@<version>+<short sha>`
+  (version from `apps/mobile/app.json`, releases standard); one value is
+  inlined in the browser bundle and the Worker, names the uploaded maps, and
+  matches `/version`. Mobile updates published by CI use the same name; see
+  [mobile](mobile.md#versions).
 - **User**: the opaque Clerk user id only, set and cleared on sign-out/unmount
   by `SentryUser` in the Clerk provider. No email, name or IP.
 - **Privacy** (`src/lib/observability/privacy.ts`, same rules in
