@@ -49,9 +49,10 @@ function allowedShape(words) {
   return false;
 }
 
-// Fails closed: a dotenv file is only read line by line with the forms dotenv
-// accepts (`=` or `:`); any mention of a credential, or of a CONVEX_DEPLOYMENT
-// that is not plainly local, counts as a cloud target.
+// Fails closed. A credential name anywhere in the file (comments included)
+// counts as a cloud target, so no dotenv parsing quirk can hide one. Lines are
+// split on CR, LF or CRLF like dotenv, and every non-comment line that names
+// CONVEX_DEPLOYMENT must plainly select an anonymous or local deployment.
 function checkEnvFile(dir, file) {
   let text;
   try {
@@ -59,14 +60,12 @@ function checkEnvFile(dir, file) {
   } catch {
     return;
   }
-  for (const line of text.split(/\r?\n/)) {
-    if (/^\s*(?:#|$)/.test(line)) continue;
-    const credential = CREDENTIALS.find((name) => new RegExp(`\\b${name}\\b`).test(line));
-    if (credential) deny(`${credential} appears in ${file}; it can point the CLI at a cloud deployment. Remove it for local work, or ask Eric.`);
-    if (/\bCONVEX_DEPLOYMENT\b/.test(line)) {
-      const local = /^\s*(?:export\s+)?CONVEX_DEPLOYMENT\s*[=:]\s*["'`]?(?:anonymous|local):[\w-]+["'`]?\s*(?:#.*)?$/.test(line);
-      if (!local) deny(`CONVEX_DEPLOYMENT in ${file} is not a local or anonymous deployment. Use a worktree without a cloud .env.local, or ask Eric.`);
-    }
+  const credential = CREDENTIALS.find((name) => text.includes(name));
+  if (credential) deny(`${credential} appears in ${file}; it can point the CLI at a cloud deployment. Remove it for local work, or ask Eric.`);
+  for (const line of text.split(/\r\n|\r|\n/)) {
+    if (!line.includes("CONVEX_DEPLOYMENT") || /^\s*#/.test(line)) continue;
+    const local = /^\s*(?:export\s+)?CONVEX_DEPLOYMENT\s*[=:]\s*["'`]?(?:anonymous|local):[\w-]+["'`]?\s*(?:#.*)?$/.test(line);
+    if (!local) deny(`CONVEX_DEPLOYMENT in ${file} is not a local or anonymous deployment. Use a worktree without a cloud .env.local, or ask Eric.`);
   }
 }
 
