@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Rondedetail: uitslag matchplay en skins</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#e4e7e1;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif}
+.th-light{--bg:#f3f4ef;--surface:#ffffff;--surface2:#e7ebe3;--accent:#1a7348;--accentFill:#1a7348;--onAccent:#ffffff;--accentDim:rgba(26,115,72,.10);--accentInk:#1c6b45;--text:#16241c;--muted:#506157;--faint:#606b57;--sep:rgba(60,62,50,.12);--borderStrong:rgba(26,32,21,.25);--danger:#b42332}
+.th-dark{--bg:#08130d;--surface:#11201a;--surface2:#1a2c23;--accent:#3fbf7a;--accentFill:#3fbf7a;--onAccent:#06110b;--accentDim:rgba(63,191,122,.14);--accentInk:#7fe0a6;--text:#f1f5f0;--muted:#9aaa9f;--faint:#919789;--sep:rgba(255,255,255,.14);--borderStrong:rgba(255,255,255,.18);--danger:#ff6b6b}
+.board{display:flex;gap:48px;padding:32px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px}
+.cap{font-size:14px;font-weight:600;color:#36423b}
+.phone{width:390px;height:844px;border-radius:48px;overflow:hidden;position:relative;background:var(--bg);color:var(--text);border:1px solid rgba(0,0,0,.18)}
+.scr{position:absolute;left:0;right:0;top:0;bottom:0;padding:58px 20px 40px;display:flex;flex-direction:column;gap:16px;overflow:hidden}
+.nav{display:flex;align-items:center;justify-content:space-between;min-height:44px}
+.navbtn{border:0;background:var(--surface);color:var(--accent);font:600 16px/1 inherit;min-height:40px;padding:0 14px;border-radius:999px;display:inline-flex;align-items:center}
+.navt{font-size:17px;font-weight:600}
+.fn{font-size:13px;color:var(--muted);line-height:1.35}
+.res{background:var(--surface);border-radius:24px;padding:18px;display:flex;flex-direction:column;gap:4px}
+.res .k{font-size:13px;font-weight:600;color:var(--muted)}
+.res .r{font-size:32px;font-weight:800;letter-spacing:-.4px}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tile{background:var(--surface);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:2px}
+.tv{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
+.hdr{font-size:13px;color:var(--muted);padding:0 16px 6px;font-weight:500}
+.list{background:var(--surface);border-radius:24px;overflow:hidden}
+.row{display:flex;align-items:center;min-height:48px;padding:0 16px;gap:12px;font-size:17px;border-top:1px solid var(--sep)}
+.row:first-child{border-top:0}
+.row .v{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums}
+.share{border-radius:18px;padding:16px;background:linear-gradient(160deg,#0f3d2a,#08130d);color:#fff;display:flex;flex-direction:column;gap:4px}
+.share small{font-size:12px;color:rgba(255,255,255,.75)}
+.share b{font-size:22px}
+</style>
+</helmet>
+<div class="board">
+
+<div class="col">
+<div class="cap">Licht · matchplay, beslist op hole 16</div>
+<div class="phone th-light"><div class="scr">
+<div class="nav"><button class="navbtn" type="button" aria-label="Terug"><svg width="10" height="16" viewBox="0 0 10 16" aria-hidden="true"><path d="M8 2 2 8l6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path></svg></button><span class="navt">Ronde</span><button class="navbtn" type="button">Delen</button></div>
+<div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:18px;font-weight:700">Golfclub De Pan</div><div class="fn" style="font-size:15px">zaterdag 15 november 2026 · Geel · Matchplay netto</div></div>
+<div class="res" role="status"><span class="k">Matchplay tegen Piet</span><span class="r">Eric wint 3&amp;2</span><span class="fn">Beslist op hole 16. Holes 17 en 18 zijn uitgespeeld voor de score.</span></div>
+<div class="tiles"><div class="tile"><span class="fn">Score</span><span class="tv">84</span></div><div class="tile"><span class="fn">T.o.v. par</span><span class="tv">+12</span></div><div class="tile"><span class="fn">Differential</span><span class="tv">11,8</span></div></div>
+<div><div class="hdr">Deelkaart</div>
+<div class="share" aria-label="Voorbeeld van de deelkaart"><small>Golfclub De Pan · 15 nov 2026 · Geel</small><b>Eric wint 3&amp;2 van Piet</b><small>Matchplay netto · Eric 84 · Piet 93</small></div>
+</div>
+</div></div>
+</div>
+
+<div class="col">
+<div class="cap">Donker · skins met drie spelers</div>
+<div class="phone th-dark"><div class="scr">
+<div class="nav"><button class="navbtn" type="button" aria-label="Terug"><svg width="10" height="16" viewBox="0 0 10 16" aria-hidden="true"><path d="M8 2 2 8l6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path></svg></button><span class="navt">Ronde</span><button class="navbtn" type="button">Delen</button></div>
+<div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:18px;font-weight:700">Golfclub De Pan</div><div class="fn" style="font-size:15px">zaterdag 15 november 2026 · Geel · Skins netto</div></div>
+<div class="res" role="status"><span class="k">Skins</span><span class="r">Jan wint met 7</span><span class="fn">2 skins bleven liggen: holes 17 en 18 eindigden gelijk.</span></div>
+<div><div class="hdr">Skins per speler</div>
+<div class="list"><div class="row">Jan<span class="v">7</span></div><div class="row">Eric<span class="v">6</span></div><div class="row">Piet<span class="v">3</span></div><div class="row" style="color:var(--muted)">Op tafel<span class="v">2</span></div></div>
+</div>
+<div class="tiles"><div class="tile"><span class="fn">Score</span><span class="tv">86</span></div><div class="tile"><span class="fn">T.o.v. par</span><span class="tv">+14</span></div><div class="tile"><span class="fn">Putts</span><span class="tv">33</span></div></div>
+</div></div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":892,"height":940}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>
