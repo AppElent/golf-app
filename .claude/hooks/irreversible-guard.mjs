@@ -19,7 +19,7 @@
 // unreadable hook input asks. Approved irreversible steps run in their CI
 // workflow or by Eric himself, never through this agent.
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -138,7 +138,8 @@ export function parse(source) {
       while (source[i] === " " || source[i] === "\t") i++;
       let j = i;
       while (j < source.length && !" \t\n;&|()<>".includes(source[j])) j++;
-      heredocs.push({ delimiter: source.slice(i, j).replace(/["'\\]/g, ""), words });
+      const raw = source.slice(i, j);
+      heredocs.push({ delimiter: raw.replace(/["'\\]/g, ""), quoted: /["'\\]/.test(raw), words });
       i = j;
     } else if (c === "\n" && heredocs.length) {
       // Skip each pending heredoc body up to its delimiter line.
@@ -152,7 +153,10 @@ export function parse(source) {
           if (line.replace(/^\t+/, "") === doc.delimiter) break;
           lines.push(line);
         }
-        if (doc.words.length && SHELLS.has(programName(doc.words[0]))) commands.push(...parse(lines.join("\n")));
+        const body = lines.join("\n");
+        if (doc.words.length && SHELLS.has(programName(doc.words[0]))) commands.push(...parse(body));
+        // An unquoted body still runs its $(…) and backticks.
+        else if (!doc.quoted) commands.push(...parse(`"${body.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`));
       }
       heredocs.length = 0;
       endCommand();
@@ -324,6 +328,7 @@ function checkGit(args, context) {
   let remove = false;
   let all = false;
   const positional = [];
+  let repoOption = false;
   for (let j = 0; j < rest.length; j++) {
     const word = rest[j];
     if (word === "--") { positional.push(...rest.slice(j + 1)); break; }
@@ -331,13 +336,15 @@ function checkGit(args, context) {
     else if (word === "--mirror") { force = true; all = true; }
     else if (word === "--delete") remove = true;
     else if (word === "--all" || word === "--branches") all = true;
-    else if (["-o", "--push-option", "--repo", "--receive-pack", "--exec"].includes(word)) j++;
+    else if (word === "--repo") { repoOption = true; j++; }
+    else if (word.startsWith("--repo=")) repoOption = true;
+    else if (["-o", "--push-option", "--receive-pack", "--exec"].includes(word)) j++;
     else if (/^-[a-zA-Z]+$/.test(word)) {
       if (word.includes("f")) force = true;
       if (word.includes("d")) remove = true;
     } else if (!word.startsWith("-")) positional.push(word);
   }
-  const refspecs = positional.slice(1);
+  const refspecs = positional.slice(repoOption ? 0 : 1);
   if ((force || remove) && refspecs.some((ref) => ref.includes("$"))) ask("could not tell which branch this force push or delete targets.");
   if (refspecs.some((ref) => ref.startsWith("+"))) force = true;
   if (refspecs.some((ref) => ref.startsWith(":"))) remove = true;
@@ -475,9 +482,23 @@ export function check(command, options) {
     const rel = relative(root, path);
     return rel !== "" && !rel.startsWith("..") && !isAbsolute(rel);
   };
-  const roots = [project, ...extraRoots, ...tempRoots].filter(Boolean);
-  const isDeletable = (path) => roots.some((root) => inside(path, root));
-  const isRoot = (path) => roots.some((root) => resolve(root) === path);
+  // Compares real locations: a symlinked folder inside the project that points
+  // elsewhere does not make its target deletable. The last part stays as is,
+  // since `rm -rf link` removes only the link.
+  const real = (path) => {
+    let base = dirname(path);
+    const rest = [basename(path)];
+    while (!existsSync(base) && dirname(base) !== base) {
+      rest.unshift(basename(base));
+      base = dirname(base);
+    }
+    try { base = realpathSync(base); } catch { /* keep the lexical path */ }
+    return join(base, ...rest);
+  };
+  const realRoot = (root) => { try { return realpathSync(root); } catch { return resolve(root); } };
+  const roots = [project, ...extraRoots, ...tempRoots].filter(Boolean).map(realRoot);
+  const isDeletable = (path) => roots.some((root) => inside(real(path), root));
+  const isRoot = (path) => roots.some((root) => root === real(path));
   const context = { get cwd() { return cwd; }, resolvePath, isDeletable, isRoot };
 
   const visit = (commands) => {
