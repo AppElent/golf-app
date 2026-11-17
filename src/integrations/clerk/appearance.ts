@@ -20,7 +20,8 @@ export function usePrefersDark(): boolean {
 /**
  * Clerk's sign-in card in dark mode, drawn from the app column's themed
  * tokens (styles.css). Light mode keeps Clerk's own look, so no appearance is
- * passed there.
+ * passed there. Clerk accepts CSS variables here and derives its shades from
+ * them; e2e/dark-theme.spec.ts checks the dark card after a Clerk upgrade.
  */
 export const DARK_APPEARANCE = {
 	variables: {

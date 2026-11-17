@@ -99,6 +99,8 @@
 	--page-link: #246f76;
 	--page-link-hover: #1b575d;
 	--page-sand: #e7f0e8;
+	/* page-top: the top of the page gradient, lightened in light mode only */
+	--page-top: color-mix(in oklab, var(--page-sand) 68%, white);
 	--page-foam: #f3faf5;
 	--page-base: #e7f3ec;
 	--page-glow-a: rgba(79, 184, 178, 0.36);
@@ -113,6 +115,7 @@
 
 		--page-ink: #d7ece8;
 		--page-sand: #0f1a1e;
+		--page-top: var(--page-sand);
 		--page-foam: #101d22;
 		--page-base: #0a1418;
 		--page-glow-a: rgba(96, 215, 207, 0.18);
@@ -176,7 +179,7 @@ body {
 		radial-gradient(1100px 620px at -8% -10%, var(--page-glow-a), transparent 58%),
 		radial-gradient(1050px 620px at 112% -12%, var(--page-glow-b), transparent 62%),
 		radial-gradient(720px 380px at 50% 115%, rgba(79, 184, 178, 0.1), transparent 68%),
-		linear-gradient(180deg, color-mix(in oklab, var(--page-sand) 68%, white) 0%, var(--page-foam) 44%, var(--page-base) 100%);
+		linear-gradient(180deg, var(--page-top) 0%, var(--page-foam) 44%, var(--page-base) 100%);
 	overflow-x: hidden;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;

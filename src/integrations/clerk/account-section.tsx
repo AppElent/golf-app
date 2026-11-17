@@ -1,6 +1,6 @@
 import { useClerk, useUser } from "@clerk/react";
 import { useState } from "react";
-import { SURFACE } from "../../components/classes";
+import { CONTROL } from "../../components/classes";
 import { Section } from "../../components/Page";
 import { useSimulationMode } from "../../play/simulation";
 
@@ -42,7 +42,7 @@ export function AccountSection() {
 				type="button"
 				disabled={signingOut}
 				onClick={onSignOut}
-				className={`w-full rounded-xl border ${SURFACE} px-4 py-3 font-display text-callout font-semibold text-flag-ink disabled:opacity-40`}
+				className={`w-full rounded-xl border ${CONTROL} px-4 py-3 font-display text-callout font-semibold text-flag-ink disabled:opacity-40`}
 			>
 				{signingOut ? "Signing out…" : "Sign out"}
 			</button>

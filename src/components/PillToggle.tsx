@@ -1,4 +1,4 @@
-import { SURFACE } from "./classes";
+import { CONTROL } from "./classes";
 
 const SELECTED = {
 	pine: "border-pine-fill bg-pine-fill text-cream",
@@ -21,7 +21,7 @@ export function PillToggle({
 			type="button"
 			onClick={onClick}
 			className={`rounded-full border px-4 py-2 font-display text-label font-semibold ${
-				selected ? SELECTED[tone] : `${SURFACE} text-ink`
+				selected ? SELECTED[tone] : `${CONTROL} text-ink`
 			}`}
 		>
 			{children}

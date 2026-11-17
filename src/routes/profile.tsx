@@ -10,7 +10,7 @@ import { ChevronDown, ChevronUp, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import { CTA, FIELD, SURFACE } from "../components/classes";
+import { CONTROL, CTA, FIELD, SURFACE } from "../components/classes";
 import { INVALID_INDEX_MESSAGE } from "../components/copy";
 import { Page, PageNote, PageTitle, Section } from "../components/Page";
 import { PillToggle } from "../components/PillToggle";
@@ -137,7 +137,7 @@ function ProfileScreen() {
 							className={`rounded-xl border px-4 py-2.5 text-left font-display text-callout font-semibold ${
 								settings.homeCourseId === c._id
 									? "border-live bg-live/10 text-ink"
-									: `${SURFACE} text-ink`
+									: `${CONTROL} text-ink`
 							}`}
 						>
 							{c.name}

@@ -180,17 +180,13 @@ describe("dark theme", () => {
 });
 
 describe("app column classes", () => {
-	const files = [
-		"components",
-		"routes",
-		"integrations/clerk",
-		"offline",
-	].flatMap((dir) =>
-		readdirSync(join(import.meta.dirname, dir))
-			.filter((f) => f.endsWith(".tsx") || f.endsWith(".ts"))
-			.filter((f) => !f.includes(".test."))
-			.map((f) => join(dir, f)),
-	);
+	// Every web source file under src/, except tests and generated code.
+	const files = (
+		readdirSync(import.meta.dirname, { recursive: true }) as string[]
+	)
+		.filter((f) => /\.tsx?$/.test(f))
+		.filter((f) => !f.includes(".test.") && !f.endsWith(".gen.ts"))
+		.sort();
 
 	// Fixed light colours that would stay light in dark mode. bg-pine and
 	// bg-pine-light remain for the always-dark Play screen only.
@@ -200,6 +196,8 @@ describe("app column classes", () => {
 	it.each(files)("%s uses themed tokens", (file) => {
 		const source = readFileSync(join(import.meta.dirname, file), "utf8");
 		expect(source).not.toMatch(FIXED);
+		// A round bordered button is a control: its edge is control-line.
+		expect(source).not.toMatch(/"rounded-full border border-card-line/);
 	});
 
 	it("the Play screen is the only user of bg-pine", () => {

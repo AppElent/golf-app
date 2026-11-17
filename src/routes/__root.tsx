@@ -24,7 +24,17 @@ export const Route = createRootRoute({
 				name: "viewport",
 				content: "width=device-width, initial-scale=1, viewport-fit=cover",
 			},
-			{ name: "theme-color", content: "#0F3D2A" },
+			{
+				name: "theme-color",
+				content: "#0F3D2A",
+				media: "(prefers-color-scheme: light)",
+			},
+			// The dark app column's canvas (styles.css --color-canvas).
+			{
+				name: "theme-color",
+				content: "#08130d",
+				media: "(prefers-color-scheme: dark)",
+			},
 			{ title: "Fairway · Golf Companion" },
 		],
 		links: [

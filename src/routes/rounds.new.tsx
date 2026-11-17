@@ -11,7 +11,7 @@ import { Minus, Plus, TriangleAlert } from "lucide-react";
 import { useState } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
-import { CTA, FIELD, SURFACE } from "../components/classes";
+import { CONTROL, CTA, FIELD, SURFACE } from "../components/classes";
 import { INVALID_INDEX_MESSAGE } from "../components/copy";
 import { Page, PageTitle, Section } from "../components/Page";
 import { PillToggle } from "../components/PillToggle";
@@ -54,7 +54,7 @@ function RoundSetup() {
 							className={`rounded-xl border px-4 py-3 text-left font-display text-body font-semibold ${
 								courseId === c._id
 									? "border-live bg-live/10 text-ink"
-									: `${SURFACE} text-ink`
+									: `${CONTROL} text-ink`
 							}`}
 						>
 							{c.name}
@@ -238,7 +238,7 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 								onClick={() =>
 									setGuests((prev) => prev.filter((_, j) => j !== i))
 								}
-								className="rounded-full border border-card-line p-2 text-moss"
+								className="rounded-full border border-control-line p-2 text-moss"
 							>
 								<Minus className="size-4" />
 							</button>
@@ -252,7 +252,7 @@ function CourseConfig({ courseId }: { courseId: Id<"courses"> }) {
 								{ id: crypto.randomUUID(), name: "", handicapIndex: "" },
 							])
 						}
-						className="mt-3 flex items-center gap-1.5 rounded-full border border-card-line px-4 py-2 font-display text-label font-semibold text-ink"
+						className="mt-3 flex items-center gap-1.5 rounded-full border border-control-line px-4 py-2 font-display text-label font-semibold text-ink"
 					>
 						<Plus className="size-4" /> Add guest
 					</button>
