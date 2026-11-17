@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Rondedetail met strokes gained</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#e4e7e1;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif}
+.th-light{--bg:#f3f4ef;--surface:#ffffff;--surface2:#e7ebe3;--accent:#1a7348;--accentFill:#1a7348;--onAccent:#ffffff;--accentDim:rgba(26,115,72,.10);--accentInk:#1c6b45;--text:#16241c;--muted:#506157;--faint:#606b57;--sep:rgba(60,62,50,.12);--borderStrong:rgba(26,32,21,.25);--danger:#b42332}
+.th-dark{--bg:#08130d;--surface:#11201a;--surface2:#1a2c23;--accent:#3fbf7a;--accentFill:#3fbf7a;--onAccent:#06110b;--accentDim:rgba(63,191,122,.14);--accentInk:#7fe0a6;--text:#f1f5f0;--muted:#9aaa9f;--faint:#919789;--sep:rgba(255,255,255,.14);--borderStrong:rgba(255,255,255,.18);--danger:#ff6b6b}
+.board{display:flex;gap:48px;padding:32px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px}
+.cap{font-size:14px;font-weight:600;color:#36423b}
+.phone{width:390px;height:844px;border-radius:48px;overflow:hidden;position:relative;background:var(--bg);color:var(--text);border:1px solid rgba(0,0,0,.18)}
+.scr{position:absolute;left:0;right:0;top:0;bottom:0;padding:58px 20px 40px;display:flex;flex-direction:column;gap:18px;overflow:hidden}
+.nav{display:flex;align-items:center;justify-content:space-between;min-height:44px}
+.navbtn{border:0;background:var(--surface);color:var(--accent);font:600 16px/1 inherit;min-height:40px;padding:0 14px;border-radius:999px;display:inline-flex;align-items:center;gap:4px}
+.navt{font-size:17px;font-weight:600}
+.card{background:var(--surface);border-radius:24px;padding:16px}
+.hdr{font-size:13px;color:var(--muted);padding:0 16px 6px;font-weight:500}
+.foot{font-size:13px;color:var(--muted);padding:6px 16px 0;line-height:1.35}
+.fn{font-size:13px;color:var(--muted);line-height:1.35}
+.big{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tile{background:var(--surface);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:2px}
+.tv{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
+.sgrow{display:grid;grid-template-columns:132px minmax(0,1fr) 46px;align-items:center;gap:10px;min-height:40px;font-size:15px}
+.trk{position:relative;height:10px}
+.axis{position:absolute;left:50%;top:-8px;bottom:-8px;width:1px;background:var(--borderStrong)}
+.neg{position:absolute;right:50%;top:0;height:10px;border-radius:5px 0 0 5px;background:var(--danger)}
+.pos{position:absolute;left:50%;top:0;height:10px;border-radius:0 5px 5px 0;background:var(--accentFill)}
+.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.scale{display:grid;grid-template-columns:132px minmax(0,1fr) 46px;gap:10px;font-size:11px;color:var(--muted)}
+.scale div{display:flex;justify-content:space-between}
+</style>
+</helmet>
+<div class="board">
+<sc-for list="{{themes}}" as="th" hint-placeholder-count="2">
+<div class="col">
+<div class="cap">{{th.label}}</div>
+<div class="phone {{th.cls}}">
+<div class="scr">
+<div class="nav">
+<button class="navbtn" type="button" aria-label="Terug"><svg width="10" height="16" viewBox="0 0 10 16" aria-hidden="true"><path d="M8 2 2 8l6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path></svg></button>
+<span class="navt">Ronde</span>
+<button class="navbtn" type="button">Delen</button>
+</div>
+<div style="display:flex;flex-direction:column;gap:4px">
+<div style="font-size:18px;font-weight:700">Golfclub De Pan</div>
+<div class="fn" style="font-size:15px">zaterdag 15 november 2026 · Geel · Stableford</div>
+</div>
+<div class="tiles">
+<div class="tile"><span class="fn">Score</span><span class="tv">88</span></div>
+<div class="tile"><span class="fn">T.o.v. par</span><span class="tv">+16</span></div>
+<div class="tile"><span class="fn">Punten</span><span class="tv">34</span></div>
+<div class="tile"><span class="fn">Putts</span><span class="tv">34</span></div>
+<div class="tile"><span class="fn">Fairways</span><span class="tv">6/14</span></div>
+<div class="tile"><span class="fn">Greens</span><span class="tv">4/18</span></div>
+</div>
+<div>
+<div class="hdr">Strokes gained · t.o.v. scratch</div>
+<div class="card" style="display:flex;flex-direction:column;gap:6px">
+<div style="display:flex;align-items:baseline;gap:8px"><span class="big">−6,4</span><span class="fn">over 16 van 18 holes</span></div>
+<div style="height:6px"></div>
+<div class="sgrow"><span>Off the tee</span><div class="trk"><div class="axis"></div><div class="neg" style="width:11.25%"></div></div><span class="num">−0,9</span></div>
+<div class="sgrow"><span>Approach</span><div class="trk"><div class="axis"></div><div class="neg" style="width:38.75%"></div></div><span class="num">−3,1</span></div>
+<div class="sgrow"><span>Around the green</span><div class="trk"><div class="axis"></div><div class="neg" style="width:15%"></div></div><span class="num">−1,2</span></div>
+<div class="sgrow"><span>Putting</span><div class="trk"><div class="axis"></div><div class="neg" style="width:15%"></div></div><span class="num">−1,2</span></div>
+<div class="scale" aria-hidden="true"><span></span><div><span>−4</span><span>0</span><span>+4</span></div><span></span></div>
+</div>
+<div class="foot">Holes 6 en 12 tellen niet mee: daar kloppen gemarkeerde slagen en putts niet met je score. Tik een hole op de scorekaart om slagen en lies te corrigeren.</div>
+</div>
+<div class="card" style="padding:14px 16px">
+<div class="fn" style="margin-bottom:8px">Scorekaart</div>
+<div style="display:grid;grid-template-columns:44px repeat(9,minmax(0,1fr));font-size:13px;text-align:center;row-gap:6px;font-variant-numeric:tabular-nums">
+<span style="text-align:left;color:var(--muted)">Hole</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span>
+<span style="text-align:left;color:var(--muted)">Par</span><span>4</span><span>5</span><span>3</span><span>4</span><span>4</span><span>3</span><span>4</span><span>5</span><span>4</span>
+<span style="text-align:left;color:var(--muted)">Eric</span><span>5</span><span>6</span><span>4</span><span>5</span><span>4</span><span>5</span><span>5</span><span>6</span><span>5</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":892,"height":940}}'>
+class Component extends DCLogic {
+renderVals() {
+return { themes: [{ label: "Licht", cls: "th-light" }, { label: "Donker", cls: "th-dark" }] };
+}
+}
+</script>
+</body>
+</html>
