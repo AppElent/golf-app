@@ -17,7 +17,7 @@ import { AppText } from "../ui/text";
  */
 const OFFLINE_GRACE_MS = 2000;
 
-function useStalledOffline(): boolean {
+export function useStalledOffline(): boolean {
 	const { isWebSocketConnected } = useConvexConnectionState();
 	const [stalled, setStalled] = useState(false);
 
@@ -33,7 +33,8 @@ function useStalledOffline(): boolean {
 	return stalled;
 }
 
-export function OfflineBanner() {
+/** `message`: what is offline, when it is not the pending-writes default. */
+export function OfflineBanner({ message }: { message?: string } = {}) {
 	const styles = useThemedStyles(createStyles);
 	const insets = useSafeAreaInsets();
 	const { t } = useI18n();
@@ -46,7 +47,7 @@ export function OfflineBanner() {
 			pointerEvents="none"
 		>
 			<AppText variant="caption" style={styles.text}>
-				{t.common.offline}
+				{message ?? t.common.offline}
 			</AppText>
 		</View>
 	);

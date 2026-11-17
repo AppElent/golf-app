@@ -13,6 +13,7 @@
 // First, so a crash during the rest of module evaluation is still reported.
 import "../src/monitoring/init";
 import { ClerkProvider, useAuth } from "@clerk/expo";
+import { resourceCache } from "@clerk/expo/resource-cache";
 import { tokenCache } from "@clerk/expo/token-cache";
 import * as Sentry from "@sentry/react-native";
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
@@ -24,6 +25,7 @@ import { View } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { publishableKey } from "../src/auth/config";
+import { clearLastKnown } from "../src/convex/last-known";
 import { AppConvexProvider } from "../src/convex/provider";
 // Defines the background location task at module scope (see the module).
 import "../src/features/location/background/background-location";
@@ -78,7 +80,14 @@ function ThemedRoot() {
 	return (
 		<GestureHandlerRootView style={styles.window}>
 			<LocaleProvider>
-				<ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+				<ClerkProvider
+					publishableKey={publishableKey}
+					tokenCache={tokenCache}
+					// Lets Clerk restore the session on a cold start that cannot
+					// reach its servers, so the offline round can show (APP-146).
+					// Not offline auth: Convex still checks every token it gets.
+					__experimental_resourceCache={resourceCache}
+				>
 					<AppConvexProvider>
 						<SafeAreaProvider>
 							<ThemeProvider value={navigationTheme}>
@@ -97,8 +106,14 @@ function ThemedRoot() {
 
 function RootNavigator({ windowReady }: { windowReady: boolean }) {
 	const colors = useTokens();
-	const { isLoaded } = useAuth();
+	const { isLoaded, isSignedIn } = useAuth();
 	useNavigationBreadcrumbs();
+
+	// Confirmed sign-out (and account deletion, which signs out) deletes the
+	// saved copy and the confirmed-account marker together.
+	useEffect(() => {
+		if (isLoaded && !isSignedIn) clearLastKnown();
+	}, [isLoaded, isSignedIn]);
 
 	useEffect(() => {
 		if (isLoaded && windowReady) SplashScreen.hideAsync();

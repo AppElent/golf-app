@@ -1,7 +1,17 @@
-import { mutation } from "./_generated/server";
+import { mutation, query } from "./_generated/server";
 import { deleteCourseData } from "./courses";
 import { getUserId } from "./lib";
 import { deleteRoundData } from "./rounds";
+
+/**
+ * Who Convex says is signed in: the Clerk user id from the verified token, or
+ * null. The phone compares it with the account Clerk selected locally before
+ * it shows or saves any cached copy (convex-query-caching standard).
+ */
+export const viewer = query({
+	args: {},
+	handler: async (ctx) => (await ctx.auth.getUserIdentity())?.subject ?? null,
+});
 
 /**
  * Delete everything this app stores for the signed-in user (rounds, scores,

@@ -4,7 +4,7 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { StyleSheet } from "react-native";
 import { api, type Id } from "../../../convex/api";
-import { useQuery } from "../../../convex/query-cache";
+import { useLiveQuery } from "../../../convex/query-cache";
 import { useSubmit } from "../../../convex/use-submit";
 import { haptics } from "../../../feedback/haptics";
 import { useI18n } from "../../../i18n";
@@ -20,7 +20,7 @@ export function SuggestCorrectionScreen({
 	const router = useRouter();
 	const { t } = useI18n();
 	const toast = useToast();
-	const detail = useQuery(api.courses.get, { courseId });
+	const detail = useLiveQuery(api.courses.get, { courseId });
 	const suggest = useMutation(api.courses.suggest);
 	const [message, setMessage] = useState("");
 	const submit = useSubmit();

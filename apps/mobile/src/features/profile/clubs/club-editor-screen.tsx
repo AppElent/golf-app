@@ -3,7 +3,7 @@ import { useMutation } from "convex/react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { api, type Doc, type Id } from "../../../convex/api";
-import { useQuery } from "../../../convex/query-cache";
+import { useLiveQuery, useQuery } from "../../../convex/query-cache";
 import { useSubmit } from "../../../convex/use-submit";
 import { fmt, useI18n } from "../../../i18n";
 import { GhostButton } from "../../../ui/button";
@@ -14,7 +14,7 @@ import { parseCarry } from "./club-model";
 
 export function ClubEditorScreen() {
 	const { clubId } = useLocalSearchParams<{ clubId?: string }>();
-	const clubs = useQuery(api.clubs.list);
+	const clubs = useLiveQuery(api.clubs.list);
 	if (clubId && clubs === undefined) return <SkeletonList rows={2} />;
 	const club = clubId ? clubs?.find((c) => c._id === clubId) : undefined;
 	return <ClubForm key={club?._id ?? "new"} club={club} />;

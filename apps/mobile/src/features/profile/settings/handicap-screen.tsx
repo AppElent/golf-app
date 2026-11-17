@@ -3,7 +3,7 @@ import { useMutation } from "convex/react";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { api } from "../../../convex/api";
-import { useQuery } from "../../../convex/query-cache";
+import { useLiveQuery } from "../../../convex/query-cache";
 import { useSubmit } from "../../../convex/use-submit";
 import { useI18n } from "../../../i18n";
 import { FormScreen, FormSection, FormTextField } from "../../../ui/form";
@@ -11,7 +11,7 @@ import { NavHeader } from "../../../ui/nav-header";
 import { SkeletonList } from "../../../ui/skeleton";
 
 export function HandicapScreen() {
-	const settings = useQuery(api.settings.get);
+	const settings = useLiveQuery(api.settings.get);
 	if (settings === undefined) return <SkeletonList rows={1} />;
 	return <HandicapForm initial={settings.handicapIndex} />;
 }

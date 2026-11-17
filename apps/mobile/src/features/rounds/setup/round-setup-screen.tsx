@@ -11,7 +11,7 @@ import { Stack, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { api, type Id } from "../../../convex/api";
-import { useQuery } from "../../../convex/query-cache";
+import { useLiveQuery, useQuery } from "../../../convex/query-cache";
 import { useSubmit } from "../../../convex/use-submit";
 import { haptics } from "../../../feedback/haptics";
 import { fmt, useI18n } from "../../../i18n";
@@ -54,13 +54,13 @@ export function RoundSetupScreen({
 	simulate: boolean;
 }) {
 	const { t } = useI18n();
-	const detail = useQuery(api.courses.get, { courseId });
-	const settings = useQuery(api.settings.get);
+	const detail = useLiveQuery(api.courses.get, { courseId });
+	const settings = useLiveQuery(api.settings.get);
 	// Waited for, so the tee is seeded once, with the right default.
 	const lastTeeId = useQuery(api.rounds.lastTee, { courseId });
 	// A simulation may run beside a real round; a second real round may not.
 	// Waited for too, so Start is never offered before the guard can decide.
-	const active = useQuery(api.rounds.active, simulate ? "skip" : {});
+	const active = useLiveQuery(api.rounds.active, simulate ? "skip" : {});
 
 	if (
 		detail === undefined ||
