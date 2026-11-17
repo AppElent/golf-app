@@ -19,7 +19,7 @@
 // unreadable hook input asks. Approved irreversible steps run in their CI
 // workflow or by Eric himself, never through this agent.
 import { execFileSync } from "node:child_process";
-import { lstatSync, readdirSync, readFileSync, realpathSync } from "node:fs";
+import { lstatSync, readdirSync, readFileSync, realpathSync, statSync } from "node:fs";
 import { homedir, tmpdir } from "node:os";
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -326,6 +326,11 @@ function unwrap(words) {
         if (cluster && !token.startsWith("--")) return { env, nested: parse((cluster[1] ? [cluster[1], ...rest] : rest).join(" ")), subshell: true, chdir };
         if (token === "-C" || token === "--chdir") chdir.push(rest.shift());
         else if (token.startsWith("--chdir=")) chdir.push(token.slice("--chdir=".length));
+        // Attached or clustered: `-C/dir`, `-iC/dir`, `-iC /dir`.
+        else if (/^-[a-zA-Z]*C/.test(token) && !token.startsWith("--")) {
+          const value = token.slice(token.indexOf("C") + 1);
+          chdir.push(value || rest.shift());
+        }
         else if (token === "-u" || token === "--unset") rest.shift();
         else if (ASSIGNMENT.test(token)) {
           const [name, ...value] = token.split("=");
@@ -395,6 +400,10 @@ const PRODUCTION = /^(prod|production)$/;
 
 function branchName(ref) {
   return ref.replace(/^\+/, "").replace(/^refs\/heads\//, "");
+}
+
+function isDirectory(path) {
+  try { return statSync(path).isDirectory(); } catch { return false; }
 }
 
 function currentBranch(dir) {
@@ -731,7 +740,14 @@ export function check(command, options) {
         // The parser flattens `( … )`, `$( … )` and backticks, so with any of
         // them in the command a cd may or may not reach later commands.
         else if (searched || hasSubshell) cwd = undefined;
-        else cwd = target === undefined ? home : resolvePath(target);
+        // `cd -` goes to OLDPWD; a cd into a missing folder fails and stays put.
+        else if (args.includes("-")) cwd = undefined;
+        else {
+          const next = target === undefined ? home : resolvePath(target);
+          // (Only when the current folder exists, so a missing target means a failed cd.)
+          const failed = next === undefined || (!isDirectory(next) && (cwd === undefined || isDirectory(cwd)));
+          cwd = failed ? undefined : next;
+        }
         continue;
       }
       dispatch(program, args, env);
