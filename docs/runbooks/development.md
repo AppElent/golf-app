@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when running Fairway locally, running its checks, or adding an environment variable.
-version: 1.1.0
+version: 1.1.1
 ---
 
 # Local development
@@ -46,7 +46,9 @@ signs in as the Clerk development test user. Set `E2E_BASE_URL` (default
 `http://localhost:3000`, or a PR preview URL), `E2E_USER_EMAIL` and
 `E2E_USER_PASSWORD` (the `test-user-*` values), and run
 `pnpm exec playwright install chromium` once. Screenshots land in
-`test-results/`.
+`test-results/`. The `sign-out` project (`e2e/sign-out.spec.ts`, 390px) signs
+in and out in a session of its own, so it never revokes the session the
+`desktop` and `phone` projects share; `--project=phone` alone skips it.
 
 Demo rounds for one user:
 `pnpm exec convex run seed:seedDummyData --identity '{"subject":"user_…"}'`.

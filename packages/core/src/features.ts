@@ -75,10 +75,11 @@ export const FEATURES = defineFeatures([
 	{
 		id: "sign-out",
 		kind: "floor",
-		status: "pending-port",
-		platforms: ["mobile"],
-		reason: `In the reduced web floor (${ADR}), but the web shell has no sign-out control yet. The phone signs out from the Profile tab.`,
-		routes: {},
+		status: "parity",
+		platforms: ["web", "mobile"],
+		// Both sign out from the Profile tab. Web: the Account section of the
+		// profile page (src/integrations/clerk/account-section.tsx).
+		routes: { web: ["profile"], mobile: ["(app)/(tabs)/profile/index"] },
 	},
 	{
 		id: "account-deletion",
