@@ -31,3 +31,16 @@ No red boxes or JS errors appeared. Metro logged only the usual Clerk developmen
 - **Light-mode contrast:** in light mode the banner is dark-orange text on a dark-green bar, which is hard to read (01, 07). Dark mode is readable (02).
 - **Dev-only overlap:** the dev client's floating Tools button covers the Next-hole chevron once the banner pushes the header down. With the Tools button turned off, Next works. Release builds don't have that button.
 - **SE copy:** on the SE the copy was written from Home without opening Play first, and the offline cold start still showed hole 3.
+
+## Retake on PR head f83946b (banner fix)
+
+Same setup: the local Convex backend, the relay block (Clerk not blocked) and the same round on hole 3. I terminated the app, stopped the relay and cold-started it, taking a screenshot every ~0.4 s.
+
+| # | Check | Result |
+| --- | --- | --- |
+| 09 | Light mode: banner shown from the first play-screen frame, header below it (screenshot ~0.9 s after the screen appeared, ~8.2 s after launch with the dev bundle) | Pass |
+| 10 | The same in dark mode | Pass |
+| 11 | iPhone SE offline cold start: banner shown, header below it | Pass |
+| 12 | Network restored (iPhone SE): live play returns with "Score hole 3", Close and mark-shot, and the banner is gone (~10 s). Close then goes to Home in one step. | Pass |
+
+The banner now uses the play HUD's dark colours with white text in both themes and is easy to read. The play screen no longer shows without the banner first: the earlier ~3 s gap (03) is gone. In the first play frame the map is still loading and the distances say "No GPS — distances from the tee" until the simulator's location arrives (~0.4 s). The dev Tools button still covers the Next chevron on the SE (dev builds only).
