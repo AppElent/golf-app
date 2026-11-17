@@ -6,7 +6,7 @@ import { useRef, useState } from "react";
 import { ScrollView, StyleSheet } from "react-native";
 import { api, type Doc, type Id } from "../../../convex/api";
 import { convexErrorMessage } from "../../../convex/error-message";
-import { useQuery } from "../../../convex/query-cache";
+import { useLiveQuery } from "../../../convex/query-cache";
 import { fmt, useI18n } from "../../../i18n";
 import { metrics, spacing } from "../../../theme";
 import { useConfirm } from "../../../ui/confirm-dialog";
@@ -25,7 +25,7 @@ export function ClubsScreen() {
 	const router = useRouter();
 	const confirm = useConfirm();
 	const toast = useToast();
-	const clubs = useQuery(api.clubs.list);
+	const clubs = useLiveQuery(api.clubs.list);
 	const remove = useMutation(api.clubs.remove);
 	const reorder = useMutation(api.clubs.reorder);
 	const create = useMutation(api.clubs.create);

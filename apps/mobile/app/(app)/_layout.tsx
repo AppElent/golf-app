@@ -12,9 +12,13 @@ import { useAuth } from "@clerk/expo";
 import { Redirect, Stack } from "expo-router";
 import { useMemo } from "react";
 import { Platform, View } from "react-native";
-import { ConvexSessionGate } from "../../src/auth/convex-session-gate";
+import {
+	ConvexSessionGate,
+	ResumePlayAfterOffline,
+} from "../../src/auth/convex-session-gate";
 import { OfflineBanner } from "../../src/convex/offline-banner";
 import { AppQueryCacheProvider } from "../../src/convex/query-cache";
+import { KeepOfflineRound } from "../../src/features/play/offline/keep-offline-round";
 import { SimulationModeProvider } from "../../src/features/simulation/mode/simulation-mode-provider";
 import { useTokens } from "../../src/theme";
 import { ConfirmProvider } from "../../src/ui/confirm-dialog";
@@ -32,13 +36,16 @@ export default function AppLayout() {
 		[baseOptions],
 	);
 
-	if (!isSignedIn) return <Redirect href="/sign-in" />;
+	if (!isSignedIn || !userId) return <Redirect href="/sign-in" />;
 
 	return (
 		<ToastProvider>
 			<ConfirmProvider>
 				<ConvexSessionGate>
-					<AppQueryCacheProvider scope={userId}>
+					<AppQueryCacheProvider
+						account={userId}
+						fallback={<View style={{ flex: 1, backgroundColor: colors.bg }} />}
+					>
 						<SimulationModeProvider>
 							<View style={{ flex: 1, backgroundColor: colors.bg }}>
 								<OfflineBanner />
@@ -75,6 +82,8 @@ export default function AppLayout() {
 										options={{ presentation: "modal" }}
 									/>
 								</Stack>
+								<ResumePlayAfterOffline />
+								<KeepOfflineRound />
 							</View>
 						</SimulationModeProvider>
 					</AppQueryCacheProvider>

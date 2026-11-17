@@ -657,6 +657,12 @@ describe("clubs and shots", () => {
 });
 
 describe("account", () => {
+	it("names the verified caller, or nobody", async () => {
+		const { t, alice } = await setup();
+		expect(await alice.query(api.account.viewer, {})).toBe("user_alice");
+		expect(await t.query(api.account.viewer, {})).toBeNull();
+	});
+
 	it("deletes the caller's data and nobody else's", async () => {
 		const { t, alice, bob, course } = await setup();
 		const aliceRound = await startRound(alice, course);

@@ -11,10 +11,12 @@ import { learnedBag } from "@fairway/core/shots";
 import { useKeepAwake } from "expo-keep-awake";
 import { useRouter } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { api } from "../../../convex/api";
 import { useQuery } from "../../../convex/query-cache";
+import { haptics } from "../../../feedback/haptics";
 import { fmt, useI18n } from "../../../i18n";
 import { course, spacing } from "../../../theme";
 import { AppText } from "../../../ui/text";
@@ -25,6 +27,7 @@ import { NoActiveRound } from "../../rounds/components/no-active-round";
 import {
 	type ActiveRound,
 	useActiveRound,
+	useDisplayedActiveRound,
 } from "../../rounds/use-active-round";
 import { useEndSimulation } from "../../simulation/mode/use-end-simulation";
 import { hudLayout } from "../hud/hud-layout";
@@ -53,7 +56,12 @@ import {
 export function PlayScreen() {
 	useKeepAwake();
 	const { t } = useI18n();
-	const active = useActiveRound();
+	// Writes (hole changes, marked shots) only ever start from the live round.
+	// Until it arrives, the saved copy is drawn display-only, like offline.
+	const live = useActiveRound();
+	const displayed = useDisplayedActiveRound();
+	const fromCopy = live === undefined && !!displayed;
+	const active = live !== undefined ? live : displayed;
 	const detail = useQuery(
 		api.courses.get,
 		active ? { courseId: active.round.courseId } : "skip",
@@ -79,8 +87,9 @@ export function PlayScreen() {
 	}
 	return (
 		<PlayHole
-			key={active.round._id}
+			key={`${fromCopy ? "copy" : "live"}:${active.round._id}`}
 			active={active}
+			offline={fromCopy}
 			detail={detail}
 			bag={learnedBag(effectiveBag(clubs ?? []), shots ?? [])}
 			units={units}
@@ -88,16 +97,52 @@ export function PlayScreen() {
 	);
 }
 
-function PlayHole({
+/**
+ * How the hole screen talks to the server. Live: the current hole and marked
+ * shots are saved. Offline (the session gate's fallback, APP-146): the hole
+ * moves on this phone only and nothing is written. Chosen once per mount, so
+ * the hooks behind it never change between renders.
+ */
+const LIVE = { useHole: useCurrentHole, useMarking: useShotMarking };
+const OFFLINE = { useHole: useLocalHole, useMarking: useNoShotMarking };
+
+/** Offline: move between holes on this phone, with no server write. */
+function useLocalHole(round: ActiveRound["round"]) {
+	const [holeIndex, setHoleIndex] = useState(round.currentHoleIndex);
+	function goTo(next: number) {
+		if (next < 0 || next >= round.holeRefs.length) return;
+		haptics.selectionChanged();
+		setHoleIndex(next);
+	}
+	return { holeIndex, goTo };
+}
+
+const NO_SHOTS: LatLng[] = [];
+
+/** Offline: no shots to show and none to mark. */
+function useNoShotMarking(_: Parameters<typeof useShotMarking>[0]) {
+	return {
+		holeShots: NO_SHOTS,
+		pendingShot: null,
+		marking: false,
+		onMarkShot: async () => false,
+		pickClub: (_club: string | undefined) => {},
+	};
+}
+
+export function PlayHole({
 	active,
 	detail,
 	bag,
 	units,
+	offline = false,
 }: {
 	active: ActiveRound;
 	detail: CourseDetail | null;
 	bag: ReadonlyArray<Club>;
 	units: Units;
+	/** Drawn from the saved copy without a connection: display only. */
+	offline?: boolean;
 }) {
 	const { t } = useI18n();
 	const insets = useSafeAreaInsets();
@@ -107,7 +152,8 @@ function PlayHole({
 	const { round, holes } = active;
 	const simulated = round.simulated === true;
 	const watched = useWatchPosition(!simulated);
-	const { holeIndex, goTo } = useCurrentHole(round);
+	const [{ useHole, useMarking }] = useState(() => (offline ? OFFLINE : LIVE));
+	const { holeIndex, goTo } = useHole(round);
 	const meta = holes[holeIndex];
 	const { geometry, anchors, nextAnchors, holeKey } = useHoleAnchors(
 		round.holeRefs,
@@ -144,14 +190,13 @@ function PlayHole({
 		fix,
 		bag,
 	});
-	const { holeShots, pendingShot, marking, onMarkShot, pickClub } =
-		useShotMarking({
-			roundId: round._id,
-			holeIndex,
-			holeKey,
-			fix,
-			onMarked: aimFrom,
-		});
+	const { holeShots, pendingShot, marking, onMarkShot, pickClub } = useMarking({
+		roundId: round._id,
+		holeIndex,
+		holeKey,
+		fix,
+		onMarked: aimFrom,
+	});
 	const { offerNext, dismissOffer } = useNextTeeOffer({
 		position: gps.position,
 		accuracyMeters: gps.accuracyMeters,
@@ -209,6 +254,7 @@ function PlayHole({
 				holeCount={round.holeRefs.length}
 				units={units}
 				onGoTo={goTo}
+				offline={offline}
 			/>
 			{simulated ? (
 				<PlaySimulationBanner
@@ -266,7 +312,7 @@ function PlayHole({
 					bottom={hudBottom + hudLayout.trayBottom + simulationHeight}
 					nextRef={round.holeRefs[holeIndex + 1] ?? ""}
 					unscoredRef={
-						nextTeeAction(active.scores, holeIndex) === "score"
+						!offline && nextTeeAction(active.scores, holeIndex) === "score"
 							? (round.holeRefs[holeIndex] ?? null)
 							: null
 					}
@@ -289,6 +335,7 @@ function PlayHole({
 				onToggleGreenView={() => setGreenView((v) => !v)}
 				marking={marking}
 				onMarkShot={() => void onMarkShot()}
+				offline={offline}
 			/>
 		</View>
 	);

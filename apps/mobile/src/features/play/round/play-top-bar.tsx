@@ -17,6 +17,7 @@ export function PlayTopBar({
 	holeCount,
 	units,
 	onGoTo,
+	offline = false,
 }: {
 	top: number;
 	title: string;
@@ -25,17 +26,21 @@ export function PlayTopBar({
 	holeCount: number;
 	units: Units;
 	onGoTo: (holeIndex: number) => void;
+	/** No close or scorecard: the offline fallback has nowhere else to go. */
+	offline?: boolean;
 }) {
 	const { t } = useI18n();
 	const router = useRouter();
 	const isLast = holeIndex >= holeCount - 1;
 	return (
 		<View style={[styles.topBar, { top }]} pointerEvents="box-none">
-			<HudButton
-				symbol={{ ios: "xmark", android: "close" }}
-				label={t.play.close}
-				onPress={() => router.back()}
-			/>
+			{offline ? null : (
+				<HudButton
+					symbol={{ ios: "xmark", android: "close" }}
+					label={t.play.close}
+					onPress={() => router.back()}
+				/>
+			)}
 			<HudGlass style={styles.switcher}>
 				<Pressable
 					accessibilityRole="button"
@@ -72,11 +77,13 @@ export function PlayTopBar({
 					<AppText style={styles.chevronGlyph}>›</AppText>
 				</Pressable>
 			</HudGlass>
-			<HudButton
-				symbol={{ ios: "list.number", android: "format_list_numbered" }}
-				label={t.play.scorecard}
-				onPress={() => router.push("/scorecard")}
-			/>
+			{offline ? null : (
+				<HudButton
+					symbol={{ ios: "list.number", android: "format_list_numbered" }}
+					label={t.play.scorecard}
+					onPress={() => router.push("/scorecard")}
+				/>
+			)}
 		</View>
 	);
 }

@@ -10,6 +10,7 @@ import { useState } from "react";
 import { Alert, ScrollView, StyleSheet, Switch, View } from "react-native";
 import { api } from "../../../convex/api";
 import { convexErrorMessage } from "../../../convex/error-message";
+import { clearLastKnown } from "../../../convex/last-known";
 import { useQuery } from "../../../convex/query-cache";
 import { fmt, type Locale, plural, useI18n } from "../../../i18n";
 import { buildLabel } from "../../../monitoring/release";
@@ -95,6 +96,8 @@ export function ProfileScreen() {
 		try {
 			// App data first, while the session can still authenticate.
 			await deleteMyData({});
+			// The saved round copy and its account marker go with the data.
+			clearLastKnown();
 			await user?.delete();
 		} catch (e) {
 			setDeleting(false);
@@ -231,7 +234,12 @@ export function ProfileScreen() {
 				<InsetRow
 					title={t.profile.signOut}
 					destructive
-					onPress={() => void signOut()}
+					onPress={() => {
+						// Confirmed sign-out: delete the saved round copy and the
+						// account marker (convex-query-caching, offline copy).
+						clearLastKnown();
+						void signOut();
+					}}
 				/>
 				<InsetRow
 					title={

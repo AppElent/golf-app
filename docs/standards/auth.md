@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when adding or changing Clerk/Convex authentication, session readiness, or account flows.
-version: 3.1.0
+version: 3.2.0
 applies_to: [web, mobile, backend]
 ---
 
@@ -17,7 +17,7 @@ Clerk owns sessions and navigation; Convex verifies tokens and gates every prote
 ### Session readiness and protected data
 
 - On web and native, navigation follows loaded Clerk session state; protected data follows Convex. Clerk's isSignedIn/userId does not establish backend readiness. Never redirect solely because Convex authentication is pending ([Convex's startup-race guidance](https://docs.convex.dev/auth/debug)).
-- Keep ClerkProvider and ConvexProviderWithClerk mounted above the data gate. Mount protected query providers and screens only beneath an Authenticated component or a gate checking useConvexAuth().isAuthenticated. Hooks in the gate itself or ancestors remain unprotected.
+- Keep ClerkProvider and ConvexProviderWithClerk mounted above the data gate. Mount protected query providers and screens only beneath an Authenticated component or a gate checking useConvexAuth().isAuthenticated. Hooks in the gate itself or ancestors remain unprotected. While the device is offline, the gate's fallback may show an [offline-readable copy](convex-query-caching.md#offline-readable-copy-last-known-only-opt-in), which makes no Convex calls.
 - Outside that boundary, pass "skip" to protected useQuery/usePaginatedQuery calls until Convex authenticates. Guard imperative queries, mutations, and actions separately and handle rejections.
 - Distinguish pending authentication from failure using isLoading and app-owned recovery behavior. After bounded waiting, reveal recovery controls; never use elapsed time to authorize requests or leave an indefinite blank screen. Normal token refresh need not make isAuthenticated false.
 - Authentication loss unmounts gated children. Choose the boundary deliberately; preserve drafts according to app policy and clear or partition account-specific state on logout/account switching.

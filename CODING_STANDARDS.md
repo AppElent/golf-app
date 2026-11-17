@@ -57,8 +57,33 @@ Project decisions below select implementations and explain deviations from share
   Convex functions in `convex/` serve both apps.
 - **Online first, disposable cache:** Convex is the only source of truth and a
   write is saved when the server acknowledges it. On-device storage is limited to
-  phone preferences (`src/prefs/local-preference.ts`) and the query cache, and
+  phone preferences (`src/prefs/local-preference.ts`) and the query cache
+  (including its last-known copy), and
   deleting either never loses data. No offline write queue in v1.
+- **Convex query caching: `last-known`** (Layers 1 and 2), adopted for
+  APP-146 under [convex-query-caching](docs/standards/convex-query-caching.md)
+  1.4.0 and [auth](docs/standards/auth.md) 3.2.0, copied by hand from
+  developer-home `2e49506` (the toolkit sync still ships 1.3.0 and 3.1.0, so
+  `--check` reports both files as local drift until it catches up).
+  Layer 1: 5 min expiration, 20 idle entries (`src/convex/query-cache.tsx`,
+  mounted by `(app)/_layout` below `ConvexSessionGate`, keyed by account, ready
+  once `account.viewer` names the Clerk account; it writes the
+  confirmed-account marker and prunes other accounts and bundles). Layer 2:
+  `src/convex/last-known.ts` on `expo-sqlite/kv-store`, values up to 1,000,000
+  characters (a course with all hole geometry is ~300k), at most 50 entries,
+  bundle version = runtime fingerprint + OTA update id. Persisted, whole:
+  `rounds:active`, `courses:get`, `settings:get`, `clubs:list`
+  (`src/convex/persisted.ts`). Offline-readable: the same four modules. The
+  session gate's offline fallback draws the active round's play screen from
+  them (`src/features/play/offline/`), display only: no Convex calls, no hole
+  change written, no scoring or shot marking, when Clerk restored the session
+  locally (`__experimental_resourceCache`) and its account is the one Convex
+  last confirmed here. Confirmed sign-out deletes the copy and the marker.
+  Forms and write decisions read `useLiveQuery` (round setup, course picker,
+  score sheet, scorecard, Home, handicap, home course, club editor, course
+  suggestion). Deviation from the `last-known` starter, as in Gather: the
+  provider stays inside the gate and prunes when Convex confirms the account.
+  Offline scoring is out of scope (Eric, 2026-11-17).
 - **Data access:** query hooks come from `src/convex/query-cache`, mutations from
   `convex/react`, `Id`/`Doc` types from `src/convex/api`.
 - **Exception — tests:** Jest (`jest-expo`) inside `apps/mobile` only; the rest of

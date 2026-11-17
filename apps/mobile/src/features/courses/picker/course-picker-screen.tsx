@@ -3,7 +3,7 @@ import { Stack, useRouter } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
 import { api } from "../../../convex/api";
-import { useQuery } from "../../../convex/query-cache";
+import { useLiveQuery, useQuery } from "../../../convex/query-cache";
 import { fmt, useI18n } from "../../../i18n";
 import { metrics, spacing } from "../../../theme";
 import { GhostButton } from "../../../ui/button";
@@ -23,7 +23,7 @@ export function CoursePickerScreen() {
 	const courses = useQuery(api.courses.list);
 	const settings = useQuery(api.settings.get);
 	// The real round, whatever simulation mode shows: only it blocks a start.
-	const active = useQuery(api.rounds.active);
+	const active = useLiveQuery(api.rounds.active);
 	const { state, request } = useCurrentPosition();
 	const [query, setQuery] = useState("");
 

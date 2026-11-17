@@ -54,6 +54,9 @@ export const playEn = {
 	notNow: "Not now",
 	trackingTitle: "Fairway round in progress",
 	trackingBody: "Keeping your distances ready.",
+	/** The play screen drawn from the saved copy while there is no signal. */
+	offlineBanner: "Offline — saved copy of your round",
+	offlineScoring: "Scoring returns with signal",
 };
 
 export const playNl: typeof playEn = {
@@ -109,4 +112,6 @@ export const playNl: typeof playEn = {
 	notNow: "Niet nu",
 	trackingTitle: "Fairway-ronde bezig",
 	trackingBody: "Houdt je afstanden paraat.",
+	offlineBanner: "Offline — opgeslagen kopie van je ronde",
+	offlineScoring: "Scoren kan weer met bereik",
 };

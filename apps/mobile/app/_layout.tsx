@@ -13,6 +13,7 @@
 // First, so a crash during the rest of module evaluation is still reported.
 import "../src/monitoring/init";
 import { ClerkProvider, useAuth } from "@clerk/expo";
+import { resourceCache } from "@clerk/expo/resource-cache";
 import { tokenCache } from "@clerk/expo/token-cache";
 import * as Sentry from "@sentry/react-native";
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from "expo-router";
@@ -78,7 +79,14 @@ function ThemedRoot() {
 	return (
 		<GestureHandlerRootView style={styles.window}>
 			<LocaleProvider>
-				<ClerkProvider publishableKey={publishableKey} tokenCache={tokenCache}>
+				<ClerkProvider
+					publishableKey={publishableKey}
+					tokenCache={tokenCache}
+					// Lets Clerk restore the session on a cold start that cannot
+					// reach its servers, so the offline round can show (APP-146).
+					// Not offline auth: Convex still checks every token it gets.
+					__experimental_resourceCache={resourceCache}
+				>
 					<AppConvexProvider>
 						<SafeAreaProvider>
 							<ThemeProvider value={navigationTheme}>

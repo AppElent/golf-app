@@ -8,7 +8,7 @@ import { useEffect, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useI18n } from "../i18n";
-import { spacing, type Tokens, useThemedStyles } from "../theme";
+import { course, spacing, type Tokens, useThemedStyles } from "../theme";
 import { AppText } from "../ui/text";
 
 /**
@@ -17,7 +17,7 @@ import { AppText } from "../ui/text";
  */
 const OFFLINE_GRACE_MS = 2000;
 
-function useStalledOffline(): boolean {
+export function useStalledOffline(): boolean {
 	const { isWebSocketConnected } = useConvexConnectionState();
 	const [stalled, setStalled] = useState(false);
 
@@ -33,20 +33,39 @@ function useStalledOffline(): boolean {
 	return stalled;
 }
 
-export function OfflineBanner() {
+/**
+ * `message`: what is offline, when it is not the pending-writes default.
+ * `onCourse`: over the play screen, which is offline already (the gate only
+ * draws it then): shown at once, in the play HUD's colours in both themes.
+ */
+export function OfflineBanner({
+	message,
+	onCourse = false,
+}: {
+	message?: string;
+	onCourse?: boolean;
+} = {}) {
 	const styles = useThemedStyles(createStyles);
 	const insets = useSafeAreaInsets();
 	const { t } = useI18n();
 
-	if (!useStalledOffline()) return null;
+	const stalled = useStalledOffline();
+	if (!stalled && !onCourse) return null;
 
 	return (
 		<View
-			style={[styles.wrap, { paddingTop: insets.top + spacing.xs }]}
+			style={[
+				styles.wrap,
+				onCourse && styles.onCourse,
+				{ paddingTop: insets.top + spacing.xs },
+			]}
 			pointerEvents="none"
 		>
-			<AppText variant="caption" style={styles.text}>
-				{t.common.offline}
+			<AppText
+				variant="caption"
+				style={[styles.text, onCourse && styles.onCourseText]}
+			>
+				{message ?? t.common.offline}
 			</AppText>
 		</View>
 	);
@@ -63,4 +82,9 @@ const createStyles = (colors: Tokens) =>
 			borderBottomColor: colors.warnBorder,
 		},
 		text: { color: colors.warn, fontWeight: "600" },
+		onCourse: {
+			backgroundColor: course.hudFill,
+			borderBottomColor: course.hudFill,
+		},
+		onCourseText: { color: course.hudText },
 	});

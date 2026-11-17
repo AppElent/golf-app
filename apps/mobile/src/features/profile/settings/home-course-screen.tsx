@@ -1,7 +1,7 @@
 import { useMutation } from "convex/react";
 import { useRouter } from "expo-router";
 import { api, type Id } from "../../../convex/api";
-import { useQuery } from "../../../convex/query-cache";
+import { useLiveQuery, useQuery } from "../../../convex/query-cache";
 import { useSubmit } from "../../../convex/use-submit";
 import { useI18n } from "../../../i18n";
 import { FormChoiceRow, FormScreen, FormSection } from "../../../ui/form";
@@ -13,7 +13,7 @@ export function HomeCourseScreen() {
 	const { t } = useI18n();
 	const router = useRouter();
 	const toast = useToast();
-	const settings = useQuery(api.settings.get);
+	const settings = useLiveQuery(api.settings.get);
 	const courses = useQuery(api.courses.list);
 	const update = useMutation(api.settings.update);
 	const submit = useSubmit();
