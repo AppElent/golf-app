@@ -137,7 +137,7 @@ export function parse(source) {
         if (source[j] === "\\" && j + 1 < source.length) {
           const rest = source.slice(j + 1);
           const hex = /^x([0-9a-fA-F]{1,2})/.exec(rest);
-          const uni = /^[uU]([0-9a-fA-F]{1,8})/.exec(rest);
+          const uni = /^u([0-9a-fA-F]{1,4})/.exec(rest) ?? /^U([0-9a-fA-F]{1,8})/.exec(rest);
           const oct = /^([0-7]{1,3})/.exec(rest);
           const simple = { n: "\n", t: "\t", r: "\r", a: "\x07", b: "\b", e: "\x1b", E: "\x1b", f: "\f", v: "\v" };
           if (hex) { text += String.fromCharCode(parseInt(hex[1], 16)); j += 1 + hex[0].length; }
@@ -298,8 +298,14 @@ function unwrap(words) {
       return { env, words: [], chdir };
     } else if (WRAPPER_VALUE_FLAGS[program]) {
       rest.shift();
-      const dirIndex = rest.findIndex((word, index) => index < rest.length - 1 && (word === "-D" || word === "--chdir"));
-      if (program === "sudo" && dirIndex !== -1 && rest.slice(0, dirIndex).every((word) => word.startsWith("-"))) chdir.push(rest[dirIndex + 1]);
+      // Walk the options as the wrapper does, so `sudo -u root -D /x` finds -D.
+      for (let j = 0; j < rest.length && rest[j].startsWith("-") && rest[j] !== "--"; j++) {
+        const word = rest[j];
+        if (program === "sudo" && (word === "-D" || word === "--chdir")) chdir.push(rest[j + 1]);
+        else if (program === "sudo" && word.startsWith("--chdir=")) chdir.push(word.slice(8));
+        else if (program === "sudo" && /^-D./.test(word)) chdir.push(word.slice(2));
+        if (WRAPPER_VALUE_FLAGS[program].includes(word)) j++;
+      }
       skipFlags(rest, WRAPPER_VALUE_FLAGS[program]);
     } else if (program === "env") {
       rest.shift();
