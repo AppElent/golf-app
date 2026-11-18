@@ -5,43 +5,33 @@ import {
 	type CredentialsPurpose,
 	emailFieldTraits,
 	passwordFieldTraits,
-	syncNativeText,
 } from "./credentials-model";
+import type { CredentialsFormState } from "./use-credentials-form";
 
 /**
  * Email and password, marked so the platform password manager fills sign-in,
  * and on sign-up offers a strong password (within Clerk's policy) and saves
- * it under the email. Both fields also sync from `onEndEditing`, and the
- * keyboard's Go hands `onSubmit` the password field's native text: AutoFill
- * can change a field without `onChangeText`.
+ * it under the email. `form` (from `useCredentialsForm`) keeps the latest
+ * native text, which AutoFill can change without `onChangeText`; the
+ * keyboard's Go submits the password field's own text.
  */
 export function CredentialsFields({
 	purpose,
 	emailLabel,
 	passwordLabel,
-	email,
-	password,
-	onEmailChange,
-	onPasswordChange,
-	onSubmit,
+	form,
 }: {
 	purpose: CredentialsPurpose;
 	emailLabel: string;
 	passwordLabel: string;
-	email: string;
-	password: string;
-	onEmailChange: (next: string) => void;
-	onPasswordChange: (next: string) => void;
-	/** `password` is the field's latest text. */
-	onSubmit: (password: string) => void;
+	form: CredentialsFormState;
 }) {
 	const passwordRef = useRef<TextInputInstance>(null);
 	return (
 		<>
 			<AuthInput
 				placeholder={emailLabel}
-				value={email}
-				{...syncNativeText(onEmailChange)}
+				{...form.field("email")}
 				autoCapitalize="none"
 				autoCorrect={false}
 				keyboardType="email-address"
@@ -53,16 +43,12 @@ export function CredentialsFields({
 			<AuthInput
 				ref={passwordRef}
 				placeholder={passwordLabel}
-				value={password}
-				{...syncNativeText(onPasswordChange)}
+				{...form.field("password")}
 				secureTextEntry
 				autoCapitalize="none"
 				{...passwordFieldTraits(purpose)}
 				returnKeyType="go"
-				onSubmitEditing={(event) => {
-					onPasswordChange(event.nativeEvent.text);
-					onSubmit(event.nativeEvent.text);
-				}}
+				onSubmitEditing={form.submitFrom("password")}
 			/>
 		</>
 	);

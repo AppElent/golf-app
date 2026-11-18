@@ -5,6 +5,8 @@
 import type { TextInputProps } from "react-native";
 
 export type CredentialsPurpose = "sign-in" | "sign-up";
+export type Credentials = { email: string; password: string };
+export type CredentialKey = keyof Credentials;
 
 /**
  * iOS `passwordRules` for the Clerk instance's password policy, so a
@@ -33,20 +35,70 @@ export function passwordFieldTraits(purpose: CredentialsPurpose) {
 			} as const satisfies TextInputProps);
 }
 
-/**
- * iOS AutoFill can set a field's text without `onChangeText` (declining the
- * strong-password offer clears it natively), so the state also takes the
- * field's native text when editing ends.
- */
-export function syncNativeText(
-	set: (text: string) => void,
-): Pick<TextInputProps, "onChangeText" | "onEndEditing"> {
-	return {
-		onChangeText: set,
-		onEndEditing: (event) => set(event.nativeEvent.text),
-	};
+export function credentialsReady({ email, password }: Credentials) {
+	return email.trim().length > 0 && password.length > 0;
 }
 
-export function credentialsReady(email: string, password: string) {
-	return email.trim().length > 0 && password.length > 0;
+/**
+ * The submit rules for a credential form whose fields iOS AutoFill can change
+ * silently. AutoFill (and declining its "Use Strong Password?" offer) can set
+ * or clear a field without `onChangeText`; the app only learns the text from
+ * that field's `onEndEditing`.
+ *
+ * - Every field event writes the latest text synchronously.
+ * - `press` (the primary button) never trusts a focused field: it blurs it and
+ *   submits from that field's `onEndEditing`, once its final text is known.
+ *   With nothing focused it submits the latest text straight away.
+ * - `submitEditing` (the keyboard's Go) submits the text its own event carries.
+ * - `onEditing` reports whether a field is focused, so the button can stay
+ *   enabled after a fill the app has not heard about yet.
+ *
+ * `submit` gets the latest text and decides whether it is ready.
+ */
+export function createCredentialsForm(
+	initial: Credentials,
+	io: {
+		onValues: (values: Credentials) => void;
+		onEditing: (editing: boolean) => void;
+		focusedInput: () => { blur(): void } | null | undefined;
+		submit: (values: Credentials) => void;
+	},
+) {
+	let values = initial;
+	let pendingSubmit = false;
+
+	const set = (key: CredentialKey, text: string) => {
+		values = { ...values, [key]: text };
+		io.onValues(values);
+	};
+	const submitNow = () => {
+		pendingSubmit = false;
+		io.submit(values);
+	};
+
+	return {
+		changeText: set,
+		focus() {
+			pendingSubmit = false;
+			io.onEditing(true);
+		},
+		endEditing(key: CredentialKey, text: string) {
+			set(key, text);
+			io.onEditing(false);
+			if (pendingSubmit) submitNow();
+		},
+		press() {
+			const focused = io.focusedInput();
+			if (focused) {
+				pendingSubmit = true;
+				focused.blur();
+			} else {
+				submitNow();
+			}
+		},
+		submitEditing(key: CredentialKey, text: string) {
+			set(key, text);
+			submitNow();
+		},
+	};
 }
