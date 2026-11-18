@@ -251,11 +251,11 @@ function MeasureMarker({
 				y1={from.y}
 				x2={to.x}
 				y2={to.y}
-				stroke="var(--color-ink)"
+				stroke="var(--color-map-ink)"
 				strokeOpacity={0.6}
 				strokeDasharray="2 4"
 			/>
-			<circle cx={to.x} cy={to.y} r={4} fill="var(--color-ink)" />
+			<circle cx={to.x} cy={to.y} r={4} fill="var(--color-map-ink)" />
 			<DistanceBadge
 				x={to.x}
 				y={to.y - 14}
@@ -284,7 +284,7 @@ function DistanceBadge({
 				rx={9}
 				width={w}
 				height={18}
-				fill={dark ? "var(--color-ink)" : "#ffffff"}
+				fill={dark ? "var(--color-map-ink)" : "#ffffff"}
 			/>
 			<text
 				x={w / 2}
@@ -292,7 +292,7 @@ function DistanceBadge({
 				textAnchor="middle"
 				fontSize={11}
 				fontWeight={700}
-				fill={dark ? "#ffffff" : "var(--color-ink)"}
+				fill={dark ? "#ffffff" : "var(--color-map-ink)"}
 			>
 				{text}
 			</text>

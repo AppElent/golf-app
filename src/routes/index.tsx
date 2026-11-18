@@ -49,7 +49,7 @@ function HomeScreen() {
 				</div>
 				<Link
 					to="/profile"
-					className="flex h-11 w-11 items-center justify-center rounded-full bg-pine font-display text-base font-bold text-cream"
+					className="flex h-11 w-11 items-center justify-center rounded-full bg-pine-fill font-display text-base font-bold text-cream"
 				>
 					EJ
 				</Link>

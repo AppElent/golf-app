@@ -1,13 +1,33 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700&display=swap');
 @import 'tailwindcss';
 
+/* Colours marked "themed" change in dark mode (the media query below), so
+   the app column follows the system setting. The rest are brand fills that
+   look the same in both themes: pine (the Play screen), flag, live, mint. */
 @theme {
-	/* surfaces & lines */
-	--color-cream: #f3efe4;
+	/* surfaces & lines (themed) */
+	/* canvas: the app column's background */
+	--color-canvas: #f3efe4;
+	/* surface: a card or an unselected control */
+	--color-surface: rgb(255 255 255 / 0.6);
+	/* field: a text input, select or textarea */
+	--color-field: #f3efe4;
+	/* bar: the bottom tab bar */
+	--color-bar: rgb(255 255 255 / 0.9);
 	--color-card-line: #e9e2d2;
+	/* control-line: the edge of a field. Light keeps the card line; dark
+	   strengthens it to 3:1 against the field and the ground around it. */
+	--color-control-line: #e9e2d2;
+	/* cream: text on pine fills; not themed */
+	--color-cream: #f3efe4;
 	/* greens */
 	--color-pine: #0f3d2a;
 	--color-pine-light: #144d34;
+	/* pine-fill: a pine button or badge under cream text (themed: lifted in
+	   dark mode so it stands off the canvas) */
+	--color-pine-fill: #0f3d2a;
+	/* pine-ink: pine text, icons and rings on the canvas or a card (themed) */
+	--color-pine-ink: #0f3d2a;
 	/* live: selected PillToggle fill under white text, and green text on cream */
 	--color-live: #247a4d;
 	/* live-ink: green text on cream or on a live/15 tint */
@@ -21,10 +41,13 @@
 	--color-flag-ink: #a73619;
 	/* flag-soft: orange-red text on pine (the web Play screen) */
 	--color-flag-soft: #ffa48a;
+	/* ink, moss, stone, live-ink and flag-ink are themed */
 	--color-ink: #16241c;
 	--color-moss: #5e6e64;
-	/* stone: labels, hints, inactive tabs; 4.5:1 on cream and on white/60 cards */
+	/* stone: labels, hints, inactive tabs; 4.5:1 on the canvas, cards and bar */
 	--color-stone: #636e66;
+	/* on-stone: text on a stone fill (the double-bogey mark) */
+	--color-on-stone: #ffffff;
 	--color-sand: #eadfb8;
 	--color-water: #8fbfd0;
 	--color-muted: var(--muted);
@@ -40,6 +63,8 @@
 	--color-map-water-edge: #6fa9bd;
 	--color-map-water-light: #a9d3e0;
 	--color-map-sand-edge: #cdbd84;
+	/* map-ink: dark label fill and label text on the hole map; not themed */
+	--color-map-ink: #16241c;
 	/* type: body text in Hanken Grotesk, titles and numbers in Space Grotesk;
 	   both come from the font import above */
 	--font-sans: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
@@ -71,10 +96,11 @@
 	--focus-ring: oklch(0.871 0.006 286.286);
 
 	--page-ink: #173a40;
-	/* Links sit on the always-light app column, so the link colour is not themed. */
 	--page-link: #246f76;
 	--page-link-hover: #1b575d;
 	--page-sand: #e7f0e8;
+	/* page-top: the top of the page gradient, lightened in light mode only */
+	--page-top: color-mix(in oklab, var(--page-sand) 68%, white);
 	--page-foam: #f3faf5;
 	--page-base: #e7f3ec;
 	--page-glow-a: rgba(79, 184, 178, 0.36);
@@ -89,10 +115,29 @@
 
 		--page-ink: #d7ece8;
 		--page-sand: #0f1a1e;
+		--page-top: var(--page-sand);
 		--page-foam: #101d22;
 		--page-base: #0a1418;
 		--page-glow-a: rgba(96, 215, 207, 0.18);
 		--page-glow-b: rgba(110, 200, 154, 0.12);
+		--page-link: #6fcfc6;
+		--page-link-hover: #9be3dc;
+
+		/* The app column: the phone app's dark palette (apps/mobile tokens). */
+		--color-canvas: #08130d;
+		--color-surface: #11201a;
+		--color-field: #1a2c23;
+		--color-bar: rgb(17 32 26 / 0.9);
+		--color-card-line: rgb(255 255 255 / 0.14);
+		--color-control-line: #6b7a71;
+		--color-pine-fill: #22704a;
+		--color-pine-ink: #7fe0a6;
+		--color-ink: #f1f5f0;
+		--color-moss: #9aaa9f;
+		--color-stone: #919789;
+		--color-on-stone: #08130d;
+		--color-live-ink: #7fe0a6;
+		--color-flag-ink: #ffa48a;
 	}
 }
 
@@ -134,7 +179,7 @@ body {
 		radial-gradient(1100px 620px at -8% -10%, var(--page-glow-a), transparent 58%),
 		radial-gradient(1050px 620px at 112% -12%, var(--page-glow-b), transparent 62%),
 		radial-gradient(720px 380px at 50% 115%, rgba(79, 184, 178, 0.1), transparent 68%),
-		linear-gradient(180deg, color-mix(in oklab, var(--page-sand) 68%, white) 0%, var(--page-foam) 44%, var(--page-base) 100%);
+		linear-gradient(180deg, var(--page-top) 0%, var(--page-foam) 44%, var(--page-base) 100%);
 	overflow-x: hidden;
 	-webkit-font-smoothing: antialiased;
 	-moz-osx-font-smoothing: grayscale;

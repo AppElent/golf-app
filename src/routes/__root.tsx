@@ -24,7 +24,17 @@ export const Route = createRootRoute({
 				name: "viewport",
 				content: "width=device-width, initial-scale=1, viewport-fit=cover",
 			},
-			{ name: "theme-color", content: "#0F3D2A" },
+			{
+				name: "theme-color",
+				content: "#0F3D2A",
+				media: "(prefers-color-scheme: light)",
+			},
+			// The dark app column's canvas (styles.css --color-canvas).
+			{
+				name: "theme-color",
+				content: "#08130d",
+				media: "(prefers-color-scheme: dark)",
+			},
 			{ title: "Fairway · Golf Companion" },
 		],
 		links: [
@@ -55,8 +65,8 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 							<div
 								className={
 									largeScreen
-										? "relative min-h-dvh w-full bg-cream"
-										: "relative mx-auto min-h-dvh w-full max-w-[430px] bg-cream shadow-2xl"
+										? "relative min-h-dvh w-full bg-canvas"
+										: "relative mx-auto min-h-dvh w-full max-w-[430px] bg-canvas shadow-2xl"
 								}
 							>
 								{isPublic ? children : <AuthGate>{children}</AuthGate>}

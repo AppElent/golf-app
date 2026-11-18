@@ -22,7 +22,7 @@ function ConvexReady({ children }: { children: React.ReactNode }) {
 	const { isAuthenticated } = useConvexAuth();
 	if (!isAuthenticated) {
 		return (
-			<div className="flex min-h-dvh items-center justify-center text-sm text-muted">
+			<div className="flex min-h-dvh items-center justify-center text-sm text-stone">
 				Connecting…
 			</div>
 		);

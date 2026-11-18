@@ -47,7 +47,7 @@ export function LargeScreenNotice() {
 			role="note"
 			className={`mb-6 flex items-start gap-2.5 rounded-2xl border ${SURFACE} px-4 py-3 text-label text-moss md:hidden`}
 		>
-			<Monitor aria-hidden className="mt-0.5 size-4 shrink-0 text-pine" />
+			<Monitor aria-hidden className="mt-0.5 size-4 shrink-0 text-pine-ink" />
 			<span>
 				<span className="font-semibold text-ink">Best on a larger screen.</span>{" "}
 				Courses work here, but editing them is easier on a tablet or computer
