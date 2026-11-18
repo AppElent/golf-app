@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when deciding which platforms a feature ships on, adding or moving a route on web or mobile, or adding shareable links.
-version: 1.0.0
+version: 1.1.0
 applies_to: [web, mobile]
 ---
 
@@ -50,15 +50,10 @@ Each platform has a stated goal that decides which features it gets. A typed fea
    });
    ```
 
-3. Universal links and app links:
-   - Serve `public/.well-known/apple-app-site-association` and `public/.well-known/assetlinks.json` as `application/json` (a `public/_headers` rule on Workers static assets).
-   - Add `ios.associatedDomains: ["applinks:<host>"]` and an Android `intentFilters` entry with `autoVerify: true` for the share paths to the app config.
-   - Map each https share path to an app route with `+native-intent.tsx` or matching route files.
-   - Link changes need a new native build. An OTA update cannot ship them.
+3. Make share targets open the app per [app links](app-links.md).
 
 ## Verify
 
 - The feature-manifest test passes in CI.
-- `curl -sI https://<host>/.well-known/apple-app-site-association` returns `200` with `content-type: application/json`. Do the same for `assetlinks.json`.
-- On a device with the app installed, a share link opens the app. Without the app, it opens the web page and the action can be completed there.
+- Share targets pass the [app links](app-links.md) checks.
 - A changed `responsive` page has a screenshot at phone width.

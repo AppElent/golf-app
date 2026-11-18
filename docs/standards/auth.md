@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when adding or changing Clerk/Convex authentication, session readiness, or account flows.
-version: 3.3.0
+version: 3.3.1
 applies_to: [web, mobile, backend]
 ---
 
@@ -37,7 +37,7 @@ iCloud Keychain, Google Password Manager, 1Password and similar managers must of
 - AutoFill can set a native field without `onChangeText`. Also sync each credential field from `onEndEditing`, and submit the field's latest text.
 - **Default:** native new-password fields pass iOS `passwordRules` matching the Clerk instance's password policy (`minlength: 8;` for Clerk's default), so generated passwords pass Clerk.
 - Never block paste into credential fields, and never split a password over several inputs.
-- Linking the app to its website, so a manager offers the website's saved logins in the app, is the `webcredentials` part of the app-links standard (associated domains and the `apple-app-site-association` file).
+- Linking the app to its website, so a manager offers the website's saved logins in the app, is the `webcredentials` part of [app links](app-links.md) (associated domains and the `apple-app-site-association` file).
 
 ## Implementation
 
