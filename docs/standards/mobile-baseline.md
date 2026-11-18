@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when setting up or changing an Expo Router app, its native configuration, or its EAS build profiles.
-version: 3.0.0
+version: 3.3.0
 applies_to: [mobile]
 ---
 
@@ -59,10 +59,18 @@ Expo apps share one stack while preserving native identity and release boundarie
 
    It registers itself; open the URL Metro prints (`/_expo/plugins/expo-device-hub` on the selected port). iOS simulators need macOS and Xcode; Android emulators need the Android SDK with `emulator` and `adb`. Its `node-datachannel` dependency needs its native binary for Android streaming: review that install script and allow it in the workspace's build ledger. Do not disable script checks globally.
 
+3. Local iOS builds (`expo prebuild`, `expo run:ios`, `eas build --local`) run `pod install`. CocoaPods fails with a Ruby `Encoding::CompatibilityError` when the terminal's locale is not UTF-8, so set one first, in the shell or its profile:
+
+   ```sh
+   export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
+   ```
+
+   App runbooks repeat this next to their local iOS build commands.
+
 ## Verify
 
 - Types, app tests, and Expo dependency checks pass.
-- An actual development or internal build runs on a device or simulator: cold and warm launch, login and logout, navigation, keyboard, safe areas, scaling, offline and error states, and backend reachability. Native interactions need native verification, not screenshots of the web app; follow the applicable [iOS](ios-design.md) and [Android](android-design.md) rules.
+- An actual development or internal build runs on a device or simulator: cold and warm launch, login and logout, navigation, keyboard, safe areas, scaling, offline and error states, and backend reachability. On an iOS simulator, run it with [`scripts/run-mobile.mjs`](mobile-run.md). Native interactions need native verification, not screenshots of the web app; follow the applicable [iOS](ios-design.md) and [Android](android-design.md) rules.
 - Device Hub loads and the intended device connects.
 - A missing provider credential or untested device path is reported as outstanding work.
 

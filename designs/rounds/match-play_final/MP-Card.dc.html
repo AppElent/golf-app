@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Scorekaart: matchplay- en skinsrij</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#e4e7e1;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif}
+.th-light{--bg:#f3f4ef;--surface:#ffffff;--surface2:#e7ebe3;--accent:#1a7348;--accentFill:#1a7348;--onAccent:#ffffff;--accentDim:rgba(26,115,72,.10);--accentInk:#1c6b45;--text:#16241c;--muted:#506157;--faint:#606b57;--sep:rgba(60,62,50,.12);--borderStrong:rgba(26,32,21,.25);--danger:#b42332}
+.th-dark{--bg:#08130d;--surface:#11201a;--surface2:#1a2c23;--accent:#3fbf7a;--accentFill:#3fbf7a;--onAccent:#06110b;--accentDim:rgba(63,191,122,.14);--accentInk:#7fe0a6;--text:#f1f5f0;--muted:#9aaa9f;--faint:#919789;--sep:rgba(255,255,255,.14);--borderStrong:rgba(255,255,255,.18);--danger:#ff6b6b}
+.board{display:flex;gap:48px;padding:32px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px}
+.cap{font-size:14px;font-weight:600;color:#36423b}
+.phone{width:390px;height:844px;border-radius:48px;overflow:hidden;position:relative;background:var(--bg);color:var(--text);border:1px solid rgba(0,0,0,.18)}
+.scr{position:absolute;left:0;right:0;top:0;bottom:0;padding:58px 16px 40px;display:flex;flex-direction:column;gap:16px;overflow:hidden}
+.nav{display:flex;align-items:center;justify-content:space-between;min-height:44px}
+.navbtn{border:0;background:var(--surface);color:var(--accent);font:600 16px/1 inherit;min-height:40px;padding:0 14px;border-radius:999px}
+.navt{font-size:17px;font-weight:600}
+.stand{background:var(--accentDim);border-radius:12px;padding:12px 14px;display:flex;justify-content:space-between;align-items:baseline}
+.stand b{font-size:17px}
+.stand span{font-size:13px;color:var(--muted)}
+.card{background:var(--surface);border-radius:18px;padding:12px 10px}
+.g{display:grid;grid-template-columns:52px repeat(9,minmax(0,1fr)) 34px;font-size:13px;text-align:center;font-variant-numeric:tabular-nums;align-items:center}
+.g span{min-height:30px;display:flex;align-items:center;justify-content:center;position:relative}
+.g .h{justify-content:flex-start;color:var(--muted);font-weight:600}
+.g .m{color:var(--muted)}
+.g .rl{border-top:1px solid var(--sep)}
+.g .s::after{content:"";position:absolute;top:5px;right:2px;width:5px;height:5px;border-radius:3px;background:var(--accent)}
+.chip{min-width:24px;height:22px;border-radius:11px;font-size:11px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;padding:0 4px}
+.ce{background:var(--accentFill);color:var(--onAccent)}
+.cp{background:var(--text);color:var(--bg)}
+.cj{border:1.5px solid var(--text)}
+.cas{color:var(--muted);font-weight:600;font-size:11px}
+.leg{font-size:13px;color:var(--muted);line-height:1.4;padding:0 4px}
+.tot{background:var(--surface);border-radius:18px;overflow:hidden}
+.tr{display:flex;align-items:center;min-height:48px;padding:0 16px;font-size:17px;border-top:1px solid var(--sep)}
+.tr:first-child{border-top:0}
+.tr .v{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums}
+</style>
+</helmet>
+<div class="board">
+
+<div class="col">
+<div class="cap">Licht · matchplay: rij Match onder de spelers</div>
+<div class="phone th-light"><div class="scr">
+<div class="nav"><button class="navbtn" type="button">Sluiten</button><span class="navt">Scorekaart</span><span style="width:80px"></span></div>
+<div class="stand" role="status"><b>Eric 1 UP</b><span>Netto · nog 9 holes</span></div>
+<div class="card">
+<div class="g">
+<span class="h">Hole</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span class="m">Uit</span>
+<span class="h">Par</span><span class="m">4</span><span class="m">5</span><span class="m">3</span><span class="m">4</span><span class="m">4</span><span class="m">3</span><span class="m">4</span><span class="m">5</span><span class="m">4</span><span class="m">36</span>
+<span class="h rl">Eric</span><span class="rl">5</span><span class="rl">5</span><span class="rl">4</span><span class="rl">4</span><span class="rl">4</span><span class="rl">4</span><span class="rl">5</span><span class="rl">6</span><span class="rl">4</span><span class="rl">41</span>
+<span class="h rl">Piet</span><span class="rl">6</span><span class="rl s">7</span><span class="rl">3</span><span class="rl s">6</span><span class="rl">5</span><span class="rl">3</span><span class="rl s">6</span><span class="rl s">6</span><span class="rl">5</span><span class="rl">47</span>
+<span class="h rl">Match</span>
+<span class="rl"><i class="cas">AS</i></span>
+<span class="rl"><i class="chip ce">E1</i></span>
+<span class="rl"><i class="cas">AS</i></span>
+<span class="rl"><i class="chip ce">E1</i></span>
+<span class="rl"><i class="chip ce">E2</i></span>
+<span class="rl"><i class="chip ce">E1</i></span>
+<span class="rl"><i class="chip ce">E1</i></span>
+<span class="rl"><i class="cas">AS</i></span>
+<span class="rl"><i class="chip ce">E1</i></span>
+<span class="rl"></span>
+</div>
+</div>
+<div class="leg">Stip = Piet krijgt een slag op die hole. De rij Match toont de stand na elke hole: E1 is Eric 1 up, AS is all square. Holes 10–18 staan rechts (veeg of draai).</div>
+</div></div>
+</div>
+
+<div class="col">
+<div class="cap">Donker · skins: rij Skins met winnaar en waarde</div>
+<div class="phone th-dark"><div class="scr">
+<div class="nav"><button class="navbtn" type="button">Sluiten</button><span class="navt">Scorekaart</span><span style="width:80px"></span></div>
+<div class="stand" role="status"><b>Jan 3 · Eric 2 · Piet 2</b><span>2 skins op tafel</span></div>
+<div class="card">
+<div class="g">
+<span class="h">Hole</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span><span>9</span><span class="m">Uit</span>
+<span class="h">Par</span><span class="m">4</span><span class="m">5</span><span class="m">3</span><span class="m">4</span><span class="m">4</span><span class="m">3</span><span class="m">4</span><span class="m">5</span><span class="m">4</span><span class="m">36</span>
+<span class="h rl">Eric</span><span class="rl">5</span><span class="rl">5</span><span class="rl">4</span><span class="rl">5</span><span class="rl">4</span><span class="rl">4</span><span class="rl">5</span><span class="rl">6</span><span class="rl">5</span><span class="rl">43</span>
+<span class="h rl">Piet</span><span class="rl">6</span><span class="rl s">7</span><span class="rl">3</span><span class="rl s">6</span><span class="rl">5</span><span class="rl">4</span><span class="rl s">5</span><span class="rl s">7</span><span class="rl">5</span><span class="rl">48</span>
+<span class="h rl">Jan</span><span class="rl s">6</span><span class="rl s">7</span><span class="rl s">5</span><span class="rl s">6</span><span class="rl s">5</span><span class="rl s">3</span><span class="rl s">6</span><span class="rl s">7</span><span class="rl s">6</span><span class="rl">51</span>
+<span class="h rl">Skins</span>
+<span class="rl"><i class="cas">→</i></span>
+<span class="rl"><i class="chip ce">E2</i></span>
+<span class="rl"><i class="chip cp">P1</i></span>
+<span class="rl"><i class="cas">→</i></span>
+<span class="rl"><i class="cas">→</i></span>
+<span class="rl"><i class="chip cj">J3</i></span>
+<span class="rl"><i class="chip cp">P1</i></span>
+<span class="rl"><i class="cas">→</i></span>
+<span class="rl"><i class="cas">→</i></span>
+<span class="rl"></span>
+</div>
+</div>
+<div class="leg">→ = gelijk, de skin schuift door. E2 = Eric won 2 skins (1 doorgeschoven). Elke speler heeft een eigen vorm, niet alleen een kleur.</div>
+<div class="tot">
+<div class="tr">Jan<span class="v">3 skins</span></div>
+<div class="tr">Eric<span class="v">2 skins</span></div>
+<div class="tr">Piet<span class="v">2 skins</span></div>
+</div>
+</div></div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":892,"height":940}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

@@ -9,6 +9,9 @@ version: 1.3.0
 Project facts for `apps/mobile`. Shared steps live in
 [mobile baseline](../standards/mobile-baseline.md); this file only binds them.
 
+On an iOS simulator, run and drive the dev client with `node scripts/run-mobile.mjs`
+([mobile run](../standards/mobile-run.md); Metro on port 8091). `down` releases the simulator.
+
 ## Identity
 
 | Variant (`APP_VARIANT`) | Name | Bundle ID / package | Scheme |

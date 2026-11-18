@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
-  "repository": "AppElent/developer-tools",
+  "repository": "AppElent/developer-home",
   "scope": "project",
   "ref": "main",
-  "commit": "4599d4eeca420bc75cab5aff31f40e4a46885f4e",
-  "manifestHash": "8b2219c43ef9feca9d2cf3d1213fcacdb60532b9f77ef71c17f6754a020a6ead",
+  "commit": "e2e7f7de9d6cd578c92381dc3645faf02b25cd29",
+  "manifestHash": "edd8a9ef50731abdb7097619aa53f6906830e970e70b96807b08e3cb50efd0c0",
   "files": {
     "docs/adr/.template.md": {
       "sha256": "f28b286102fb1a00512455a06896e5da3c47d67a14b0ee6c08fa84258af24adf",
@@ -68,8 +68,8 @@
       "sha256": "b09f650bab6759fccefe0bf42a298d249373fc99cb7bd8c4802d2268011fd4c0"
     },
     "docs/standards/auth.md": {
-      "sha256": "f01d8b8f37868838364cd5e4c1683fa64c0098f168fbe71a04d23f8301d6f746",
-      "version": "3.1.0"
+      "sha256": "105e99c0a9269905e3b64c53f32f4753b93e5481b301064f456c9f2aff74a746",
+      "version": "3.2.0"
     },
     "docs/standards/auth/examples/native.ts": {
       "sha256": "8c57fc48f63fa035f3282574295bd36f85231523d748cfba8d725f7cde47617a"
@@ -135,16 +135,16 @@
       "sha256": "2b5fc7ca3a68216d3c63124808e073c093899f5020312349ee9be43246a75b35"
     },
     "docs/standards/baseline.md": {
-      "sha256": "dc9fe89d3c00bb3d3721c642100b89811741888ea8548ebf377edb3942a42443",
-      "version": "2.3.0"
+      "sha256": "64879b15f59ce25a9701567575aa82d2e833f61a3c8e9eb46b0e1567c19e5220",
+      "version": "2.3.2"
     },
     "docs/standards/baseline/toolkit.md": {
-      "sha256": "f3f526b71e4410bac1753a5a282359bec8a6e13eddd2bddf7c81765fa24a91c1",
-      "version": "1.1.0"
+      "sha256": "08b603eff7e1691221bda5a21373c24c12cb3f8dd1c4219481a320b9d2dbde8c",
+      "version": "1.1.1"
     },
     "docs/standards/convex-query-caching.md": {
-      "sha256": "2daad91aae0122c292870a38c340b5097fa41c24376c21edeb191872bd0db0d3",
-      "version": "1.3.0"
+      "sha256": "01a117c9ac262488e04d59816c580fe9b13a8885965f56c2147d4795bd64ed62",
+      "version": "1.4.0"
     },
     "docs/standards/convex-query-caching/examples/last-known.ts": {
       "sha256": "141a6da30da534e9df7e6bb15731bb088f3067194b7e45e22e147ab634cb27c3"
@@ -153,27 +153,27 @@
       "sha256": "4cb3d7947e1f06f21e35fc76e011c84db45925d83d8f7664e0a5ca2d491c453b"
     },
     "docs/standards/dependency-updates.md": {
-      "sha256": "62b7a1404d2e50b2602144e82b5ad4e6fb86681be12c3f58ccb1a9b1a1ef7b95",
-      "version": "1.1.0"
+      "sha256": "4f513bdc66897666068327ac8fcc2c5060545657a07601976d0a59dca350debe",
+      "version": "2.0.0"
     },
     "docs/standards/dependency-updates/templates/dependabot.yml": {
-      "sha256": "9e440cb851da565328dcb517cbc78a42ff431a7a78a9da85ab35c86db01f70ab"
+      "sha256": "03b3b02281a1dc327d0eca3c0874919c508b6113223733b9400677a9c2d75d44"
     },
     "docs/standards/design-studies.md": {
       "sha256": "15ba133a766083366f2b146b891a5164675bcc0c5dc701ce9a9cefff9ecb2879",
       "version": "3.0.0"
     },
     "docs/standards/documentation.md": {
-      "sha256": "fbe420d49db672c7d0247c9502b9e9f2e6afe66ac3968554074a1cbb8accf248",
-      "version": "3.1.0"
+      "sha256": "5e17296a061e0065fd0cf73a253bcab378aa8d3cafb51870ab14dcdbef6b8433",
+      "version": "4.0.0"
     },
     "docs/standards/editors.md": {
       "sha256": "0f5afa6c63ad75756496b46f41fdebe63d1c087b759fbf77dae9be71b346e371",
       "version": "1.2.0"
     },
     "docs/standards/environments.md": {
-      "sha256": "4132c427ff4e83389a87ed92869387536c41bebbdd99b08d620415ec3ed905a7",
-      "version": "4.0.0"
+      "sha256": "3b53a0b0e03ba97a784837ef55af369e6799cc785ee3d07234eb3b87aafe8f5d",
+      "version": "4.1.0"
     },
     "docs/standards/environments/examples/env.manifest.ts": {
       "sha256": "d3d0dec4caa63413f4029734624632b4586e7b68751d543a7b4ccca50c0ab8ac"
@@ -183,8 +183,8 @@
       "version": "2.2.0"
     },
     "docs/standards/general-design.md": {
-      "sha256": "8bbd1b4c441cda2420d379814517ec1543b54672424866480169479a812a78d3",
-      "version": "1.4.1"
+      "sha256": "5d7310b7934494dd92c8aed2d25128a455d9094556ff4cc5034756eef1c829a9",
+      "version": "1.6.0"
     },
     "docs/standards/i18n.md": {
       "sha256": "5511fef972a66a3c4f62504b8803c86afb9d8993616e9183b63457088f03e9f1",
@@ -221,12 +221,12 @@
       "version": "1.0.3"
     },
     "docs/standards/mcp.md": {
-      "sha256": "0d9f718235662d11ab06d4621920412df213a873b67ffccfb94c444dd095d96e",
-      "version": "2.0.1"
+      "sha256": "4cf2ce320131dbd904967adda2f073f622c6c08856eeb48a6c0899e0d5a3efec",
+      "version": "4.1.0"
     },
     "docs/standards/mobile-baseline.md": {
-      "sha256": "d83b79b5fefbed9cd845a742d7460fbbf9229f91360cb940b4f96d9dd9fd931b",
-      "version": "3.0.0"
+      "sha256": "1fec085745c43b67f807f8fa2655a2a1af768ad779389883709725c2363f54a2",
+      "version": "3.3.0"
     },
     "docs/standards/mobile-baseline/examples/ota-guard.ts": {
       "sha256": "bbf4132ebc2c69d4830380aafe203eac9eab3afa182c9ef0f772f50a59636093"
@@ -319,8 +319,8 @@
       "version": "1.2.1"
     },
     "docs/standards/workspaces.md": {
-      "sha256": "de65a5c86b8f2a34f0a02c858c75d018b02faa4f282f1a879852dd9366f430f8",
-      "version": "3.0.0"
+      "sha256": "3702f0b496c5c1137341ceecaa3471737d3acc7ee349dd060c13fb7ea6ece5d1",
+      "version": "3.1.0"
     },
     "docs/standards/workspaces/examples/appelent.json": {
       "sha256": "59a478066a2c9e011cae362d6d917c177eb046912813c3c5e2b471e1a558cb1e"
@@ -335,7 +335,7 @@
       "sha256": "6336676db6dcd2e4801992cc1b878ffafa65719314a27861247a6c8f73fd0c04"
     },
     "scripts/check-project.mjs": {
-      "sha256": "9fa2d5a2ad31cd1d068f4bd5c2a7d2762fb03f23119e224aca553bf579c925af"
+      "sha256": "fe0e2ed0f2c7ea49a32bd5492e1152db45e7eaca24f1bca8cecd369656b71163"
     },
     "scripts/env.mjs": {
       "sha256": "9347b3602296c5d9d31b7fab503e2ef696886f2f3de4c9899d44b459e8add087"
@@ -383,7 +383,7 @@
       "sha256": "e236fa5566d353f7e8112d7a4f309246e4ccfefb47d0659f801db555c3fd7167"
     },
     "scripts/lib/workspace/cleanup.mjs": {
-      "sha256": "bb31852738d299f335879cde40409154390dd8950022800c9007fccaf6e36e09"
+      "sha256": "5d67cc281eb5a601895ca8120ae0628ea3bb079a9fe605cd054807aed5960c3b"
     },
     "scripts/lib/workspace/cli.mjs": {
       "sha256": "dbd743a6c9581b894ad8c077c5d97809a145cf1e8b4c58d3277fa1fa3bcb15b5"
@@ -404,19 +404,19 @@
       "sha256": "29fec6978bf10ba038f2feab860add50f025b1dd5573663aa66347ba7113f066"
     },
     "scripts/lib/workspace/prepare.mjs": {
-      "sha256": "1e88bcc7fdfa5880208ad4b03bed2126ee6cb6da6b34ff749e503f26d09a04eb"
+      "sha256": "f0e9b0051e0a40c1f0ba49712563a46f4f5964ac1f3d9550fab92bf469a17a82"
     },
     "scripts/lib/workspace/process.mjs": {
       "sha256": "87746377e3e418618d80f672b178dadcbfcf869f56fda43b78a7808bf1a1009d"
     },
     "scripts/lib/workspace/provider.mjs": {
-      "sha256": "b66e5261f0064220a02d43a94c5889cab50387ebabeafa983eaa1f534524a3ce"
+      "sha256": "3b074f2145e2f0a1f66d7d2c08e1886a105379642b56947a8c402097ff382a20"
     },
     "scripts/lib/workspace/types.ts": {
-      "sha256": "76e8b2b06c7287c9ff48cb4aeaa31cc1261342e21ca25326dbb8cd06ae2ade01"
+      "sha256": "49d9bd9d3f7e177f3d20d27f0f6e95306f563c37ac1cdf76bfcce684ed50961d"
     },
     "scripts/sync-devtools.mjs": {
-      "sha256": "aa23418857b848cec85ed2b7790019e8d0f434a25142ec793f1da847e17696df"
+      "sha256": "5c4737a7256ea35823e86e3551f74a3bb4be6c299a278f414829a7445c68aede"
     },
     "scripts/workspace.mjs": {
       "sha256": "4a913d63a48fdebb952f1939d4719cc1b3096534bddcea966771440caeeca587"
@@ -434,15 +434,15 @@
       "sha256": "46b56e44bf07a901ca6f23c11b6bf4d78c68a11b70c01195efeb1e8d7cba8c81"
     },
     "docs/standards/convex.md": {
-      "sha256": "e248426cb5eac0f4027b10483f6c7089573a5647fae1bfcf7043eba5d5ce5c55",
-      "version": "2.0.0"
+      "sha256": "5868c9e8e4d307aa94d1d8bfadf8a6b50a5512264d157ba89a2e5394d0083f6c",
+      "version": "2.2.1"
     },
     "docs/standards/deployments.md": {
-      "sha256": "29386b300f95fbc58d1e16fe0534683f82232e3a925e532fad356a32dbbc1ac3",
-      "version": "1.2.0"
+      "sha256": "588928db93374c7f61f111eaf356bbe79c6930995fd06da277f0555379f88a21",
+      "version": "1.4.0"
     },
     "docs/standards/deployments/templates/deploy.yml": {
-      "sha256": "98d83aca835c5107161d02fbebf359e9cf72674177098a98153ebc0b041eccd2"
+      "sha256": "ceb8a7ba334841c6f130f4bead8dd17f0dc3301cf9354643b97d51e53fa370ab"
     },
     "docs/standards/mobile-baseline/templates/fingerprint.config.js": {
       "sha256": "ae7f37909ba8958ee3a4b0d5bd966d4ecdd9044f9b6440883997961fbab76273"
@@ -454,11 +454,11 @@
       "sha256": "b1e4e1dea2ded85bb58e0fae2b23c05fd6933de183403b7a5eb3f9a2e14ebe15"
     },
     "docs/standards/mobile-baseline/templates/publish-update.mjs": {
-      "sha256": "08f060ba9fcc4a643b8b0f086b7c33e44c1abbc319be69f14cbd6a076e2acc65"
+      "sha256": "d8ba1a0d7020fa611de1c417a8ad6103a1217f26fdf93836af0812f8f50ce414"
     },
     "docs/standards/mobile-distribution.md": {
-      "sha256": "4ad2983960ecdfe3702823d13acc52191ea642fbc908807c506b3917434c0096",
-      "version": "2.0.0"
+      "sha256": "b2d1ca5fb673673ffc4d0bd9bb4f1812eaa4fc303b1665e74f231ca5d4d7bd17",
+      "version": "2.3.1"
     },
     "docs/standards/repo-layout.md": {
       "sha256": "558571b4e54468c304e6fb4b3b3c4dde2e38efe20e02ccfbeb01aea62d74967f",
@@ -472,12 +472,49 @@
     },
     "docs/standards/deployments/templates/main-ruleset.json": {
       "sha256": "7d1e6ec6bfce7142748b1cac25b6301052ed441d201d6a312d74a6e18761140a"
+    },
+    "docs/standards/convex/convex-local-guard.mjs": {
+      "sha256": "3b63fdb9cdc037a4e08f781cc6517d94281aec6cf017dbe5e5a9bb080d3d8c3f"
+    },
+    "docs/standards/environments/env-guard.mjs": {
+      "sha256": "a1dd5a646b2f4088c6ecf23be629869325b664826c4af41b4e770a17d7b65678"
+    },
+    "docs/standards/platform-parity.md": {
+      "sha256": "0a46d0b3e2ac6b36a2f0ead8bf7b9146e0d0d3f2e4096c058a8379b2d3ae6401",
+      "version": "1.0.0"
+    },
+    "docs/standards/platform-parity/examples/feature-manifest-check.ts": {
+      "sha256": "9399a124cae99fccecf3d8d81ef35024ea5188a612f68a8ac3cee3235373e958"
+    },
+    "docs/standards/platform-parity/examples/features.ts": {
+      "sha256": "28bb594f05a0048b6ecdf3da8340c9261d9c448071cd4ec951618bfb51321b6f"
+    },
+    "docs/standards/releases.md": {
+      "sha256": "dc48a53f206a96e1c943f1d934bbf7f1db7d2182f77787eaa463fe06bdc727ed",
+      "version": "1.0.0"
+    },
+    "docs/standards/agent-permissions.md": {
+      "sha256": "6a644da3a0eeef4528f0f89216de5c676b93c6f051b6e28436c874107427b638",
+      "version": "1.1.0"
+    },
+    "docs/standards/agent-permissions/irreversible-guard.mjs": {
+      "sha256": "d94151bd82633d47deef0a285dc5284339a76241f978bb4b1244a50d5e0d9e69"
+    },
+    "scripts/lib/project/agent-permissions.mjs": {
+      "sha256": "3676673615c25e7ceb75fa7534b68dcdbe99856c715fb79a11c4bafab99e4ea6"
+    },
+    "docs/standards/mobile-run.md": {
+      "sha256": "e8e12f5962acb3c71ca5949810a6b8dd425308cb659e8f8053f528058cc352ab",
+      "version": "1.1.0"
+    },
+    "scripts/run-mobile.mjs": {
+      "sha256": "eebbf04e30359b84b78339cda8b6355d4138c0676ddcc30d1c7957ab13d9cfee"
     }
   },
   "blocks": {
     "AGENTS.md": "5dd11c522805ab3041f27582a641d667534c3594f06ab023a435219f3894dcea",
     "CLAUDE.md": "3a539a9496d276ff97cbc761a98a6db988880a0939a61e78fb156b237927cb24",
-    "CODING_STANDARDS.md": "3b3bca9011ed5b392916556603c5a5f73e0dd2c47aadc886f5ed9e4a7b2ef268",
+    "CODING_STANDARDS.md": "850a35206e86bf33146cc84ea076aaefad5126849d30b3caabeecae62eccab63",
     "DESIGN_SYSTEM.md": "0b84f92d183be259e69372bff87939bdedda2ed81c215f3c1214d02d7f83de9a"
   }
 }

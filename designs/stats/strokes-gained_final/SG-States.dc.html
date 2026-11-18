@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Strokes gained: staten</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#e4e7e1;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif}
+.th-light{--bg:#f3f4ef;--surface:#ffffff;--surface2:#e7ebe3;--accent:#1a7348;--accentFill:#1a7348;--onAccent:#ffffff;--accentDim:rgba(26,115,72,.10);--accentInk:#1c6b45;--text:#16241c;--muted:#506157;--faint:#606b57;--sep:rgba(60,62,50,.12);--borderStrong:rgba(26,32,21,.25);--danger:#b42332;--warn:#865500;--warnSoft:rgba(134,85,0,.09);--warnBorder:rgba(134,85,0,.25);--menu:#ffffff}
+.th-dark{--bg:#08130d;--surface:#11201a;--surface2:#1a2c23;--accent:#3fbf7a;--accentFill:#3fbf7a;--onAccent:#06110b;--accentDim:rgba(63,191,122,.14);--accentInk:#7fe0a6;--text:#f1f5f0;--muted:#9aaa9f;--faint:#919789;--sep:rgba(255,255,255,.14);--borderStrong:rgba(255,255,255,.18);--danger:#ff6b6b;--warn:#fbbf24;--warnSoft:rgba(251,191,36,.12);--warnBorder:rgba(251,191,36,.25);--menu:#25362d}
+.board{display:flex;gap:48px;padding:32px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px}
+.cap{font-size:14px;font-weight:600;color:#36423b;max-width:390px}
+.phone{width:390px;height:844px;border-radius:48px;overflow:hidden;position:relative;background:var(--bg);color:var(--text);border:1px solid rgba(0,0,0,.18)}
+.scr{position:absolute;left:0;right:0;top:0;bottom:0;padding:58px 20px 40px;display:flex;flex-direction:column;gap:18px;overflow:hidden}
+.nav{display:flex;align-items:center;justify-content:space-between;min-height:44px}
+.navbtn{border:0;background:var(--surface);color:var(--accent);font:600 16px/1 inherit;min-height:40px;padding:0 14px;border-radius:999px;display:inline-flex;align-items:center;gap:4px}
+.navt{font-size:17px;font-weight:600}
+.lt{font-size:34px;font-weight:700;letter-spacing:-.4px;margin:0 0 -4px}
+.card{background:var(--surface);border-radius:24px;padding:16px}
+.hdr{font-size:13px;color:var(--muted);padding:0 16px 6px;font-weight:500}
+.fn{font-size:13px;color:var(--muted);line-height:1.35}
+.foot{font-size:13px;color:var(--muted);padding:6px 16px 0;line-height:1.35}
+.tiles{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.tile{background:var(--surface);border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;gap:2px}
+.tv{font-size:24px;font-weight:800;font-variant-numeric:tabular-nums}
+.empty{display:flex;flex-direction:column;gap:6px}
+.empty b{font-size:17px}
+.bar{height:8px;border-radius:4px;background:var(--surface2);overflow:hidden}
+.bar span{display:block;height:8px;background:var(--accentFill)}
+.tlink{border:0;background:none;color:var(--accent);font:600 15px/1 inherit;padding:10px 0 0;text-align:left}
+.menus{display:flex;gap:8px;flex-wrap:wrap;position:relative}
+.menu{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border-radius:999px;background:var(--surface);color:var(--text);font:600 15px/1 inherit;border:0}
+.pop{position:absolute;left:0;top:44px;width:250px;background:var(--menu);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.35);overflow:hidden;z-index:2}
+.mi{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 14px;font-size:16px;border-top:1px solid var(--sep)}
+.mi:first-child{border-top:0}
+.mi .ck{width:16px;color:var(--accent)}
+.list{background:var(--surface);border-radius:24px;overflow:hidden}
+.row{display:flex;align-items:center;min-height:48px;padding:0 16px;gap:12px;font-size:17px;border-top:1px solid var(--sep)}
+.row:first-child{border-top:0}
+.row .v{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums}
+.sheet{position:absolute;left:0;right:0;top:54px;bottom:0;background:var(--bg);border-radius:20px 20px 0 0;display:flex;flex-direction:column}
+.sh-h{display:flex;align-items:center;min-height:52px;padding:0 8px}
+.sh-a{min-width:76px;min-height:44px;border:0;background:none;font:500 17px/1 inherit;color:var(--muted);text-align:left;padding:0 8px}
+.sh-s{color:var(--accent);font-weight:700;text-align:right}
+.sh-t{flex:1;text-align:center;font-size:18px;font-weight:700}
+.body{padding:8px 16px;display:flex;flex-direction:column;gap:10px}
+.grp{background:var(--surface);border-radius:12px}
+.step{display:flex;align-items:center;min-height:52px;padding:0 12px 0 16px;font-size:17px;gap:10px}
+.sv{min-width:26px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.shot{display:grid;grid-template-columns:22px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:54px;padding:0 10px 0 14px;border-top:1px solid var(--sep)}
+.shot:first-child{border-top:0}
+.n{font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;font-size:15px}
+.st{display:flex;flex-direction:column;gap:2px;font-size:16px}
+.ss{font-size:13px;color:var(--muted)}
+.lie{display:inline-flex;align-items:center;gap:4px;min-height:34px;padding:0 10px;border-radius:999px;border:0;background:var(--accentDim);color:var(--accent);font:600 14px/1 inherit}
+.warn{background:var(--warnSoft);border:1px solid var(--warnBorder);color:var(--text);border-radius:12px;padding:12px 14px;font-size:14px;line-height:1.4}
+.warn b{color:var(--warn)}
+</style>
+</helmet>
+<div class="board">
+
+<div class="col">
+<div class="cap">Licht · ronde met te weinig gemarkeerde slagen</div>
+<div class="phone th-light"><div class="scr">
+<div class="nav"><button class="navbtn" type="button" aria-label="Terug"><svg width="10" height="16" viewBox="0 0 10 16" aria-hidden="true"><path d="M8 2 2 8l6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"></path></svg></button><span class="navt">Ronde</span><button class="navbtn" type="button">Delen</button></div>
+<div style="display:flex;flex-direction:column;gap:4px"><div style="font-size:18px;font-weight:700">Golfclub Spaarnwoude</div><div class="fn" style="font-size:15px">zondag 9 november 2026 · Wit · Strokeplay</div></div>
+<div class="tiles"><div class="tile"><span class="fn">Score</span><span class="tv">91</span></div><div class="tile"><span class="fn">T.o.v. par</span><span class="tv">+19</span></div><div class="tile"><span class="fn">Putts</span><span class="tv">35</span></div></div>
+<div>
+<div class="hdr">Strokes gained · t.o.v. scratch</div>
+<div class="card empty">
+<b>Nog niet te berekenen</b>
+<span class="fn" style="font-size:15px">Op 4 van 18 holes kloppen gemarkeerde slagen en putts met je score. Er zijn er minstens 9 nodig.</span>
+<div class="bar" role="img" aria-label="4 van 9 holes"><span style="width:44%"></span></div>
+<span class="fn">Markeer volgende keer elke slag met Slag markeren. Ontbrekende slagen kun je hier niet achteraf plaatsen.</span>
+</div>
+</div>
+</div></div>
+</div>
+
+<div class="col">
+<div class="cap">Donker · periodefilter open</div>
+<div class="phone th-dark"><div class="scr">
+<h1 class="lt">Statistieken</h1>
+<div class="card" style="display:flex;flex-direction:column;gap:2px"><span class="fn" style="font-weight:600">Indicatieve handicap</span><span style="font-size:52px;font-weight:600;letter-spacing:-1.5px;line-height:1.05">14,2</span><span class="fn">Uit je laatste 20 rondes. Filters veranderen dit getal niet.</span></div>
+<div class="menus">
+<button class="menu" type="button" aria-expanded="true">Laatste 20 rondes <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg></button>
+<button class="menu" type="button">Alle banen <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg></button>
+<div class="pop" role="menu" aria-label="Periode">
+<div class="mi" role="menuitemradio" aria-checked="true"><span class="ck">✓</span>Laatste 20 rondes</div>
+<div class="mi" role="menuitemradio"><span class="ck"></span>Dit jaar</div>
+<div class="mi" role="menuitemradio"><span class="ck"></span>Afgelopen 12 maanden</div>
+<div class="mi" role="menuitemradio"><span class="ck"></span>Alle rondes</div>
+</div>
+</div>
+<div style="height:150px"></div>
+<div><div class="hdr">Gemiddelden · Laatste 20 rondes</div><div class="list"><div class="row">Rondes<span class="v">20</span></div><div class="row">Score (18 holes)<span class="v">88,4</span></div></div></div>
+</div></div>
+</div>
+
+<div class="col">
+<div class="cap">Licht · slagen en score kloppen niet</div>
+<div class="phone th-light" style="background:#2b3a31">
+<div class="sheet">
+<div class="sh-h"><button class="sh-a" type="button">Annuleren</button><span class="sh-t">Hole 12 · Par 3</span><button class="sh-a sh-s" type="button">Opslaan</button></div>
+<div class="body">
+<div class="fn" style="font-weight:600">Eric</div>
+<div class="grp step">Slagen<span style="margin-left:auto"></span><span class="sv">4</span></div>
+<div class="grp step">Putts<span style="margin-left:auto"></span><span class="sv">2</span></div>
+<div>
+<div class="hdr" style="padding-top:6px">Slagen op deze hole</div>
+<div class="grp" style="overflow:hidden">
+<div class="shot"><span class="n">1</span><span class="st">148 m tot de hole<span class="ss">7-ijzer</span></span><button class="lie" type="button">Tee</button></div>
+<div class="shot"><span class="n">2</span><span class="st">31 m<span class="ss">Pitching wedge</span></span><button class="lie" type="button">Rough</button></div>
+<div class="shot"><span class="n">3</span><span class="st">9 m<span class="ss">Pitching wedge</span></span><button class="lie" type="button">Rough</button></div>
+<div class="shot"><span class="n">4</span><span class="st">3 m · eerste putt<span class="ss">2 putts</span></span><button class="lie" type="button">Green</button></div>
+</div>
+</div>
+<div class="warn" role="status"><b>3 slagen + 2 putts = 5, je score is 4.</b> Deze hole telt niet mee voor strokes gained. Verwijder een dubbel gemarkeerde slag (veeg naar links of houd vast) of pas je score aan.</div>
+</div>
+</div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1350,"height":940}}'>
+class Component extends DCLogic {
+renderVals() { return {}; }
+}
+</script>
+</body>
+</html>

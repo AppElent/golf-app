@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Web Progress with strokes gained</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&amp;family=Space+Grotesk:wght@500;600;700&amp;display=swap">
+<style>
+body{margin:0;background:#e4e7e1;font-family:"Hanken Grotesk",system-ui,sans-serif}
+.board{display:flex;gap:40px;padding:32px}
+.panel{width:600px;height:930px;border-radius:16px;overflow:hidden;display:flex;justify-content:center;position:relative}
+.pl{background:linear-gradient(180deg,#eef5ef 0%,#f3faf5 44%,#e7f3ec 100%)}
+.pd{background:linear-gradient(180deg,#0f1a1e 0%,#101d22 44%,#0a1418 100%)}
+.tag{position:absolute;left:16px;top:14px;font-size:13px;font-weight:600;padding:4px 10px;border-radius:999px;background:rgba(255,255,255,.75);color:#173a40}
+.app{width:430px;background:#f3efe4;color:#16241c;box-shadow:0 20px 50px rgba(0,0,0,.25);position:relative;padding:64px 20px 110px;box-sizing:border-box;display:flex;flex-direction:column}
+h1{font-family:"Space Grotesk",sans-serif;font-size:24px;font-weight:700;letter-spacing:-.4px;margin:0}
+.moss{color:#5e6e64}.stone{color:#636e66}
+.sc{border:1px solid #e9e2d2;background:rgba(255,255,255,.6)}
+.cap{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:#636e66}
+.disp{font-family:"Space Grotesk",sans-serif;font-weight:700}
+.pills{display:flex;gap:8px;margin-top:16px;flex-wrap:wrap}
+.sel{display:inline-flex;align-items:center;gap:6px;height:36px;padding:0 12px;border-radius:999px;border:1px solid #e9e2d2;background:#fff;color:#16241c;font:600 13px/1 "Hanken Grotesk",sans-serif}
+.sgrow{display:grid;grid-template-columns:124px minmax(0,1fr) 40px;align-items:center;gap:10px;min-height:34px;font-size:14px}
+.trk{position:relative;height:9px}
+.axis{position:absolute;left:50%;top:-7px;bottom:-7px;width:1px;background:#cfc6b2}
+.neg{position:absolute;right:50%;top:0;height:9px;border-radius:5px 0 0 5px;background:#c93f1d}
+.num{text-align:right;font-family:"Space Grotesk",sans-serif;font-weight:700}
+.grid2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-top:16px}
+.stat{border-radius:16px;padding:12px 16px}
+.nav{position:absolute;left:0;right:0;bottom:0;min-height:86px;border-top:1px solid #e9e2d2;background:rgba(255,255,255,.9);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));padding-top:12px;box-sizing:border-box}
+.ni{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:11px;font-weight:600;color:#636e66}
+.ni.on{color:#0f3d2a}
+</style>
+</helmet>
+<div class="board">
+<sc-for list="{{panels}}" as="p" hint-placeholder-count="2">
+<div class="panel {{p.cls}}">
+<span class="tag">{{p.label}}</span>
+<div class="app">
+<h1>Progress</h1>
+<p class="moss" style="font-size:13px;margin:4px 0 0">Would-be index from your last 20 rounds.</p>
+<section class="sc" style="margin-top:20px;border-radius:22px;padding:20px;display:flex;justify-content:space-between;align-items:flex-end">
+<div><div class="cap">Would-be index</div><div class="disp" style="font-size:44px;line-height:1;margin-top:4px">14.2</div></div>
+<svg width="110" height="40" viewBox="0 0 110 40" aria-hidden="true"><path d="M4 28 L20 31 L36 23 L52 25 L68 17 L84 19 L104 9" fill="none" stroke="#247a4d" stroke-width="2.5" stroke-linecap="round"></path></svg>
+</section>
+<div class="pills">
+<label class="sel">Last 20 rounds <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg></label>
+<label class="sel">All courses <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg></label>
+</div>
+<section style="margin-top:20px">
+<h2 class="disp moss" style="font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;margin:0">Strokes gained vs scratch</h2>
+<p class="stone" style="font-size:12px;margin:2px 0 0">From 8 of 20 rounds with marked shots.</p>
+<div class="sc" style="margin-top:12px;border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:4px">
+<div style="display:flex;align-items:baseline;gap:8px"><span class="disp" style="font-size:28px">−6.8</span><span class="moss" style="font-size:13px">strokes per round</span></div>
+<div style="font-size:13px;font-weight:600;color:#a73619;margin-bottom:6px">Biggest loss: approach</div>
+<div class="sgrow"><span>Off the tee</span><div class="trk"><div class="axis"></div><div class="neg" style="width:13.75%"></div></div><span class="num">−1.1</span></div>
+<div class="sgrow"><span>Approach</span><div class="trk"><div class="axis"></div><div class="neg" style="width:42.5%"></div></div><span class="num">−3.4</span></div>
+<div class="sgrow"><span>Around the green</span><div class="trk"><div class="axis"></div><div class="neg" style="width:20%"></div></div><span class="num">−1.6</span></div>
+<div class="sgrow"><span>Putting</span><div class="trk"><div class="axis"></div><div class="neg" style="width:8.75%"></div></div><span class="num">−0.7</span></div>
+</div>
+</section>
+<div class="grid2">
+<div class="sc stat"><div class="cap">Scrambling</div><div class="disp" style="font-size:24px;margin-top:4px">31%</div></div>
+<div class="sc stat"><div class="cap">Sand saves</div><div class="disp" style="font-size:24px;margin-top:4px">18%</div></div>
+<div class="sc stat"><div class="cap">Avg score</div><div class="disp" style="font-size:24px;margin-top:4px">88.4</div></div>
+<div class="sc stat"><div class="cap">Putts / 18</div><div class="disp" style="font-size:24px;margin-top:4px">33.1</div></div>
+</div>
+<nav class="nav" aria-label="Main">
+<a class="ni" href="#home">Home</a><a class="ni" href="#play">Play</a><a class="ni" href="#card">Card</a><a class="ni on" href="#progress" aria-current="page">Progress</a><a class="ni" href="#profile">Profile</a>
+</nav>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1320,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return { panels: [{ cls: "pl", label: "Desktop · light page" }, { cls: "pd", label: "Desktop · dark page (app column stays cream)" }] };
+}
+}
+</script>
+</body>
+</html>

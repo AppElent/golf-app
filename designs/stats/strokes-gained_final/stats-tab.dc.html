@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Statistieken met strokes gained</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#e4e7e1;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif}
+.th-light{--bg:#f3f4ef;--surface:#ffffff;--surface2:#e7ebe3;--accent:#1a7348;--accentFill:#1a7348;--onAccent:#ffffff;--accentDim:rgba(26,115,72,.10);--accentInk:#1c6b45;--text:#16241c;--muted:#506157;--faint:#606b57;--sep:rgba(60,62,50,.12);--borderStrong:rgba(26,32,21,.25);--danger:#b42332}
+.th-dark{--bg:#08130d;--surface:#11201a;--surface2:#1a2c23;--accent:#3fbf7a;--accentFill:#3fbf7a;--onAccent:#06110b;--accentDim:rgba(63,191,122,.14);--accentInk:#7fe0a6;--text:#f1f5f0;--muted:#9aaa9f;--faint:#919789;--sep:rgba(255,255,255,.14);--borderStrong:rgba(255,255,255,.18);--danger:#ff6b6b}
+.board{display:flex;gap:48px;padding:32px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px}
+.cap{font-size:14px;font-weight:600;color:#36423b}
+.phone{width:390px;height:844px;border-radius:48px;overflow:hidden;position:relative;background:var(--bg);color:var(--text);border:1px solid rgba(0,0,0,.18)}
+.scr{position:absolute;left:0;right:0;top:0;bottom:0;padding:60px 20px 120px;display:flex;flex-direction:column;gap:18px;overflow:hidden}
+.lt{font-size:34px;font-weight:700;letter-spacing:-.4px;margin:0 0 -4px}
+.card{background:var(--surface);border-radius:24px;padding:16px}
+.list{background:var(--surface);border-radius:24px;overflow:hidden}
+.row{display:flex;align-items:center;min-height:48px;padding:0 16px;gap:12px;font-size:17px;border-top:1px solid var(--sep)}
+.row:first-child{border-top:0}
+.row .v{margin-left:auto;color:var(--muted);font-variant-numeric:tabular-nums}
+.hdr{font-size:13px;color:var(--muted);padding:0 16px 6px;font-weight:500}
+.foot{font-size:13px;color:var(--muted);padding:6px 16px 0;line-height:1.35}
+.lbl{font-size:13px;font-weight:600;color:var(--muted)}
+.fn{font-size:13px;color:var(--muted);line-height:1.35}
+.menus{display:flex;gap:8px;flex-wrap:wrap}
+.menu{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border-radius:999px;background:var(--surface);color:var(--text);font:600 15px/1 inherit;border:0}
+.sgtop{display:flex;align-items:baseline;gap:8px}
+.big{font-size:28px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.3px}
+.sgrow{display:grid;grid-template-columns:132px minmax(0,1fr) 46px;align-items:center;gap:10px;min-height:40px;font-size:15px}
+.trk{position:relative;height:10px}
+.axis{position:absolute;left:50%;top:-8px;bottom:-8px;width:1px;background:var(--borderStrong)}
+.neg{position:absolute;right:50%;top:0;height:10px;border-radius:5px 0 0 5px;background:var(--danger)}
+.pos{position:absolute;left:50%;top:0;height:10px;border-radius:0 5px 5px 0;background:var(--accentFill)}
+.num{text-align:right;font-variant-numeric:tabular-nums;font-weight:600}
+.lead{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--danger)}
+.hero{display:flex;align-items:flex-end;justify-content:space-between}
+.tabbar{position:absolute;left:16px;right:16px;bottom:28px;height:62px;border-radius:31px;background:var(--surface);display:grid;grid-template-columns:repeat(4,minmax(0,1fr));align-items:center;border:1px solid var(--sep)}
+.tab{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10px;font-weight:600;color:var(--muted)}
+.tab.on{color:var(--accentInk)}
+</style>
+</helmet>
+<div class="board">
+<sc-for list="{{themes}}" as="th" hint-placeholder-count="2">
+<div class="col">
+<div class="cap">{{th.label}}</div>
+<div class="phone {{th.cls}}">
+<div class="scr">
+<h1 class="lt">Statistieken</h1>
+<div class="card hero">
+<div>
+<div class="lbl">Indicatieve handicap</div>
+<div style="font-size:52px;font-weight:600;letter-spacing:-1.5px;line-height:1.05;font-variant-numeric:tabular-nums">14,2</div>
+<div class="fn">Uit je laatste 20 rondes. Geen officiële handicap.</div>
+</div>
+<svg width="110" height="44" viewBox="0 0 110 44" aria-hidden="true"><path d="M4 30 L18 34 L32 26 L46 28 L60 20 L74 22 L88 14 L104 10" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path><circle cx="104" cy="10" r="3.5" fill="var(--accent)"></circle></svg>
+</div>
+<div class="menus" aria-label="Filters">
+<button class="menu" type="button">Laatste 20 rondes <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg></button>
+<button class="menu" type="button">Alle banen <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg></button>
+</div>
+<div>
+<div class="hdr">Strokes gained · t.o.v. scratch</div>
+<div class="card" style="display:flex;flex-direction:column;gap:6px">
+<div class="sgtop"><span class="big">−6,8</span><span class="fn">slagen per ronde</span></div>
+<div class="lead">Grootste verlies: approach</div>
+<div style="height:6px"></div>
+<div class="sgrow"><span>Off the tee</span><div class="trk"><div class="axis"></div><div class="neg" style="width:13.75%"></div></div><span class="num">−1,1</span></div>
+<div class="sgrow"><span>Approach</span><div class="trk"><div class="axis"></div><div class="neg" style="width:42.5%"></div></div><span class="num">−3,4</span></div>
+<div class="sgrow"><span>Around the green</span><div class="trk"><div class="axis"></div><div class="neg" style="width:20%"></div></div><span class="num">−1,6</span></div>
+<div class="sgrow"><span>Putting</span><div class="trk"><div class="axis"></div><div class="neg" style="width:8.75%"></div></div><span class="num">−0,7</span></div>
+</div>
+<div class="foot">Uit 8 van 20 rondes met gemarkeerde slagen. Markeer elke slag om een ronde mee te laten tellen.</div>
+</div>
+<div>
+<div class="hdr">Gemiddelden · Laatste 20 rondes</div>
+<div class="list">
+<div class="row">Fairway gemist<span class="v">24% links · 33% rechts</span></div>
+<div class="row">Green gemist<span class="v">31% kort · 8% lang</span></div>
+<div class="row">Scrambling<span class="v">31%</span></div>
+<div class="row">Sand saves<span class="v">18%</span></div>
+<div class="row">Putts per 18<span class="v">33,1</span></div>
+<div class="row">Rondes<span class="v">20</span></div>
+</div>
+</div>
+</div>
+<div class="tabbar" role="tablist">
+<div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4m0 0h10l-2 4 2 4H6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path></svg>Home</div>
+<div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="4" y="4" width="16" height="16" rx="3" fill="none" stroke="currentColor" stroke-width="1.8"></rect><path d="M8 9h8M8 13h8M8 17h5" stroke="currentColor" stroke-width="1.8"></path></svg>Rondes</div>
+<div class="tab on"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 4v16h16M7 15l4-5 3 3 5-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg>Statistieken</div>
+<div class="tab"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"></circle><circle cx="12" cy="10" r="3" fill="none" stroke="currentColor" stroke-width="1.8"></circle><path d="M6.5 18c1.5-2 3.3-3 5.5-3s4 1 5.5 3" fill="none" stroke="currentColor" stroke-width="1.8"></path></svg>Profiel</div>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":892,"height":940}}'>
+class Component extends DCLogic {
+renderVals() {
+return { themes: [{ label: "Licht", cls: "th-light" }, { label: "Donker", cls: "th-dark" }] };
+}
+}
+</script>
+</body>
+</html>

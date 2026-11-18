@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Spelen: lie na Slag markeren</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#e4e7e1;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif}
+.board{display:flex;gap:48px;padding:32px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px}
+.cap{font-size:14px;font-weight:600;color:#36423b}
+.phone{width:390px;height:844px;border-radius:48px;overflow:hidden;position:relative;background:#2f5d3a;color:#fff;border:1px solid rgba(0,0,0,.18)}
+.glass{background:rgba(14,20,17,.72);border-radius:999px}
+.top{position:absolute;top:58px;left:16px;right:16px;display:flex;justify-content:space-between;align-items:center}
+.pill{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 16px;font-size:15px;font-weight:700}
+.muted{color:rgba(255,255,255,.72);font-weight:600}
+.plate{position:absolute;right:16px;top:120px;border-radius:18px;padding:10px 14px;display:flex;flex-direction:column;gap:4px;text-align:right}
+.plate b{font-size:28px;font-variant-numeric:tabular-nums}
+.plate small{font-size:10px;font-weight:700;letter-spacing:.6px;color:rgba(255,255,255,.72)}
+.tray{position:absolute;left:12px;right:12px;bottom:108px;border-radius:22px;padding:12px 12px 14px;display:flex;flex-direction:column;gap:8px}
+.tt{font-size:12px;font-weight:600;color:rgba(255,255,255,.72);padding:0 4px}
+.chips{display:flex;gap:6px;flex-wrap:nowrap;overflow:hidden}
+.chip{flex:none;min-height:40px;padding:0 13px;border-radius:999px;border:1px solid rgba(255,255,255,.22);background:rgba(255,255,255,.08);color:#fff;font:600 15px/1 inherit;display:inline-flex;align-items:center;gap:6px}
+.chip.sel{background:#ffd60a;color:#1a1600;border-color:#ffd60a}
+.chip small{font-size:11px;font-weight:700;opacity:.8}
+.bottom{position:absolute;left:16px;right:16px;bottom:34px;display:flex;gap:8px;align-items:center}
+.hb{width:56px;height:56px;border-radius:28px;border:0;display:flex;align-items:center;justify-content:center;color:#fff}
+.score{flex:1;min-height:56px;border-radius:999px;background:#ffd60a;color:#1a1600;border:0;font:800 16px/1 inherit}
+.toast{position:absolute;left:50%;top:180px;transform:translateX(-50%);min-height:36px;padding:0 14px;display:flex;align-items:center;font-size:14px;font-weight:600}
+</style>
+</helmet>
+<div class="board">
+<sc-for list="{{phones}}" as="ph" hint-placeholder-count="2">
+<div class="col">
+<div class="cap">{{ph.label}}</div>
+<div class="phone">
+<svg width="390" height="844" viewBox="0 0 390 844" aria-hidden="true" style="position:absolute;left:0;top:0">
+<path d="M150 820 C120 700 170 600 160 500 C150 400 210 330 200 250 C195 200 230 170 240 150 L290 160 C285 220 255 260 260 330 C268 420 220 500 230 600 C238 690 220 760 240 820 Z" fill="#4f9a5c"></path>
+<ellipse cx="248" cy="132" rx="44" ry="34" fill="#79c98a"></ellipse>
+<ellipse cx="300" cy="182" rx="22" ry="12" fill="#e9d8a6"></ellipse>
+<ellipse cx="128" cy="430" rx="24" ry="14" fill="#e9d8a6"></ellipse>
+<path d="M{{ph.bx}} {{ph.by}} L248 132" stroke="#ffd60a" stroke-width="3" stroke-dasharray="2 0"></path>
+<circle cx="248" cy="132" r="5" fill="#e0532f"></circle>
+<circle cx="{{ph.bx}}" cy="{{ph.by}}" r="9" fill="#0a84ff" stroke="#fff" stroke-width="3"></circle>
+</svg>
+<div class="top"><span class="glass pill">Hole 7 <span class="muted">· Par 4 · HCP 5</span></span><span class="glass pill">GPS ±4 m</span></div>
+<div class="glass plate"><small>ACHTER</small><b>{{ph.b}}</b><small>MIDDEN</small><b>{{ph.m}}</b><small>VOOR</small><b>{{ph.f}}</b></div>
+<div class="glass toast">Slag {{ph.n}} opgeslagen</div>
+<div class="glass tray">
+<div class="tt">Lie · van de kaart, tik om te wijzigen</div>
+<div class="chips" role="radiogroup" aria-label="Lie">
+<sc-for list="{{ph.lies}}" as="l" hint-placeholder-count="5">
+<sc-if value="{{l.sel}}" hint-placeholder-val="{{false}}"><button class="chip sel" type="button" role="radio" aria-checked="true">{{l.name}}</button></sc-if>
+<sc-if value="{{l.off}}" hint-placeholder-val="{{true}}"><button class="chip" type="button" role="radio" aria-checked="false">{{l.name}}</button></sc-if>
+</sc-for>
+</div>
+<div class="tt" style="margin-top:4px">Welke club?</div>
+<div class="chips">
+<sc-for list="{{ph.clubs}}" as="c" hint-placeholder-count="5"><button class="chip" type="button">{{c}}</button></sc-for>
+</div>
+</div>
+<div class="bottom">
+<button class="hb glass" type="button" aria-label="Greenweergave"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 21V4h10l-2 4 2 4H6" fill="currentColor"></path></svg></button>
+<button class="score" type="button">Score hole 7</button>
+<button class="hb glass" type="button" aria-label="Slag markeren"><svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-6-6.2-6-11a6 6 0 1 1 12 0c0 4.8-6 11-6 11z" fill="none" stroke="currentColor" stroke-width="1.9"></path><circle cx="12" cy="10" r="2.2" fill="currentColor"></circle></svg></button>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":892,"height":940}}'>
+class Component extends DCLogic {
+renderVals() {
+const names = ["Tee", "Fairway", "Rough", "Bunker", "Green"];
+const lies = (sel) => names.map((name) => ({ name, sel: name === sel, off: name !== sel }));
+return { phones: [
+{ label: "Slag 2 gemarkeerd op de fairway (niet thematisch: Play is altijd zo)", n: 2, bx: 214, by: 520, f: 141, m: 152, b: 163, lies: lies("Fairway"), clubs: ["6-ijzer", "7-ijzer", "8-ijzer", "Pitching wedge", "Overslaan"] },
+{ label: "Slag 3 in de greenside bunker: lie wordt Bunker", n: 3, bx: 300, by: 182, f: 12, m: 24, b: 33, lies: lies("Bunker"), clubs: ["Sand wedge", "Lob wedge", "Pitching wedge", "Overslaan"] }
+] };
+}
+}
+</script>
+</body>
+</html>

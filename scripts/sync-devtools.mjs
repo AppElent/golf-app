@@ -6,7 +6,9 @@ import { lstat, mkdir, readFile, realpath, rename, rm, writeFile } from 'node:fs
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-export const repository = 'AppElent/developer-tools';
+export const repository = 'AppElent/developer-home';
+// Receipts written before the toolkit moved into the home repo name its former repository.
+const formerRepositories = ['AppElent/developer-tools'];
 export const hash = value => createHash('sha256').update(value).digest('hex');
 const receiptPath = '.appelent/devtools.json';
 const journalPath = '.appelent/devtools-pending.json';
@@ -118,6 +120,7 @@ export function removeRetiredBlock(text) {
 function parseReceipt(text, scope) {
   if (text === null) return { files: {}, blocks: {} };
   const receipt = JSON.parse(text);
+  if (formerRepositories.includes(receipt.repository)) receipt.repository = repository;
   if (receipt.schemaVersion !== 1 || receipt.repository !== repository || receipt.scope !== scope ||
       !receipt.files || Array.isArray(receipt.files)) throw new Error('Invalid receipt or different installation scope');
   for (const [path, entry] of Object.entries(receipt.files)) { allowed(path, scope); if (!digest(entry.sha256)) throw new Error('Invalid receipt hash'); }

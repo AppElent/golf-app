@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when writing or reviewing Convex functions, schema changes, migrations, seeds, tests, or account deletion and export.
-version: 2.0.0
+version: 2.2.1
 applies_to: [backend]
 ---
 
@@ -50,6 +50,13 @@ Every public function authenticates and validates its caller, fails with a keyed
 ### Development deployments
 
 - Worktrees share the dev deployment unless prepared with their own backend ([workspaces](workspaces.md)). A schema push to the shared deployment changes every worktree's backend, so push there only schema every open branch can run against; a schema change that breaks other branches gets its own backend.
+
+### Local agent deployments
+
+- Agents start a local backend with `CONVEX_AGENT_MODE=anonymous npx convex dev` (or `pnpm exec convex`). It runs on the machine and never touches a cloud deployment. Every Convex command an agent runs against it carries the same prefix, `env set`/`get`/`list` included.
+- Each app's `.claude/settings.json` allows exactly these prefixed commands, so they run without a prompt: `dev`, `dev:*`, `env set:*`, `env get:*`, `env list`, for both `npx convex` and `pnpm exec convex`. No other Convex command is allowed there.
+- A `PreToolUse` hook, [`convex-local-guard.mjs`](convex/convex-local-guard.mjs) in `.claude/hooks/`, registered as `node "$CLAUDE_PROJECT_DIR/.claude/hooks/convex-local-guard.mjs"` with matcher `Bash` so it still runs after a `cd`, keeps those rules local. It lets through only plain, unquoted `dev` with local-only flags (`--once`, `--until-success`, `--verbose`, `--tail-logs`, `--typecheck=…`, `--codegen=…`) and `env list`, `env get NAME`, `env set NAME VALUE`; every other shape (`--configure`, `--start`, `--env-file`, quoting, chaining, …) goes back to a normal permission prompt, and so does the prefix anywhere but at the start of the command (a compound command or a wrapper such as `timeout`, whose subcommands the allow rules also match) or unreadable hook input. It denies `deploy`, and denies any command when `CONVEX_DEPLOYMENT` (shell, `.env.local` or `.env`) is not an `anonymous:` or `local:` deployment or a deploy credential (`CONVEX_DEPLOY_KEY`, `CONVEX_DEPLOYMENT_TOKEN`, `CONVEX_SELF_HOSTED_URL`, `CONVEX_SELF_HOSTED_ADMIN_KEY`, `CONVEX_OVERRIDE_ACCESS_TOKEN`) appears there, since it wins over the selector. Dotenv files are read fail-closed: a credential name anywhere in them denies. The allow rules are only safe together with this hook; add both or neither.
+- `convex deploy` and anything against a cloud deployment keep the normal permission flow. Production follows [deployments](deployments.md).
 
 ## Implementation
 

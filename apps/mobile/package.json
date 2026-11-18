@@ -64,5 +64,9 @@
     "test": "jest --passWithNoTests",
     "e2e:preview-sign-in": "maestro test .maestro/preview-sign-in.yaml"
   },
-  "private": true
+  "private": true,
+  "runMobile": {
+    "bundleId": "com.appelent.fairway.dev",
+    "port": 8091
+  }
 }

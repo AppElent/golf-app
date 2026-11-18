@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Scoreformulier met slagen en lie</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#e4e7e1;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif}
+.th-light{--bg:#f3f4ef;--surface:#ffffff;--surface2:#e7ebe3;--accent:#1a7348;--accentFill:#1a7348;--onAccent:#ffffff;--accentDim:rgba(26,115,72,.10);--accentInk:#1c6b45;--text:#16241c;--muted:#506157;--faint:#606b57;--sep:rgba(60,62,50,.12);--borderStrong:rgba(26,32,21,.25);--danger:#b42332;--scrim:rgba(0,0,0,.4);--menu:#ffffff}
+.th-dark{--bg:#08130d;--surface:#11201a;--surface2:#1a2c23;--accent:#3fbf7a;--accentFill:#3fbf7a;--onAccent:#06110b;--accentDim:rgba(63,191,122,.14);--accentInk:#7fe0a6;--text:#f1f5f0;--muted:#9aaa9f;--faint:#919789;--sep:rgba(255,255,255,.14);--borderStrong:rgba(255,255,255,.18);--danger:#ff6b6b;--scrim:rgba(0,0,0,.6);--menu:#25362d}
+.board{display:flex;gap:48px;padding:32px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px}
+.cap{font-size:14px;font-weight:600;color:#36423b}
+.phone{width:390px;height:844px;border-radius:48px;overflow:hidden;position:relative;background:#2b3a31;color:var(--text);border:1px solid rgba(0,0,0,.18)}
+.sheet{position:absolute;left:0;right:0;top:54px;bottom:0;background:var(--bg);border-radius:20px 20px 0 0;display:flex;flex-direction:column}
+.sh-h{display:flex;align-items:center;min-height:52px;padding:0 8px}
+.sh-a{min-width:76px;min-height:44px;border:0;background:none;font:500 17px/1 inherit;color:var(--muted);text-align:left;padding:0 8px}
+.sh-s{color:var(--accent);font-weight:700;text-align:right}
+.sh-t{flex:1;text-align:center;font-size:18px;font-weight:700}
+.body{padding:8px 16px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.lbl{font-size:13px;font-weight:600;color:var(--muted)}
+.grp{background:var(--surface);border-radius:12px}
+.step{display:flex;align-items:center;min-height:52px;padding:0 12px 0 16px;font-size:17px;gap:10px}
+.sb{width:36px;height:36px;border-radius:18px;border:0;background:var(--surface2);color:var(--text);font:600 20px/1 inherit}
+.sv{min-width:26px;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.half{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.seg{display:flex;align-items:center;gap:10px;min-height:50px;padding:0 10px 0 16px;font-size:17px}
+.segc{margin-left:auto;display:grid;grid-template-columns:repeat(3,auto);background:var(--surface2);border-radius:9px;padding:2px}
+.segc span{padding:6px 12px;font-size:13px;font-weight:600;border-radius:7px}
+.segc .on{background:var(--accentFill);color:var(--onAccent)}
+.hdr{font-size:13px;color:var(--muted);padding:6px 16px 4px;font-weight:500}
+.list{background:var(--surface);border-radius:12px;overflow:visible;position:relative}
+.shot{display:grid;grid-template-columns:22px minmax(0,1fr) auto;align-items:center;gap:10px;min-height:54px;padding:0 10px 0 14px;border-top:1px solid var(--sep)}
+.shot:first-child{border-top:0}
+.n{font-weight:700;color:var(--muted);font-variant-numeric:tabular-nums;font-size:15px}
+.st{display:flex;flex-direction:column;gap:2px;font-size:16px}
+.ss{font-size:13px;color:var(--muted)}
+.lie{display:inline-flex;align-items:center;gap:4px;min-height:34px;padding:0 10px;border-radius:999px;border:0;background:var(--accentDim);color:var(--accent);font:600 14px/1 inherit}
+.foot{font-size:13px;color:var(--muted);padding:6px 16px 0;line-height:1.35}
+.pop{position:absolute;right:8px;top:96px;width:228px;background:var(--menu);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.35);overflow:hidden;z-index:2}
+.mi{display:flex;align-items:center;gap:10px;min-height:44px;padding:0 14px;font-size:16px;border-top:1px solid var(--sep)}
+.mi:first-child{border-top:0}
+.mi .ck{width:16px;color:var(--accent)}
+.mi .r{margin-left:auto;font-size:13px;color:var(--muted)}
+</style>
+</helmet>
+<div class="board">
+<sc-for list="{{phones}}" as="ph" hint-placeholder-count="2">
+<div class="col">
+<div class="cap">{{ph.label}}</div>
+<div class="phone {{ph.cls}}">
+<div class="sheet">
+<div class="sh-h"><button class="sh-a" type="button">Annuleren</button><span class="sh-t">Hole 7 · Par 4</span><button class="sh-a sh-s" type="button">Opslaan</button></div>
+<div class="body">
+<div class="lbl">Eric</div>
+<div class="grp step">Slagen<span style="margin-left:auto"></span><button class="sb" type="button" aria-label="Minder">−</button><span class="sv">5</span><button class="sb" type="button" aria-label="Meer">+</button></div>
+<div class="half">
+<div class="grp step" style="padding-right:8px">Putts<span style="margin-left:auto"></span><span class="sv">2</span></div>
+<div class="grp step" style="padding-right:8px">Strafslagen<span style="margin-left:auto"></span><span class="sv">0</span></div>
+</div>
+<div class="grp seg">Fairway<div class="segc" style="grid-template-columns:repeat(4,auto)" role="radiogroup" aria-label="Fairway"><span>—</span><span class="on">← Links</span><span>Geraakt</span><span>Rechts →</span></div></div>
+<div class="grp" style="display:flex;align-items:center;gap:10px;padding:10px 12px 10px 16px">
+<span style="font-size:17px;flex:1">Green in regulation<span style="display:block;font-size:13px;color:var(--muted);margin-top:2px">Gemist: kort</span></span>
+<div role="radiogroup" aria-label="Green" style="display:grid;grid-template-columns:repeat(3,58px);grid-template-rows:repeat(3,34px);gap:3px;background:var(--surface2);border-radius:12px;padding:3px;font-size:12px;font-weight:600;text-align:center">
+<span></span><span style="display:flex;align-items:center;justify-content:center;border-radius:8px">Lang</span><span></span>
+<span style="display:flex;align-items:center;justify-content:center;border-radius:8px">Links</span><span style="display:flex;align-items:center;justify-content:center;border-radius:8px;border:1.5px solid var(--borderStrong)">Geraakt</span><span style="display:flex;align-items:center;justify-content:center;border-radius:8px">Rechts</span>
+<span></span><span style="display:flex;align-items:center;justify-content:center;border-radius:8px;background:var(--accentFill);color:var(--onAccent)">Kort</span><span></span>
+</div>
+</div>
+<div>
+<div class="hdr">Slagen op deze hole</div>
+<div class="list">
+<div class="shot"><span class="n">1</span><span class="st">362 m tot de hole<span class="ss">Driver</span></span><button class="lie" type="button">Tee</button></div>
+<div class="shot"><span class="n">2</span><span class="st">151 m<span class="ss">7-ijzer</span></span><button class="lie" type="button">Rough <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg></button></div>
+<div class="shot"><span class="n">3</span><span class="st">24 m<span class="ss">Sand wedge</span></span><button class="lie" type="button">Bunker <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg></button></div>
+<div class="shot"><span class="n">4</span><span class="st">5 m · eerste putt<span class="ss">2 putts</span></span><button class="lie" type="button">Green <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M2.5 4.5 6 8l3.5-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"></path></svg></button></div>
+<sc-if value="{{ph.menu}}" hint-placeholder-val="{{false}}">
+<div class="pop" role="menu" aria-label="Lie van slag 2">
+<div class="mi" role="menuitemradio"><span class="ck"></span>Fairway</div>
+<div class="mi" role="menuitemradio" aria-checked="true"><span class="ck">✓</span>Rough<span class="r">van de kaart</span></div>
+<div class="mi" role="menuitemradio"><span class="ck"></span>Bunker</div>
+<div class="mi" role="menuitemradio"><span class="ck"></span>Green</div>
+<div class="mi" role="menuitemradio"><span class="ck"></span>Tee</div>
+</div>
+</sc-if>
+</div>
+<div class="foot">3 slagen + 2 putts = 5. De lie komt van de baankaart; tik om te wijzigen.</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":892,"height":940}}'>
+class Component extends DCLogic {
+renderVals() {
+return { phones: [
+{ label: "Licht · slagen van deze hole", cls: "th-light", menu: false },
+{ label: "Donker · lie wijzigen (pull-down menu)", cls: "th-dark", menu: true }
+] };
+}
+}
+</script>
+</body>
+</html>

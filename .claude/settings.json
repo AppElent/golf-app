@@ -1,20 +1,53 @@
 {
   "hooks": {
     "PreToolUse": [
-      { "matcher": "Bash", "hooks": [ { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/convex-local-guard.mjs\"" }, { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/env-guard.mjs\"" } ] }
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/irreversible-guard.mjs\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/convex-local-guard.mjs\""
+          },
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/env-guard.mjs\""
+          }
+        ]
+      }
     ],
     "SessionStart": [
-      { "hooks": [ { "type": "command", "command": "node .claude/hooks/session-start.mjs" } ] }
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/session-start.mjs"
+          }
+        ]
+      }
     ]
   },
   "permissions": {
     "allow": [
-      "Bash(pnpm test)", "Bash(pnpm test:*)",
-      "Bash(pnpm run check)", "Bash(pnpm run check:*)",
-      "Bash(pnpm run typecheck)", "Bash(pnpm run lint)", "Bash(pnpm run lint:fix)",
-      "Bash(pnpm run seed)", "Bash(pnpm build)", "Bash(pnpm install:*)",
-      "Bash(pnpm exec convex dev --once)", "Bash(pnpm exec tsr generate)",
-      "Bash(git status:*)", "Bash(git diff:*)", "Bash(git log:*)",
+      "Bash(pnpm test)",
+      "Bash(pnpm test:*)",
+      "Bash(pnpm run check)",
+      "Bash(pnpm run check:*)",
+      "Bash(pnpm run typecheck)",
+      "Bash(pnpm run lint)",
+      "Bash(pnpm run lint:fix)",
+      "Bash(pnpm run seed)",
+      "Bash(pnpm verify)",
+      "Bash(pnpm build)",
+      "Bash(pnpm install:*)",
+      "Bash(pnpm exec convex dev --once)",
+      "Bash(pnpm exec tsr generate)",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
       "Bash(CONVEX_AGENT_MODE=anonymous npx convex dev)",
       "Bash(CONVEX_AGENT_MODE=anonymous npx convex dev:*)",
       "Bash(CONVEX_AGENT_MODE=anonymous npx convex env set:*)",
@@ -34,6 +67,70 @@
       "Bash(pnpm env:apply preview:*)",
       "Bash(pnpm env:apply staging:*)",
       "Bash(pnpm env:apply production:*)"
+    ],
+    "deny": [
+      "Read(**/.env)",
+      "Read(**/.env.*)",
+      "Read(**/.dev.vars)",
+      "Read(**/.dev.vars.*)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/*.p8)",
+      "Read(**/*.p12)",
+      "Read(**/*.jks)",
+      "Read(**/*.keystore)",
+      "Read(**/credentials.json)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.gnupg/**)",
+      "Read(~/.config/gh/**)",
+      "Read(~/.convex/**)",
+      "Read(~/.expo/**)",
+      "Read(~/.netrc)",
+      "Read(~/.npmrc)",
+      "Bash(rm -rf /)",
+      "Bash(rm -rf ~)",
+      "Bash(rm -rf ~/)",
+      "Bash(rm -rf $HOME)",
+      "Bash(rm -rf ..)",
+      "Bash(git push --force * main)",
+      "Bash(git push -f * main)",
+      "Bash(git push --force-with-lease * main)",
+      "Bash(git push * +main)",
+      "Bash(git push * :main)",
+      "Bash(git push * --delete main)",
+      "Bash(git push --force * master)",
+      "Bash(git push -f * master)",
+      "Bash(git push --force-with-lease * master)",
+      "Bash(git push * +master)",
+      "Bash(git push * :master)",
+      "Bash(git push * --delete master)",
+      "Bash(convex deploy*)",
+      "Bash(npx convex deploy*)",
+      "Bash(pnpm exec convex deploy*)",
+      "Bash(pnpm convex deploy*)",
+      "Bash(npx convex * --prod*)",
+      "Bash(pnpm exec convex * --prod*)",
+      "Bash(eas submit*)",
+      "Bash(npx eas submit*)",
+      "Bash(npx eas-cli submit*)",
+      "Bash(pnpm exec eas submit*)",
+      "Bash(eas build * --auto-submit*)",
+      "Bash(eas build * --profile production*)",
+      "Bash(eas update * --channel production*)",
+      "Bash(eas update * --branch production*)",
+      "Bash(wrangler deploy)",
+      "Bash(npx wrangler deploy)",
+      "Bash(pnpm exec wrangler deploy)",
+      "Bash(wrangler deploy --env production*)",
+      "Bash(pnpm deploy)",
+      "Bash(pnpm run deploy)",
+      "Bash(pnpm deploy:prod*)",
+      "Bash(pnpm run deploy:prod*)",
+      "Bash(pnpm ship:production*)",
+      "Bash(pnpm run ship:production*)",
+      "Bash(pnpm mobile:update:production*)",
+      "Bash(pnpm run mobile:update:production*)"
     ]
   }
 }
