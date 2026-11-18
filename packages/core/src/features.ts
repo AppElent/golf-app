@@ -92,10 +92,12 @@ export const FEATURES = defineFeatures([
 	{
 		id: "data-export",
 		kind: "floor",
-		status: "pending-port",
-		platforms: [],
-		reason: `Owed on both platforms (${ADR}); neither exports a user's data yet.`,
-		routes: {},
+		status: "parity",
+		platforms: ["web", "mobile"],
+		// "Export my data" on the Profile tab: one JSON file of every user-owned
+		// table (convex/userData.ts, account.exportPage). Web downloads it; the
+		// phone opens the share sheet on it.
+		routes: { web: ["profile"], mobile: ["(app)/(tabs)/profile/index"] },
 	},
 	{
 		id: "privacy",

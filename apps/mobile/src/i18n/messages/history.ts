@@ -186,6 +186,8 @@ export const profileEn = {
 	handicapPlaceholder: "18.4",
 	account: "Account",
 	signOut: "Sign out",
+	exportData: "Export my data",
+	exportError: "Export failed. Check your connection and try again.",
 	deleteAccount: "Delete account",
 	deleteTitle: "Delete your account?",
 	deleteMessage:
@@ -229,6 +231,9 @@ export const profileNl: typeof profileEn = {
 	handicapPlaceholder: "18,4",
 	account: "Account",
 	signOut: "Uitloggen",
+	exportData: "Mijn gegevens exporteren",
+	exportError:
+		"Exporteren mislukt. Controleer je verbinding en probeer opnieuw.",
 	deleteAccount: "Account verwijderen",
 	deleteTitle: "Je account verwijderen?",
 	deleteMessage:
