@@ -14,7 +14,7 @@
  *   `pathname`, and `+native-intent` must never throw.
  * - `buildAasa` produces the exact JSON for
  *   `public/.well-known/apple-app-site-association`; the
- *   [test example](app-links.test.ts) keeps the file and this config in step.
+ *   [test example](app-links.example-test.ts) keeps the file and this config in step.
  */
 
 export interface SegmentLink {
@@ -50,7 +50,7 @@ export interface AppLinksConfig {
 
 type SearchParams = Readonly<Record<string, string | string[] | undefined>>;
 
-const escape = (value: string) => value.replace(/[.*+?^${}()|[\]\\/-]/g, "\\$&");
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\/-]/g, "\\$&");
 const isSegment = (link: AppLink): link is SegmentLink => "param" in link;
 
 function decode(value: string): string | null {
@@ -83,11 +83,11 @@ function parseQuery(query: string): Map<string, string> {
 }
 
 export function createAppLinks(config: AppLinksConfig) {
-	const schemes = config.schemes.map(escape).join("|");
+	const schemes = config.schemes.map(escapeRegExp).join("|");
 	// https://<host>/, <scheme>:// (or :///), or the parsed path Expo Router hands over.
-	const start = `^(?:https://${escape(config.host)}/|(?:${schemes}):///?|/)`;
+	const start = `^(?:https://${escapeRegExp(config.host)}/|(?:${schemes}):///?|/)`;
 	const matchers = config.links.map((link) => {
-		const prefix = escape(isSegment(link) ? link.path.slice(1, -2) : link.path.slice(1));
+		const prefix = escapeRegExp(isSegment(link) ? link.path.slice(1, -2) : link.path.slice(1));
 		return {
 			link,
 			url: isSegment(link)
@@ -102,7 +102,8 @@ export function createAppLinks(config: AppLinksConfig) {
 
 	/** The app route an incoming link opens, or `null` when it is not a claimed link. */
 	function routeFromUrl(url: string): string | null {
-		const trimmed = url.trim();
+		// Scheme and host are case-insensitive; the path is not.
+		const trimmed = url.trim().replace(/^[a-z][a-z0-9+.-]*:\/\/[^/?#]*/i, (origin) => origin.toLowerCase());
 		for (const { link, url: re } of matchers) {
 			const match = re.exec(trimmed);
 			if (!match) continue;
@@ -155,9 +156,13 @@ export function createAppLinks(config: AppLinksConfig) {
 	return { routeFromUrl, routeFromPathname, systemPath };
 }
 
-/** `ios.associatedDomains` for a variant that claims links; `[]` otherwise. */
-export function associatedDomains(host: string, claims: boolean): string[] {
-	return claims ? [`applinks:${host}`, `webcredentials:${host}`] : [];
+/**
+ * Spread into `ios` in `app.config.ts`. A variant that claims links gets
+ * `applinks:<host>` and `webcredentials:<host>`; any other variant gets no
+ * `associatedDomains` key at all, so its build carries no empty entitlement.
+ */
+export function iosAssociatedDomains(host: string, claims: boolean): { associatedDomains?: string[] } {
+	return claims ? { associatedDomains: [`applinks:${host}`, `webcredentials:${host}`] } : {};
 }
 
 /**

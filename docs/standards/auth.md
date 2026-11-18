@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when adding or changing Clerk/Convex authentication, session readiness, or account flows.
-version: 3.3.1
+version: 3.4.0
 applies_to: [web, mobile, backend]
 ---
 
@@ -34,7 +34,7 @@ iCloud Keychain, Google Password Manager, 1Password and similar managers must of
 - Mark every credential field. Web: `autocomplete` `username` on the email or username field, `current-password` on sign-in and on the current field of change password, `new-password` on sign-up, reset, and the new field of change password, `one-time-code` on code fields. Native: the same `autoComplete` values plus iOS `textContentType` `username`, `password`, `newPassword`, or `oneTimeCode`.
 - Every form that sets a password names the account. Web: put the copied [`UsernameHint`](auth/examples/web/UsernameHint.tsx) in the form. Native: show the email as a read-only field with `textContentType="username"` above the password fields, on the reset step and on change password.
 - Keep each flow in its own form or screen with a real submit. Native change password gets its own pushed screen: iOS AutoFill reads an inline current and new password pair as two new passwords and clears both without `onChangeText` when the strong-password offer is declined.
-- AutoFill can set a native field without `onChangeText`. Also sync each credential field from `onEndEditing`, and submit the field's latest text.
+- AutoFill can set a native field without `onChangeText`. Also sync each credential field from `onEndEditing`, and submit the field's latest text: the keyboard's return key submits its own event text, and the primary button stays enabled while a credential field is focused, blurs it, and submits from that field's `onEndEditing`. Test a button press before `onEndEditing`.
 - **Default:** native new-password fields pass iOS `passwordRules` matching the Clerk instance's password policy (`minlength: 8;` for Clerk's default), so generated passwords pass Clerk.
 - Never block paste into credential fields, and never split a password over several inputs.
 - Linking the app to its website, so a manager offers the website's saved logins in the app, is the `webcredentials` part of [app links](app-links.md) (associated domains and the `apple-app-site-association` file).

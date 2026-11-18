@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url';
 import { assertSafeProjectPath } from './lib/env/files.mjs';
 import { manifestWarnings, validateManifest } from './lib/project/manifest.mjs';
 import { agentPermissionFindings, GUARD_FILE, GUARD_SOURCE } from './lib/project/agent-permissions.mjs';
+import { STOP_FILE, STOP_SOURCE, stopCheckFindings } from './lib/project/stop-checks.mjs';
 
 export async function checkProject(root) {
   root = await realpath(root);
@@ -38,6 +39,11 @@ export async function checkProject(root) {
     settingsText: await read('.claude/settings.json'),
     guardText: await read(GUARD_FILE),
     sourceText: await read(GUARD_SOURCE),
+  })) add(finding.level, finding.message);
+  for (const finding of stopCheckFindings({
+    settingsText: await read('.claude/settings.json'),
+    hookText: await read(STOP_FILE),
+    sourceText: await read(STOP_SOURCE),
   })) add(finding.level, finding.message);
   if (await read('env.manifest.ts') !== null) add('info', 'Environment manifest exists; use env.mjs check for trusted execution and validation');
   if (text) {
