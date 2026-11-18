@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when changing a project's `.claude/settings.json` or hooks, adding an allow rule, when an agent command is blocked by the deny list, or before driving a simulator or emulator.
-version: 1.1.0
+version: 1.2.0
 applies_to: [web, mobile, backend]
 ---
 
@@ -23,6 +23,7 @@ Irreversible actions are hard-blocked for every agent in every project, in every
   - `wrangler deploy` without a non-production `--env`;
   - the package scripts that deploy or ship (`deploy`, `deploy:prod*`, `ship:production`, `mobile:update:production`).
 - Deny rules match the command as written, so `sh -c '…'`, `npx eas-cli submit` or `git -C x push -f` slip past them. A `PreToolUse` hook, [`irreversible-guard.mjs`](agent-permissions/irreversible-guard.mjs) in `.claude/hooks/`, registered as `node "$CLAUDE_PROJECT_DIR/.claude/hooks/irreversible-guard.mjs"` with matcher `Bash`, closes that gap. It reads every command in a Bash call (also inside `sh -c`, `eval`, `$(…)`, backticks, `if`/`for`/`{ }` blocks, `sh <<EOF` scripts, `bash <<<` here-strings and wrappers such as `timeout`, `env`, `sudo`, `npx`, `pnpm exec`; other heredoc bodies are data, so a commit message may name a denied command) and denies the same actions in any spelling, plus: recursive `rm` outside the project, its `additionalDirectories` and the temp folders; `eas build` without `--profile` (EAS builds `production` by default); `wrangler secret`/`versions deploy`/`rollback` on production; and any `deploy`/`ship` script except `:dev`, or any script ending in `:prod`/`:production`. A force push whose branch it cannot resolve (`$B`, `$(…)`) or an `rm` target it cannot resolve (also brace expansions such as `{a,b}`, and relative targets after a `cd` it cannot place, such as one under `CDPATH` or in a command with `( … )`) gets a prompt. A refspec-less force push also follows the saved `push.default`. Every other command exits the hook silently and keeps the normal flow.
+- A `Stop` hook, [`stop-checks.mjs`](verification/stop-checks.mjs), keeps a session from ending while lint, types or tests fail on its changes; see [verification](verification.md#stop-hook).
 - The deny list and the hook go together; add both or neither. They sit next to the [Convex local guard](convex.md) and the [env guard](environments.md), which keep their own allow rules safe.
 - An approved irreversible step never runs through an agent: it runs in its CI workflow (merge to `main`, the gated production OTA job) or Eric runs it himself, in his terminal or with `!` in Claude Code. Do not add an allow rule or a hook exception to let an agent run it.
 - A new irreversible command (a new CLI, a new deploy script) goes into `BASELINE_DENY` and the hook in developer-home first, then into each project with the next toolkit sync.

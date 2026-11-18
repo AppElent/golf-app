@@ -3,8 +3,8 @@
   "repository": "AppElent/developer-home",
   "scope": "project",
   "ref": "main",
-  "commit": "3cdc5319cd77378a6467cd267c9c9ba6ae59398f",
-  "manifestHash": "f0db82d8c863dc434104528df06634e3e153cfe532c2423cb3fe0b4f69b6f30e",
+  "commit": "local",
+  "manifestHash": "c6615b3662ccbee1d6d16157c179056fcd8688a5b45c28905556c5a71a657260",
   "files": {
     "docs/adr/.template.md": {
       "sha256": "f28b286102fb1a00512455a06896e5da3c47d67a14b0ee6c08fa84258af24adf",
@@ -68,8 +68,8 @@
       "sha256": "b09f650bab6759fccefe0bf42a298d249373fc99cb7bd8c4802d2268011fd4c0"
     },
     "docs/standards/auth.md": {
-      "sha256": "b1171cfed774599a9c2beaa41a9517d90f4f49dabcd364423c2e789f7e10b177",
-      "version": "3.3.1"
+      "sha256": "eedea506741c5ddb3a59aa03be4c08ec21e8877722cc37e229527272082c6d9e",
+      "version": "3.4.0"
     },
     "docs/standards/auth/examples/native.ts": {
       "sha256": "8c57fc48f63fa035f3282574295bd36f85231523d748cfba8d725f7cde47617a"
@@ -289,8 +289,8 @@
       "version": "2.0.1"
     },
     "docs/standards/verification.md": {
-      "sha256": "87e5262d87f67e15d000fe21455696346bfab93de22de4a46d03efe0300832d1",
-      "version": "2.2.0"
+      "sha256": "946d42b745bc8620b31bc11f9d98106617da7f90c9631bc917452dd624936a10",
+      "version": "2.3.0"
     },
     "docs/standards/web-baseline.md": {
       "sha256": "562aa3396a09dd73f5a69f870d6dda8da3a24d189120609e0cc01ddaf6892b74",
@@ -335,7 +335,7 @@
       "sha256": "6336676db6dcd2e4801992cc1b878ffafa65719314a27861247a6c8f73fd0c04"
     },
     "scripts/check-project.mjs": {
-      "sha256": "fe0e2ed0f2c7ea49a32bd5492e1152db45e7eaca24f1bca8cecd369656b71163"
+      "sha256": "bdef437ccb5f208566ed0498304a393079d08068e299c45840bb8cfea64bf425"
     },
     "scripts/env.mjs": {
       "sha256": "9347b3602296c5d9d31b7fab503e2ef696886f2f3de4c9899d44b459e8add087"
@@ -494,8 +494,8 @@
       "version": "1.1.0"
     },
     "docs/standards/agent-permissions.md": {
-      "sha256": "6a644da3a0eeef4528f0f89216de5c676b93c6f051b6e28436c874107427b638",
-      "version": "1.1.0"
+      "sha256": "e02532165654172ce97d3285ba909f98450cd77af945feeda686d2d6853a254a",
+      "version": "1.2.0"
     },
     "docs/standards/agent-permissions/irreversible-guard.mjs": {
       "sha256": "d94151bd82633d47deef0a285dc5284339a76241f978bb4b1244a50d5e0d9e69"
@@ -511,20 +511,26 @@
       "sha256": "eebbf04e30359b84b78339cda8b6355d4138c0676ddcc30d1c7957ab13d9cfee"
     },
     "docs/standards/app-links.md": {
-      "sha256": "25fa8b57cd472d678adebc411e1f1b0b0ff9db9ae140cfb4f4224dd3067f1d72",
-      "version": "1.0.0"
-    },
-    "docs/standards/app-links/examples/app-links.test.ts": {
-      "sha256": "54322923d380fd47c1e954de211f37529dc213339b39b599da744edda500036f"
+      "sha256": "6e1d3681c54cb36bd244adb1a180cc1b05e8305f395949a3a958fe04b878ccd3",
+      "version": "2.2.0"
     },
     "docs/standards/app-links/examples/app-links.ts": {
-      "sha256": "aae93409a78350de31774fec186bcbb6aa19bbd7428c9809c9f0c0b97fc00472"
+      "sha256": "163c3a14eba3d987034f1527fccb7925b33addb32ffe303bfc25ab12821d2f1e"
     },
     "docs/standards/app-links/examples/pending-link.ts": {
       "sha256": "199f109d13479c8eae08aafa6dfc64dd3a009b09da0cec6bafd54529214f3d5c"
     },
     "docs/standards/auth/examples/web/UsernameHint.tsx": {
       "sha256": "b1e45b0b2dda4d6559ed4c4902e4056764a377cb61400464ed9681bf4001cdb5"
+    },
+    "docs/standards/app-links/examples/app-links.example-test.ts": {
+      "sha256": "ccfe22a2fd9099d3da69862f07e44eceef628b5ed33bce2fdc98464db54683c4"
+    },
+    "docs/standards/verification/stop-checks.mjs": {
+      "sha256": "001615091f699c2a631be23f7f5693f3ea199638a3dc59eed850aa6f47e90f18"
+    },
+    "scripts/lib/project/stop-checks.mjs": {
+      "sha256": "074e0b5360bba27954dacf760ed5008649415a1fc53573ca1bb1e1f22293d221"
     }
   },
   "blocks": {

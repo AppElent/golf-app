@@ -1,11 +1,12 @@
 /**
- * Keeps the site files and the app's link config in step. Copy to
+ * Keeps the site files and the app's link config in step. Named so no test
+ * runner picks up the toolkit copy in `docs/`. Copy to
  * `scripts/app-links.test.ts` (run from the repository root) and replace the
  * config below with an import of the app's `createAppLinks` input.
  */
 import fs from "node:fs";
 import { describe, expect, it } from "vitest";
-import { type AppLink, buildAasa, createAppLinks } from "./app-links.ts";
+import { type AppLink, buildAasa, createAppLinks, iosAssociatedDomains } from "./app-links.ts";
 
 // Replace with the app's values (import them from the app module).
 const TEAM_ID = "ABCDE12345";
@@ -45,6 +46,8 @@ describe("link routing", () => {
 		"app://join/ABC",
 		"app-preview:///join/ABC",
 		"/join/ABC",
+		"https://APP.Example.com/join/ABC",
+		"APP://join/ABC",
 	])("opens %s", (url) => {
 		expect(links.routeFromUrl(url)).toBe("/join/ABC");
 		expect(links.systemPath(url)).toBe("/join/ABC");
@@ -76,6 +79,13 @@ describe("link routing", () => {
 		expect(links.routeFromPathname("/invite", { token: ["ABC", "XYZ"], other: "1" })).toBe(
 			"/invite?token=ABC",
 		);
+	});
+
+	it("adds associated domains only to variants that claim links", () => {
+		expect(iosAssociatedDomains(HOST, true)).toEqual({
+			associatedDomains: [`applinks:${HOST}`, `webcredentials:${HOST}`],
+		});
+		expect(iosAssociatedDomains(HOST, false)).not.toHaveProperty("associatedDomains");
 	});
 
 	it("passes other app-scheme links through", () => {

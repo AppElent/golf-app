@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when making a shared, join, or invite link open the installed app, or when setting up the associated domains that let password managers fill and save app logins.
-version: 1.0.0
+version: 2.2.0
 applies_to: [web, mobile]
 ---
 
@@ -17,7 +17,7 @@ A link on the web origin opens the installed app on the matching screen, survive
 - Claim narrowly: exact paths, never `/*`. The app keeps working when the web adds pages.
 - One `public/.well-known/apple-app-site-association` per web origin, built by `buildAasa`, with both `applinks` and `webcredentials`. It lists the Production and Preview bundle IDs as `<TeamID>.<bundle ID>`, Preview first. Serve it as `application/json` through `public/_headers`; it has no extension and iOS rejects other types.
 - Production and Preview builds claim the production host; both use the production backend ([mobile distribution](mobile-distribution.md)). Development and Test builds claim nothing, so a local build never takes over real links.
-- `ios.associatedDomains` comes from `associatedDomains(host, claims)`: `applinks:<host>` and `webcredentials:<host>`. Set `ios.appleTeamId` beside it.
+- `ios.associatedDomains` comes from `iosAssociatedDomains(host, claims)`: `applinks:<host>` and `webcredentials:<host>` when the variant claims links, and no key at all otherwise (an empty list still adds the entitlement). Set `ios.appleTeamId` beside it.
 - `+native-intent.tsx` routes through `systemPath`: a claimed link opens its route, any other web link or malformed claimed link opens home, other scheme links (sign-in callbacks) pass through. An app with its own rewrites (a share extension) runs them first and then `systemPath`.
 - A link opened while signed out opens its screen after sign-in, through [`pending-link.ts`](app-links/examples/pending-link.ts). It is held in memory only.
 - The target screen validates its parameter again and handles an expired or unknown one with a message and a way home; it never assumes the link was valid.
@@ -35,7 +35,7 @@ A link on the web origin opens the installed app on the matching screen, survive
      ...config.ios,
      bundleIdentifier: id,
      appleTeamId: APPLE_TEAM_ID,
-     associatedDomains: associatedDomains(APP_LINK_HOST, claims),
+     ...iosAssociatedDomains(APP_LINK_HOST, claims),
    },
    ```
 
@@ -55,8 +55,9 @@ A link on the web origin opens the installed app on the matching screen, survive
      Content-Type: application/json
    ```
 
-6. Copy [`app-links.test.ts`](app-links/examples/app-links.test.ts) to `scripts/`, import the app's values, and add the app's own valid and malformed links.
-7. Build Preview (`preview-internal`) and install it.
+6. Copy [`app-links.example-test.ts`](app-links/examples/app-links.example-test.ts) to `scripts/app-links.test.ts`, import the app's values, and add the app's own valid and malformed links.
+7. Before the first build that claims links, the owner runs `eas credentials -p ios` interactively (signed in to Apple) for each claiming profile, so EAS adds the Associated Domains capability to the App ID and regenerates the profile. A non-interactive build reuses the old profile and fails at signing with "doesn't include the Associated Domains capability". An agent hands the owner the exact command instead of exporting an App Store Connect key.
+8. Build Preview (`preview-internal`) and install it.
 
 ## Verify
 
@@ -66,3 +67,9 @@ A link on the web origin opens the installed app on the matching screen, survive
 - Without the app, the link opens the web page and the action can be completed there.
 - With the login fields set up per [auth](auth.md), the sign-in screen's keyboard bar offers the website's saved login.
 - iOS caches the AASA through Apple's CDN for up to a day. When a new file does not take effect, check `https://app-site-association.cdn-apple.com/a/v1/<host>` before debugging the app.
+
+## Migration
+
+From 1.0: re-copy `app-links.ts`. `associatedDomains(host, claims)` is now `iosAssociatedDomains(host, claims)`, spread into `ios` (`...iosAssociatedDomains(host, claims)`), so Development and Test builds get no empty entitlement. Links with an uppercase scheme or host now open their route.
+
+From 2.1: the test example is now `app-links.example-test.ts`, so test runners skip the toolkit copy. The next sync removes `docs/standards/app-links/examples/app-links.test.ts`; until then, exclude `docs/standards/**` from the test runner.

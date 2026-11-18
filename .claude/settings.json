@@ -28,6 +28,17 @@
           }
         ]
       }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop-checks.mjs\"",
+            "timeout": 240
+          }
+        ]
+      }
     ]
   },
   "permissions": {
