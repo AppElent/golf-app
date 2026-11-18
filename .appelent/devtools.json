@@ -3,8 +3,8 @@
   "repository": "AppElent/developer-home",
   "scope": "project",
   "ref": "main",
-  "commit": "e2e7f7de9d6cd578c92381dc3645faf02b25cd29",
-  "manifestHash": "edd8a9ef50731abdb7097619aa53f6906830e970e70b96807b08e3cb50efd0c0",
+  "commit": "d58859d383c9a1283f85095e2bc2fdbbfae48bf7",
+  "manifestHash": "e73969c49419f72f309afac736f94dfb9bd0d6ba488c5dc2bb603736a029b646",
   "files": {
     "docs/adr/.template.md": {
       "sha256": "f28b286102fb1a00512455a06896e5da3c47d67a14b0ee6c08fa84258af24adf",
@@ -68,8 +68,8 @@
       "sha256": "b09f650bab6759fccefe0bf42a298d249373fc99cb7bd8c4802d2268011fd4c0"
     },
     "docs/standards/auth.md": {
-      "sha256": "105e99c0a9269905e3b64c53f32f4753b93e5481b301064f456c9f2aff74a746",
-      "version": "3.2.0"
+      "sha256": "b01c693021b6cf528fab04ad9cb2517ac5a1370eafc5e45130b08426ddeef922",
+      "version": "3.3.0"
     },
     "docs/standards/auth/examples/native.ts": {
       "sha256": "8c57fc48f63fa035f3282574295bd36f85231523d748cfba8d725f7cde47617a"
@@ -96,22 +96,22 @@
       "sha256": "de90b631612a2c3f0e1ab52963ed9a0f27b356709922312158c869ae346729fb"
     },
     "docs/standards/auth/examples/web/ForgotPasswordForm.tsx": {
-      "sha256": "27115b55573fd3da9ef665c58c96f11218ca5a83ccbc5f858a9fc242aa518de6"
+      "sha256": "2d76e52332097b32be6123e4d4a94fbc792c2cae4097914cee61c90e81a6c224"
     },
     "docs/standards/auth/examples/web/HeaderUser.tsx": {
       "sha256": "2527aff87c38c7f7cc744c8f2b5684777fd4806c9a3d65b52279c4c2f95d4794"
     },
     "docs/standards/auth/examples/web/index.ts": {
-      "sha256": "f82e878a4871c1f59b7efa216972844c2222ccc7f0c268963816438f3ed4fadf"
+      "sha256": "94060a37c1d10d9d0ff2c23709c9526ab37a64ea13da0690286784ee27792de9"
     },
     "docs/standards/auth/examples/web/ProfilePanel.tsx": {
-      "sha256": "df9c51570bfcd6061e266990bede6af99b7da9a9d95a508ca3e762f648b7fb2a"
+      "sha256": "2772cc14fd1fc95ef8a5f0a3cc7bca617c3a05b5cc9160349a5d29ca018f2824"
     },
     "docs/standards/auth/examples/web/SignInForm.tsx": {
-      "sha256": "97c103a97682b987fb20214f165481a7d41b61a3650a6ec857108ed235f9e2df"
+      "sha256": "a66558e1b2015d0ac401a0d62ed9dc2aba3df5ef70b10bec0114368908ff0440"
     },
     "docs/standards/auth/examples/web/SignUpForm.tsx": {
-      "sha256": "1bef9af3e5a18833678124347b31469a6a7a355c81493a5fdd91cb54b2a4b478"
+      "sha256": "e66b755c0b9b8a9e83e65e5fc0d05a22646e26e312d8f0344d9bebec0f01fdb7"
     },
     "docs/standards/auth/examples/web/TestLoginButton.tsx": {
       "sha256": "5ecfc1726650ac3f145f3c9aad35726d9252113c87b2e179198f4c4c919187db"
@@ -257,11 +257,11 @@
       "version": "1.0.3"
     },
     "docs/standards/previews.md": {
-      "sha256": "e503bf9209305937e1ee9e192eb4db748c5ee12e0bff9a2cbb10c613ae98b3fd",
-      "version": "4.1.0"
+      "sha256": "7584ceed8c304fc1b0686a94a032c0f6ceb4ddcf3c06733e84db71983c42adcd",
+      "version": "5.0.0"
     },
     "docs/standards/previews/templates/preview.yml": {
-      "sha256": "57f93df1b3d673645f173791e181eaee7eb30470a7e403f6e466c4ceb38394a5"
+      "sha256": "3672675a7555918ecc56b678a830dd20e6e00a991ada653b6a2d7d36553f80e3"
     },
     "docs/standards/pwa.md": {
       "sha256": "847f3533259814cdac4afec4fe04622f96b04891cf04a52de89a1c040b289764",
@@ -509,6 +509,9 @@
     },
     "scripts/run-mobile.mjs": {
       "sha256": "eebbf04e30359b84b78339cda8b6355d4138c0676ddcc30d1c7957ab13d9cfee"
+    },
+    "docs/standards/auth/examples/web/UsernameHint.tsx": {
+      "sha256": "b1e45b0b2dda4d6559ed4c4902e4056764a377cb61400464ed9681bf4001cdb5"
     }
   },
   "blocks": {

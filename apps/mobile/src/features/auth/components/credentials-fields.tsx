@@ -1,11 +1,19 @@
 import { useRef } from "react";
 import type { TextInputInstance } from "react-native";
 import { AuthInput } from "./auth-form";
+import {
+	type CredentialsPurpose,
+	emailFieldTraits,
+	passwordFieldTraits,
+	syncNativeText,
+} from "./credentials-model";
 
 /**
- * Email and password. `autoComplete` / `textContentType` are what let the
- * platform password manager fill sign-in, and offer to generate and save a
- * password on sign-up (`new-password`), which later fills sign-in.
+ * Email and password, marked so the platform password manager fills sign-in,
+ * and on sign-up offers a strong password (within Clerk's policy) and saves
+ * it under the email. Both fields also sync from `onEndEditing`, and the
+ * keyboard's Go hands `onSubmit` the password field's native text: AutoFill
+ * can change a field without `onChangeText`.
  */
 export function CredentialsFields({
 	purpose,
@@ -17,14 +25,15 @@ export function CredentialsFields({
 	onPasswordChange,
 	onSubmit,
 }: {
-	purpose: "sign-in" | "sign-up";
+	purpose: CredentialsPurpose;
 	emailLabel: string;
 	passwordLabel: string;
 	email: string;
 	password: string;
 	onEmailChange: (next: string) => void;
 	onPasswordChange: (next: string) => void;
-	onSubmit: () => void;
+	/** `password` is the field's latest text. */
+	onSubmit: (password: string) => void;
 }) {
 	const passwordRef = useRef<TextInputInstance>(null);
 	return (
@@ -32,12 +41,11 @@ export function CredentialsFields({
 			<AuthInput
 				placeholder={emailLabel}
 				value={email}
-				onChangeText={onEmailChange}
+				{...syncNativeText(onEmailChange)}
 				autoCapitalize="none"
 				autoCorrect={false}
 				keyboardType="email-address"
-				autoComplete="email"
-				textContentType="username"
+				{...emailFieldTraits}
 				returnKeyType="next"
 				submitBehavior="submit"
 				onSubmitEditing={() => passwordRef.current?.focus()}
@@ -46,15 +54,15 @@ export function CredentialsFields({
 				ref={passwordRef}
 				placeholder={passwordLabel}
 				value={password}
-				onChangeText={onPasswordChange}
+				{...syncNativeText(onPasswordChange)}
 				secureTextEntry
 				autoCapitalize="none"
-				autoComplete={
-					purpose === "sign-up" ? "new-password" : "current-password"
-				}
-				textContentType={purpose === "sign-up" ? "newPassword" : "password"}
+				{...passwordFieldTraits(purpose)}
 				returnKeyType="go"
-				onSubmitEditing={onSubmit}
+				onSubmitEditing={(event) => {
+					onPasswordChange(event.nativeEvent.text);
+					onSubmit(event.nativeEvent.text);
+				}}
 			/>
 		</>
 	);

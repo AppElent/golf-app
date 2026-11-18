@@ -8,6 +8,7 @@ import {
 	AuthSubmit,
 } from "../components/auth-form";
 import { CredentialsFields } from "../components/credentials-fields";
+import { credentialsReady } from "../components/credentials-model";
 import { SocialButtons } from "../components/social-buttons";
 import { usePasswordSignUp } from "./use-password-sign-up";
 
@@ -18,10 +19,12 @@ export function SignUpScreen() {
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
 
-	const ready = email.trim().length > 0 && password.length > 0;
+	const ready = credentialsReady(email, password);
 
-	async function submit() {
-		if (await signUp.submit(email, password)) {
+	/** `typed` is the password field's native text when the keyboard's Go submits. */
+	async function submit(typed: string = password) {
+		if (!credentialsReady(email, typed) || signUp.busy) return;
+		if (await signUp.submit(email, typed)) {
 			router.push({
 				pathname: "/verify-email",
 				params: { email: email.trim() },
@@ -49,7 +52,7 @@ export function SignUpScreen() {
 				password={password}
 				onEmailChange={setEmail}
 				onPasswordChange={setPassword}
-				onSubmit={() => ready && !signUp.busy && submit()}
+				onSubmit={submit}
 			/>
 
 			<AuthMessage message={signUp.error} />
@@ -58,7 +61,7 @@ export function SignUpScreen() {
 				label={copy.submit}
 				busy={signUp.busy}
 				disabled={!ready}
-				onPress={submit}
+				onPress={() => submit()}
 			/>
 
 			<SocialButtons />

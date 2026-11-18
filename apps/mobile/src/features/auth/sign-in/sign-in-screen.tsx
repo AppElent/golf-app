@@ -14,6 +14,7 @@ import {
 	AuthSubmit,
 } from "../components/auth-form";
 import { CredentialsFields } from "../components/credentials-fields";
+import { credentialsReady } from "../components/credentials-model";
 import { SocialButtons } from "../components/social-buttons";
 import { useEmailCodeSignIn } from "./use-email-code-sign-in";
 import { usePasswordSignIn } from "./use-password-sign-in";
@@ -27,7 +28,13 @@ export function SignInScreen() {
 	const [email, setEmail] = useState(devLogin?.email ?? "");
 	const [password, setPassword] = useState(devLogin?.password ?? "");
 
-	const ready = email.trim().length > 0 && password.length > 0;
+	const ready = credentialsReady(email, password);
+
+	/** `typed` is the password field's native text when the keyboard's Go submits. */
+	function submitPassword(typed: string = password) {
+		if (credentialsReady(email, typed) && !(busy || emailCode.busy))
+			void submit(email, typed);
+	}
 
 	async function sendCode() {
 		setCodeHint(null);
@@ -71,9 +78,7 @@ export function SignInScreen() {
 				password={password}
 				onEmailChange={setEmail}
 				onPasswordChange={setPassword}
-				onSubmit={() =>
-					ready && !(busy || emailCode.busy) && submit(email, password)
-				}
+				onSubmit={submitPassword}
 			/>
 
 			<AuthMessage message={codeHint ?? emailCode.error ?? error} />
@@ -82,7 +87,7 @@ export function SignInScreen() {
 				label={copy.submit}
 				busy={busy || emailCode.busy}
 				disabled={!ready}
-				onPress={() => submit(email, password)}
+				onPress={() => submitPassword()}
 				testID="sign-in-submit"
 			/>
 

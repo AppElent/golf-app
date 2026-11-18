@@ -4,6 +4,7 @@ import { AppearanceSettings } from "./AppearanceSettings";
 import { AuthButton } from "./AuthButton";
 import { AuthError } from "./AuthError";
 import { AuthField } from "./AuthField";
+import { UsernameHint } from "./UsernameHint";
 import { clerkErrorMessage } from "./core";
 
 export function ProfilePanel() {
@@ -99,6 +100,9 @@ export function ProfilePanel() {
 					className="mt-3 flex flex-col gap-3"
 					noValidate
 				>
+					<UsernameHint
+						username={user.primaryEmailAddress?.emailAddress ?? ""}
+					/>
 					<AuthField
 						label="Current password"
 						type="password"

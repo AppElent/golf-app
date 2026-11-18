@@ -3,6 +3,7 @@ import { useState } from "react";
 import { AuthButton } from "./AuthButton";
 import { AuthError } from "./AuthError";
 import { AuthField } from "./AuthField";
+import { UsernameHint } from "./UsernameHint";
 import { clerkErrorMessage, orThrow } from "./core";
 
 export function ForgotPasswordForm({ onSuccess }: { onSuccess: () => void }) {
@@ -53,6 +54,7 @@ export function ForgotPasswordForm({ onSuccess }: { onSuccess: () => void }) {
 		return (
 			<form onSubmit={resetPassword} noValidate className="flex flex-col gap-3">
 				<AuthError message={error} />
+				<UsernameHint username={email} />
 				<AuthField
 					label="Code"
 					type="text"
@@ -80,7 +82,7 @@ export function ForgotPasswordForm({ onSuccess }: { onSuccess: () => void }) {
 			<AuthField
 				label="Email"
 				type="email"
-				autoComplete="email"
+				autoComplete="username"
 				value={email}
 				onChange={setEmail}
 				required
