@@ -2,10 +2,13 @@ import { readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
-import { field, iconSvg, markSvg } from "./fairway-icon.mjs";
 
 const root = fileURLToPath(new URL("../../", import.meta.url));
 
+// Masters live in docs/brand/icon/: light.png is the generated artwork; dark,
+// tinted and the transparent mark come from scripts/brand/derive-appearances.py.
+const brand = (name) => readFile(path.join(root, `docs/brand/icon/${name}.png`));
+const field = ["#1cb45d", "#013a27"];
 const mobile = "apps/mobile/assets/images/";
 const svg = (width, height, content) => Buffer.from(
   `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${content}</svg>`,
@@ -14,26 +17,25 @@ const save = (name, buffer) => writeFile(path.join(root, name), buffer);
 const clear = (width, height) => sharp({
   create: { width, height, channels: 4, background: "#00000000" },
 });
-const render = (source) => sharp(Buffer.from(source)).png().toBuffer();
 
 // iOS: one opaque 1024 px icon per appearance (App Store icons carry no alpha).
-const icon = await sharp(await render(iconSvg("light"))).removeAlpha().png().toBuffer();
+const master = async (appearance) =>
+  sharp(await brand(appearance)).resize(1024, 1024).removeAlpha().png().toBuffer();
+const icon = await master("light");
 await save(`${mobile}icon.png`, icon);
 for (const appearance of ["dark", "tinted"]) {
-  await save(`${mobile}icon-${appearance}.png`,
-    await sharp(await render(iconSvg(appearance))).removeAlpha().png().toBuffer());
+  await save(`${mobile}icon-${appearance}.png`, await master(appearance));
 }
 
 // The mark alone, trimmed to its bounding box, for the transparent assets.
-const trimmed = async (options) => sharp(await render(markSvg(options))).trim().png().toBuffer();
-const onLayer = await trimmed();
-const onSurface = await trimmed({ pole: "#1c7a4c" });
+const onLayer = await sharp(await brand("mark")).trim({ threshold: 1 }).png().toBuffer();
+const onSurface = onLayer;
 async function mark(canvas, extent, master = onLayer) {
   const image = await sharp(master).resize(extent, extent, { fit: "inside" }).png().toBuffer();
   return clear(canvas, canvas).composite([{ input: image, gravity: "centre" }]).png().toBuffer();
 }
 
-// Android (parked, regenerated for consistency): the flag and green fit in a
+// Android (parked, regenerated for consistency): the hole fits in a
 // 540 px box, inside the adaptive icon's central 66% safe circle.
 const adaptive = await mark(1024, 540);
 await save(`${mobile}android-icon-foreground.png`, adaptive);
