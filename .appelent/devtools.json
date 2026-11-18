@@ -3,8 +3,8 @@
   "repository": "AppElent/developer-home",
   "scope": "project",
   "ref": "main",
-  "commit": "e2e7f7de9d6cd578c92381dc3645faf02b25cd29",
-  "manifestHash": "edd8a9ef50731abdb7097619aa53f6906830e970e70b96807b08e3cb50efd0c0",
+  "commit": "8faed14d9d77f47cc9a4645df33c001e11f6d991",
+  "manifestHash": "3ff57d3353a816a71bd3863ee646a1483e10c0b3b90cc39158bea21a2611e3f7",
   "files": {
     "docs/adr/.template.md": {
       "sha256": "f28b286102fb1a00512455a06896e5da3c47d67a14b0ee6c08fa84258af24adf",
@@ -257,11 +257,11 @@
       "version": "1.0.3"
     },
     "docs/standards/previews.md": {
-      "sha256": "e503bf9209305937e1ee9e192eb4db748c5ee12e0bff9a2cbb10c613ae98b3fd",
-      "version": "4.1.0"
+      "sha256": "7584ceed8c304fc1b0686a94a032c0f6ceb4ddcf3c06733e84db71983c42adcd",
+      "version": "5.0.0"
     },
     "docs/standards/previews/templates/preview.yml": {
-      "sha256": "57f93df1b3d673645f173791e181eaee7eb30470a7e403f6e466c4ceb38394a5"
+      "sha256": "3672675a7555918ecc56b678a830dd20e6e00a991ada653b6a2d7d36553f80e3"
     },
     "docs/standards/pwa.md": {
       "sha256": "847f3533259814cdac4afec4fe04622f96b04891cf04a52de89a1c040b289764",

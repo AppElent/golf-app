@@ -2,8 +2,9 @@
 # wrangler.jsonc needs a route-free env for previews:
 #   "env": { "pr": { "name": "APP_NAME-pr", "workers_dev": true, "routes": [] } }
 # Opt-in: deploys only while the PR carries the `preview:web` label; pushes
-# redeploy, removing the label or closing the PR deletes the Worker. Close
-# always cleans up, so Workers deployed before the label gate are not left behind.
+# redeploy, removing the label or closing the PR deletes the Convex preview and
+# the Worker. Close always cleans up, so previews deployed before the label gate
+# are not left behind.
 # Each run creates an isolated Convex preview backend from a preview-kind
 # deploy key, runs the seed function there, builds the web app against its
 # URL, and deploys a per-PR Worker. Values come from repository scope as
@@ -82,17 +83,120 @@ jobs:
       CLOUDFLARE_API_TOKEN: ${{ secrets.PREVIEW_CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.PREVIEW_CLOUDFLARE_ACCOUNT_ID }}
     steps:
+      # Convex previews count against the team's deployment quota until they
+      # are deleted, and every app on the team shares it: leftovers fail every
+      # new preview deploy. The preview deploy key
+      # (`preview:<team>:<project>|<token>`) may list and delete its own
+      # project's previews through the management API. Only a deployment of
+      # type `preview` whose previewIdentifier is pr-<N> is ever deleted; none
+      # is a no-op. Runs first and needs only curl and jq, so a failed install
+      # cannot skip it.
+      - name: Delete Convex preview
+        env:
+          CONVEX_DEPLOY_KEY: ${{ secrets.PREVIEW_CONVEX_DEPLOY_KEY }}
+          PREVIEW: pr-${{ github.event.pull_request.number }}
+          ACTOR: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          case "$CONVEX_DEPLOY_KEY" in
+            # Runs started by Dependabot get no repository secrets; anyone else
+            # without the key has a misconfigured repository.
+            "")
+              level=warning; [ "$ACTOR" = "dependabot[bot]" ] && level=notice
+              echo "::$level::No preview deploy key in this run; Convex preview $PREVIEW not checked."
+              exit 0 ;;
+            preview:*) ;;
+            *) echo "::error::PREVIEW_CONVEX_DEPLOY_KEY is not a preview deploy key"; exit 1 ;;
+          esac
+          IFS=: read -r _ TEAM PROJECT <<< "${CONVEX_DEPLOY_KEY%%|*}"
+          API=https://api.convex.dev/v1
+          AUTH="Authorization: Bearer $CONVEX_DEPLOY_KEY"
+          CURL=(curl -sS --connect-timeout 10 --max-time 60 --retry 3 -H "$AUTH")
+          api() { "${CURL[@]}" -f --retry-all-errors "$@"; }
+          PROJECT_ID=$(api "$API/teams/$TEAM/projects/$PROJECT" | jq -er .id)
+          # Deployment names (generated slugs) of this project's previews for pr-<N>.
+          matches() {
+            local list
+            # jq reads the response from a file: shell capture would silently
+            # drop bytes (such as NUL) that make the JSON invalid.
+            list=$(mktemp)
+            api "$API/projects/$PROJECT_ID/list_deployments" -o "$list" || return 1
+            # An empty body, or anything but exactly one array, must not read as
+            # "no match".
+            if ! jq -se 'length == 1 and (.[0] | type == "array")' "$list" > /dev/null 2>&1; then
+              echo "::error::Convex list_deployments did not return one JSON array." >&2
+              return 1
+            fi
+            # Rows without a string deploymentType, or previews without a string
+            # previewIdentifier, mean the API changed: matching would silently
+            # find nothing and leak previews again.
+            if ! jq -e 'all(.[]; type == "object" and (.deploymentType | type) == "string"
+                  and (.deploymentType != "preview" or (.previewIdentifier | type) == "string"))' "$list" > /dev/null 2>&1; then
+              echo "::error::Convex list_deployments rows changed shape; update this step." >&2
+              return 1
+            fi
+            # Each matched name must be a plain slug string before it is printed,
+            # so a null, empty or multi-line name can never reach the delete URL.
+            # A Convex naming change fails the step on purpose.
+            jq -r --arg p "$PREVIEW" '
+              [.[] | select(.deploymentType == "preview" and .previewIdentifier == $p) | .name]
+              | if all(type == "string" and test("\\A[a-z0-9]+(-[a-z0-9]+)*\\z")) then .[]
+                else error("unexpected Convex deployment name in \(.)") end' "$list"
+          }
+          OUT=$(matches)
+          if [ -z "$OUT" ]; then
+            # Other open PRs' previews are listed too, so no match while
+            # previews exist is normal: it does not mean the API's fields changed.
+            echo "No Convex preview $PREVIEW to delete."
+            exit 0
+          fi
+          NAMES=(); while IFS= read -r NAME; do NAMES+=("$NAME"); done <<< "$OUT"
+          for NAME in "${NAMES[@]}"; do
+            # Retries cover 5xx and timeouts; a 404 means it is already gone.
+            CODE=$("${CURL[@]}" -o /dev/null -w '%{http_code}' -X POST "$API/deployments/$NAME/delete") || CODE=000
+            case "$CODE" in
+              2??) echo "Deleted Convex preview $PREVIEW ($NAME)." ;;
+              404) echo "Convex preview $PREVIEW ($NAME) was already gone." ;;
+              *) echo "::error::Deleting Convex preview $NAME returned HTTP $CODE"; exit 1 ;;
+            esac
+          done
+          # A delete that answered 2xx but left the preview behind still fills
+          # the quota; list again and fail if it remains.
+          for attempt in 1 2 3 4 5 6; do
+            LEFT=$(matches)
+            [ -z "$LEFT" ] && exit 0
+            if [ "$attempt" -lt 6 ]; then sleep 10; fi
+          done
+          echo "::error::Convex preview $PREVIEW is still listed after delete: $LEFT"
+          exit 1
+      # The Worker is deleted even when the Convex step failed.
       - uses: actions/checkout@v4
+        if: ${{ !cancelled() }}
       - uses: pnpm/action-setup@v4
+        if: ${{ !cancelled() }}
       - uses: actions/setup-node@v4
+        if: ${{ !cancelled() }}
         with:
           node-version: 22.15.0
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - # Close always runs cleanup, so a PR that never deployed has no Worker.
-        # Tolerate only that; any other failure must stay visible.
+        if: ${{ !cancelled() }}
+      # Close always runs cleanup, so a PR that never deployed has no Worker.
+      # Tolerate only that; any other failure must stay visible.
+      - name: Delete Worker
+        if: ${{ !cancelled() }}
+        env:
+          ACTOR: ${{ github.actor }}
         run: |
+          # Runs started by Dependabot (closing a superseded PR) get no secrets.
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            level=warning; [ "$ACTOR" = "dependabot[bot]" ] && level=notice
+            echo "::$level::No Cloudflare token in this run; Worker not deleted."
+            exit 0
+          fi
           status=0; out=$(pnpm exec wrangler delete --force --name "APP_NAME-pr-${{ github.event.pull_request.number }}" 2>&1) || status=$?
           echo "$out"
-          # Wrangler reports a missing Worker as code 10007 ("This Worker does not exist").
-          [ "$status" -eq 0 ] || echo "$out" | grep -qE "10007|does not exist" || exit "$status"
+          # Wrangler reports a missing Worker as Cloudflare error 10007 or, from
+          # its services lookup, 10090 (its own isWorkerNotFoundError accepts
+          # both). Match the code, not the message wording.
+          [ "$status" -eq 0 ] || grep -qE '\[code: (10007|10090)\]' <<< "$out" || exit "$status"
