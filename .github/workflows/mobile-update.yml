@@ -52,6 +52,9 @@ jobs:
       # Read when ota-preview does not exist yet; the first publish replaces it.
       LEGACY_TAG: mobile-ota/preview
       FORCE: ${{ inputs.force && 'true' || 'false' }}
+      # Android is paused until the repository variable ANDROID_ENABLED is
+      # `true` (developer-home standards/releases.md, "Android pause").
+      PLATFORMS: ${{ vars.ANDROID_ENABLED == 'true' && 'ios android' || 'ios' }}
     defaults:
       run:
         working-directory: apps/mobile
@@ -98,7 +101,7 @@ jobs:
         if: steps.changed.outputs.changed == 'true'
         run: |
           publish=()
-          for platform in ios android; do
+          for platform in $PLATFORMS; do
             runtime=$(pnpm exec expo-updates runtimeversion:resolve --platform "$platform" | jq -r .runtimeVersion)
             updates=$(pnpm exec eas update:list --branch "$CHANNEL" --runtime-version "$runtime" \
               --limit 50 --json --non-interactive 2>/dev/null \
