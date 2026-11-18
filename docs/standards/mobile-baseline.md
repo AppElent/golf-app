@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when setting up or changing an Expo Router app, its native configuration, or its EAS build profiles.
-version: 3.2.0
+version: 3.3.0
 applies_to: [mobile]
 ---
 
@@ -70,7 +70,7 @@ Expo apps share one stack while preserving native identity and release boundarie
 ## Verify
 
 - Types, app tests, and Expo dependency checks pass.
-- An actual development or internal build runs on a device or simulator: cold and warm launch, login and logout, navigation, keyboard, safe areas, scaling, offline and error states, and backend reachability. Native interactions need native verification, not screenshots of the web app; follow the applicable [iOS](ios-design.md) and [Android](android-design.md) rules.
+- An actual development or internal build runs on a device or simulator: cold and warm launch, login and logout, navigation, keyboard, safe areas, scaling, offline and error states, and backend reachability. On an iOS simulator, run it with [`scripts/run-mobile.mjs`](mobile-run.md). Native interactions need native verification, not screenshots of the web app; follow the applicable [iOS](ios-design.md) and [Android](android-design.md) rules.
 - Device Hub loads and the intended device connects.
 - A missing provider credential or untested device path is reported as outstanding work.
 

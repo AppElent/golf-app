@@ -1,8 +1,8 @@
 ---
 type: standard
 kind: capability
-description: Read when changing a project's `.claude/settings.json` or hooks, adding an allow rule, or when an agent command is blocked by the deny list.
-version: 1.0.0
+description: Read when changing a project's `.claude/settings.json` or hooks, adding an allow rule, when an agent command is blocked by the deny list, or before driving a simulator or emulator.
+version: 1.1.0
 applies_to: [web, mobile, backend]
 ---
 
@@ -26,6 +26,37 @@ Irreversible actions are hard-blocked for every agent in every project, in every
 - The deny list and the hook go together; add both or neither. They sit next to the [Convex local guard](convex.md) and the [env guard](environments.md), which keep their own allow rules safe.
 - An approved irreversible step never runs through an agent: it runs in its CI workflow (merge to `main`, the gated production OTA job) or Eric runs it himself, in his terminal or with `!` in Claude Code. Do not add an allow rule or a hook exception to let an agent run it.
 - A new irreversible command (a new CLI, a new deploy script) goes into `BASELINE_DENY` and the hook in developer-home first, then into each project with the next toolkit sync.
+
+## Driving simulators unattended
+
+Eric, 18 Nov 2026: agents must drive simulators without Eric at the Mac.
+
+- **Drive simulators only from Bash**: `agent-device`, `maestro` and `xcrun simctl`, always with the claimed UDID (`--udid`, `--device`). Bash commands follow the project's permission rules and need no prompt from Eric.
+- **Never use the Claude desktop app's iOS Simulator tool** (`mcp__Claude_Code_iOS_Simulator__control`) or computer use on the Simulator app. The desktop app asks Eric to approve each simulator by UDID. Agent simulators get a new UDID for every task, so every thread raised a new prompt. An unanswered prompt blocks retries for a while, and a declined one blocks that device for good.
+- Claim and release devices with `~/.agents/bin/sim` (see the RUNBOOK's Local folders section). For an app's dev build, use [`scripts/run-mobile.mjs`](mobile-run.md), which claims and releases through `sim`.
+- Wait for a simulator with a polling loop inside one command (`agent-device wait`, `simctl bootstatus -b`), not with `sleep`, which the harness blocks.
+
+### Auto mode on the Mac
+
+Remote Control and T3 sessions on the Mac run in auto mode from `~/Developer`, which has no project settings. The auto mode classifier then judges simulator commands. It flagged taps on "Delete" in a dev build, and `simctl delete` inside a compound command. `autoMode` is only read from user settings (`~/.claude/settings.json`) or managed settings, never from a project's `.claude/settings.json`. With Eric's approval, his user settings carry these entries, merged with any he already has:
+
+```json
+{
+  "autoMode": {
+    "environment": [
+      "$defaults",
+      "Local iOS simulators and Android emulators on this Mac are disposable test devices. Agents drive them with agent-device, maestro, adb and xcrun simctl, always passing the claimed UDID or serial."
+    ],
+    "allow": [
+      "$defaults",
+      "Tapping, typing, deleting data or deleting the account inside a development build (bundle ids ending in .dev or .preview) on a local simulator or emulator, against a dev or anonymous local backend, is expected testing.",
+      "Creating, booting, shutting down, erasing and deleting simulators named agent-* with xcrun simctl or ~/.agents/bin/sim is expected cleanup."
+    ]
+  }
+}
+```
+
+These entries do not loosen the deny list or the guard hooks: production deploys, store submits and secret reads stay blocked. Check the result with `claude auto-mode config` and `claude auto-mode critique`.
 
 ## Implementation
 

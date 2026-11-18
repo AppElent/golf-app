@@ -23,6 +23,7 @@ Read only what the task needs; never preload every standard.
 | Web app stack, UI states, or browser capabilities | [Web baseline](docs/standards/web-baseline.md) |
 | Expo setup or native configuration | [Mobile baseline](docs/standards/mobile-baseline.md) |
 | Native builds, getting one onto a phone, TestFlight, OTA updates, or releases | [Mobile distribution](docs/standards/mobile-distribution.md) |
+| Running, driving or screenshotting the mobile app on an iOS simulator | [Mobile run](docs/standards/mobile-run.md) |
 | Reporting work as done, verified, or accepted | [Verification](docs/standards/verification.md), then the project's check commands |
 | Environment variables, secrets, `env.manifest.ts`, or `env:*` scripts | [Environments](docs/standards/environments.md) |
 | Claude Code settings, hooks, allow or deny rules, or a command the deny list blocked | [Agent permissions](docs/standards/agent-permissions.md) |
