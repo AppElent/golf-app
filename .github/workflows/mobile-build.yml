@@ -40,12 +40,15 @@ jobs:
       profile: ${{ inputs.profile || 'development' }}
     secrets: inherit
 
+  # Android is paused until the repository variable ANDROID_ENABLED is `true`
+  # (developer-home standards/releases.md, "Android pause").
   android:
     if: >-
+      vars.ANDROID_ENABLED == 'true' && (
       (github.event_name == 'workflow_dispatch' && inputs.platform == 'android') ||
       (github.event.pull_request.head.repo.full_name == github.repository &&
       contains(github.event.pull_request.labels.*.name, 'build:android') &&
-      (github.event.action != 'labeled' || github.event.label.name == 'build:android'))
+      (github.event.action != 'labeled' || github.event.label.name == 'build:android')))
     concurrency:
       group: mobile-android-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true

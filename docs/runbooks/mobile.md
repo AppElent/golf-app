@@ -71,6 +71,12 @@ installed preview app) is written from `staging`: `pnpm env:apply staging --only
 
 ## Builds
 
+> **Android is paused (Eric, 18 Nov 2026).** Until the repository variable
+> `ANDROID_ENABLED` is `true`, Mobile Build ignores `build:android`, and Mobile
+> Update and Mobile Update (production) publish iOS only. Re-enable with
+> `gh variable set ANDROID_ENABLED --body true` (developer-home
+> `standards/releases.md`, "Android pause").
+
 - CI: label a PR `build:ios` / `build:android`, or run **Mobile Build** manually
   (`.github/workflows/mobile-build.yml` → `eas-local-build.yml`). Builds run
   `eas build --local` on the runner and spend no EAS Build credits.

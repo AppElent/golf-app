@@ -52,7 +52,19 @@ export default ({ config }: ConfigContext): ExpoConfig => {
 		slug: "fairway",
 		scheme,
 		icon: `./assets/images/icon${icon}.png`,
-		ios: { ...config.ios, bundleIdentifier: id },
+		ios: {
+			...config.ios,
+			bundleIdentifier: id,
+			// The store icon follows the iOS 18+ dark and tinted home screens;
+			// badged install variants keep one icon so the label stays visible.
+			icon: icon
+				? `./assets/images/icon${icon}.png`
+				: {
+						light: "./assets/images/icon.png",
+						dark: "./assets/images/icon-dark.png",
+						tinted: "./assets/images/icon-tinted.png",
+					},
+		},
 		android: {
 			...config.android,
 			package: id,

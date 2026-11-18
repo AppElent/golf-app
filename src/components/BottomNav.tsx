@@ -19,7 +19,7 @@ const tabs = [
 export default function BottomNav({ wide = false }: { wide?: boolean }) {
 	return (
 		<nav
-			className={`fixed inset-x-0 bottom-0 z-30 mx-auto min-h-[86px] w-full border-t border-card-line bg-white/90 px-2 pt-3 pb-[env(safe-area-inset-bottom)] backdrop-blur-md ${wide ? "" : "max-w-[430px]"}`}
+			className={`fixed inset-x-0 bottom-0 z-30 mx-auto min-h-[86px] w-full border-t border-card-line bg-bar px-2 pt-3 pb-[env(safe-area-inset-bottom)] backdrop-blur-md ${wide ? "" : "max-w-[430px]"}`}
 		>
 			<div className="mx-auto flex w-full max-w-[430px] items-start">
 				{tabs.map(({ to, label, icon: Icon }) => (
@@ -28,7 +28,7 @@ export default function BottomNav({ wide = false }: { wide?: boolean }) {
 						to={to}
 						activeOptions={{ exact: to === "/" }}
 						className="flex flex-1 flex-col items-center gap-1"
-						activeProps={{ className: "text-pine" }}
+						activeProps={{ className: "text-pine-ink" }}
 						inactiveProps={{ className: "text-stone" }}
 					>
 						<Icon size={23} strokeWidth={1.9} />

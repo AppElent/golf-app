@@ -41,7 +41,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        platform: [ios, android]
+        # Android is paused until the repository variable ANDROID_ENABLED is
+        # `true` (developer-home standards/releases.md, "Android pause").
+        platform: ${{ fromJSON(vars.ANDROID_ENABLED == 'true' && '["ios","android"]' || '["ios"]') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

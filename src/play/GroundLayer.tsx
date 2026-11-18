@@ -86,7 +86,7 @@ export function GroundLayer({
 						cy={at.y}
 						r={4.5}
 						fill={TEE_MARKER_COLORS[box.colors[0]] ?? TEE_MARKER_FALLBACK}
-						stroke="var(--color-ink)"
+						stroke="var(--color-map-ink)"
 						strokeWidth={1}
 					/>
 				);
@@ -122,14 +122,14 @@ export function GroundLayer({
 				y1={flag.y}
 				x2={flag.x}
 				y2={flag.y - 22}
-				stroke="var(--color-ink)"
+				stroke="var(--color-map-ink)"
 				strokeWidth={1.5}
 			/>
 			<path
 				d={`M${flag.x} ${flag.y - 22} L${flag.x + 12} ${flag.y - 18} L${flag.x} ${flag.y - 14} Z`}
 				fill="var(--color-flag)"
 			/>
-			<circle cx={flag.x} cy={flag.y} r={2.5} fill="var(--color-ink)" />
+			<circle cx={flag.x} cy={flag.y} r={2.5} fill="var(--color-map-ink)" />
 		</g>
 	);
 }

@@ -19,7 +19,7 @@ import { useMutation } from "convex/react";
 import { Minus, Plus } from "lucide-react";
 import { useState } from "react";
 import { api } from "../../convex/_generated/api";
-import { CTA, SURFACE } from "../components/classes";
+import { CONTROL, CTA, SURFACE } from "../components/classes";
 import { Page, PageNote, PageTitle } from "../components/Page";
 import { SyncPill } from "../offline/SyncPill";
 import { useScoreSync } from "../offline/useScoreSync";
@@ -138,8 +138,8 @@ function RoundCard({
 							onClick={() => setPlayerIndex(i)}
 							className={`rounded-full border px-3 py-1.5 font-display text-footnote font-semibold ${
 								playerIndex === i
-									? "border-pine bg-pine text-cream"
-									: `${SURFACE} text-ink`
+									? "border-pine-fill bg-pine-fill text-cream"
+									: `${CONTROL} text-ink`
 							}`}
 						>
 							{p.name}
@@ -163,17 +163,26 @@ function RoundCard({
 								key={hole.ref}
 								onClick={() => setSelected(holeIndex)}
 								className={`flex flex-col items-center rounded-lg py-1.5 ${
-									selected === holeIndex ? "bg-pine/10 ring-1 ring-pine" : ""
+									selected === holeIndex
+										? "bg-pine-ink/10 ring-1 ring-pine-ink"
+										: ""
 								}`}
 							>
-								<span className="text-micro font-semibold text-stone">
+								<span
+									className={`text-micro font-semibold ${selected === holeIndex ? "text-ink" : "text-stone"}`}
+								>
 									{holeIndex + 1}
 								</span>
 								<MarkCell
 									mark={scoreMark(hole.par, strokes)}
 									strokes={s?.nr ? "NR" : (strokes ?? "·")}
 								/>
-								<span className="text-nano text-stone">{hole.par}</span>
+								{/* stone misses 4.5:1 on the selected tint, so the selected hole uses ink */}
+								<span
+									className={`text-nano ${selected === holeIndex ? "text-ink" : "text-stone"}`}
+								>
+									{hole.par}
+								</span>
 							</button>
 						);
 					})}
@@ -247,7 +256,7 @@ function RoundCard({
 						type="button"
 						disabled={selected === 0}
 						onClick={() => setSelected((s) => s - 1)}
-						className="rounded-full border border-card-line px-4 py-2 font-display text-label font-semibold text-ink disabled:opacity-40"
+						className="rounded-full border border-control-line px-4 py-2 font-display text-label font-semibold text-ink disabled:opacity-40"
 					>
 						← Prev
 					</button>
@@ -255,7 +264,7 @@ function RoundCard({
 						type="button"
 						disabled={selected === holes.length - 1}
 						onClick={() => setSelected((s) => s + 1)}
-						className="rounded-full border border-card-line px-4 py-2 font-display text-label font-semibold text-ink disabled:opacity-40"
+						className="rounded-full border border-control-line px-4 py-2 font-display text-label font-semibold text-ink disabled:opacity-40"
 					>
 						Next →
 					</button>
@@ -281,7 +290,7 @@ function RoundCard({
 						<button
 							type="button"
 							onClick={() => setConfirmFinish(false)}
-							className="rounded-full border border-card-line px-4 py-3 font-display text-callout font-semibold text-ink"
+							className="rounded-full border border-control-line px-4 py-3 font-display text-callout font-semibold text-ink"
 						>
 							Cancel
 						</button>
@@ -292,7 +301,7 @@ function RoundCard({
 					<button
 						type="button"
 						onClick={() => setConfirmFinish(true)}
-						className="flex-1 rounded-full bg-pine px-4 py-3 font-display text-callout font-bold text-cream"
+						className="flex-1 rounded-full bg-pine-fill px-4 py-3 font-display text-callout font-bold text-cream"
 					>
 						Finish round
 					</button>
@@ -302,7 +311,7 @@ function RoundCard({
 							await abandon({ roundId: round._id });
 							if (round.simulated) setSimulating(false);
 						}}
-						className="rounded-full border border-card-line px-4 py-3 font-display text-label font-semibold text-moss"
+						className="rounded-full border border-control-line px-4 py-3 font-display text-label font-semibold text-moss"
 					>
 						Abandon
 					</button>
@@ -343,7 +352,7 @@ function MarkCell({
 			);
 		case "double":
 			return (
-				<span className={`${base} rounded-md bg-stone text-white`}>
+				<span className={`${base} rounded-md bg-stone text-on-stone`}>
 					{strokes}
 				</span>
 			);
@@ -395,7 +404,7 @@ function Stepper({
 					aria-label={`decrease ${label}`}
 					disabled={value === null || value <= min}
 					onClick={() => value !== null && onChange(value - 1)}
-					className="rounded-full border border-card-line p-2 text-ink disabled:opacity-30"
+					className="rounded-full border border-control-line p-2 text-ink disabled:opacity-30"
 				>
 					<Minus className="size-4" />
 				</button>
@@ -406,7 +415,7 @@ function Stepper({
 					type="button"
 					aria-label={`increase ${label}`}
 					onClick={() => onChange((value ?? 0) + 1)}
-					className="rounded-full border border-card-line p-2 text-ink"
+					className="rounded-full border border-control-line p-2 text-ink"
 				>
 					<Plus className="size-4" />
 				</button>
@@ -435,7 +444,7 @@ function Toggle({
 					? flag
 						? "border-flag bg-flag text-white"
 						: "border-live bg-live text-white"
-					: `${SURFACE} text-moss`
+					: `${CONTROL} text-moss`
 			}`}
 		>
 			{label}
