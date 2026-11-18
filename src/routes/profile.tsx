@@ -12,6 +12,7 @@ import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
 import { CONTROL, CTA, FIELD, SURFACE } from "../components/classes";
 import { INVALID_INDEX_MESSAGE } from "../components/copy";
+import { DataExportSection } from "../components/DataExportSection";
 import { Page, PageNote, PageTitle, Section } from "../components/Page";
 import { PillToggle } from "../components/PillToggle";
 import { StatCard } from "../components/StatCard";
@@ -159,6 +160,8 @@ function ProfileScreen() {
 			<Section title="Club bag">
 				<ClubBag clubs={clubs ?? []} units={units} />
 			</Section>
+
+			<DataExportSection />
 
 			<AccountSection />
 		</Page>

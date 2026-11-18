@@ -1,6 +1,6 @@
 import { useAuth, useUser } from "@clerk/expo";
 import type { Units } from "@fairway/core/format";
-import { useMutation } from "convex/react";
+import { useConvex, useMutation } from "convex/react";
 import * as Application from "expo-application";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
@@ -34,6 +34,7 @@ import {
 	setBackgroundLocationPreferred,
 } from "../../location/background/background-location-preference";
 import { useUnits } from "../use-units";
+import { shareDataExport } from "./data-export";
 
 /** Language names are written in their own language. */
 const LANGUAGES: { value: Locale; label: string }[] = [
@@ -59,6 +60,8 @@ export function ProfileScreen() {
 	const clubs = useQuery(api.clubs.list);
 	const updateSettings = useMutation(api.settings.update);
 	const deleteMyData = useMutation(api.account.deleteMyData);
+	const convex = useConvex();
+	const [exporting, setExporting] = useState(false);
 	const [deleting, setDeleting] = useState(false);
 	const [lockedGps, setLockedGps] = useState(backgroundLocationPreferred);
 
@@ -81,6 +84,19 @@ export function ProfileScreen() {
 			await updateSettings({ units });
 		} catch (e) {
 			toast.error(convexErrorMessage(e, t.profile.saveError));
+		}
+	}
+
+	async function onExportData() {
+		setExporting(true);
+		try {
+			await shareDataExport((step) =>
+				convex.query(api.account.exportPage, { step }),
+			);
+		} catch (e) {
+			toast.error(convexErrorMessage(e, t.profile.exportError));
+		} finally {
+			setExporting(false);
 		}
 	}
 
@@ -230,6 +246,11 @@ export function ProfileScreen() {
 					onPress={() => {
 						openBrowserAsync(PRIVACY_POLICY_URL).catch(() => {});
 					}}
+				/>
+				<InsetRow
+					leading={{ symbol: "square.and.arrow.up" }}
+					title={exporting ? `${t.profile.exportData}…` : t.profile.exportData}
+					onPress={exporting ? undefined : () => void onExportData()}
 				/>
 				<InsetRow
 					title={t.profile.signOut}

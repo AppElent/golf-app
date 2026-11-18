@@ -6,6 +6,7 @@
  * history, and the catalog sync's idempotence.
  */
 
+import { collectExport, type DataExport } from "@fairway/core/data-export";
 import { ConvexError } from "convex/values";
 import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
@@ -13,6 +14,7 @@ import { api, internal } from "./_generated/api";
 import schema from "./schema";
 import * as seed from "./seed";
 import * as seedPreview from "./seedPreview";
+import { OWNED_TABLES, USER_DATA } from "./userData";
 
 // Function modules plus `_generated`, which convex-test uses to find the root.
 const modules = import.meta.glob([
@@ -728,6 +730,157 @@ describe("account", () => {
 		expect(await alice.query(api.courses.get, { courseId: catalogId })).toEqual(
 			course,
 		);
+	});
+});
+
+describe("data export", () => {
+	type Who = Awaited<ReturnType<typeof setup>>["alice"];
+	type Course = Awaited<ReturnType<typeof setup>>["course"];
+
+	/** A row in every user-owned table: settings, clubs, a scored round with
+	 *  a shot, two course copies (tees, holes, geometry) and a suggestion. */
+	async function fillEveryTable(who: Who, course: Course, name: string) {
+		const catalogId = course.course._id;
+		await who.mutation(api.settings.update, {
+			homeCourseId: catalogId,
+			handicapIndex: 12.4,
+		});
+		await who.mutation(api.clubs.create, { name: "7i", carryMeters: 150 });
+		const roundId = await startRound(who, course);
+		await who.mutation(api.rounds.setScore, {
+			roundId,
+			holeIndex: 0,
+			playerIndex: 0,
+			strokes: 5,
+			putts: 2,
+		});
+		await who.mutation(api.shots.mark, {
+			roundId,
+			holeIndex: 0,
+			position: { lat: 51.6, lng: 4.87 },
+		});
+		const copyId = await who.mutation(api.courses.fork, {
+			courseId: catalogId,
+			name: `${name}'s copy`,
+		});
+		await who.mutation(api.courses.fork, { courseId: catalogId });
+		await who.mutation(api.courses.suggest, {
+			courseId: catalogId,
+			message: `${name}: hole 1 is a par 4`,
+		});
+		return { roundId, copyId };
+	}
+
+	const exportOf = (who: Who) =>
+		collectExport((step) => who.query(api.account.exportPage, { step }));
+
+	const rowIds = (data: DataExport) =>
+		Object.values(data.tables).flatMap((rows) =>
+			rows.map((row) => (row as { _id: string })._id),
+		);
+
+	it("refuses without a session", async () => {
+		const t = convexTest(schema, modules);
+		await expect(t.query(api.account.exportPage, {})).rejects.toThrow(
+			"Not signed in.",
+		);
+	});
+
+	it("classifies every table in the schema", () => {
+		expect(Object.keys(USER_DATA).sort()).toEqual(
+			Object.keys(schema.tables).sort(),
+		);
+		for (const treatment of Object.values(USER_DATA)) {
+			if (treatment.kind === "child") {
+				expect(OWNED_TABLES).toContain(treatment.parent);
+			}
+		}
+	});
+
+	it("exports a row of every user-owned table, and nobody else's", async () => {
+		const { t, alice, bob, course } = await setup();
+		const { roundId, copyId } = await fillEveryTable(alice, course, "Alice");
+		await fillEveryTable(bob, course, "Bob");
+
+		const data = await exportOf(alice);
+
+		expect(data.format).toBe("fairway-data-export");
+		expect(data.version).toBe(1);
+		expect(Date.parse(data.exportedAt)).not.toBeNaN();
+		for (const [table, treatment] of Object.entries(USER_DATA)) {
+			if (treatment.kind === "shared") continue;
+			expect(data.tables[table]?.length, table).toBeGreaterThan(0);
+		}
+		// Two copies, one per page: the walk goes past the first page.
+		expect(data.tables.courses).toHaveLength(2);
+		expect(data.tables.rounds).toEqual([
+			expect.objectContaining({ _id: roundId }),
+		]);
+		expect(data.tables.holeScores).toEqual([
+			expect.objectContaining({ roundId, strokes: 5, putts: 2 }),
+		]);
+		const copyHoles = data.tables.holes as { courseId: string }[];
+		expect(copyHoles.length).toBe(course.holes.length * 2);
+		expect(copyHoles.some((h) => h.courseId === copyId)).toBe(true);
+
+		// Bob's rows are not in Alice's file, and no row carries a user id.
+		const bobIds = await t.run(async (ctx) => {
+			const rounds = await ctx.db
+				.query("rounds")
+				.withIndex("by_user", (q) => q.eq("userId", BOB.subject))
+				.collect();
+			const copies = await ctx.db
+				.query("courses")
+				.withIndex("by_owner", (q) => q.eq("ownerId", BOB.subject))
+				.collect();
+			return [...rounds, ...copies].map((d) => d._id as string);
+		});
+		const ids = rowIds(data);
+		expect(ids.filter((id) => bobIds.includes(id))).toEqual([]);
+		expect(new Set(ids).size).toBe(ids.length);
+		const text = JSON.stringify(data);
+		expect(text).not.toContain(BOB.subject);
+		expect(text).not.toContain(ALICE.subject);
+		expect(text).not.toContain("Bob: hole 1");
+
+		// The catalog course the round, settings and suggestion name, by name.
+		expect(data.catalog.courses).toEqual([
+			{
+				_id: course.course._id,
+				name: course.course.name,
+				city: course.course.city,
+			},
+		]);
+		expect(data.catalog.tees).toEqual([
+			expect.objectContaining({
+				_id: course.tees[0]._id,
+				name: course.tees[0].name,
+			}),
+		]);
+	});
+
+	it("is empty after the account's data is deleted", async () => {
+		const { alice, bob, course } = await setup();
+		await fillEveryTable(alice, course, "Alice");
+		await fillEveryTable(bob, course, "Bob");
+
+		await alice.mutation(api.account.deleteMyData, {});
+
+		const data = await exportOf(alice);
+		for (const [table, treatment] of Object.entries(USER_DATA)) {
+			if (treatment.kind === "shared") continue;
+			expect(data.tables[table], table).toEqual([]);
+		}
+		expect(rowIds(await exportOf(bob)).length).toBeGreaterThan(0);
+	});
+
+	it("refuses a table it does not export", async () => {
+		const { alice } = await setup();
+		await expect(
+			alice.query(api.account.exportPage, {
+				step: { table: "holes", cursor: null },
+			}),
+		).rejects.toThrow("Unknown export table.");
 	});
 });
 
