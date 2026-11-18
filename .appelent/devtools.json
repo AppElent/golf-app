@@ -4,7 +4,7 @@
   "scope": "project",
   "ref": "main",
   "commit": "local",
-  "manifestHash": "618d0057482eceb8bfa7dca71cc5de80c9aca9f68fd9545426c66ff017197730",
+  "manifestHash": "edd8a9ef50731abdb7097619aa53f6906830e970e70b96807b08e3cb50efd0c0",
   "files": {
     "docs/adr/.template.md": {
       "sha256": "f28b286102fb1a00512455a06896e5da3c47d67a14b0ee6c08fa84258af24adf",
@@ -504,11 +504,11 @@
       "sha256": "3676673615c25e7ceb75fa7534b68dcdbe99856c715fb79a11c4bafab99e4ea6"
     },
     "docs/standards/mobile-run.md": {
-      "sha256": "e58a66c4728ce40ee280f12d04da38cb2ae3bc52b7c9e9920ab0f7a0be716074",
-      "version": "1.0.0"
+      "sha256": "e8e12f5962acb3c71ca5949810a6b8dd425308cb659e8f8053f528058cc352ab",
+      "version": "1.1.0"
     },
     "scripts/run-mobile.mjs": {
-      "sha256": "2ff65b26e7c33725216d0cd47b3c294820f605ffed236394cb933cdb0be14919"
+      "sha256": "eebbf04e30359b84b78339cda8b6355d4138c0676ddcc30d1c7957ab13d9cfee"
     }
   },
   "blocks": {

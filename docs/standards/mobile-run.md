@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read before running, driving, or screenshotting an app's mobile build on an iOS simulator.
-version: 1.0.0
+version: 1.1.0
 applies_to: [mobile]
 ---
 
@@ -18,8 +18,8 @@ Every app runs its Expo dev client on a simulator the same way: `node scripts/ru
   "runMobile": { "bundleId": "com.appelent.foundry.dev", "port": 8090 }
   ```
 
-  `bundleId` is the development variant. Ports are fixed per app so checkouts don't collide: Foundry 8090, Fairway 8091, Gather 8092, Arcade Club 8093. Another checkout of the same app sets `RUN_MOBILE_PORT`.
-- **Devices come from `sim`.** `up` claims the simulator with `~/.agents/bin/sim claim ios run-<checkout>` (named `agent-<repo>-run-<checkout>`), and `down` returns it with `sim release`, which deletes it. Run `down` before the thread ends. Developer-home's `pnpm simulators prune` deletes any a thread left behind. Never create a simulator by hand.
+  `bundleId` is the development variant. Each app has its own base port: Foundry 8090, Fairway 8091, Gather 8092, Arcade Club 8093. When another checkout's Metro holds it, `up` moves to the next free port (up to +20) and later commands reuse it; `RUN_MOBILE_PORT` pins a port.
+- **Devices come from `sim`.** `up` claims the simulator with `~/.agents/bin/sim claim ios run-<checkout>` (named `agent-<checkout folder>-run-<checkout id>`; `up` logs the name), and `down` returns it with `sim release`, which deletes it. Run `down` before the thread ends, also after a failed `up` (it says when a simulator stays claimed). Developer-home's `pnpm simulators prune` deletes any a thread left behind. Never create a simulator by hand.
 - **Bash only.** Drive the app with `run-mobile.mjs ad …` (agent-device), `maestro --device "$(node scripts/run-mobile.mjs udid)"`, or `xcrun simctl` with that UDID. Never use the Claude desktop app's iOS Simulator tool or computer use on Simulator: the desktop app asks Eric to approve every new device ([agent permissions](agent-permissions.md#driving-simulators-unattended)).
 - **Backend check.** `up` stops when the bundle Metro serves inlines a different `EXPO_PUBLIC_CONVEX_URL` than `apps/mobile/.env.local` (and `.env`). Make no writes until `backend` passes. The check prints only Convex origins: bundles inline the test user's password, so never grep or print a bundle.
 
@@ -52,4 +52,5 @@ $R down                                # close session, stop our Metro, release 
 - New simulators inherit the Mac's language (Dutch); `up` forces English unless `--lang nl`.
 - `up` passes `disableOnboarding`, `disableFab` and `disableAutoLaunch` to expo-dev-launcher so the dev menu doesn't cover header buttons.
 - Wait with `$R ad wait …` or `simctl bootstatus -b`, not `sleep`, which the harness blocks.
-- Many Metros run at once; `up` refuses a port whose Metro belongs to another checkout.
+- Many Metros run at once; `up` never reuses or stops another checkout's Metro.
+- In an app, Biome skips `scripts/run-mobile.mjs` like the other synced toolkit scripts (`"!scripts/run-mobile.mjs"` in `biome.json` `files.includes` where `scripts/**` is included).

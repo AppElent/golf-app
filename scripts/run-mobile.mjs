@@ -12,7 +12,7 @@
 //   "runMobile": { "bundleId": "com.appelent.foundry.dev", "port": 8090 }
 //
 // The simulator always comes from `~/.agents/bin/sim claim ios run-<checkout>`
-// (named `agent-<repo>-run-<checkout>`) and goes back with `sim release` on
+// (named `agent-<checkout folder>-run-<checkout id>`) and goes back with `sim release` on
 // `down`. Drive it only through this script or Bash with its UDID, never with
 // the Claude desktop app's iOS Simulator tool (it asks Eric for every device).
 import { spawn, spawnSync } from "node:child_process";
@@ -98,8 +98,10 @@ export function readConfig(pkg) {
 // Side effects
 
 const log = (msg) => process.stderr.write(`[run-mobile] ${msg}\n`);
+let claimed = "";
 function die(msg) {
 	log(`ERROR: ${msg}`);
+	if (claimed) log(`simulator '${claimed}' stays claimed; run: node scripts/run-mobile.mjs down`);
 	process.exit(1);
 }
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -117,10 +119,13 @@ function context() {
 	if (!existsSync(pkgPath)) die(`no apps/mobile/package.json under ${repo}`);
 	const config = readConfig(JSON.parse(readFileSync(pkgPath, "utf8")));
 	const id = checkoutId(mobile);
-	const port = Number(process.env.RUN_MOBILE_PORT || config.port);
 	const state = process.env.RUN_MOBILE_STATE || join(tmpdir(), `run-mobile-${id}`);
 	mkdirSync(state, { recursive: true });
-	return { repo, mobile, id, port, state, bundleId: config.bundleId };
+	// `up` moves to a free port when another checkout's Metro holds the app's port; later commands reuse it.
+	const portFile = join(state, "port");
+	const saved = existsSync(portFile) ? Number(readFileSync(portFile, "utf8")) : 0;
+	const port = Number(process.env.RUN_MOBILE_PORT || saved || config.port);
+	return { repo, mobile, id, port, portFile, state, bundleId: config.bundleId, pinned: Boolean(process.env.RUN_MOBILE_PORT) };
 }
 
 function devices() {
@@ -182,9 +187,23 @@ function metroCwd(port) {
 }
 
 async function ensureMetro(ctx, { clear, env }) {
-	const cwd = metroCwd(ctx.port);
+	let cwd = metroCwd(ctx.port);
+	if (cwd && cwd !== ctx.mobile && !ctx.pinned) {
+		const taken = ctx.port;
+		for (let p = taken + 1; p <= taken + 20; p++) {
+			const owner = metroCwd(p);
+			if (!owner || owner === ctx.mobile) {
+				ctx.port = p;
+				cwd = owner;
+				break;
+			}
+		}
+		if (ctx.port === taken) die(`ports ${taken}-${taken + 20} are all Metro for other checkouts; set RUN_MOBILE_PORT`);
+		log(`port ${taken} is Metro for another checkout; using ${ctx.port}`);
+	}
+	writeFileSync(ctx.portFile, String(ctx.port));
 	if (cwd) {
-		if (cwd !== ctx.mobile) die(`port ${ctx.port} is Metro for ${cwd}, not this checkout; set RUN_MOBILE_PORT`);
+		if (cwd !== ctx.mobile) die(`port ${ctx.port} is Metro for ${cwd}, not this checkout; unset RUN_MOBILE_PORT or pick another`);
 		if (clear || Object.keys(env).length) die("Metro is already running; run down, then up with these flags");
 		log(`reusing Metro on :${ctx.port}`);
 		return;
@@ -210,15 +229,21 @@ async function ensureMetro(ctx, { clear, env }) {
 }
 
 function claim(ctx) {
-	let u = findUdid(ctx);
-	if (u) return { udid: u, fresh: false };
+	const found = devices().find((d) => d.isAvailable && isRunSimulator(d.name, ctx.id));
+	if (found) {
+		claimed = found.name;
+		log(`reusing simulator '${found.name}' (${found.udid})`);
+		return { udid: found.udid, fresh: false };
+	}
 	if (!existsSync(SIM)) die(`${SIM} is missing; it hands out agent simulators on the Mac`);
 	log(`claiming a simulator (sim claim ios run-${ctx.id})`);
 	const r = run(SIM, ["claim", "ios", `run-${ctx.id}`], { cwd: ctx.repo });
 	if (!r.ok) die(`sim claim failed: ${r.out.trim()}`);
-	u = findUdid(ctx);
-	if (!u) die(`sim claim did not create agent-*-run-${ctx.id}: ${r.out.trim()}`);
-	return { udid: u, fresh: true };
+	const made = devices().find((d) => d.isAvailable && isRunSimulator(d.name, ctx.id));
+	if (!made) die(`sim claim did not create agent-*-run-${ctx.id}: ${r.out.trim()}`);
+	claimed = made.name;
+	log(`claimed simulator '${made.name}' (${made.udid})`);
+	return { udid: made.udid, fresh: true };
 }
 
 function setLang(udid, lang) {
@@ -323,7 +348,7 @@ async function cmdUp(ctx, args) {
 	if (!ok) die(`no new iOS bundle after 180s; see ${metroLog}`);
 	if (!(await cmdBackend(ctx))) die("the app is not on the configured backend; make no writes");
 	await sleep(3000);
-	log(`up: udid=${udid} port=${ctx.port} lang=${lang}`);
+	log(`up: simulator='${claimed}' udid=${udid} port=${ctx.port} lang=${lang}`);
 }
 
 function cmdSignin(ctx, args) {
@@ -376,6 +401,7 @@ function cmdDown(ctx) {
 		else log(`released simulator ${u}`);
 		rmSync(join(ctx.state, "lang"), { force: true });
 	}
+	rmSync(ctx.portFile, { force: true });
 	log("down");
 }
 
