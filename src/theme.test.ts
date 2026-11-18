@@ -11,6 +11,10 @@ const classes = readFileSync(
 	join(import.meta.dirname, "components/classes.ts"),
 	"utf8",
 );
+const clerk = readFileSync(
+	join(import.meta.dirname, "integrations/clerk/appearance.ts"),
+	"utf8",
+);
 
 function block(source: string, start: string): string {
 	const from = source.indexOf(start);
@@ -168,6 +172,32 @@ describe("dark theme", () => {
 		for (const ground of ["field", "surface", "canvas"]) {
 			expect(ratio(edge, color(dark, ground))).toBeGreaterThanOrEqual(3);
 		}
+	});
+
+	// Clerk draws links and its primary button label from these variables.
+	it("Clerk's dark sign-in card reaches 4.5:1 for text and links", () => {
+		const token = (name: string) => {
+			const m = clerk.match(
+				new RegExp(`${name}: "var\\(--color-([\\w-]+)\\)"`),
+			);
+			if (!m) throw new Error(`${name} not set`);
+			return color(dark, m[1]);
+		};
+		const card = token("colorBackground");
+		for (const text of [
+			"colorForeground",
+			"colorMutedForeground",
+			"colorPrimary",
+			"colorDanger",
+		]) {
+			expect(ratio(token(text), card)).toBeGreaterThanOrEqual(4.5);
+		}
+		expect(
+			ratio(token("colorPrimaryForeground"), token("colorPrimary")),
+		).toBeGreaterThanOrEqual(4.5);
+		expect(
+			ratio(token("colorInputForeground"), token("colorInput")),
+		).toBeGreaterThanOrEqual(4.5);
 	});
 
 	it("leaves the brand fills and map colours alone", () => {

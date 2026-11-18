@@ -100,6 +100,8 @@ Designers and coding agents start from it; product decisions below still bind th
   in both themes. Field placeholders are `stone`. Clerk's sign-in card takes
   the same tokens in dark mode through `appearance` variables
   (`src/integrations/clerk/appearance.ts`) and keeps Clerk's own look in light.
+  Its primary is `pine-ink` (mint) with a `canvas` label, because Clerk also
+  draws its links in the primary colour.
 - **Map colours** in `src/play/` use `--color-map-*` tokens and the shared tee
   marker colours, never hex.
 
@@ -143,6 +145,7 @@ and the "Connecting…" note (`text-muted`, near-white, → `stone`).
 | Web: `live-ink` / `flag-ink` / `pine-ink` on `canvas` (APP-191) | dark | cream column | 11.82 / 9.85 / 11.82 |
 | Web: link on `canvas` (APP-191) | dark | 5.06 (cream column) | 10.29 |
 | Web: cream on `pine-fill` (APP-191); the fill itself is 3.14:1 on `canvas`, 2.80:1 on `surface`, carried by its label | dark | 10.62 (`pine`) | 5.25 |
+| Web: Clerk sign-in links and primary button (`colorPrimary` `pine-fill` → `pine-ink`): link on `surface` / `canvas` label on the button (APP-191) | dark | **2.80** / 5.25 | 10.53 / 11.82 |
 | Web: bottom-nav tabs in the dark column: each on `bar`; active (`pine-ink`, mint) against inactive (`stone`) (APP-191) | dark | cream column | each ≥ 5.67; 1.88 apart, plus the hue change |
 | Web: field placeholder (ink at 50% → `stone`) on `field` (APP-191) | light / dark | **3.09** / n/a | 4.62 / 4.89 |
 | Web: dark control edge (`control-line`: fields, buttons, toggles) on `field` / `surface` / `canvas` (3:1) (APP-191) | dark | **1.53** (`card-line`) | 3.25 / 3.73 / 4.19 |
