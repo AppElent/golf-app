@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when getting an iOS build onto a phone, choosing between internal distribution and TestFlight, building in CI, or publishing an over-the-air update.
-version: 2.3.0
+version: 2.3.1
 applies_to: [mobile]
 ---
 
@@ -54,7 +54,7 @@ Your own phone runs a standalone build within minutes of a change, without Apple
 ## Implementation
 
 1. Register each phone once: `eas device:create` (open the link on the phone), or confirm a USB- or Wi‑Fi-paired device with `xcrun devicectl list devices`.
-2. Run the first build of each bundle ID yourself (`pnpm exec eas build -p ios --profile preview-internal`): its interactive Apple login creates the ad hoc profile, after which `--non-interactive` builds work in CI and for agents. Repeat one interactive build after adding a device or an app extension (widgets or Live Activities through `expo-widgets`, share or notification extensions). An extension target has its own bundle ID (`<bundle>.<Target>`) and profile, so non-interactive builds fail with "couldn't find any credentials suitable for internal distribution" until then.
+2. Run the first build of each bundle ID yourself (`pnpm exec eas build -p ios --profile preview-internal`): its interactive Apple login creates the ad hoc profile, after which `--non-interactive` builds work in CI and for agents. Repeat one interactive build after adding a device or an app extension (widgets or Live Activities through `expo-widgets`, share or notification extensions). An extension target has its own bundle ID (`<bundle>.<Target>`) and profile, so non-interactive builds fail with "couldn't find any credentials suitable for internal distribution" until then. An agent that hits this login cannot show its own terminal to the owner: it hands the owner the exact command to paste into their own Terminal (working directory, profile, `--output` path, and `SENTRY_DISABLE_AUTO_UPLOAD=true` where the profile needs it), waits for the `.ipa`, and then registers and installs it.
 3. Build and install:
 
    ```sh

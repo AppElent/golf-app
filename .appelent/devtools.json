@@ -3,8 +3,8 @@
   "repository": "AppElent/developer-home",
   "scope": "project",
   "ref": "main",
-  "commit": "eeb996b72c5490332ca5a61bd02ab950f37812f3",
-  "manifestHash": "bebe6a2d1000634144f517d202b99ee257421b8a11a17dd20b9b7a5a5a0c24fe",
+  "commit": "local",
+  "manifestHash": "618d0057482eceb8bfa7dca71cc5de80c9aca9f68fd9545426c66ff017197730",
   "files": {
     "docs/adr/.template.md": {
       "sha256": "f28b286102fb1a00512455a06896e5da3c47d67a14b0ee6c08fa84258af24adf",
@@ -221,12 +221,12 @@
       "version": "1.0.3"
     },
     "docs/standards/mcp.md": {
-      "sha256": "90cce492c01002a6d04b0719d87bd2342d98de124073a050c986116870d9806f",
-      "version": "4.0.1"
+      "sha256": "4cf2ce320131dbd904967adda2f073f622c6c08856eeb48a6c0899e0d5a3efec",
+      "version": "4.1.0"
     },
     "docs/standards/mobile-baseline.md": {
-      "sha256": "d5436da9dcbc1a16d687796f2d7b2b26d8941eebeff1de18eafc3b3ce86231c6",
-      "version": "3.2.0"
+      "sha256": "1fec085745c43b67f807f8fa2655a2a1af768ad779389883709725c2363f54a2",
+      "version": "3.3.0"
     },
     "docs/standards/mobile-baseline/examples/ota-guard.ts": {
       "sha256": "bbf4132ebc2c69d4830380aafe203eac9eab3afa182c9ef0f772f50a59636093"
@@ -457,8 +457,8 @@
       "sha256": "d8ba1a0d7020fa611de1c417a8ad6103a1217f26fdf93836af0812f8f50ce414"
     },
     "docs/standards/mobile-distribution.md": {
-      "sha256": "6654d02170d8c6565e0bab3ecf7282f043faad89779a15f4ba3bf1a9febacffd",
-      "version": "2.3.0"
+      "sha256": "b2d1ca5fb673673ffc4d0bd9bb4f1812eaa4fc303b1665e74f231ca5d4d7bd17",
+      "version": "2.3.1"
     },
     "docs/standards/repo-layout.md": {
       "sha256": "558571b4e54468c304e6fb4b3b3c4dde2e38efe20e02ccfbeb01aea62d74967f",
@@ -494,20 +494,27 @@
       "version": "1.0.0"
     },
     "docs/standards/agent-permissions.md": {
-      "sha256": "5329fc74806b87dca35be6e451e2ed916dfeb95b2229eb64478d99ae4b87396f",
-      "version": "1.0.0"
+      "sha256": "6a644da3a0eeef4528f0f89216de5c676b93c6f051b6e28436c874107427b638",
+      "version": "1.1.0"
     },
     "docs/standards/agent-permissions/irreversible-guard.mjs": {
       "sha256": "d94151bd82633d47deef0a285dc5284339a76241f978bb4b1244a50d5e0d9e69"
     },
     "scripts/lib/project/agent-permissions.mjs": {
       "sha256": "3676673615c25e7ceb75fa7534b68dcdbe99856c715fb79a11c4bafab99e4ea6"
+    },
+    "docs/standards/mobile-run.md": {
+      "sha256": "e58a66c4728ce40ee280f12d04da38cb2ae3bc52b7c9e9920ab0f7a0be716074",
+      "version": "1.0.0"
+    },
+    "scripts/run-mobile.mjs": {
+      "sha256": "2ff65b26e7c33725216d0cd47b3c294820f605ffed236394cb933cdb0be14919"
     }
   },
   "blocks": {
     "AGENTS.md": "5dd11c522805ab3041f27582a641d667534c3594f06ab023a435219f3894dcea",
     "CLAUDE.md": "3a539a9496d276ff97cbc761a98a6db988880a0939a61e78fb156b237927cb24",
-    "CODING_STANDARDS.md": "f531c435e4c2910a6a6b26c7099ffae329c789b840622e6a6168f1462cb61942",
+    "CODING_STANDARDS.md": "850a35206e86bf33146cc84ea076aaefad5126849d30b3caabeecae62eccab63",
     "DESIGN_SYSTEM.md": "0b84f92d183be259e69372bff87939bdedda2ed81c215f3c1214d02d7f83de9a"
   }
 }
