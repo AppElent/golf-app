@@ -32,6 +32,7 @@ export { SignUpForm } from "./SignUpForm";
 export { TestLoginButton } from "./TestLoginButton";
 export type { AuthConfig, SlotClassNames, SocialProvider } from "./types";
 export { ThemeSync } from "./ThemeSync";
+export { UsernameHint } from "./UsernameHint";
 // Lib
 export {
 	CLERK_TEST_VERIFICATION_CODE,

@@ -3,8 +3,8 @@
   "repository": "AppElent/developer-home",
   "scope": "project",
   "ref": "main",
-  "commit": "8faed14d9d77f47cc9a4645df33c001e11f6d991",
-  "manifestHash": "3ff57d3353a816a71bd3863ee646a1483e10c0b3b90cc39158bea21a2611e3f7",
+  "commit": "3cdc5319cd77378a6467cd267c9c9ba6ae59398f",
+  "manifestHash": "f0db82d8c863dc434104528df06634e3e153cfe532c2423cb3fe0b4f69b6f30e",
   "files": {
     "docs/adr/.template.md": {
       "sha256": "f28b286102fb1a00512455a06896e5da3c47d67a14b0ee6c08fa84258af24adf",
@@ -68,8 +68,8 @@
       "sha256": "b09f650bab6759fccefe0bf42a298d249373fc99cb7bd8c4802d2268011fd4c0"
     },
     "docs/standards/auth.md": {
-      "sha256": "105e99c0a9269905e3b64c53f32f4753b93e5481b301064f456c9f2aff74a746",
-      "version": "3.2.0"
+      "sha256": "b1171cfed774599a9c2beaa41a9517d90f4f49dabcd364423c2e789f7e10b177",
+      "version": "3.3.1"
     },
     "docs/standards/auth/examples/native.ts": {
       "sha256": "8c57fc48f63fa035f3282574295bd36f85231523d748cfba8d725f7cde47617a"
@@ -96,22 +96,22 @@
       "sha256": "de90b631612a2c3f0e1ab52963ed9a0f27b356709922312158c869ae346729fb"
     },
     "docs/standards/auth/examples/web/ForgotPasswordForm.tsx": {
-      "sha256": "27115b55573fd3da9ef665c58c96f11218ca5a83ccbc5f858a9fc242aa518de6"
+      "sha256": "2d76e52332097b32be6123e4d4a94fbc792c2cae4097914cee61c90e81a6c224"
     },
     "docs/standards/auth/examples/web/HeaderUser.tsx": {
       "sha256": "2527aff87c38c7f7cc744c8f2b5684777fd4806c9a3d65b52279c4c2f95d4794"
     },
     "docs/standards/auth/examples/web/index.ts": {
-      "sha256": "f82e878a4871c1f59b7efa216972844c2222ccc7f0c268963816438f3ed4fadf"
+      "sha256": "94060a37c1d10d9d0ff2c23709c9526ab37a64ea13da0690286784ee27792de9"
     },
     "docs/standards/auth/examples/web/ProfilePanel.tsx": {
-      "sha256": "df9c51570bfcd6061e266990bede6af99b7da9a9d95a508ca3e762f648b7fb2a"
+      "sha256": "2772cc14fd1fc95ef8a5f0a3cc7bca617c3a05b5cc9160349a5d29ca018f2824"
     },
     "docs/standards/auth/examples/web/SignInForm.tsx": {
-      "sha256": "97c103a97682b987fb20214f165481a7d41b61a3650a6ec857108ed235f9e2df"
+      "sha256": "a66558e1b2015d0ac401a0d62ed9dc2aba3df5ef70b10bec0114368908ff0440"
     },
     "docs/standards/auth/examples/web/SignUpForm.tsx": {
-      "sha256": "1bef9af3e5a18833678124347b31469a6a7a355c81493a5fdd91cb54b2a4b478"
+      "sha256": "e66b755c0b9b8a9e83e65e5fc0d05a22646e26e312d8f0344d9bebec0f01fdb7"
     },
     "docs/standards/auth/examples/web/TestLoginButton.tsx": {
       "sha256": "5ecfc1726650ac3f145f3c9aad35726d9252113c87b2e179198f4c4c919187db"
@@ -225,8 +225,8 @@
       "version": "4.1.0"
     },
     "docs/standards/mobile-baseline.md": {
-      "sha256": "1fec085745c43b67f807f8fa2655a2a1af768ad779389883709725c2363f54a2",
-      "version": "3.3.0"
+      "sha256": "6aa457554c72ecf8b18c946240db4def91d8b5922d8943696603a5f0537678a9",
+      "version": "3.4.0"
     },
     "docs/standards/mobile-baseline/examples/ota-guard.ts": {
       "sha256": "bbf4132ebc2c69d4830380aafe203eac9eab3afa182c9ef0f772f50a59636093"
@@ -235,7 +235,7 @@
       "sha256": "abc6e08620117978368bcd013e89e2d276f55cb4ca1403c0489c48f62416ee1f"
     },
     "docs/standards/mobile-baseline/templates/mobile-build.yml": {
-      "sha256": "19fbb476f287aaa1c0b7dc8288671ea3aa2d0e9d9b421bdf6ffda6e19e3c3056"
+      "sha256": "e41d0b0a5b060854a62359ee6f69b0a30c9be883500e46506e1f6ae906f5d6c8"
     },
     "docs/standards/mobile-coding.md": {
       "sha256": "b701b6b5d41eb3b53d04bde4550f0443e39a3f44403fec79a8a29d301d61943b",
@@ -457,8 +457,8 @@
       "sha256": "d8ba1a0d7020fa611de1c417a8ad6103a1217f26fdf93836af0812f8f50ce414"
     },
     "docs/standards/mobile-distribution.md": {
-      "sha256": "b2d1ca5fb673673ffc4d0bd9bb4f1812eaa4fc303b1665e74f231ca5d4d7bd17",
-      "version": "2.3.1"
+      "sha256": "0645e8d030ee6e3fd51382e0bc34e95dd1ccc7c89e89d6423dfc5cdcb27df66d",
+      "version": "2.4.0"
     },
     "docs/standards/repo-layout.md": {
       "sha256": "558571b4e54468c304e6fb4b3b3c4dde2e38efe20e02ccfbeb01aea62d74967f",
@@ -480,8 +480,8 @@
       "sha256": "a1dd5a646b2f4088c6ecf23be629869325b664826c4af41b4e770a17d7b65678"
     },
     "docs/standards/platform-parity.md": {
-      "sha256": "0a46d0b3e2ac6b36a2f0ead8bf7b9146e0d0d3f2e4096c058a8379b2d3ae6401",
-      "version": "1.0.0"
+      "sha256": "79b348bd5604b4430bdcdbdd1899771bc04d3f3c6e191347d23ab8560edc49c8",
+      "version": "1.1.0"
     },
     "docs/standards/platform-parity/examples/feature-manifest-check.ts": {
       "sha256": "9399a124cae99fccecf3d8d81ef35024ea5188a612f68a8ac3cee3235373e958"
@@ -490,8 +490,8 @@
       "sha256": "28bb594f05a0048b6ecdf3da8340c9261d9c448071cd4ec951618bfb51321b6f"
     },
     "docs/standards/releases.md": {
-      "sha256": "dc48a53f206a96e1c943f1d934bbf7f1db7d2182f77787eaa463fe06bdc727ed",
-      "version": "1.0.0"
+      "sha256": "761a6a5ed971a9579773817f0f5e9e609b783fcfe59af3a750052a7ffc7367ae",
+      "version": "1.1.0"
     },
     "docs/standards/agent-permissions.md": {
       "sha256": "6a644da3a0eeef4528f0f89216de5c676b93c6f051b6e28436c874107427b638",
@@ -509,12 +509,28 @@
     },
     "scripts/run-mobile.mjs": {
       "sha256": "eebbf04e30359b84b78339cda8b6355d4138c0676ddcc30d1c7957ab13d9cfee"
+    },
+    "docs/standards/app-links.md": {
+      "sha256": "25fa8b57cd472d678adebc411e1f1b0b0ff9db9ae140cfb4f4224dd3067f1d72",
+      "version": "1.0.0"
+    },
+    "docs/standards/app-links/examples/app-links.test.ts": {
+      "sha256": "54322923d380fd47c1e954de211f37529dc213339b39b599da744edda500036f"
+    },
+    "docs/standards/app-links/examples/app-links.ts": {
+      "sha256": "aae93409a78350de31774fec186bcbb6aa19bbd7428c9809c9f0c0b97fc00472"
+    },
+    "docs/standards/app-links/examples/pending-link.ts": {
+      "sha256": "199f109d13479c8eae08aafa6dfc64dd3a009b09da0cec6bafd54529214f3d5c"
+    },
+    "docs/standards/auth/examples/web/UsernameHint.tsx": {
+      "sha256": "b1e45b0b2dda4d6559ed4c4902e4056764a377cb61400464ed9681bf4001cdb5"
     }
   },
   "blocks": {
     "AGENTS.md": "5dd11c522805ab3041f27582a641d667534c3594f06ab023a435219f3894dcea",
     "CLAUDE.md": "3a539a9496d276ff97cbc761a98a6db988880a0939a61e78fb156b237927cb24",
-    "CODING_STANDARDS.md": "850a35206e86bf33146cc84ea076aaefad5126849d30b3caabeecae62eccab63",
+    "CODING_STANDARDS.md": "8a08769df4117fca963cbd69f76e1d5f3329baced09289061082e1c413c96a9c",
     "DESIGN_SYSTEM.md": "0b84f92d183be259e69372bff87939bdedda2ed81c215f3c1214d02d7f83de9a"
   }
 }

@@ -17,6 +17,7 @@ Read only what the task needs; never preload every standard.
 | --- | --- |
 | Adding, moving, or naming native files | [Mobile structure](docs/standards/mobile-structure.md) |
 | Deciding which platforms a feature ships on, adding or moving a web or mobile route, or shareable links | [Platform parity](docs/standards/platform-parity.md) |
+| Making a shared, join, or invite link open the app; associated domains for password-manager autofill | [App links](docs/standards/app-links.md) |
 | Repository, package manager, formatter, types, tests, CI, or toolkit sync | [Baseline](docs/standards/baseline.md) |
 | Top-level folders, workspace packages, or shared code between web, Convex, and mobile | [Repository layout](docs/standards/repo-layout.md) |
 | Dependabot or automated dependency PRs | [Dependency updates](docs/standards/dependency-updates.md) |

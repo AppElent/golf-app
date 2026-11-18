@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when deciding when a change ships where (web, preview app, production app, store build), or when versioning, tagging, or rolling back a release.
-version: 1.0.0
+version: 1.1.0
 applies_to: [web, backend, mobile]
 ---
 
@@ -44,6 +44,24 @@ Web and backend ship continuously, one merge at a time; the installed apps get e
 - **Default:** bundle native changes into one store build, at most every two weeks unless a fix cannot wait. The manager proposes the release on a decision card with the changelog; submission happens only after the owner's yes.
 - Before building, confirm the production backend matches `main` and serves both the old and the new build.
 
+### Android pause
+
+Eric decided on 18 Nov 2026 that nothing is done with Android for now: the apps are iOS only. No app has a Play Store listing.
+
+- **Default:** Android is off in every app repository until its GitHub repository variable `ANDROID_ENABLED` is `true`. While it is unset:
+  - the preview OTA (every merge) and the daily production OTA publish iOS only;
+  - Mobile Build ignores the `build:android` label and a manual Android run;
+  - `pnpm builds build <app> <profile> android` refuses unless `ANDROID_ENABLED=true` is in the environment.
+- The Android code, `eas.json` profiles, fingerprint checks, and the `ota-*-android` tags stay, so turning Android back on needs no code change.
+- Agents do not ask for Android builds, Android fingerprints, or Android-only fixes, and they park Android parts of an issue in a sub-issue.
+- **Re-enable switch**, per repository (`workouts`, `golf-app`, `gather`, `games`), with the owner's go:
+
+  ```sh
+  gh variable set ANDROID_ENABLED --body true --repo AppElent/<repo>
+  ```
+
+  The next merge publishes the Android preview update when a preview build has the current Android fingerprint. Otherwise its summary says a `preview-internal` rebuild is due. Production follows once the update has soaked on preview. To pause again, run `gh variable delete ANDROID_ENABLED --repo AppElent/<repo>`.
+
 ### Versioning
 
 - **SemVer** `MAJOR.MINOR.PATCH` per app. The app version in `app.json` (`expo.version`) is the single source; web reads the same value (import it, or mirror it in the web `package.json`).
@@ -82,5 +100,7 @@ Web and backend ship continuously, one merge at a time; the installed apps get e
 - The daily job's summary says per platform whether it published, skipped (nothing changed / not soaked), or found a store build due.
 
 ## Migration
+
+1.1 adds the Android pause: apps read `ANDROID_ENABLED` in their OTA and build workflows (Eric, 18 Nov 2026).
 
 New in 1.0. Apps adopt it in their own threads: Foundry, Gather, and Arcade Club move production from `workflow_dispatch` to the chain; all four add `/version`, Sentry releases, and the daily production update job.

@@ -1,5 +1,4 @@
 import { useRouter } from "expo-router";
-import { useState } from "react";
 import { useI18n } from "../../../i18n";
 import {
 	AuthLink,
@@ -8,26 +7,31 @@ import {
 	AuthSubmit,
 } from "../components/auth-form";
 import { CredentialsFields } from "../components/credentials-fields";
+import {
+	type Credentials,
+	credentialsReady,
+} from "../components/credentials-model";
 import { SocialButtons } from "../components/social-buttons";
+import { useCredentialsForm } from "../components/use-credentials-form";
 import { usePasswordSignUp } from "./use-password-sign-up";
 
 export function SignUpScreen() {
 	const router = useRouter();
 	const copy = useI18n().t.signUp;
 	const signUp = usePasswordSignUp();
-	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
-
-	const ready = email.trim().length > 0 && password.length > 0;
-
-	async function submit() {
-		if (await signUp.submit(email, password)) {
+	async function submit(latest: Credentials) {
+		if (!credentialsReady(latest) || signUp.busy) return;
+		if (await signUp.submit(latest.email, latest.password)) {
 			router.push({
 				pathname: "/verify-email",
-				params: { email: email.trim() },
+				params: { email: latest.email.trim() },
 			});
 		}
 	}
+	// AutoFill can change a field without `onChangeText`; submit its final text.
+	const form = useCredentialsForm({ email: "", password: "" }, (latest) => {
+		void submit(latest);
+	});
 
 	return (
 		<AuthScreen
@@ -45,11 +49,7 @@ export function SignUpScreen() {
 				purpose="sign-up"
 				emailLabel={copy.email}
 				passwordLabel={copy.password}
-				email={email}
-				password={password}
-				onEmailChange={setEmail}
-				onPasswordChange={setPassword}
-				onSubmit={() => ready && !signUp.busy && submit()}
+				form={form}
 			/>
 
 			<AuthMessage message={signUp.error} />
@@ -57,8 +57,8 @@ export function SignUpScreen() {
 			<AuthSubmit
 				label={copy.submit}
 				busy={signUp.busy}
-				disabled={!ready}
-				onPress={submit}
+				disabled={!(credentialsReady(form.values) || form.editing)}
+				onPress={form.press}
 			/>
 
 			<SocialButtons />

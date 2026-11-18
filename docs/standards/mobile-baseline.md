@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when setting up or changing an Expo Router app, its native configuration, or its EAS build profiles.
-version: 3.3.0
+version: 3.4.0
 applies_to: [mobile]
 ---
 
@@ -75,5 +75,7 @@ Expo apps share one stack while preserving native identity and release boundarie
 - A missing provider credential or untested device path is reported as outstanding work.
 
 ## Migration
+
+From 3.3: the `mobile-build.yml` template gates its Android job on `vars.ANDROID_ENABLED == 'true'` ([Android pause](releases.md#android-pause)).
 
 From 2.x: OTA publishing, fingerprints, and CI builds moved to [mobile distribution](mobile-distribution.md); template paths are unchanged. Apps from before 2.5 also align the root `react`/`react-dom` pins with `apps/mobile` (or record the exception) and add the root's strictness flags to `apps/mobile/tsconfig.json`.

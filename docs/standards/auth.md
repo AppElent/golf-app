@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when adding or changing Clerk/Convex authentication, session readiness, or account flows.
-version: 3.2.0
+version: 3.3.1
 applies_to: [web, mobile, backend]
 ---
 
@@ -26,6 +26,18 @@ Clerk owns sessions and navigation; Convex verifies tokens and gates every prote
 ### Account flows
 
 - Use supported Clerk UI or custom flows covering verification, MFA, password reset, incomplete sessions, and activation/finalization. A successful password request is not a completed session. Preserve failed input, prevent duplicate submissions, and translate provider codes.
+
+### Password managers
+
+iCloud Keychain, Google Password Manager, 1Password and similar managers must offer, fill, save, and update credentials on every account screen.
+
+- Mark every credential field. Web: `autocomplete` `username` on the email or username field, `current-password` on sign-in and on the current field of change password, `new-password` on sign-up, reset, and the new field of change password, `one-time-code` on code fields. Native: the same `autoComplete` values plus iOS `textContentType` `username`, `password`, `newPassword`, or `oneTimeCode`.
+- Every form that sets a password names the account. Web: put the copied [`UsernameHint`](auth/examples/web/UsernameHint.tsx) in the form. Native: show the email as a read-only field with `textContentType="username"` above the password fields, on the reset step and on change password.
+- Keep each flow in its own form or screen with a real submit. Native change password gets its own pushed screen: iOS AutoFill reads an inline current and new password pair as two new passwords and clears both without `onChangeText` when the strong-password offer is declined.
+- AutoFill can set a native field without `onChangeText`. Also sync each credential field from `onEndEditing`, and submit the field's latest text.
+- **Default:** native new-password fields pass iOS `passwordRules` matching the Clerk instance's password policy (`minlength: 8;` for Clerk's default), so generated passwords pass Clerk.
+- Never block paste into credential fields, and never split a password over several inputs.
+- Linking the app to its website, so a manager offers the website's saved logins in the app, is the `webcredentials` part of [app links](app-links.md) (associated domains and the `apple-app-site-association` file).
 
 ## Implementation
 
@@ -60,3 +72,5 @@ Copy needed [native helper](auth/examples/native.ts) behavior into app-owned cod
 ## Verify
 
 Verify zero protected requests while Clerk is signed in and Convex is delayed, including provider-level subscriptions. Test authentication gained/lost/regained, account switching, draft handling, stalled-handshake recovery without redirect loops, new/existing accounts, incomplete/MFA flows, expired sessions, and unauthorized calls. Exercise cold launch and background/resume on a native device/build; report runtime verification separately from helper tests.
+
+For password managers, on an iOS build with iCloud Keychain on, and in Safari and Chrome on the web: sign up and accept the save prompt, sign out and sign in from the AutoFill bar, reset the password and confirm the manager updates the existing entry instead of adding one, change the password the same way, and fill an emailed code from the keyboard suggestion. Decline the strong-password offer once on each new-password field and confirm the fields keep their values.

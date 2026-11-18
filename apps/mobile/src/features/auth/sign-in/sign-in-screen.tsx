@@ -14,7 +14,9 @@ import {
 	AuthSubmit,
 } from "../components/auth-form";
 import { CredentialsFields } from "../components/credentials-fields";
+import { credentialsReady } from "../components/credentials-model";
 import { SocialButtons } from "../components/social-buttons";
+import { useCredentialsForm } from "../components/use-credentials-form";
 import { useEmailCodeSignIn } from "./use-email-code-sign-in";
 import { usePasswordSignIn } from "./use-password-sign-in";
 
@@ -24,10 +26,15 @@ export function SignInScreen() {
 	const { submit, busy, error } = usePasswordSignIn();
 	const emailCode = useEmailCodeSignIn();
 	const [codeHint, setCodeHint] = useState<string | null>(null);
-	const [email, setEmail] = useState(devLogin?.email ?? "");
-	const [password, setPassword] = useState(devLogin?.password ?? "");
-
-	const ready = email.trim().length > 0 && password.length > 0;
+	// AutoFill can change a field without `onChangeText`; submit its final text.
+	const form = useCredentialsForm(
+		{ email: devLogin?.email ?? "", password: devLogin?.password ?? "" },
+		(latest) => {
+			if (credentialsReady(latest) && !(busy || emailCode.busy))
+				void submit(latest.email, latest.password);
+		},
+	);
+	const { email } = form.values;
 
 	async function sendCode() {
 		setCodeHint(null);
@@ -67,13 +74,7 @@ export function SignInScreen() {
 				purpose="sign-in"
 				emailLabel={copy.email}
 				passwordLabel={copy.password}
-				email={email}
-				password={password}
-				onEmailChange={setEmail}
-				onPasswordChange={setPassword}
-				onSubmit={() =>
-					ready && !(busy || emailCode.busy) && submit(email, password)
-				}
+				form={form}
 			/>
 
 			<AuthMessage message={codeHint ?? emailCode.error ?? error} />
@@ -81,8 +82,8 @@ export function SignInScreen() {
 			<AuthSubmit
 				label={copy.submit}
 				busy={busy || emailCode.busy}
-				disabled={!ready}
-				onPress={() => submit(email, password)}
+				disabled={!(credentialsReady(form.values) || form.editing)}
+				onPress={form.press}
 				testID="sign-in-submit"
 			/>
 
