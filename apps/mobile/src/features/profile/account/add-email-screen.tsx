@@ -45,7 +45,11 @@ export function AddEmailScreen() {
 					const message = t.authErrors[thrownErrorKey(failure)];
 					if (!id) return write.setError(message);
 					toast.error(message);
-					router.replace({ pathname: "/profile/verify-email", params: { id } });
+					if (write.isOpen())
+						router.replace({
+							pathname: "/profile/verify-email",
+							params: { id },
+						});
 				},
 			},
 		);
