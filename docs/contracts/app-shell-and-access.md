@@ -25,6 +25,13 @@ signing in with Clerk.
   nor counts them. The queue from before that split stays unclaimed: any
   account's flush may try it, Convex accepts only the owner's entries, and it
   is never moved into an account.
+- **Account deletion:** the same Account section deletes the account after an
+  inline confirm step: `account.deleteMyData` first, while Convex still accepts
+  the session, then that account's web score queue, then the Clerk user
+  (`user.delete()`, behind Clerk's reverification prompt when the instance asks
+  for one). Simulation mode goes off. If the data cannot go, nothing is deleted
+  and the golfer stays signed in; if Clerk refuses, the data is gone and a retry
+  deletes the Clerk user. With the user gone, `AuthGate` shows the sign-in card.
 - **Public pages:** the paths in `PUBLIC_PATHS` (`src/components/LegalPage.tsx`),
   `/privacy` and `/support`, render without `AuthGate` and without the tab bar, so
   App Store Connect and the phone app can link to them. They read no user data.

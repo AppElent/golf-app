@@ -84,10 +84,12 @@ export const FEATURES = defineFeatures([
 	{
 		id: "account-deletion",
 		kind: "floor",
-		status: "pending-port",
-		platforms: ["mobile"],
-		reason: `In the reduced web floor (${ADR}), but only the phone deletes an account (Profile tab: convex/account.ts deleteMyData, then the Clerk user). The web port reuses that mutation.`,
-		routes: {},
+		status: "parity",
+		platforms: ["web", "mobile"],
+		// Both delete from the Profile tab after a confirm step: convex/account.ts
+		// deleteMyData first, while the session still authenticates, then the
+		// Clerk user. Web: the Account section of the profile page.
+		routes: { web: ["profile"], mobile: ["(app)/(tabs)/profile/index"] },
 	},
 	{
 		id: "data-export",
