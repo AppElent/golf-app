@@ -118,9 +118,9 @@ Project facts (identity, env, builds): [mobile runbook](docs/runbooks/mobile.md)
   - [Convex backend](docs/standards/convex.md): the auth helper is `getUserId`
     in `convex/lib.ts`, not `convex/lib/auth.ts`; public functions declare no
     `returns` validators; `ConvexError` codes are not typed against a shared
-    catalog; `account:deleteMyData` has no `expectedSubject` or batching and
-    does not walk the per-table registry (`convex/userData.ts`) that data
-    export (`account:exportPage`) reads by; a test checks that an export after
-    deletion is empty.
+    catalog. `account:deleteMyData` walks the per-table registry
+    (`convex/userData.ts`) in bounded batches and takes `expectedSubject`
+    (APP-399); a call without it, from installed apps that predate it, still
+    deletes everything in one transaction.
   - [i18n](docs/standards/i18n.md): the web app hardcodes English; only
     `apps/mobile` has a catalog.

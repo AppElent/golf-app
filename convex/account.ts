@@ -1,15 +1,21 @@
 import type { ExportPage } from "@fairway/core/data-export";
-import { v } from "convex/values";
+import { ConvexError, v } from "convex/values";
+import { internal } from "./_generated/api";
 import type { Doc, Id, TableNames } from "./_generated/dataModel";
-import { mutation, type QueryCtx, query } from "./_generated/server";
-import { deleteCourseData } from "./courses";
+import {
+	internalMutation,
+	mutation,
+	type QueryCtx,
+	query,
+} from "./_generated/server";
 import { getUserId } from "./lib";
-import { deleteRoundData } from "./rounds";
 import {
 	type CatalogIds,
 	childTables,
+	loose,
 	OWNED_TABLES,
 	type Owned,
+	purgeUserData,
 	USER_DATA,
 } from "./userData";
 
@@ -24,44 +30,47 @@ export const viewer = query({
 });
 
 /**
- * Delete everything this app stores for the signed-in user (rounds, scores,
- * shots, clubs, settings, course copies, course suggestions). The client
- * deletes the Clerk user afterwards; run this first, while the session can
- * still authenticate. Catalog courses are shared and stay.
+ * Delete what this app stores for the signed-in user (rounds, scores, shots,
+ * clubs, settings, course copies, course suggestions), one bounded batch per
+ * call; the client repeats it until it returns `done`. The Clerk login is not
+ * touched: "Delete Fairway data only" stops here, "Delete my whole AppElent
+ * account" deletes the Clerk user afterwards, and the Clerk `user.deleted`
+ * webhook (`http.ts`) runs the same purge. Catalog courses are shared and stay.
+ *
+ * `expectedSubject` is the Clerk user the client means to delete; a different
+ * signed-in subject (an account switch mid-run) is refused. Installed apps
+ * from before it call with no arguments and expect everything gone in one
+ * call, so that call runs every batch in one transaction, as it always did.
  */
 export const deleteMyData = mutation({
-	args: {},
-	handler: async (ctx) => {
+	args: { expectedSubject: v.optional(v.string()) },
+	handler: async (ctx, { expectedSubject }): Promise<{ done: boolean }> => {
 		const userId = await getUserId(ctx);
-		const [rounds, clubs, settings, copies, suggestions] = await Promise.all([
-			ctx.db
-				.query("rounds")
-				.withIndex("by_user", (q) => q.eq("userId", userId))
-				.collect(),
-			ctx.db
-				.query("clubs")
-				.withIndex("by_user", (q) => q.eq("userId", userId))
-				.collect(),
-			ctx.db
-				.query("userSettings")
-				.withIndex("by_user", (q) => q.eq("userId", userId))
-				.collect(),
-			ctx.db
-				.query("courses")
-				.withIndex("by_owner", (q) => q.eq("ownerId", userId))
-				.collect(),
-			ctx.db
-				.query("courseSuggestions")
-				.withIndex("by_user", (q) => q.eq("userId", userId))
-				.collect(),
-		]);
-		for (const round of rounds) await deleteRoundData(ctx, round._id);
-		await Promise.all(
-			[...clubs, ...settings, ...suggestions].map((doc) =>
-				ctx.db.delete(doc._id),
-			),
-		);
-		for (const copy of copies) await deleteCourseData(ctx, copy._id);
+		if (expectedSubject === undefined) {
+			while (!(await purgeUserData(ctx, userId)).done) {}
+			return { done: true };
+		}
+		if (expectedSubject !== userId) {
+			throw new ConvexError({ code: "accountChanged" });
+		}
+		return await purgeUserData(ctx, userId);
+	},
+});
+
+/**
+ * The Clerk `user.deleted` webhook's purge: the same batches as
+ * `deleteMyData`, for a Clerk user id instead of the session, rescheduling
+ * itself until nothing is left. A user with no data here is a no-op.
+ */
+export const purgeDeletedUser = internalMutation({
+	args: { subject: v.string() },
+	handler: async (ctx, { subject }) => {
+		const { done } = await purgeUserData(ctx, subject);
+		if (!done) {
+			await ctx.scheduler.runAfter(0, internal.account.purgeDeletedUser, {
+				subject,
+			});
+		}
 	},
 });
 
@@ -117,29 +126,6 @@ export const exportPage = query({
 		return { tables, catalog: await catalogRows(ctx, refs), next };
 	},
 });
-
-/**
- * `ctx.db.query` for a table chosen at runtime. The registry's types already
- * tie each index to its table and lead field; TypeScript cannot follow that
- * through a union of tables, so this view drops it.
- */
-function loose(ctx: QueryCtx, table: TableNames) {
-	type Eq = { eq(field: string, value: unknown): Eq };
-	type Query = {
-		withIndex(
-			index: string,
-			range: (q: Eq) => Eq,
-		): {
-			collect(): Promise<Doc<TableNames>[]>;
-			paginate(opts: { cursor: string | null; numItems: number }): Promise<{
-				page: Doc<TableNames>[];
-				isDone: boolean;
-				continueCursor: string;
-			}>;
-		};
-	};
-	return ctx.db.query(table) as unknown as Query;
-}
 
 function omit(doc: Doc<TableNames>, field: string) {
 	const { [field]: _subject, ...rest } = doc as Record<string, unknown>;

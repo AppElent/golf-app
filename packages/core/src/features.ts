@@ -86,10 +86,19 @@ export const FEATURES = defineFeatures([
 		kind: "floor",
 		status: "parity",
 		platforms: ["web", "mobile"],
-		// Both delete from the Profile tab after a confirm step: convex/account.ts
-		// deleteMyData first, while the session still authenticates, then the
-		// Clerk user. Web: the Account section of the profile page.
-		routes: { web: ["profile"], mobile: ["(app)/(tabs)/profile/index"] },
+		// Both delete from the Profile tab: a choice between Fairway's data only
+		// (keeps the shared AppElent login, signs out) and the whole AppElent
+		// account, then a confirm step. convex/account.ts deleteMyData first,
+		// batch by batch while the session still authenticates, then (whole
+		// account only) the Clerk user. Web: the Account section of the profile
+		// page; phone: Profile → Delete account.
+		routes: {
+			web: ["profile"],
+			mobile: [
+				"(app)/(tabs)/profile/index",
+				"(app)/(tabs)/profile/delete-account",
+			],
+		},
 	},
 	{
 		id: "data-export",
