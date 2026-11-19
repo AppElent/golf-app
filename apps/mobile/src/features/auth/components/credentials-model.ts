@@ -22,25 +22,49 @@ export const emailFieldTraits = {
 	textContentType: "username",
 } as const satisfies TextInputProps;
 
+/**
+ * A password the account already has: the manager fills the saved one (sign-in,
+ * the current field of change password).
+ */
+export const currentPasswordTraits = {
+	autoComplete: "current-password",
+	textContentType: "password",
+} as const satisfies TextInputProps;
+
+/**
+ * A password being chosen (sign-up, reset, the new field of change password):
+ * the manager offers a strong one within Clerk's policy and saves it under the
+ * account named by the `username` field above it.
+ */
+export const newPasswordTraits = {
+	autoComplete: "new-password",
+	textContentType: "newPassword",
+	passwordRules: CLERK_PASSWORD_RULES,
+} as const satisfies TextInputProps;
+
 export function passwordFieldTraits(purpose: CredentialsPurpose) {
-	return purpose === "sign-up"
-		? ({
-				autoComplete: "new-password",
-				textContentType: "newPassword",
-				passwordRules: CLERK_PASSWORD_RULES,
-			} as const satisfies TextInputProps)
-		: ({
-				autoComplete: "current-password",
-				textContentType: "password",
-			} as const satisfies TextInputProps);
+	return purpose === "sign-up" ? newPasswordTraits : currentPasswordTraits;
 }
+
+/**
+ * A read-only field that names the account on a screen that sets a password
+ * (reset, change, set): without it iOS AutoFill reads the password fields as
+ * belonging to no account, or a current and new pair as two new passwords.
+ */
+export const accountNameFieldTraits = {
+	...emailFieldTraits,
+	editable: false,
+	autoCapitalize: "none",
+	autoCorrect: false,
+} as const satisfies TextInputProps;
 
 export function credentialsReady({ email, password }: Credentials) {
 	return email.trim().length > 0 && password.length > 0;
 }
 
 /**
- * The submit rules for a credential form whose fields iOS AutoFill can change
+ * The submit rules for a credential form (any set of text fields: email and
+ * password, code and new password, current and new password) whose fields iOS AutoFill can change
  * silently. AutoFill (and declining its "Use Strong Password?" offer) can set
  * or clear a field without `onChangeText`; the app only learns the text from
  * that field's `onEndEditing`.
@@ -55,19 +79,19 @@ export function credentialsReady({ email, password }: Credentials) {
  *
  * `submit` gets the latest text and decides whether it is ready.
  */
-export function createCredentialsForm(
-	initial: Credentials,
+export function createCredentialsForm<K extends string = CredentialKey>(
+	initial: Record<K, string>,
 	io: {
-		onValues: (values: Credentials) => void;
+		onValues: (values: Record<K, string>) => void;
 		onEditing: (editing: boolean) => void;
 		focusedInput: () => { blur(): void } | null | undefined;
-		submit: (values: Credentials) => void;
+		submit: (values: Record<K, string>) => void;
 	},
 ) {
 	let values = initial;
 	let pendingSubmit = false;
 
-	const set = (key: CredentialKey, text: string) => {
+	const set = (key: K, text: string) => {
 		values = { ...values, [key]: text };
 		io.onValues(values);
 	};
@@ -82,7 +106,7 @@ export function createCredentialsForm(
 			pendingSubmit = false;
 			io.onEditing(true);
 		},
-		endEditing(key: CredentialKey, text: string) {
+		endEditing(key: K, text: string) {
 			set(key, text);
 			io.onEditing(false);
 			if (pendingSubmit) submitNow();
@@ -96,7 +120,7 @@ export function createCredentialsForm(
 				submitNow();
 			}
 		},
-		submitEditing(key: CredentialKey, text: string) {
+		submitEditing(key: K, text: string) {
 			set(key, text);
 			submitNow();
 		},

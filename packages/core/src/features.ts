@@ -67,10 +67,14 @@ export const FEATURES = defineFeatures([
 	{
 		id: "password-reset",
 		kind: "floor",
-		status: "pending-port",
-		platforms: ["web"],
-		reason: `Owed on the phone (${ADR}). The web's Clerk <SignIn> card has Clerk's forgot-password step; the phone has none. Emailed-code sign-in gets a user in but does not change the password.`,
-		routes: {},
+		status: "parity",
+		platforms: ["web", "mobile"],
+		// Web: the forgot-password step of Clerk's prebuilt <SignIn> card, no
+		// route. Mobile: "Forgot password?" on sign-in, then Clerk's
+		// reset_password_email_code; ends signed in (APP-120).
+		routes: {
+			mobile: ["(auth)/forgot-password", "(auth)/reset-password"],
+		},
 	},
 	{
 		id: "sign-out",
@@ -110,10 +114,18 @@ export const FEATURES = defineFeatures([
 	{
 		id: "account-profile",
 		kind: "floor",
-		status: "pending-port",
-		platforms: [],
-		reason: `Not in the reduced web floor (${ADR}), so only the phone owes it. The phone shows the email read-only and cannot change name, email or password yet.`,
-		routes: {},
+		status: "exclusive",
+		platforms: ["mobile"],
+		reason: `Not in the reduced web floor (${ADR}): the phone edits name, email addresses and password through Clerk from the Profile tab (APP-120); the web has no account editing.`,
+		routes: {
+			mobile: [
+				"(app)/(tabs)/profile/name",
+				"(app)/(tabs)/profile/emails",
+				"(app)/(tabs)/profile/add-email",
+				"(app)/(tabs)/profile/verify-email",
+				"(app)/(tabs)/profile/password",
+			],
+		},
 	},
 	{
 		id: "language",

@@ -43,7 +43,9 @@ function toCoded(err: unknown): CodedError {
 }
 
 export function useSocialSignIn() {
-	const incomplete = useI18n().t.signIn.social.incomplete;
+	const { t } = useI18n();
+	const incomplete = t.signIn.social.incomplete;
+	const messages = t.authErrors;
 	const { startSSOFlow } = useSSO();
 	const { startAppleAuthenticationFlow } = useSignInWithApple();
 	const [pending, setPending] = useState<SocialProvider | null>(null);
@@ -75,12 +77,12 @@ export function useSocialSignIn() {
 			} catch (err) {
 				const coded = toCoded(err);
 				if (coded.code !== "ERR_REQUEST_CANCELED") {
-					setError(readError(coded));
+					setError(readError(coded, messages));
 				}
 			}
 			setPending(null);
 		},
-		[startSSOFlow, startAppleAuthenticationFlow, incomplete],
+		[startSSOFlow, startAppleAuthenticationFlow, incomplete, messages],
 	);
 
 	return { start, pending, error };

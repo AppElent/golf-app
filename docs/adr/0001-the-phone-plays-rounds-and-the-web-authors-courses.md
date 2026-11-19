@@ -49,24 +49,22 @@ there would be cost without users. Consequences in `features.ts`:
 
 - `language` and `theme` are `exclusive` to the phone, with a reason linking
   this ADR. The web is English-only and follows the OS colour scheme.
-- `account-profile` (name, email, password) is owed by the phone only. Neither
-  platform edits it yet, and the checker allows only `pending-port` for a
-  feature with no platforms, so it is `pending-port` until the phone ships it;
-  then it becomes `exclusive` to the phone with a reason linking this ADR.
+- `account-profile` (name, email, password) is `exclusive` to the phone, with a
+  reason linking this ADR. The phone edits it from the Profile tab since
+  APP-120.
 
 **The reduced floor is not met yet.** These are `pending-port` with follow-ups:
 
 - `account-deletion`: the phone deletes the account (`convex/account.ts`
   `deleteMyData`, then the Clerk user); the web does not. A web port reuses
   the same mutation.
-- `password-reset` (phone): the web's Clerk sign-in card has Clerk's
-  forgot-password step; the phone has none. Emailed-code sign-in gets a user
-  in but does not change the password.
 - `data-export`: neither platform exports a user's data. When it lands, it
   covers every table on both platforms, including data whose screens are
   phone-only.
 
 `sign-out` is `parity` since APP-116: both sign out from the Profile tab.
+`password-reset` is `parity` since APP-120: the web through Clerk's sign-in
+card, the phone through "Forgot password?" on its sign-in screen.
 
 `privacy` is `parity`: the web serves `/privacy` publicly, and the phone opens
 that page from the Profile tab. `support` is a web page the App Store listing
