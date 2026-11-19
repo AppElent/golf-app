@@ -44,7 +44,7 @@ export function VerifyEmailScreen() {
 			onSuccess: async () => {
 				toast.success(fmt(copy.verified, { email }));
 				await actions.makePrimary(address.id);
-				router.back();
+				if (write.isOpen()) router.back();
 			},
 		});
 	}
