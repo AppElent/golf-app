@@ -46,7 +46,7 @@ jobs:
       CLOUDFLARE_ENV: ${{ inputs.environment != 'production' && inputs.environment || '' }}
       EXPECTED_WORKER: ${{ inputs.worker }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: ./.github/actions/setup
 
       # Fails before anything ships rather than deploying half a target. An
