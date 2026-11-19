@@ -11,6 +11,7 @@ import { ConvexError } from "convex/values";
 import { convexTest } from "convex-test";
 import { describe, expect, it } from "vitest";
 import { api, internal } from "./_generated/api";
+import type { TableNames } from "./_generated/dataModel";
 import schema from "./schema";
 import * as seed from "./seed";
 import * as seedPreview from "./seedPreview";
@@ -872,6 +873,35 @@ describe("data export", () => {
 			expect(data.tables[table], table).toEqual([]);
 		}
 		expect(rowIds(await exportOf(bob)).length).toBeGreaterThan(0);
+	});
+
+	// The export reads child rows through their parents, so it cannot see a
+	// score or hole left behind by a deleted round or copy. This reads every
+	// table in the registry directly: after deletion each holds exactly the
+	// rows it held before the caller wrote anything (the catalog and Bob's).
+	it("deletes every row the caller wrote, in every table, and nothing else", async () => {
+		const { t, alice, bob, course } = await setup();
+		await fillEveryTable(bob, course, "Bob");
+		const snapshot = () =>
+			t.run(async (ctx) => {
+				const ids: Record<string, string[]> = {};
+				for (const table of Object.keys(USER_DATA) as TableNames[]) {
+					const rows = await ctx.db.query(table).collect();
+					ids[table] = rows.map((row) => row._id as string).sort();
+				}
+				return ids;
+			});
+		const before = await snapshot();
+		await fillEveryTable(alice, course, "Alice");
+		const filled = await snapshot();
+		for (const [table, treatment] of Object.entries(USER_DATA)) {
+			if (treatment.kind === "shared") continue;
+			expect(filled[table].length, table).toBeGreaterThan(before[table].length);
+		}
+
+		await alice.mutation(api.account.deleteMyData, {});
+
+		expect(await snapshot()).toEqual(before);
 	});
 
 	it("refuses a table it does not export", async () => {

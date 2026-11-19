@@ -36,6 +36,15 @@ export function accountQueue(
 	};
 }
 
+/** Drop one account's unsent scores, for when that account is deleted: their
+ *  rounds are gone, so they could never be sent. The unclaimed queue stays. */
+export function forgetAccountQueue(
+	storage: Pick<Storage, "removeItem">,
+	userId: string,
+): void {
+	storage.removeItem(`${QUEUE_KEY}:${userId}`);
+}
+
 export function keyFor(
 	roundId: string,
 	holeIndex: number,
