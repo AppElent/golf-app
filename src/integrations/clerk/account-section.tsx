@@ -92,6 +92,7 @@ export function AccountSection() {
 			await deleteUser(user);
 		} catch {
 			// Still signed in. A retry deletes no more data and tries Clerk again.
+			// Simulation mode stays off: the simulated round went with the data.
 			setFailed("account");
 			setBusy(null);
 		}
