@@ -9,6 +9,8 @@ import { useState } from "react";
 import { useI18n } from "../../../i18n";
 import { FormScreen, FormSection, FormTextField } from "../../../ui/form";
 import { NavHeader } from "../../../ui/nav-header";
+import { useToast } from "../../../ui/toast";
+import { thrownErrorKey } from "../../auth/clerk-errors";
 import { useClerkWrite } from "./use-clerk-write";
 
 export function AddEmailScreen() {
@@ -16,6 +18,7 @@ export function AddEmailScreen() {
 	const { t } = useI18n();
 	const copy = t.account;
 	const router = useRouter();
+	const toast = useToast();
 	const write = useClerkWrite();
 	const [email, setEmail] = useState("");
 
@@ -37,6 +40,13 @@ export function AddEmailScreen() {
 						pathname: "/profile/verify-email",
 						params: { id },
 					}),
+				// Created, but the code didn't go out: the code step can resend it.
+				onError: (failure) => {
+					const message = t.authErrors[thrownErrorKey(failure)];
+					if (!id) return write.setError(message);
+					toast.error(message);
+					router.replace({ pathname: "/profile/verify-email", params: { id } });
+				},
 			},
 		);
 	}

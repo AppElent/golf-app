@@ -16,6 +16,7 @@ export default function ProfileStack() {
 			<Stack.Screen name="add-email" options={small} />
 			<Stack.Screen name="verify-email" options={small} />
 			<Stack.Screen name="password" options={small} />
+			<Stack.Screen name="reverify" options={small} />
 		</Stack>
 	);
 }

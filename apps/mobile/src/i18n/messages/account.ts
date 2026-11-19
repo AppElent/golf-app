@@ -142,6 +142,12 @@ export const accountEn = {
 		"Signs you out everywhere except this phone, for example after a lost device.",
 	passwordChanged: "Password changed.",
 	passwordAdded: "Password set.",
+	reverifyTitle: "Confirm it's you",
+	confirm: "Confirm",
+	reverifyPasswordHint:
+		"For your security, enter your password before you change your email or password.",
+	reverifyCodeHint:
+		"For your security, enter the 6-digit code we sent to {email} before you change your email or password.",
 };
 
 export const accountNl: typeof accountEn = {
@@ -193,4 +199,10 @@ export const accountNl: typeof accountEn = {
 		"Logt je overal uit behalve op deze telefoon, bijvoorbeeld na een verloren apparaat.",
 	passwordChanged: "Wachtwoord gewijzigd.",
 	passwordAdded: "Wachtwoord ingesteld.",
+	reverifyTitle: "Bevestig dat jij het bent",
+	confirm: "Bevestigen",
+	reverifyPasswordHint:
+		"Voor je veiligheid: vul je wachtwoord in voordat je je e-mailadres of wachtwoord wijzigt.",
+	reverifyCodeHint:
+		"Voor je veiligheid: vul de code van 6 cijfers in die we naar {email} stuurden, voordat je je e-mailadres of wachtwoord wijzigt.",
 };

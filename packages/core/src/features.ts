@@ -124,6 +124,7 @@ export const FEATURES = defineFeatures([
 				"(app)/(tabs)/profile/add-email",
 				"(app)/(tabs)/profile/verify-email",
 				"(app)/(tabs)/profile/password",
+				"(app)/(tabs)/profile/reverify",
 			],
 		},
 	},

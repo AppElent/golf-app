@@ -2,6 +2,8 @@ import { en } from "../../i18n/messages/en";
 import { nl } from "../../i18n/messages/nl";
 import {
 	clerkErrorEntries,
+	isReverifyCancelled,
+	isReverifyHint,
 	pickError,
 	readError,
 	thrownErrorKey,
@@ -82,5 +84,29 @@ describe("thrown user-method errors", () => {
 			"network",
 		);
 		expect(thrownErrorKey(thrown)).toBe("passwordWeak");
+	});
+});
+
+describe("reverification", () => {
+	it("tells a cancelled prompt from a failure", () => {
+		expect(isReverifyCancelled({ code: "reverification_cancelled" })).toBe(
+			true,
+		);
+		expect(isReverifyCancelled({ code: "form_password_incorrect" })).toBe(
+			false,
+		);
+		expect(isReverifyCancelled(null)).toBe(false);
+	});
+
+	it("spots the hint useReverification resolves with", () => {
+		expect(isReverifyHint({ clerk_error: { type: "forbidden" } })).toBe(true);
+		expect(isReverifyHint({ id: "user_1" })).toBe(false);
+		expect(isReverifyHint(undefined)).toBe(false);
+	});
+
+	it("maps Clerk's reverification error to its message", () => {
+		expect(
+			thrownErrorKey({ errors: [{ code: "session_reverification_required" }] }),
+		).toBe("reverify");
 	});
 });

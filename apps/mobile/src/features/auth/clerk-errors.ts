@@ -139,3 +139,20 @@ export function thrownErrorKey(error: unknown): AuthErrorKey {
 	const [first] = clerkErrorEntries(error);
 	return first ? errorKey(first) : "network";
 }
+
+/** `useReverification` rejects with this code when its prompt is cancelled. */
+export function isReverifyCancelled(error: unknown): boolean {
+	return (
+		(error as { code?: unknown } | null)?.code === "reverification_cancelled"
+	);
+}
+
+/**
+ * What `useReverification` resolves with, instead of throwing, when the call
+ * still needs reverification after the prompt.
+ */
+export function isReverifyHint(result: unknown): boolean {
+	return (
+		typeof result === "object" && result !== null && "clerk_error" in result
+	);
+}
