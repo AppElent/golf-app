@@ -1,5 +1,6 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { EmailCodeForm } from "../components/email-code-form";
+import { emailFromParam } from "./email-param";
 import { useEmailCodeSignIn } from "./use-email-code-sign-in";
 
 export function SignInCodeScreen() {
@@ -10,7 +11,7 @@ export function SignInCodeScreen() {
 
 	return (
 		<EmailCodeForm
-			email={email}
+			email={emailFromParam(email)}
 			busy={busy}
 			error={error}
 			notice={notice}
