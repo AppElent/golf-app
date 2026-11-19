@@ -79,7 +79,7 @@ jobs:
           echo "update-type='$UPDATE_TYPE' all-patch=$all_patch ecosystem='$ECOSYSTEM' ci=$ci -> $want"
           # Read the labels now, not from the event payload, so a label set
           # while this run waited (blast-radius:high above all) is respected.
-          labels=$(gh api "repos/$GH_REPO/issues/$PR/labels" --jq '.[].name')
+          labels=$(gh api --paginate "repos/$GH_REPO/issues/$PR/labels" --jq '.[].name')
           if grep -qx 'blast-radius:high' <<<"$labels"; then
             echo "blast-radius:high is set; leaving labels alone."
             exit 0
