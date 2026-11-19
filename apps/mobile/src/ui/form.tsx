@@ -1,6 +1,5 @@
-import { HeaderHeightContext } from "expo-router/react-navigation";
 import { SymbolView } from "expo-symbols";
-import { Children, type ReactNode, useContext } from "react";
+import { Children, type ReactNode, useRef, useState } from "react";
 import {
 	KeyboardAvoidingView,
 	Platform,
@@ -10,6 +9,7 @@ import {
 	TextInput,
 	type TextInputProps,
 	View,
+	type ViewInstance,
 	type ViewStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -60,7 +60,13 @@ export function FormScreen({
 }) {
 	const styles = useThemedStyles(createStyles);
 	const insets = useSafeAreaInsets();
-	const headerHeight = useContext(HeaderHeightContext) ?? 0;
+	// How far below the top of the window this form starts. A navigator header
+	// that pushes the content down counts; a transparent one the content slides
+	// under does not, so it is measured instead of read from the header height.
+	const frame = useRef<ViewInstance>(null);
+	const [windowTop, setWindowTop] = useState(0);
+	const measureTop = () =>
+		frame.current?.measureInWindow((_x, y) => setWindowTop(y));
 
 	const content = (
 		<>
@@ -97,13 +103,15 @@ export function FormScreen({
 	if (nativeSheet) return content;
 	if (!avoidKeyboard) return <View style={styles.screen}>{content}</View>;
 	return (
-		<KeyboardAvoidingView
-			behavior={Platform.OS === "ios" ? "padding" : "height"}
-			keyboardVerticalOffset={header ? 0 : headerHeight}
-			style={styles.screen}
-		>
-			{content}
-		</KeyboardAvoidingView>
+		<View ref={frame} onLayout={measureTop} style={styles.screen}>
+			<KeyboardAvoidingView
+				behavior={Platform.OS === "ios" ? "padding" : "height"}
+				keyboardVerticalOffset={windowTop}
+				style={styles.screen}
+			>
+				{content}
+			</KeyboardAvoidingView>
+		</View>
 	);
 }
 

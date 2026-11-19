@@ -14,6 +14,11 @@
 export interface CodedError {
 	code: string;
 	message?: string;
+	/**
+	 * Set on Clerk's `ClerkAPIResponseError` wrapper (`code: "api_response_error"`),
+	 * which holds the machine-stable codes of the API's actual errors.
+	 */
+	errors?: readonly CodedError[];
 }
 
 const GENERIC = "Something went wrong. Please try again.";
@@ -47,14 +52,25 @@ const CODE_MAP: Record<string, string> = {
 /** `null` in, `null` out — so a call site can render this straight into an error message. */
 export function readError(error: CodedError | null | undefined): string | null {
 	if (!error) return null;
-	const mapped = CODE_MAP[error.code];
+	const code = codeOf(error);
+	const mapped = CODE_MAP[code];
 	if (!mapped) {
 		if (__DEV__) {
-			console.warn(`[auth] unmapped Clerk error code: ${error.code}`);
+			console.warn(`[auth] unmapped Clerk error code: ${code}`);
 		}
 		return GENERIC;
 	}
 	return mapped;
+}
+
+/**
+ * An error Clerk can't pin to a form field (no `meta.param_name`, such as
+ * `strategy_for_user_invalid`) reaches `errors.global` as the whole
+ * `ClerkAPIResponseError`, whose own code is `api_response_error`. The code
+ * to map is the first one it wraps.
+ */
+function codeOf(error: CodedError): string {
+	return error.errors?.[0]?.code ?? error.code;
 }
 
 /** The shape of `useSignIn().errors` / `useSignUp().errors`. */

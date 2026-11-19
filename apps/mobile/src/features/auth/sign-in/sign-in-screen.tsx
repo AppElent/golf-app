@@ -17,6 +17,7 @@ import { CredentialsFields } from "../components/credentials-fields";
 import { credentialsReady } from "../components/credentials-model";
 import { SocialButtons } from "../components/social-buttons";
 import { useCredentialsForm } from "../components/use-credentials-form";
+import { emailToParam } from "./email-param";
 import { useEmailCodeSignIn } from "./use-email-code-sign-in";
 import { usePasswordSignIn } from "./use-password-sign-in";
 
@@ -45,7 +46,7 @@ export function SignInScreen() {
 		if (await emailCode.send(email)) {
 			router.push({
 				pathname: "/sign-in-code",
-				params: { email: email.trim() },
+				params: { email: emailToParam(email.trim()) },
 			});
 		}
 	}
