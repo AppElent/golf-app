@@ -3,7 +3,9 @@
  * the SDK. `init.ts` is the only module that initialises the SDK.
  * Policy: docs/runbooks/mobile.md#monitoring.
  */
-import type { Breadcrumb, ErrorEvent } from "@sentry/react-native";
+import type { Breadcrumb, ErrorEvent, Event } from "@sentry/react-native";
+import type { Messages } from "../i18n/messages/en";
+import type { Tokens } from "../theme/tokens";
 
 type SentryEnvironment = "development" | "preview" | "production";
 
@@ -40,6 +42,73 @@ export function sanitizeEvent(event: ErrorEvent): ErrorEvent {
 	return {
 		...rest,
 		...(request ? { request: { url: stripQuery(request.url) as string } } : {}),
+	};
+}
+
+/**
+ * Feedback skips `beforeSend`, so a registered event processor gives the
+ * report the same treatment: no user, no contact fields, no query string.
+ * Other events pass through to the error hooks untouched.
+ */
+export function sanitizeFeedbackEvent<T extends Event>(event: T): T {
+	if (event.type !== "feedback") return event;
+	const feedback = event.contexts?.feedback as
+		| { url?: string; contact_email?: string; name?: string }
+		| undefined;
+	if (feedback) {
+		delete feedback.contact_email;
+		delete feedback.name;
+		if (feedback.url) feedback.url = stripQuery(feedback.url) as string;
+	}
+	const { user: _user, request: _request, ...rest } = event;
+	return rest as T;
+}
+
+/**
+ * The feedback form: no name or email field, an optional screenshot the
+ * golfer takes themselves, and opened by a shake or the Profile row. Shake is
+ * started by `shake-to-report`, which pauses it while a sheet, modal or system
+ * alert is presented.
+ */
+export const FEEDBACK_OPTIONS = {
+	enableShakeToReport: false,
+	showName: false,
+	showEmail: false,
+	isNameRequired: false,
+	isEmailRequired: false,
+	enableScreenshot: false,
+	enableTakeScreenshot: true,
+	showBranding: false,
+} as const;
+
+/** The form in Fairway's colors instead of Sentry's purple. */
+export function feedbackTheme(colors: Tokens) {
+	return {
+		background: colors.bg,
+		foreground: colors.text,
+		accentBackground: colors.accentFill,
+		accentForeground: colors.onAccent,
+		border: colors.border,
+	};
+}
+
+/** The form's labels in the golfer's language. */
+export function feedbackLabels(text: Messages["feedback"]) {
+	return {
+		formTitle: text.report,
+		messageLabel: text.message,
+		isRequiredLabel: text.required,
+		messagePlaceholder: text.placeholder,
+		submitButtonLabel: text.submit,
+		cancelButtonLabel: text.cancel,
+		addScreenshotButtonLabel: text.add,
+		captureScreenshotButtonLabel: text.take,
+		removeScreenshotButtonLabel: text.remove,
+		errorTitle: text.report,
+		formError: text.error,
+		genericError: text.error,
+		captureScreenshotError: text.error,
+		successMessageText: text.success,
 	};
 }
 

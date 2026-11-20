@@ -1,7 +1,8 @@
 import { Directory, File, Paths } from "expo-file-system";
 import type { ComponentRef, RefObject } from "react";
-import { Share, type View } from "react-native";
+import type { View } from "react-native";
 import { captureRef } from "react-native-view-shot";
+import { share } from "../../../monitoring/native-presentation";
 
 /** A share in progress: a second tap would empty the folder the open sheet reads from. */
 let sharing = false;
@@ -28,7 +29,7 @@ export async function shareRound(
 		}
 		if (url) url = await named(url, fileName);
 		// On iOS this resolves when the sheet closes, so the guard spans it.
-		await Share.share(url ? { url, message } : { message }).catch(() => {});
+		await share(url ? { url, message } : { message }).catch(() => {});
 	} finally {
 		sharing = false;
 	}

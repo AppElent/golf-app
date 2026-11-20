@@ -13,17 +13,11 @@ import {
 	useRef,
 	useState,
 } from "react";
-import {
-	Alert,
-	Modal,
-	Platform,
-	Pressable,
-	StyleSheet,
-	View,
-} from "react-native";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { haptics } from "../feedback/haptics";
 import { modalAnimation, useReduceMotion } from "../feedback/reduce-motion";
 import { useI18n } from "../i18n";
+import { showAlert } from "../monitoring/native-presentation";
 import {
 	metrics,
 	radius,
@@ -32,6 +26,7 @@ import {
 	useThemedStyles,
 	useTokens,
 } from "../theme";
+import { Modal } from "./modal";
 import { AppText } from "./text";
 
 type ConfirmOptions = {
@@ -71,7 +66,7 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
 						resolveRef.current = null;
 						resolve(answer);
 					};
-					Alert.alert(
+					showAlert(
 						next.title,
 						next.message,
 						[

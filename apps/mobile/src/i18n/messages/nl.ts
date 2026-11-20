@@ -2,6 +2,7 @@ import { accountNl, authErrorsNl, resetPasswordNl } from "./account";
 import { signInNl, signUpNl, verifyEmailNl } from "./auth";
 import { commonNl, tabsNl } from "./common";
 import type { Messages } from "./en";
+import { feedbackNl } from "./feedback";
 import { clubsNl, profileNl, roundsNl, statsNl } from "./history";
 import { playNl } from "./play";
 import { scorecardNl, scoreNl } from "./score";
@@ -28,4 +29,5 @@ export const nl = {
 	profile: profileNl,
 	account: accountNl,
 	clubs: clubsNl,
+	feedback: feedbackNl,
 } satisfies Messages;
