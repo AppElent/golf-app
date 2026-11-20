@@ -1,171 +1,79 @@
-import { DEFAULT_UNITS, formatDistance } from "@fairway/core/format";
-import {
-	formatHandicapIndex,
-	wouldBeFromHistory,
-} from "@fairway/core/handicap";
-import { formatVsPar } from "@fairway/core/scoring";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useQuery } from "convex/react";
-import { api } from "../../convex/_generated/api";
-import { SURFACE } from "../components/classes";
-import { Page, Section } from "../components/Page";
-import { Sparkline } from "../components/Sparkline";
+import { ChevronRight, CircleUserRound, LandPlot } from "lucide-react";
+import { APP_STORE_URL, TESTFLIGHT_URL } from "../components/app-links";
+import { CONTROL, CTA, SURFACE } from "../components/classes";
 
-export const Route = createFileRoute("/")({ component: HomeScreen });
+export const Route = createFileRoute("/")({ component: OpenTheApp });
 
-function HomeScreen() {
-	const settings = useQuery(api.settings.get);
-	const history = useQuery(api.rounds.history, {});
-	const clubs = useQuery(api.clubs.list);
-
-	const units = settings?.units ?? DEFAULT_UNITS;
-	const rounds = history ?? [];
-	const last = rounds[0] ?? null;
-
-	const { trend } = wouldBeFromHistory(rounds);
-	const delta =
-		trend.length >= 2
-			? trend[trend.length - 1] - trend[trend.length - 2]
-			: null;
-
-	const counts = new Map<string, number>();
-	for (const r of rounds)
-		counts.set(r.courseName, (counts.get(r.courseName) ?? 0) + 1);
-	const mostPlayed =
-		[...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
-
-	const heroIndex =
-		settings?.handicapIndex ??
-		(trend.length > 0 ? trend[trend.length - 1] : null);
-
+/**
+ * "Open the Fairway app" (features.ts `open-the-app`). The phone plays and
+ * reviews rounds; the web only authors courses (ADR 0001). Public, like
+ * /privacy: it reads no user data, and the retired round paths land here.
+ */
+function OpenTheApp() {
 	return (
-		<Page>
-			<div className="mb-6 flex items-center justify-between">
-				<div>
-					<p className="text-label font-medium text-moss">Welcome back</p>
-					<h1 className="font-display text-title-sm font-bold tracking-tight text-ink">
-						Fairway
-					</h1>
-				</div>
-				<Link
-					to="/profile"
-					className="flex h-11 w-11 items-center justify-center rounded-full bg-pine-fill font-display text-base font-bold text-cream"
-				>
-					EJ
-				</Link>
-			</div>
+		<main className="px-5 pt-16 pb-16">
+			<p className="font-display text-label font-semibold tracking-[0.14em] text-moss uppercase">
+				Fairway
+			</p>
+			<h1 className="mt-1 font-display text-2xl font-bold tracking-tight text-ink">
+				Open the Fairway app
+			</h1>
+			<p className="mt-2 text-body leading-7 text-moss">
+				Rounds, scores, GPS distances, stats, your handicap and your clubs live
+				in the Fairway app on your phone. The website is for editing courses.
+			</p>
 
-			<section className="relative overflow-hidden rounded-[26px] bg-gradient-to-br from-pine-light to-pine p-6 text-[#eaf2e9] shadow-[0_18px_40px_-22px_rgba(15,61,42,0.9)]">
-				<div className="pointer-events-none absolute -top-8 -right-8 h-36 w-36 rounded-full bg-live/15" />
-				<div className="flex items-start justify-between">
-					<div>
-						<p className="text-label font-semibold tracking-[0.14em] uppercase opacity-70">
-							Handicap Index
-						</p>
-						<p className="mt-1 font-display text-jumbo leading-none font-bold tracking-tight">
-							{heroIndex !== null ? formatHandicapIndex(heroIndex) : "—"}
-						</p>
-						<p className="mt-2 text-label opacity-65">
-							{delta !== null
-								? `${delta <= 0 ? "▾" : "▴"} ${Math.abs(delta).toFixed(1)} vs last round`
-								: "Play three rounds to see your trend"}
-						</p>
-					</div>
-					<div className="pt-2">
-						<Sparkline values={trend} />
-					</div>
-				</div>
-			</section>
+			<a href={APP_STORE_URL} className={`${CTA} mt-6 block text-center`}>
+				Get Fairway on the App Store
+			</a>
+			<p className="mt-3 text-center text-label text-moss">
+				Trying the preview?{" "}
+				<a href={TESTFLIGHT_URL} className="font-semibold underline">
+					Join the TestFlight beta
+				</a>
+			</p>
 
-			<Link
-				to="/rounds/new"
-				className="mt-4 flex items-center justify-between rounded-[22px] bg-flag px-6 py-4 shadow-[0_14px_30px_-16px_rgba(224,83,47,0.9)]"
+			<nav
+				aria-label="On the website"
+				className={`mt-8 divide-y divide-card-line rounded-2xl border ${SURFACE}`}
 			>
-				<span>
-					<span className="block font-display text-lg font-bold text-white">
-						Start a round
-					</span>
-					<span className="block text-label text-white">
-						{mostPlayed
-							? `Back to ${mostPlayed}?`
-							: "Pick a course and tee off"}
-					</span>
-				</span>
-				<span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/18 text-white">
-					→
-				</span>
-			</Link>
-
-			{last ? (
-				<Section title="Last round">
-					<div className={`rounded-2xl border ${SURFACE} p-4`}>
-						<div className="flex items-baseline justify-between">
-							<p className="font-display text-body font-semibold text-ink">
-								{last.courseName}
-							</p>
-							<p className="font-display text-2xl font-bold text-ink">
-								{last.owner.strokes || "—"}
-								<span className="ml-2 text-label font-semibold text-live-ink">
-									{last.owner.strokes ? formatVsPar(last.owner.vsPar) : ""}
-								</span>
-							</p>
-						</div>
-						<div className="mt-3 flex gap-4 text-footnote text-moss">
-							<Stat
-								label="Putts"
-								value={
-									last.owner.putts !== null ? String(last.owner.putts) : "—"
-								}
-							/>
-							<Stat
-								label="FIR"
-								value={
-									last.owner.firEligible > 0
-										? `${last.owner.firMade}/${last.owner.firEligible}`
-										: "—"
-								}
-							/>
-							<Stat
-								label="GIR"
-								value={
-									last.owner.girHoles > 0
-										? `${last.owner.girMade}/${last.owner.girHoles}`
-										: "—"
-								}
-							/>
-						</div>
-					</div>
-				</Section>
-			) : null}
-
-			{clubs && clubs.length > 0 ? (
-				<Section title="Your clubs">
-					<div className="flex gap-2 overflow-x-auto pb-1">
-						{clubs.map((club) => (
-							<div
-								key={club._id}
-								className={`flex shrink-0 flex-col items-center rounded-xl border ${SURFACE} px-3 py-2`}
-							>
-								<span className="font-display text-label font-bold text-ink">
-									{club.name}
-								</span>
-								<span className="text-caption text-moss">
-									{formatDistance(club.carryMeters, units)}
-								</span>
-							</div>
-						))}
-					</div>
-				</Section>
-			) : null}
-		</Page>
+				<WebLink to="/courses" icon={LandPlot} title="Edit courses">
+					Make your own copy of a course and fix its tees and holes.
+				</WebLink>
+				<WebLink to="/profile" icon={CircleUserRound} title="Account">
+					Export your data, sign out or delete your account.
+				</WebLink>
+			</nav>
+		</main>
 	);
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function WebLink({
+	to,
+	icon: Icon,
+	title,
+	children,
+}: {
+	to: "/courses" | "/profile";
+	icon: typeof LandPlot;
+	title: string;
+	children: React.ReactNode;
+}) {
 	return (
-		<span>
-			<span className="mr-1 uppercase tracking-wide text-stone">{label}</span>
-			<span className="font-semibold text-ink">{value}</span>
-		</span>
+		<Link to={to} className="flex items-center gap-3 px-4 py-3.5">
+			<span
+				className={`flex size-10 shrink-0 items-center justify-center rounded-full border ${CONTROL} text-pine-ink`}
+			>
+				<Icon aria-hidden className="size-5" />
+			</span>
+			<span className="min-w-0 flex-1">
+				<span className="block font-display text-callout font-semibold text-ink">
+					{title}
+				</span>
+				<span className="block text-footnote text-moss">{children}</span>
+			</span>
+			<ChevronRight aria-hidden className="size-4 shrink-0 text-moss" />
+		</Link>
 	);
 }

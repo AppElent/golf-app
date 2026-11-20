@@ -11,7 +11,6 @@ const mocks = vi.hoisted(() => ({
 	signOut: vi.fn<() => Promise<void>>(),
 	deleteUser: vi.fn<() => Promise<void>>(),
 	deleteMyData: vi.fn<(args: object) => Promise<null>>(),
-	setSimulating: vi.fn(),
 	email: "golfer@example.com" as string | undefined,
 }));
 vi.mock("@clerk/react", () => ({
@@ -31,12 +30,6 @@ vi.mock("@clerk/react", () => ({
 }));
 vi.mock("convex/react", () => ({
 	useMutation: () => mocks.deleteMyData,
-}));
-vi.mock("../../play/simulation", () => ({
-	useSimulationMode: () => ({
-		simulating: true,
-		setSimulating: mocks.setSimulating,
-	}),
 }));
 
 import { AccountSection } from "./account-section";
@@ -80,7 +73,7 @@ it("shows who is signed in", () => {
 	expect(screen.getByRole("heading", { name: "Account" })).toBeTruthy();
 });
 
-it("signs out through Clerk once and leaves simulation mode", async () => {
+it("signs out through Clerk once", async () => {
 	let finish = () => {};
 	mocks.signOut.mockReturnValue(
 		new Promise<void>((resolve) => {
@@ -90,18 +83,12 @@ it("signs out through Clerk once and leaves simulation mode", async () => {
 	render(<AccountSection />);
 	fireEvent.click(signOutButton());
 	expect(mocks.signOut).toHaveBeenCalledTimes(1);
-	// Simulation mode is off before Clerk navigates away.
-	expect(mocks.setSimulating).toHaveBeenCalledWith(false);
-	expect(mocks.setSimulating.mock.invocationCallOrder[0]).toBeLessThan(
-		mocks.signOut.mock.invocationCallOrder[0],
-	);
 	// While Clerk works, the button cannot send a second request.
 	expect(signOutButton().textContent).toBe("Signing out…");
 	expect((signOutButton() as HTMLButtonElement).disabled).toBe(true);
 	fireEvent.click(signOutButton());
 	expect(mocks.signOut).toHaveBeenCalledTimes(1);
 	await act(async () => finish());
-	expect(mocks.setSimulating).toHaveBeenCalledTimes(1);
 });
 
 it("says so and allows a retry when sign-out fails", async () => {
@@ -112,8 +99,6 @@ it("says so and allows a retry when sign-out fails", async () => {
 		/couldn't sign out/i,
 	);
 	expect((signOutButton() as HTMLButtonElement).disabled).toBe(false);
-	// Still signed in, so back in simulation mode.
-	expect(mocks.setSimulating).toHaveBeenLastCalledWith(true);
 	await act(async () => fireEvent.click(signOutButton()));
 	expect(mocks.signOut).toHaveBeenCalledTimes(2);
 });
@@ -147,7 +132,6 @@ describe("account deletion", () => {
 		expect(document.activeElement?.textContent).toBe("Delete account…");
 		expect(mocks.deleteMyData).not.toHaveBeenCalled();
 		expect(mocks.deleteUser).not.toHaveBeenCalled();
-		expect(mocks.setSimulating).not.toHaveBeenCalled();
 		expect(window.localStorage.getItem(QUEUE)).toBe("[]");
 	});
 
@@ -171,7 +155,6 @@ describe("account deletion", () => {
 		expect(mocks.deleteMyData.mock.invocationCallOrder[0]).toBeLessThan(
 			mocks.deleteUser.mock.invocationCallOrder[0],
 		);
-		expect(mocks.setSimulating).toHaveBeenCalledWith(false);
 		// The unclaimed queue is nobody's to delete.
 		expect(window.localStorage.getItem("fairway.scoreQueue")).toBe("[]");
 		// Nothing can start a second run, or sign out halfway.
@@ -195,8 +178,7 @@ describe("account deletion", () => {
 		expect(mocks.deleteUser).not.toHaveBeenCalled();
 		expect(mocks.signOut).not.toHaveBeenCalled();
 		expect(window.localStorage.getItem(QUEUE)).toBe("[]");
-		// Still signed in, so back in simulation mode, and free to retry.
-		expect(mocks.setSimulating).toHaveBeenLastCalledWith(true);
+		// Still signed in, and free to retry.
 		expect((confirmButton() as HTMLButtonElement).disabled).toBe(false);
 		await act(async () => fireEvent.click(confirmButton()));
 		expect(mocks.deleteUser).toHaveBeenCalledTimes(1);
