@@ -339,7 +339,7 @@ process.stdout.write(readFileSync(join(process.env.FINGERPRINT_FIXTURES, file), 
 		// preview and production; one that used the preview list everywhere
 		// would miss a development build losing expo-dev-client.
 		expect(runCheck(modules, healthy).status).toBe(0);
-		const result = runCheck(modules, (variant, platform) =>
+		const result = runCheck(modules, (_variant, platform) =>
 			realPrint(platform, byPlatform[platform]),
 		);
 		expect(result.status).toBe(1);
