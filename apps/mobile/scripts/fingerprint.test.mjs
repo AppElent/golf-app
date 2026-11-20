@@ -7,7 +7,12 @@ import { tmpdir } from "node:os";
 import { delimiter, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterEach, describe, expect, it } from "vitest";
-import { fingerprintErrors, PLATFORMS, WATCHED } from "./fingerprint.mjs";
+import {
+	fingerprintErrors,
+	PLATFORMS,
+	parseJson,
+	WATCHED,
+} from "./fingerprint.mjs";
 
 const REASON = { ios: "expoAutolinkingIos", android: "expoAutolinkingAndroid" };
 
@@ -39,6 +44,30 @@ function print(platform, { without = [], autolinking = true } = {}) {
 		],
 	};
 }
+
+describe("parseJson", () => {
+	it("parses plain JSON", () => {
+		expect(parseJson('{"hash":"a"}')).toEqual({ hash: "a" });
+	});
+
+	it("skips pnpm's install log and a [WARN] line before the JSON", () => {
+		const stdout = [
+			"Scope: all 3 workspace projects",
+			" WARN  deprecated glob@7.2.3",
+			"[WARN] Unsupported engine: wanted node ^22.13.0",
+			'{"modules":[]}',
+		].join("\n");
+		expect(parseJson(stdout)).toEqual({ modules: [] });
+	});
+
+	it("still parses a top-level JSON array", () => {
+		expect(parseJson('[WARN] something\n["a"]\n')).toEqual(["a"]);
+	});
+
+	it("throws when there is no JSON", () => {
+		expect(() => parseJson("[WARN] only a warning\n")).toThrow(SyntaxError);
+	});
+});
 
 describe("fingerprintErrors", () => {
 	it.each(PLATFORMS)("passes a complete %s fingerprint", (platform) => {
@@ -194,15 +223,19 @@ const { readFileSync } = require("node:fs");
 const { join } = require("node:path");
 const args = process.argv.slice(2);
 const platform = args[args.indexOf("--platform") + 1];
+// Without APP_VARIANT the app config falls back to a local development build.
+const variant = process.env.APP_VARIANT || "development";
 const file = args.includes("fingerprint:generate")
-	? \`fingerprint-\${process.env.APP_VARIANT}-\${platform}.json\`
-	: \`autolinking-\${platform}.json\`;
+	? \`fingerprint-\${variant}-\${platform}.json\`
+	: \`autolinking-\${variant}-\${platform}.json\`;
 if (process.env.FAIL_RESOLVE && !args.includes("fingerprint:generate")) {
 	process.stderr.write("resolve failed");
 	process.exit(1);
 }
 // pnpm logs this to stdout when it installs before running.
 process.stdout.write("Scope: all 3 workspace projects\\n");
+// Outside CI=true pnpm can print a warning line that starts with "[".
+process.stdout.write("[WARN] Unsupported engine\\n");
 process.stdout.write(readFileSync(join(process.env.FINGERPRINT_FIXTURES, file), "utf8"));
 `;
 	const VARIANTS = ["preview", "production", "development"];
@@ -236,8 +269,9 @@ process.stdout.write(readFileSync(join(process.env.FINGERPRINT_FIXTURES, file), 
 	}
 
 	/**
-	 * Runs `check` with fixtures. `modules[platform]` is what autolinking
-	 * resolves; `prints(variant, platform)` the fingerprint to report.
+	 * Runs `check` with fixtures. `modules(variant, platform)` is what
+	 * autolinking resolves; `prints(variant, platform)` the fingerprint to
+	 * report.
 	 */
 	function runCheck(modules, prints, env = {}) {
 		const dir = mkdtempSync(join(tmpdir(), "fingerprint-check-"));
@@ -245,18 +279,20 @@ process.stdout.write(readFileSync(join(process.env.FINGERPRINT_FIXTURES, file), 
 		writeFileSync(join(dir, "pnpm"), FAKE_PNPM);
 		chmodSync(join(dir, "pnpm"), 0o755);
 		for (const platform of PLATFORMS) {
-			const resolved = {
-				modules: modules[platform].map((packageName) => ({ packageName })),
-			};
-			writeFileSync(
-				// The script must ask autolinking for `apple`, as @expo/fingerprint does.
-				join(
-					dir,
-					`autolinking-${platform === "ios" ? "apple" : platform}.json`,
-				),
-				JSON.stringify(resolved),
-			);
 			for (const variant of VARIANTS) {
+				const resolved = {
+					modules: modules(variant, platform).map((packageName) => ({
+						packageName,
+					})),
+				};
+				writeFileSync(
+					// The script must ask autolinking for `apple`, as @expo/fingerprint does.
+					join(
+						dir,
+						`autolinking-${variant}-${platform === "ios" ? "apple" : platform}.json`,
+					),
+					JSON.stringify(resolved),
+				);
 				writeFileSync(
 					join(dir, `fingerprint-${variant}-${platform}.json`),
 					JSON.stringify(prints(variant, platform)),
@@ -267,6 +303,7 @@ process.stdout.write(readFileSync(join(process.env.FINGERPRINT_FIXTURES, file), 
 			encoding: "utf8",
 			env: {
 				...process.env,
+				APP_VARIANT: "",
 				FINGERPRINT_FIXTURES: dir,
 				PATH: `${dir}${delimiter}${process.env.PATH}`,
 				...env,
@@ -275,12 +312,17 @@ process.stdout.write(readFileSync(join(process.env.FINGERPRINT_FIXTURES, file), 
 	}
 
 	// expo-symbols links on iOS only, @sentry/react-native on Android only.
-	const modules = {
+	// expo-dev-client links only in the development variant.
+	const byPlatform = {
 		ios: [...Object.keys(WATCHED), "expo-sqlite", "expo-symbols"],
 		android: [...Object.keys(WATCHED), "expo-sqlite", "@sentry/react-native"],
 	};
-	const healthy = (_variant, platform) =>
-		realPrint(platform, modules[platform]);
+	const modules = (variant, platform) =>
+		variant === "development"
+			? [...byPlatform[platform], "expo-dev-client"]
+			: byPlatform[platform];
+	const healthy = (variant, platform) =>
+		realPrint(platform, modules(variant, platform));
 
 	it("exits 0 when every fingerprint has its platform's modules", () => {
 		const result = runCheck(modules, healthy);
@@ -288,6 +330,26 @@ process.stdout.write(readFileSync(join(process.env.FINGERPRINT_FIXTURES, file), 
 		expect(result.stdout).not.toContain("::error::");
 		expect(result.stdout).toContain(
 			"Every fingerprint has every Expo-autolinked module",
+		);
+	});
+
+	it("asks autolinking per variant, so each variant's modules are expected", () => {
+		// A check that resolved autolinking without APP_VARIANT would get the
+		// development list (with expo-dev-client) for every variant and fail
+		// preview and production; one that used the preview list everywhere
+		// would miss a development build losing expo-dev-client.
+		expect(runCheck(modules, healthy).status).toBe(0);
+		const result = runCheck(modules, (variant, platform) =>
+			realPrint(platform, byPlatform[platform]),
+		);
+		expect(result.status).toBe(1);
+		expect(
+			result.stdout.split("\n").filter((line) => line.startsWith("::error::")),
+		).toEqual(
+			PLATFORMS.map(
+				(platform) =>
+					`::error::development ${platform}: Expo-autolinked expo-dev-client is not in the fingerprint`,
+			),
 		);
 	});
 
@@ -330,7 +392,7 @@ process.stdout.write(readFileSync(join(process.env.FINGERPRINT_FIXTURES, file), 
 			variant === "production" && platform === "android"
 				? realPrint(
 						platform,
-						modules.android.filter((name) => name !== "expo-sqlite"),
+						byPlatform.android.filter((name) => name !== "expo-sqlite"),
 					)
 				: healthy(variant, platform),
 		);
