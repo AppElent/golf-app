@@ -18,6 +18,7 @@
 			"apps/mobile/app/**/*",
 			"apps/mobile/*.{ts,tsx,js}",
 			"apps/mobile/scripts/**/*",
+			"apps/mobile/plugins/**/*",
 			"**/.vscode/**/*",
 			"**/vite.config.ts",
 			"e2e/**/*.ts",
