@@ -14,6 +14,7 @@ vi.mock("@sentry/cloudflare", () => ({
 	captureMessage: mocks.captureMessage,
 }));
 
+import { convexDeployment } from "./lib/release/version";
 import server from "./server";
 
 const ctx = {} as ExecutionContext;
@@ -63,6 +64,10 @@ it("answers /version without rendering the app", async () => {
 		app: "fairway",
 		environment: "staging",
 	});
+	expect(convexDeployment("https://fine-heron-5.eu-west-1.convex.cloud")).toBe(
+		"fine-heron-5",
+	);
+	expect(convexDeployment("not a url")).toBeNull();
 });
 
 it("leaves other methods on /version to the app", async () => {
