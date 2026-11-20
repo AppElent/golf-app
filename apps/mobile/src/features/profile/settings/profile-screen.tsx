@@ -13,7 +13,7 @@ import { convexErrorMessage } from "../../../convex/error-message";
 import { clearLastKnown } from "../../../convex/last-known";
 import { useQuery } from "../../../convex/query-cache";
 import { fmt, type Locale, plural, useI18n } from "../../../i18n";
-import { buildLabel } from "../../../monitoring/release";
+import { buildLabel, otaLabel } from "../../../monitoring/release";
 import { openProblemReport } from "../../../monitoring/report-problem";
 import {
 	type AppearancePreference,
@@ -223,6 +223,13 @@ export function ProfileScreen() {
 						channel: Updates.channel,
 						updateId: Updates.updateId,
 						embedded: Updates.isEmbeddedLaunch,
+						noUpdate: t.profile.noUpdate,
+						label: otaLabel({
+							version: Constants.expoConfig?.version,
+							createdAt: Updates.createdAt,
+							commit: process.env.EXPO_PUBLIC_COMMIT_SHA,
+							embedded: Updates.isEmbeddedLaunch,
+						}),
 					}),
 				})}
 			>
