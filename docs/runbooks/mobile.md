@@ -375,6 +375,6 @@ so live distances show. Upload with
   builds; a development bundle stays silent unless
   `EXPO_PUBLIC_SENTRY_DEBUG=1`. "Report a problem" opens Sentry User Feedback
   when reporting is on, otherwise shows an explanation. Convex backend errors
-  go through the production log forwarder in [Sentry](sentry.md).
+  go through the shared incident inbox's log forwarder in [Sentry](sentry.md).
 - Courses: the catalog is read-only on the phone; round setup links to
   "Suggest a correction". See [course catalog](course-catalog.md).
