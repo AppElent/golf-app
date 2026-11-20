@@ -7,14 +7,12 @@
  */
 import { useUser } from "@clerk/expo";
 import { useRouter } from "expo-router";
-import {
-	ActionSheetIOS,
-	Alert,
-	Platform,
-	ScrollView,
-	StyleSheet,
-} from "react-native";
+import { Platform, ScrollView, StyleSheet } from "react-native";
 import { useI18n } from "../../../i18n";
+import {
+	showActionSheet,
+	showAlert,
+} from "../../../monitoring/native-presentation";
 import { metrics, spacing } from "../../../theme";
 import { InsetList, InsetRow } from "../../../ui/inset-list";
 import type { RowAction } from "../../../ui/inset-list.shared";
@@ -63,7 +61,7 @@ export function EmailsScreen() {
 	function openSheet(row: EmailRow, list: RowAction[]) {
 		if (Platform.OS === "ios") {
 			const destructive = list.findIndex((action) => action.destructive);
-			ActionSheetIOS.showActionSheetWithOptions(
+			showActionSheet(
 				{
 					title: row.email,
 					options: [...list.map((action) => action.label), t.common.cancel],
@@ -74,7 +72,7 @@ export function EmailsScreen() {
 			);
 			return;
 		}
-		Alert.alert(row.email, undefined, [
+		showAlert(row.email, undefined, [
 			...list.map((action) => ({
 				text: action.label,
 				style: action.destructive ? ("destructive" as const) : undefined,

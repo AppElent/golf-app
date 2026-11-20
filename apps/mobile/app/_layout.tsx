@@ -28,8 +28,8 @@ import { publishableKey } from "../src/auth/config";
 import { AppConvexProvider } from "../src/convex/provider";
 // Defines the background location task at module scope (see the module).
 import "../src/features/location/background/background-location";
-import { LocaleProvider } from "../src/i18n";
-import { sentryEnabled } from "../src/monitoring/init";
+import { LocaleProvider, useI18n } from "../src/i18n";
+import { sentryEnabled, setFeedbackLocale } from "../src/monitoring/init";
 import { useNavigationBreadcrumbs } from "../src/monitoring/navigation";
 import { AppearanceProvider, useAppearance, useTokens } from "../src/theme";
 
@@ -106,7 +106,9 @@ function ThemedRoot() {
 function RootNavigator({ windowReady }: { windowReady: boolean }) {
 	const colors = useTokens();
 	const { isLoaded } = useAuth();
+	const { locale } = useI18n();
 	useNavigationBreadcrumbs();
+	useEffect(() => setFeedbackLocale(locale), [locale]);
 
 	useEffect(() => {
 		if (isLoaded && windowReady) SplashScreen.hideAsync();

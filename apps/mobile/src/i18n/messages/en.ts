@@ -6,6 +6,7 @@
 import { accountEn, authErrorsEn, resetPasswordEn } from "./account";
 import { signInEn, signUpEn, verifyEmailEn } from "./auth";
 import { commonEn, tabsEn } from "./common";
+import { feedbackEn } from "./feedback";
 import { clubsEn, profileEn, roundsEn, statsEn } from "./history";
 import { playEn } from "./play";
 import { scorecardEn, scoreEn } from "./score";
@@ -32,6 +33,7 @@ export const en = {
 	profile: profileEn,
 	account: accountEn,
 	clubs: clubsEn,
+	feedback: feedbackEn,
 };
 
 export type Messages = typeof en;

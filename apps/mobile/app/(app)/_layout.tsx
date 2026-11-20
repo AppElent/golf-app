@@ -6,11 +6,13 @@
  * bounces between the groups during the JWT handshake.
  *
  * A plain Stack; the tab bar lives in the nested `(tabs)` group so the full-
- * screen Play route and the sheets can be pushed over it.
+ * screen Play route and the sheets can be pushed over it. While any of those
+ * presented routes is in the stack, shake-to-report is paused: the feedback
+ * form cannot present over them (`src/monitoring/shake-to-report.ts`).
  */
 import { useAuth } from "@clerk/expo";
 import { Redirect, Stack } from "expo-router";
-import { useMemo } from "react";
+import { type ReactNode, useMemo } from "react";
 import { Platform, View } from "react-native";
 import {
 	ConvexSessionGate,
@@ -20,12 +22,28 @@ import { OfflineBanner } from "../../src/convex/offline-banner";
 import { AppQueryCacheProvider } from "../../src/convex/query-cache";
 import { KeepOfflineRound } from "../../src/features/play/offline/keep-offline-round";
 import { SimulationModeProvider } from "../../src/features/simulation/mode/simulation-mode-provider";
+import {
+	isPresentedRoute,
+	useShakeToReportBlocker,
+} from "../../src/monitoring/shake-to-report";
 import { useTokens } from "../../src/theme";
 import { ConfirmProvider } from "../../src/ui/confirm-dialog";
 import { useBaseStackOptions } from "../../src/ui/stack-options";
 import { ToastProvider } from "../../src/ui/toast";
 
 export const unstable_settings = { anchor: "(tabs)" };
+
+/** A shake must not open the feedback form under a presented sheet. */
+function ShakeToReportGate({
+	blocked,
+	children,
+}: {
+	blocked: boolean;
+	children: ReactNode;
+}) {
+	useShakeToReportBlocker(blocked);
+	return children;
+}
 
 export default function AppLayout() {
 	const colors = useTokens();
@@ -49,7 +67,20 @@ export default function AppLayout() {
 						<SimulationModeProvider>
 							<View style={{ flex: 1, backgroundColor: colors.bg }}>
 								<OfflineBanner />
-								<Stack screenOptions={screenOptions}>
+								<Stack
+									layout={({ state, descriptors, children }) => (
+										<ShakeToReportGate
+											blocked={state.routes.some((route) =>
+												isPresentedRoute(
+													descriptors[route.key]?.options.presentation,
+												),
+											)}
+										>
+											{children}
+										</ShakeToReportGate>
+									)}
+									screenOptions={screenOptions}
+								>
 									<Stack.Screen
 										name="(tabs)"
 										options={{ headerShown: false }}

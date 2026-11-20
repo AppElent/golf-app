@@ -6,7 +6,8 @@ import {
 	serializeExport,
 } from "@fairway/core/data-export";
 import { Directory, File, Paths } from "expo-file-system";
-import { Platform, Share } from "react-native";
+import { Platform } from "react-native";
+import { share } from "../../../monitoring/native-presentation";
 
 /**
  * "Export my data" (features.ts `data-export`): builds the JSON file from
@@ -21,7 +22,7 @@ export async function shareDataExport(
 	const text = serializeExport(await collectExport(fetchPage, now));
 	// React Native's Android share takes text only, not a file.
 	if (Platform.OS === "android") {
-		await Share.share({ message: text });
+		await share({ message: text });
 		return;
 	}
 	const dir = new Directory(Paths.cache, "data-export");
@@ -30,5 +31,5 @@ export async function shareDataExport(
 	const file = new File(dir, exportFileName(now));
 	file.create();
 	file.write(text);
-	await Share.share({ url: file.uri });
+	await share({ url: file.uri });
 }
