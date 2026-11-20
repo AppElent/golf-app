@@ -18,6 +18,11 @@ import type { Messages } from "../../i18n/messages/en";
 export interface CodedError {
 	code: string;
 	message?: string;
+	/**
+	 * Set on Clerk's `ClerkAPIResponseError` wrapper (`code: "api_response_error"`),
+	 * which holds the machine-stable codes of the API's actual errors.
+	 */
+	errors?: readonly CodedError[];
 }
 
 export type AuthErrors = Messages["authErrors"];
@@ -52,10 +57,11 @@ const CODE_MAP: Record<string, AuthErrorKey> = {
 
 /** The catalog key for a Clerk error code; unknown codes read as `generic`. */
 export function errorKey(error: CodedError): AuthErrorKey {
-	const key = CODE_MAP[error.code];
+	const code = codeOf(error);
+	const key = CODE_MAP[code];
 	if (!key) {
 		if (__DEV__) {
-			console.warn(`[auth] unmapped Clerk error code: ${error.code}`);
+			console.warn(`[auth] unmapped Clerk error code: ${code}`);
 		}
 		return "generic";
 	}
@@ -68,6 +74,16 @@ export function readError(
 	messages: AuthErrors,
 ): string | null {
 	return error ? messages[errorKey(error)] : null;
+}
+
+/**
+ * An error Clerk can't pin to a form field (no `meta.param_name`, such as
+ * `strategy_for_user_invalid`) reaches `errors.global` as the whole
+ * `ClerkAPIResponseError`, whose own code is `api_response_error`. The code
+ * to map is the first one it wraps.
+ */
+function codeOf(error: CodedError): string {
+	return error.errors?.[0]?.code ?? error.code;
 }
 
 /** The shape of `useSignIn().errors` / `useSignUp().errors`. */

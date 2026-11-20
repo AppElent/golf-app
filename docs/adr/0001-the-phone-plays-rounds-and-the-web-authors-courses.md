@@ -81,7 +81,7 @@ native build.
   that adds a feature states its platforms and adds or updates its entry.
 - A floor feature can never be `exclusive` without a reason linking this ADR;
   only `language` and `theme` use that.
-- Data deletion and, once built, export cover every table regardless of which
+- Data deletion and export (both shipped, `parity`) cover every table regardless of which
   platform shows the data.
 
 ## Rejected

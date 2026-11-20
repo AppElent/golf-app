@@ -15,6 +15,7 @@ import {
 } from "../components/auth-form";
 import { emailFieldTraits } from "../components/credentials-model";
 import { HoldWhileBusy } from "../components/hold-while-busy";
+import { emailFromParam, emailToParam } from "../sign-in/email-param";
 import { usePasswordReset } from "./use-password-reset";
 
 export function ForgotPasswordScreen() {
@@ -22,7 +23,7 @@ export function ForgotPasswordScreen() {
 	const params = useLocalSearchParams<{ email?: string }>();
 	const copy = useI18n().t.resetPassword;
 	const { request, busy, error } = usePasswordReset();
-	const [email, setEmail] = useState(params.email ?? "");
+	const [email, setEmail] = useState(emailFromParam(params.email) ?? "");
 	// The screen holds while the request runs, but if it is gone anyway a late
 	// success must not then push the code screen.
 	const mounted = useRef(true);
@@ -37,7 +38,10 @@ export function ForgotPasswordScreen() {
 		const address = typed.trim();
 		if (!address || busy) return;
 		if ((await request(address)) && mounted.current) {
-			router.push({ pathname: "/reset-password", params: { email: address } });
+			router.push({
+				pathname: "/reset-password",
+				params: { email: emailToParam(address) },
+			});
 		}
 	}
 

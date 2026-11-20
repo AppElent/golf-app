@@ -18,6 +18,26 @@ describe("readError", () => {
 		);
 	});
 
+	it("reads the code Clerk's API-response wrapper holds", () => {
+		expect(
+			readError(
+				{
+					code: "api_response_error",
+					errors: [{ code: "strategy_for_user_invalid" }],
+				},
+				messages,
+			),
+		).toMatch(/no password/);
+	});
+
+	it("keeps the wrapper's own code when it holds no errors", () => {
+		const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
+		expect(
+			readError({ code: "api_response_error", errors: [] }, messages),
+		).toBe("Something went wrong. Please try again.");
+		warn.mockRestore();
+	});
+
 	it("falls back to a generic message for an unknown code", () => {
 		const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
 		expect(readError({ code: "something_new" }, messages)).toBe(
@@ -34,6 +54,24 @@ describe("pickError", () => {
 				{
 					fields: { password: null },
 					global: [{ code: "strategy_for_user_invalid" }],
+				},
+				{ code: "api_response_error" },
+				messages,
+			),
+		).toMatch(/no password/);
+	});
+
+	it("reads a global wrapper with a no-password account inside", () => {
+		expect(
+			pickError(
+				{
+					fields: { password: null },
+					global: [
+						{
+							code: "api_response_error",
+							errors: [{ code: "strategy_for_user_invalid" }],
+						},
+					],
 				},
 				{ code: "api_response_error" },
 				messages,

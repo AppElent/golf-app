@@ -33,12 +33,14 @@ import {
 } from "../components/credentials-model";
 import { HoldWhileBusy } from "../components/hold-while-busy";
 import { useCredentialsForm } from "../components/use-credentials-form";
+import { emailFromParam } from "../sign-in/email-param";
 import { RESET_CODE_LENGTH, resetReady } from "./reset-model";
 import { usePasswordReset } from "./use-password-reset";
 
 export function ResetPasswordScreen() {
 	const router = useRouter();
-	const { email = "" } = useLocalSearchParams<{ email?: string }>();
+	const email =
+		emailFromParam(useLocalSearchParams<{ email?: string }>().email) ?? "";
 	const copy = useI18n().t.resetPassword;
 	const { reset, finish, stage, resend, startOver, busy, locked, error } =
 		usePasswordReset();
