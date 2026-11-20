@@ -24,6 +24,10 @@ const mustTransform = [
 module.exports = {
 	preset: "jest-expo",
 	setupFiles: ["<rootDir>/jest.setup.ts"],
+	// Jest always loads `.mjs` as native ESM, which it runs only with a flag.
+	// `src/updates/ota-label.mjs` (developer-home's file, copied unchanged) is
+	// therefore read through a CommonJS loader in tests; see jest.ota-label.js.
+	moduleNameMapper: { "/ota-label\\.mjs$": "<rootDir>/jest.ota-label.js" },
 	testMatch: ["<rootDir>/src/**/*.test.ts", "<rootDir>/src/**/*.test.tsx"],
 	// Both separators: on Windows these patterns are tested against backslash paths.
 	transformIgnorePatterns: [

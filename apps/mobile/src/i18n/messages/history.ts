@@ -196,6 +196,7 @@ export const profileEn = {
 	deleteError: "Account not deleted. Check your connection and try again.",
 	saveError: "Not saved. Check your connection and try again.",
 	version: "Version {v}",
+	noUpdate: "no update",
 };
 
 export const profileNl: typeof profileEn = {
@@ -243,6 +244,7 @@ export const profileNl: typeof profileEn = {
 		"Account niet verwijderd. Controleer je verbinding en probeer opnieuw.",
 	saveError: "Niet opgeslagen. Controleer je verbinding en probeer opnieuw.",
 	version: "Versie {v}",
+	noUpdate: "geen update",
 };
 
 export const clubsEn = {
