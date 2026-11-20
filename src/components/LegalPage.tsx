@@ -2,9 +2,10 @@ import { SURFACE } from "./classes";
 
 /**
  * Pages anyone can open without signing in: App Store Connect and the phone
- * app link to them, so the root layout skips the sign-in gate and tab bar.
+ * app link to /privacy and /support, and `/` is "Open the Fairway app". The
+ * root layout skips the sign-in gate and tab bar on them.
  */
-export const PUBLIC_PATHS = ["/privacy", "/support"] as const;
+export const PUBLIC_PATHS = ["/", "/privacy", "/support"] as const;
 
 export function isPublicPath(pathname: string): boolean {
 	const path = pathname.replace(/\/+$/, "") || "/";

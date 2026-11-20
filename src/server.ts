@@ -6,6 +6,7 @@
  */
 import * as Sentry from "@sentry/cloudflare";
 import handler from "@tanstack/react-start/server-entry";
+import { isRetiredPath } from "./components/app-links";
 import {
 	isLocalReportingUrl,
 	sentryEnvironment,
@@ -58,6 +59,12 @@ export default {
 					env.environment_name || import.meta.env.VITE_SENTRY_ENVIRONMENT,
 				),
 			);
+		}
+		// The web's round screens were retired (APP-235); old links land on
+		// "Open the Fairway app".
+		const url = new URL(request.url);
+		if (isRetiredPath(url.pathname)) {
+			return Response.redirect(new URL("/", url).href, 301);
 		}
 		if (isLocalReportingUrl(request.url)) return handler.fetch(request);
 		return instrumentedHandler.fetch(request, env, ctx);

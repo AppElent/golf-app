@@ -1,18 +1,10 @@
 import { Link } from "@tanstack/react-router";
-import {
-	ChartLine,
-	CircleUserRound,
-	ClipboardList,
-	House,
-	LandPlot,
-} from "lucide-react";
+import { CircleUserRound, LandPlot } from "lucide-react";
 
+// The web authors courses; rounds are in the phone app (ADR 0001, APP-235).
 const tabs = [
-	{ to: "/", label: "Home", icon: House },
-	{ to: "/play", label: "Play", icon: LandPlot },
-	{ to: "/card", label: "Card", icon: ClipboardList },
-	{ to: "/progress", label: "Progress", icon: ChartLine },
-	{ to: "/profile", label: "Profile", icon: CircleUserRound },
+	{ to: "/courses", label: "Courses", icon: LandPlot },
+	{ to: "/profile", label: "Account", icon: CircleUserRound },
 ] as const;
 
 /** `wide`: the bar spans the window (large-screen pages); the tabs stay 430px. */
@@ -26,7 +18,6 @@ export default function BottomNav({ wide = false }: { wide?: boolean }) {
 					<Link
 						key={to}
 						to={to}
-						activeOptions={{ exact: to === "/" }}
 						className="flex flex-1 flex-col items-center gap-1"
 						activeProps={{ className: "text-pine-ink" }}
 						inactiveProps={{ className: "text-stone" }}

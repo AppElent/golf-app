@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing sign-in, the web app shell, or who may read or write a user's data in Convex.
-version: 1.2.0
+version: 1.3.0
 status: current
 ---
 
@@ -16,25 +16,25 @@ signing in with Clerk.
   `ConvexProvider` → `AuthGate` (`src/integrations/clerk/auth-gate.tsx`). Signed
   out, the gate shows Clerk's sign-in and renders nothing behind it; signed in, it
   mounts the app once Convex has the token. There is no test-login button.
-- **Sign-out:** the Account section at the foot of `/profile`
-  (`src/integrations/clerk/account-section.tsx`) calls Clerk's `signOut()` and
-  leaves simulation mode. Clerk returns the tab to `afterSignOutUrl` (`/`), and
-  `AuthGate` shows the sign-in card on every protected path. The web score
-  queue (`src/offline`) is kept per Clerk user id, so a golfer's unsent scores
-  go when they sign back in, and the next golfer on that browser neither sends
-  nor counts them. The queue from before that split stays unclaimed: any
-  account's flush may try it, Convex accepts only the owner's entries, and it
-  is never moved into an account.
+- **Sign-out:** the Account section of `/profile`, the Account page
+  (`src/integrations/clerk/account-section.tsx`), calls Clerk's `signOut()`.
+  Clerk returns the tab to `afterSignOutUrl` (`/`, the public "Open the
+  Fairway app" page), and `AuthGate` shows the sign-in card on every protected
+  path.
 - **Account deletion:** the same Account section deletes the account after an
   inline confirm step: `account.deleteMyData` first, while Convex still accepts
-  the session, then that account's web score queue, then the Clerk user
-  (`user.delete()`, behind Clerk's reverification prompt when the instance asks
-  for one). Simulation mode goes off. If the data cannot go, nothing is deleted
+  the session, then that account's leftover web score queue
+  (`fairway.scoreQueue:<userId>` in localStorage, written by the round screens
+  retired in APP-235), then the Clerk user (`user.delete()`, behind Clerk's
+  reverification prompt when the instance asks for one). If the data cannot go, nothing is deleted
   and the golfer stays signed in; if Clerk refuses, the data is gone and a retry
   deletes the Clerk user. With the user gone, `AuthGate` shows the sign-in card.
 - **Public pages:** the paths in `PUBLIC_PATHS` (`src/components/LegalPage.tsx`),
-  `/privacy` and `/support`, render without `AuthGate` and without the tab bar, so
-  App Store Connect and the phone app can link to them. They read no user data.
+  `/` ("Open the Fairway app"), `/privacy` and `/support`, render without
+  `AuthGate` and without the tab bar, so anyone, App Store Connect and the phone
+  app can open them. They read no user data.
+- **Retired paths:** `/play`, `/card`, `/rounds/new` and `/progress` answer a
+  301 to `/` from the Worker (`src/server.ts`), before the app renders.
   `isPublicPath` matches them exactly (case-sensitive, trailing slashes ignored).
 - **Theme:** dark mode follows the OS through a `prefers-color-scheme` media query
   in `src/styles.css`.

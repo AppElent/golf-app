@@ -7,7 +7,7 @@ description: Verify that a code change actually does what it's supposed to by ex
 
 ## Route → module map
 
-Web routes are file routes: `/rounds/new` is `src/routes/rounds.new.tsx`, and that
+Web routes are file routes: `/courses/$courseId/edit` is `src/routes/courses.$courseId.edit.tsx`, and that
 file imports its components and Convex functions. Mobile routes are in
 `apps/mobile/app/`, each importing a screen from `apps/mobile/src/features`.
 
