@@ -24,4 +24,4 @@ in the preview.
 Local-first: drive the affected flow via the dev server (`.claude/launch.json`,
 `preview_start`) and observe actual behavior, not just typecheck/lint/tests.
 On web (no Convex/Clerk runtime creds available), verification falls back to
-the static suite: `pnpm run typecheck`, `pnpm run check`, `pnpm test`, `pnpm build`.
+`pnpm verify && pnpm build`.
