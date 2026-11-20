@@ -33,6 +33,7 @@ import {
 	backgroundLocationPreferred,
 	setBackgroundLocationPreferred,
 } from "../../location/background/background-location-preference";
+import { displayName } from "../account/account-model";
 import { useUnits } from "../use-units";
 import { shareDataExport } from "./data-export";
 
@@ -225,12 +226,32 @@ export function ProfileScreen() {
 					}),
 				})}
 			>
-				{user?.primaryEmailAddress ? (
-					<InsetRow
-						leading={{ symbol: "person.crop.circle" }}
-						title={user.primaryEmailAddress.emailAddress}
-					/>
-				) : null}
+				<InsetRow
+					leading={{ symbol: "person.crop.circle" }}
+					title={t.account.name}
+					value={
+						displayName(user?.firstName, user?.lastName) ?? t.account.nameUnset
+					}
+					chevron
+					onPress={() => router.push("/profile/name")}
+				/>
+				<InsetRow
+					leading={{ symbol: "envelope" }}
+					title={t.account.email}
+					secondary={user?.primaryEmailAddress?.emailAddress}
+					chevron
+					onPress={() => router.push("/profile/emails")}
+				/>
+				<InsetRow
+					leading={{ symbol: "key" }}
+					title={
+						user?.passwordEnabled
+							? t.account.changePassword
+							: t.account.setPassword
+					}
+					chevron
+					onPress={() => router.push("/profile/password")}
+				/>
 				<InsetRow
 					leading={{ symbol: "exclamationmark.bubble" }}
 					title={t.profile.report}

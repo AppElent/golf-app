@@ -7,11 +7,13 @@
  */
 import { useSignUp } from "@clerk/expo";
 import { useCallback } from "react";
+import { useI18n } from "../../../i18n";
 import { pickError } from "../clerk-errors";
 import { useClerkStep } from "../use-clerk-step";
 
 export function usePasswordSignUp() {
 	const { signUp, errors } = useSignUp();
+	const messages = useI18n().t.authErrors;
 	const { busy, returned, run } = useClerkStep();
 
 	const submit = useCallback(
@@ -27,5 +29,5 @@ export function usePasswordSignUp() {
 		[signUp, run],
 	);
 
-	return { submit, busy, error: pickError(errors, returned) };
+	return { submit, busy, error: pickError(errors, returned, messages) };
 }

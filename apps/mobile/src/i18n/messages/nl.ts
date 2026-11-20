@@ -1,3 +1,4 @@
+import { accountNl, authErrorsNl, resetPasswordNl } from "./account";
 import { signInNl, signUpNl, verifyEmailNl } from "./auth";
 import { commonNl, tabsNl } from "./common";
 import type { Messages } from "./en";
@@ -12,6 +13,8 @@ export const nl = {
 	signIn: signInNl,
 	signUp: signUpNl,
 	verifyEmail: verifyEmailNl,
+	resetPassword: resetPasswordNl,
+	authErrors: authErrorsNl,
 	home: homeNl,
 	courses: coursesNl,
 	setup: setupNl,
@@ -23,5 +26,6 @@ export const nl = {
 	rounds: roundsNl,
 	stats: statsNl,
 	profile: profileNl,
+	account: accountNl,
 	clubs: clubsNl,
 } satisfies Messages;

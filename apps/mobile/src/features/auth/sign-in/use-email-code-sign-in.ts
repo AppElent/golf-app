@@ -9,12 +9,14 @@
  */
 import { useSignIn } from "@clerk/expo";
 import { useCallback } from "react";
+import { useI18n } from "../../../i18n";
 import { pickError } from "../clerk-errors";
 import { useClerkStep } from "../use-clerk-step";
 import { useResend } from "../use-resend";
 
 export function useEmailCodeSignIn() {
 	const { signIn, errors } = useSignIn();
+	const messages = useI18n().t.authErrors;
 	const { busy, returned, clearReturned, run } = useClerkStep();
 
 	const send = useCallback(
@@ -58,6 +60,6 @@ export function useEmailCodeSignIn() {
 		startOver,
 		verify,
 		busy,
-		error: pickError(errors, returned),
+		error: pickError(errors, returned, messages),
 	};
 }

@@ -23,7 +23,8 @@ import { usePasswordSignIn } from "./use-password-sign-in";
 
 export function SignInScreen() {
 	const router = useRouter();
-	const copy = useI18n().t.signIn;
+	const { t } = useI18n();
+	const copy = t.signIn;
 	const { submit, busy, error } = usePasswordSignIn();
 	const emailCode = useEmailCodeSignIn();
 	const [codeHint, setCodeHint] = useState<string | null>(null);
@@ -57,6 +58,16 @@ export function SignInScreen() {
 			subtitle={copy.tagline}
 			footer={
 				<>
+					<AuthLink
+						label={t.resetPassword.forgot}
+						disabled={busy || emailCode.busy}
+						onPress={() =>
+							router.push({
+								pathname: "/forgot-password",
+								params: { email: emailToParam(email.trim()) },
+							})
+						}
+					/>
 					<AuthLink label={copy.emailCode} onPress={sendCode} />
 					<AuthLink
 						prompt={copy.noAccount}
