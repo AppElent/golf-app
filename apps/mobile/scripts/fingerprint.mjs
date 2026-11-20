@@ -73,11 +73,21 @@ export function fingerprint(variant, platform, root = appRoot) {
 
 /**
  * JSON printed by a `pnpm exec` command. Skips anything pnpm prints before
- * it (when it installs first, it logs `Scope: …` to stdout).
+ * it: when it installs first, it logs `Scope: …` to stdout, and outside
+ * `CI=true` a warning such as `[WARN] …` can come first. A line that starts
+ * with `[` is not always JSON, so try each line that starts with `{` or `[`
+ * until the rest of the output parses.
  */
-function parseJson(stdout) {
-	const start = stdout.search(/^[{[]/m);
-	return JSON.parse(start === -1 ? stdout : stdout.slice(start));
+export function parseJson(stdout) {
+	let error;
+	for (const match of stdout.matchAll(/^[{[]/gm)) {
+		try {
+			return JSON.parse(stdout.slice(match.index));
+		} catch (e) {
+			error = e;
+		}
+	}
+	throw error ?? new SyntaxError(`No JSON in output:\n${stdout}`);
 }
 
 /** The `--platform` autolinking and @expo/fingerprint use for iOS modules. */
