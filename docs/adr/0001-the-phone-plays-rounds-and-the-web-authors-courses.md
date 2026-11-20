@@ -40,8 +40,10 @@ notice (`src/components/large-screen.tsx`, APP-117).
 in APP-235). `/`, `/play`, `/card`, `/rounds/new`, `/progress` and the golfer
 parts of `/profile` predated the phone app. Now:
 
-- `/` is "Open the Fairway app" (`open-the-app`, public): App Store and
-  TestFlight links, and links to course authoring and the Account page.
+- `/` is "Open the Fairway app" (`open-the-app`, public): the TestFlight
+  beta (and the App Store once `APP_STORE_LIVE` in
+  `src/components/app-links.ts` is flipped at the first store release), and
+  links to course authoring and the Account page.
 - The Worker (`src/server.ts`) answers `/play`, `/card`, `/rounds/new` and
   `/progress` with a 301 to `/` (`RETIRED_PATHS` in
   `src/components/app-links.ts`); their routes and components are gone.

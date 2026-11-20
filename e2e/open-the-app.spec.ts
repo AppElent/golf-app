@@ -10,7 +10,9 @@ for (const path of ["/play", "/card", "/rounds/new", "/progress"]) {
 		await expect(
 			page.getByRole("heading", { name: "Open the Fairway app" }),
 		).toBeVisible();
-		await expect(page.getByRole("link", { name: /app store/i })).toBeVisible();
+		await expect(
+			page.getByRole("link", { name: /testflight|app store/i }).first(),
+		).toBeVisible();
 		await expect(
 			page.getByRole("link", { name: /edit courses/i }),
 		).toBeVisible();
