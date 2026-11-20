@@ -13,6 +13,8 @@ export type VersionInfo = {
 	environment: string;
 	/** When the bundle was built, which is when the deploy ran. */
 	deployedAt: string | null;
+	/** The Convex deployment the bundle calls, or null without a Convex URL. */
+	convex: string | null;
 };
 
 export function versionInfo(environment: string): VersionInfo {
@@ -22,6 +24,7 @@ export function versionInfo(environment: string): VersionInfo {
 		commit: import.meta.env.VITE_GIT_COMMIT || "unknown",
 		environment,
 		deployedAt: import.meta.env.VITE_BUILT_AT || null,
+		convex: convexDeployment(import.meta.env.VITE_CONVEX_URL),
 	};
 }
 
@@ -36,4 +39,14 @@ export function versionResponse(environment: string): Response {
 	return Response.json(versionInfo(environment), {
 		headers: { "cache-control": "no-store" },
 	});
+}
+
+/** The Convex deployment the bundle calls, e.g. `limitless-bulldog-972`, from its client URL. */
+export function convexDeployment(url: string | undefined): string | null {
+	if (!url) return null;
+	try {
+		return new URL(url).hostname.split(".")[0] || null;
+	} catch {
+		return null;
+	}
 }
