@@ -110,9 +110,10 @@ edges) reach 3:1. Ratios are WCAG 2 relative luminance, with translucent colours
 composited over their ground. Pairs changed in APP-184 and APP-191 (bold =
 failed before). The APP-184 web rows were measured when the app column was
 cream in both themes; since APP-191 the dark column has its own rows below
-them. Known gap: light-mode control edges (fields, bordered buttons and
-toggles: `control-line` = `card-line`, 1.12:1 on cream) stay as they were,
-because APP-191 keeps light mode unchanged. Its deliberate light-mode changes are
+them. Light-mode control edges (fields, bordered buttons and toggles) were
+`card-line`, 1.12:1 on cream; APP-276 gave them the same `control-line` token
+as dark, now `#80877f` in light, so every edge reaches 3:1. Cards, dividers and
+the tab bar keep `card-line`. APP-191's other deliberate light-mode changes are
 contrast fixes only: field placeholders, the selected scorecard hole's labels
 and the "Connecting…" note (`text-muted`, near-white, → `stone`).
 
@@ -147,6 +148,7 @@ and the "Connecting…" note (`text-muted`, near-white, → `stone`).
 | Web: bottom-nav tabs in the dark column: each on `bar`; active (`pine-ink`, mint) against inactive (`stone`) (APP-191) | dark | cream column | each ≥ 5.67; 1.88 apart, plus the hue change |
 | Web: field placeholder (ink at 50% → `stone`) on `field` (APP-191) | light / dark | **3.09** / n/a | 4.62 / 4.89 |
 | Web: dark control edge (`control-line`: fields, buttons, toggles) on `field` / `surface` / `canvas` (3:1) (APP-191) | dark | **1.53** (`card-line`) | 3.25 / 3.73 / 4.19 |
+| Web: light control edge (`control-line`: fields, buttons, toggles) on `field` / `surface` / `canvas` (3:1) (APP-276) | light | **1.12** (`card-line`) | 3.21 / 3.50 / 3.21 |
 | Web: selected scorecard hole number (`stone` → `ink`) on `pine-ink/10` (APP-191) | light / dark | **3.88** / n/a | 11.77 / 14.19 |
 | Phone: `onAccent` on `accentFill` (primary button, selected segment) | light | **3.39** | 5.85 |
 | Phone: `onAccent` on `accentPressed` | light | **3.39** | 8.25 |
