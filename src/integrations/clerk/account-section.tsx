@@ -5,11 +5,12 @@ import { useEffect, useId, useRef, useState } from "react";
 import { api } from "../../../convex/_generated/api";
 import { CONTROL } from "../../components/classes";
 import { Section } from "../../components/Page";
-import { forgetAccountQueue } from "../../offline/scoreQueue";
-import { useSimulationMode } from "../../play/simulation";
 import { forgetDataDeleted, rememberDataDeleted } from "./data-deleted-notice";
 
 type ClerkUser = NonNullable<ReturnType<typeof useUser>["user"]>;
+
+/** The web score queue's storage key, per Clerk user id (`:<userId>`). */
+const SCORE_QUEUE_KEY = "fairway.scoreQueue";
 
 /** What the golfer chose to delete. The login is shared by every AppElent
  *  app, so "app" keeps it and "account" deletes it everywhere. */
@@ -51,7 +52,6 @@ const CONFIRM: Record<
 export function AccountSection() {
 	const { user } = useUser();
 	const { signOut } = useClerk();
-	const { simulating, setSimulating } = useSimulationMode();
 	const deleteMyData = useMutation(api.account.deleteMyData);
 	// Clerk may ask the golfer to confirm who they are before it deletes them.
 	const deleteUser = useReverification((u: ClerkUser) => u.delete());
@@ -79,14 +79,9 @@ export function AccountSection() {
 	async function onSignOut() {
 		setBusy("signing-out");
 		setFailed(null);
-		// Simulation mode is per tab; the next account starts in its real round.
-		// Off before Clerk navigates away, back on if this golfer stays.
-		const wasSimulating = simulating;
-		setSimulating(false);
 		try {
 			await signOut();
 		} catch {
-			setSimulating(wasSimulating);
 			setFailed("sign-out");
 			setBusy(null);
 		}
@@ -96,31 +91,30 @@ export function AccountSection() {
 		if (!user) return;
 		setBusy("deleting");
 		setFailed(null);
-		const wasSimulating = simulating;
-		setSimulating(false);
 		// App data first, while the session can still authenticate with Convex,
 		// batch by batch; a different signed-in account is refused.
 		try {
 			await deleteInBatches(() => deleteMyData({ expectedSubject: user.id }));
 		} catch {
 			// The login is untouched; a retry deletes what is left.
-			setSimulating(wasSimulating);
 			setFailed("data");
 			setBusy(null);
 			return;
 		}
-		// Unsent scores belonged to rounds that are gone now.
+		// Unsent scores the retired web round screens (APP-235) may have left
+		// in this browser belonged to rounds that are gone now.
 		try {
-			forgetAccountQueue(window.localStorage, user.id);
+			window.localStorage.removeItem(`${SCORE_QUEUE_KEY}:${user.id}`);
 		} catch {
 			// Storage blocked: there was no queue to forget.
 		}
 		if (choice === "app") {
 			// The shared login stays: no user.delete(), no Apple revocation.
-			// The sign-in card says what happened (AuthGate).
+			// The sign-in card says what happened (AuthGate). The public `/`
+			// (APP-235) has no sign-in card, so land on this gated page instead.
 			rememberDataDeleted();
 			try {
-				await signOut();
+				await signOut({ redirectUrl: "/profile" });
 			} catch {
 				// Data is gone; signing out is all that is left to retry.
 				forgetDataDeleted();
@@ -133,7 +127,6 @@ export function AccountSection() {
 			await deleteUser(user);
 		} catch {
 			// Still signed in. A retry deletes no more data and tries Clerk again.
-			// Simulation mode stays off: the simulated round went with the data.
 			setFailed("account");
 			setBusy(null);
 		}

@@ -218,8 +218,7 @@ describe("app column classes", () => {
 		.filter((f) => !f.includes(".test.") && !f.endsWith(".gen.ts"))
 		.sort();
 
-	// Fixed light colours that would stay light in dark mode. bg-pine and
-	// bg-pine-light remain for the always-dark Play screen only.
+	// Fixed light colours that would stay light in dark mode.
 	const FIXED =
 		/\b(bg-cream|bg-white\/(60|90)|text-pine|ring-pine|bg-pine\/\d+|text-muted)\b(?![-\w])/;
 
@@ -230,12 +229,13 @@ describe("app column classes", () => {
 		expect(source).not.toMatch(/"rounded-full border border-card-line/);
 	});
 
-	it("the Play screen is the only user of bg-pine", () => {
+	// bg-pine was for the always-dark web Play screen, retired in APP-235.
+	it("no page uses the unthemed bg-pine fill", () => {
 		const users = files.filter((file) =>
 			/\bbg-pine\b(?![-\w/])/.test(
 				readFileSync(join(import.meta.dirname, file), "utf8"),
 			),
 		);
-		expect(users).toEqual(["routes/play.tsx"]);
+		expect(users).toEqual([]);
 	});
 });

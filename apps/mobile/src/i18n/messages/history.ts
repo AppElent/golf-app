@@ -216,6 +216,7 @@ export const profileEn = {
 		"Your Fairway data is deleted, but your AppElent login isn't. Try again to finish.",
 	saveError: "Not saved. Check your connection and try again.",
 	version: "Version {v}",
+	noUpdate: "no update",
 };
 
 export const profileNl: typeof profileEn = {
@@ -282,6 +283,7 @@ export const profileNl: typeof profileEn = {
 		"Je Fairway-gegevens zijn verwijderd, maar je AppElent-login niet. Probeer opnieuw om het af te ronden.",
 	saveError: "Niet opgeslagen. Controleer je verbinding en probeer opnieuw.",
 	version: "Versie {v}",
+	noUpdate: "geen update",
 };
 
 export const clubsEn = {

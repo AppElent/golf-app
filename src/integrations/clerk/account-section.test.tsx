@@ -8,10 +8,9 @@ import {
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
-	signOut: vi.fn<() => Promise<void>>(),
+	signOut: vi.fn<(options?: { redirectUrl?: string }) => Promise<void>>(),
 	deleteUser: vi.fn<() => Promise<void>>(),
 	deleteMyData: vi.fn<(args: object) => Promise<{ done: boolean }>>(),
-	setSimulating: vi.fn(),
 	email: "golfer@example.com" as string | undefined,
 }));
 vi.mock("@clerk/react", () => ({
@@ -31,12 +30,6 @@ vi.mock("@clerk/react", () => ({
 }));
 vi.mock("convex/react", () => ({
 	useMutation: () => mocks.deleteMyData,
-}));
-vi.mock("../../play/simulation", () => ({
-	useSimulationMode: () => ({
-		simulating: true,
-		setSimulating: mocks.setSimulating,
-	}),
 }));
 
 import { AccountSection } from "./account-section";
@@ -81,7 +74,7 @@ it("shows who is signed in", () => {
 	expect(screen.getByRole("heading", { name: "Account" })).toBeTruthy();
 });
 
-it("signs out through Clerk once and leaves simulation mode", async () => {
+it("signs out through Clerk once", async () => {
 	let finish = () => {};
 	mocks.signOut.mockReturnValue(
 		new Promise<void>((resolve) => {
@@ -91,18 +84,12 @@ it("signs out through Clerk once and leaves simulation mode", async () => {
 	render(<AccountSection />);
 	fireEvent.click(signOutButton());
 	expect(mocks.signOut).toHaveBeenCalledTimes(1);
-	// Simulation mode is off before Clerk navigates away.
-	expect(mocks.setSimulating).toHaveBeenCalledWith(false);
-	expect(mocks.setSimulating.mock.invocationCallOrder[0]).toBeLessThan(
-		mocks.signOut.mock.invocationCallOrder[0],
-	);
 	// While Clerk works, the button cannot send a second request.
 	expect(signOutButton().textContent).toBe("Signing out…");
 	expect((signOutButton() as HTMLButtonElement).disabled).toBe(true);
 	fireEvent.click(signOutButton());
 	expect(mocks.signOut).toHaveBeenCalledTimes(1);
 	await act(async () => finish());
-	expect(mocks.setSimulating).toHaveBeenCalledTimes(1);
 });
 
 it("says so and allows a retry when sign-out fails", async () => {
@@ -113,8 +100,6 @@ it("says so and allows a retry when sign-out fails", async () => {
 		/couldn't sign out/i,
 	);
 	expect((signOutButton() as HTMLButtonElement).disabled).toBe(false);
-	// Still signed in, so back in simulation mode.
-	expect(mocks.setSimulating).toHaveBeenLastCalledWith(true);
 	await act(async () => fireEvent.click(signOutButton()));
 	expect(mocks.signOut).toHaveBeenCalledTimes(2);
 });
@@ -173,7 +158,6 @@ describe("account deletion", () => {
 		expect(mocks.deleteMyData).not.toHaveBeenCalled();
 		expect(mocks.deleteUser).not.toHaveBeenCalled();
 		expect(mocks.signOut).not.toHaveBeenCalled();
-		expect(mocks.setSimulating).not.toHaveBeenCalled();
 		expect(window.localStorage.getItem(QUEUE)).toBe("[]");
 	});
 
@@ -197,6 +181,8 @@ describe("account deletion", () => {
 				expectedSubject: "user_golfer",
 			});
 			expect(mocks.signOut).toHaveBeenCalledTimes(1);
+			// The public `/` has no sign-in card to show the notice on.
+			expect(mocks.signOut).toHaveBeenCalledWith({ redirectUrl: "/profile" });
 			expect(mocks.deleteMyData.mock.invocationCallOrder[1]).toBeLessThan(
 				mocks.signOut.mock.invocationCallOrder[0],
 			);
@@ -219,7 +205,6 @@ describe("account deletion", () => {
 			);
 			expect(mocks.signOut).not.toHaveBeenCalled();
 			expect(mocks.deleteUser).not.toHaveBeenCalled();
-			expect(mocks.setSimulating).toHaveBeenLastCalledWith(true);
 			await act(async () => fireEvent.click(confirmButton()));
 			expect(mocks.signOut).toHaveBeenCalledTimes(1);
 			expect(mocks.deleteUser).not.toHaveBeenCalled();
@@ -251,7 +236,6 @@ describe("account deletion", () => {
 				mocks.deleteUser.mock.invocationCallOrder[0],
 			);
 			expect(mocks.signOut).not.toHaveBeenCalled();
-			expect(mocks.setSimulating).toHaveBeenCalledWith(false);
 			// The unclaimed queue is nobody's to delete.
 			expect(window.localStorage.getItem("fairway.scoreQueue")).toBe("[]");
 			// Nothing can start a second run, or sign out halfway.
@@ -277,7 +261,6 @@ describe("account deletion", () => {
 			expect(mocks.deleteUser).not.toHaveBeenCalled();
 			expect(mocks.signOut).not.toHaveBeenCalled();
 			expect(window.localStorage.getItem(QUEUE)).toBe("[]");
-			expect(mocks.setSimulating).toHaveBeenLastCalledWith(true);
 			expect((confirmButton() as HTMLButtonElement).disabled).toBe(false);
 			await act(async () => fireEvent.click(confirmButton()));
 			expect(mocks.deleteUser).toHaveBeenCalledTimes(1);

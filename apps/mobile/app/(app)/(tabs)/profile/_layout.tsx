@@ -11,6 +11,12 @@ export default function ProfileStack() {
 			<Stack.Screen name="home-course" options={small} />
 			<Stack.Screen name="club" options={small} />
 			<Stack.Screen name="simulator" options={small} />
+			<Stack.Screen name="name" options={small} />
+			<Stack.Screen name="emails" options={small} />
+			<Stack.Screen name="add-email" options={small} />
+			<Stack.Screen name="verify-email" options={small} />
+			<Stack.Screen name="password" options={small} />
+			<Stack.Screen name="reverify" options={small} />
 			<Stack.Screen name="delete-account" options={small} />
 		</Stack>
 	);

@@ -10,29 +10,15 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as CardRouteImport } from './routes/card'
-import { Route as PlayRouteImport } from './routes/play'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as ProfileRouteImport } from './routes/profile'
-import { Route as ProgressRouteImport } from './routes/progress'
 import { Route as SupportRouteImport } from './routes/support'
 import { Route as CoursesIndexRouteImport } from './routes/courses.index'
-import { Route as RoundsNewRouteImport } from './routes/rounds.new'
 import { Route as CoursesCourseIdEditRouteImport } from './routes/courses.$courseId.edit'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CardRoute = CardRouteImport.update({
-  id: '/card',
-  path: '/card',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PlayRoute = PlayRouteImport.update({
-  id: '/play',
-  path: '/play',
   getParentRoute: () => rootRouteImport,
 } as any)
 const PrivacyRoute = PrivacyRouteImport.update({
@@ -45,11 +31,6 @@ const ProfileRoute = ProfileRouteImport.update({
   path: '/profile',
   getParentRoute: () => rootRouteImport,
 } as any)
-const ProgressRoute = ProgressRouteImport.update({
-  id: '/progress',
-  path: '/progress',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const SupportRoute = SupportRouteImport.update({
   id: '/support',
   path: '/support',
@@ -60,11 +41,6 @@ const CoursesIndexRoute = CoursesIndexRouteImport.update({
   path: '/courses/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RoundsNewRoute = RoundsNewRouteImport.update({
-  id: '/rounds/new',
-  path: '/rounds/new',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const CoursesCourseIdEditRoute = CoursesCourseIdEditRouteImport.update({
   id: '/courses/$courseId/edit',
   path: '/courses/$courseId/edit',
@@ -73,38 +49,26 @@ const CoursesCourseIdEditRoute = CoursesCourseIdEditRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
-  '/card': typeof CardRoute
-  '/play': typeof PlayRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
-  '/progress': typeof ProgressRoute
   '/support': typeof SupportRoute
-  '/rounds/new': typeof RoundsNewRoute
   '/courses/': typeof CoursesIndexRoute
   '/courses/$courseId/edit': typeof CoursesCourseIdEditRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
-  '/card': typeof CardRoute
-  '/play': typeof PlayRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
-  '/progress': typeof ProgressRoute
   '/support': typeof SupportRoute
-  '/rounds/new': typeof RoundsNewRoute
   '/courses': typeof CoursesIndexRoute
   '/courses/$courseId/edit': typeof CoursesCourseIdEditRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
-  '/card': typeof CardRoute
-  '/play': typeof PlayRoute
   '/privacy': typeof PrivacyRoute
   '/profile': typeof ProfileRoute
-  '/progress': typeof ProgressRoute
   '/support': typeof SupportRoute
-  '/rounds/new': typeof RoundsNewRoute
   '/courses/': typeof CoursesIndexRoute
   '/courses/$courseId/edit': typeof CoursesCourseIdEditRoute
 }
@@ -112,50 +76,34 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
-    | '/card'
-    | '/play'
     | '/privacy'
     | '/profile'
-    | '/progress'
     | '/support'
-    | '/rounds/new'
     | '/courses/'
     | '/courses/$courseId/edit'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
-    | '/card'
-    | '/play'
     | '/privacy'
     | '/profile'
-    | '/progress'
     | '/support'
-    | '/rounds/new'
     | '/courses'
     | '/courses/$courseId/edit'
   id:
     | '__root__'
     | '/'
-    | '/card'
-    | '/play'
     | '/privacy'
     | '/profile'
-    | '/progress'
     | '/support'
-    | '/rounds/new'
     | '/courses/'
     | '/courses/$courseId/edit'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
-  CardRoute: typeof CardRoute
-  PlayRoute: typeof PlayRoute
   PrivacyRoute: typeof PrivacyRoute
   ProfileRoute: typeof ProfileRoute
-  ProgressRoute: typeof ProgressRoute
   SupportRoute: typeof SupportRoute
-  RoundsNewRoute: typeof RoundsNewRoute
   CoursesIndexRoute: typeof CoursesIndexRoute
   CoursesCourseIdEditRoute: typeof CoursesCourseIdEditRoute
 }
@@ -167,20 +115,6 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/card': {
-      id: '/card'
-      path: '/card'
-      fullPath: '/card'
-      preLoaderRoute: typeof CardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/play': {
-      id: '/play'
-      path: '/play'
-      fullPath: '/play'
-      preLoaderRoute: typeof PlayRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/privacy': {
@@ -197,13 +131,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/progress': {
-      id: '/progress'
-      path: '/progress'
-      fullPath: '/progress'
-      preLoaderRoute: typeof ProgressRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/support': {
       id: '/support'
       path: '/support'
@@ -218,13 +145,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CoursesIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/rounds/new': {
-      id: '/rounds/new'
-      path: '/rounds/new'
-      fullPath: '/rounds/new'
-      preLoaderRoute: typeof RoundsNewRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/courses/$courseId/edit': {
       id: '/courses/$courseId/edit'
       path: '/courses/$courseId/edit'
@@ -237,13 +157,9 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
-  CardRoute: CardRoute,
-  PlayRoute: PlayRoute,
   PrivacyRoute: PrivacyRoute,
   ProfileRoute: ProfileRoute,
-  ProgressRoute: ProgressRoute,
   SupportRoute: SupportRoute,
-  RoundsNewRoute: RoundsNewRoute,
   CoursesIndexRoute: CoursesIndexRoute,
   CoursesCourseIdEditRoute: CoursesCourseIdEditRoute,
 }

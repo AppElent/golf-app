@@ -13,11 +13,13 @@
  */
 import { useSignIn } from "@clerk/expo";
 import { useCallback, useState } from "react";
+import { useI18n } from "../../../i18n";
 import { pickError } from "../clerk-errors";
 import { useClerkStep } from "../use-clerk-step";
 
 export function usePasswordSignIn() {
 	const { signIn, errors } = useSignIn();
+	const messages = useI18n().t.authErrors;
 	const { busy, returned, run } = useClerkStep();
 	const [override, setOverride] = useState<string | null>(null);
 
@@ -37,21 +39,19 @@ export function usePasswordSignIn() {
 							`[auth] sign-in stopped at an unhandled status: ${signIn.status}`,
 						);
 					}
-					setOverride(
-						"Sign-in needs another step this app doesn't support yet. Try the web app instead.",
-					);
+					setOverride(messages.signInStep);
 					return false;
 				}
 
 				return ok(await signIn.finalize());
 			}, "hold");
 		},
-		[signIn, run],
+		[signIn, run, messages],
 	);
 
 	return {
 		submit,
 		busy,
-		error: override ?? pickError(errors, returned),
+		error: override ?? pickError(errors, returned, messages),
 	};
 }

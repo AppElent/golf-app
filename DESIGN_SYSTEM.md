@@ -53,8 +53,8 @@ Designers and coding agents start from it; product decisions below still bind th
 - **Live Activity** (`features/live/hole/hole-activity.tsx`) runs in the widget
   runtime and cannot import tokens, so it declares its palette inline; its
   `target` must equal `course.target` (`#ffd60a`).
-- **Tee marker colours** live in `@fairway/core/tee-colors` and are shared by the
-  phone's `course.teeMarker` and the web hole map.
+- **Tee marker colours** live in `@fairway/core/tee-colors` and are used by the
+  phone's `course.teeMarker` (the web hole map was retired in APP-235).
 - **HUD controls** float in `HudGlass` (Liquid Glass on iOS 26+, dark translucent
   fill elsewhere). The primary action (Score hole N) is the yellow pill.
 - **Building blocks:** lists use `InsetList`/`InsetRow`, forms `FormScreen` and its
@@ -102,8 +102,6 @@ Designers and coding agents start from it; product decisions below still bind th
   (`src/integrations/clerk/appearance.ts`) and keeps Clerk's own look in light.
   Its primary is `pine-ink` (mint) with a `canvas` label, because Clerk also
   draws its links in the primary colour.
-- **Map colours** in `src/play/` use `--color-map-*` tokens and the shared tee
-  marker colours, never hex.
 
 ### Contrast
 

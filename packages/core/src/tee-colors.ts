@@ -1,6 +1,6 @@
 /**
- * Tee marker colours, keyed by the colour a tee plays from. Shared by the web
- * hole map and the phone's course palette so both draw the same markers.
+ * Tee marker colours, keyed by the colour a tee plays from, for the phone's
+ * course palette.
  */
 export const TEE_MARKER_COLORS: Readonly<Record<string, string>> = {
 	white: "#ffffff",

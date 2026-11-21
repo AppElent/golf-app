@@ -1,9 +1,12 @@
 import {
+	accountNameFieldTraits,
 	CLERK_PASSWORD_RULES,
 	type Credentials,
 	createCredentialsForm,
 	credentialsReady,
+	currentPasswordTraits,
 	emailFieldTraits,
+	newPasswordTraits,
 	passwordFieldTraits,
 } from "./credentials-model";
 
@@ -135,5 +138,50 @@ describe("createCredentialsForm", () => {
 		});
 		form.press();
 		expect(submit).toHaveBeenCalledWith({ email: "a@b.nl", password: "" });
+	});
+});
+
+describe("password-setting screens", () => {
+	it("names the account with a read-only username field", () => {
+		expect(accountNameFieldTraits).toMatchObject({
+			textContentType: "username",
+			autoComplete: "username",
+			editable: false,
+		});
+	});
+
+	it("tells the current and new password apart, and the new one follows Clerk's policy", () => {
+		expect(currentPasswordTraits).toEqual({
+			autoComplete: "current-password",
+			textContentType: "password",
+		});
+		expect(newPasswordTraits).toEqual({
+			autoComplete: "new-password",
+			textContentType: "newPassword",
+			passwordRules: CLERK_PASSWORD_RULES,
+		});
+	});
+
+	it("submits a current/new pair from the focused field's final text", () => {
+		const submit = jest.fn();
+		const blur = jest.fn();
+		let focused = true;
+		const form = createCredentialsForm(
+			{ current: "", next: "" },
+			{
+				onValues: () => {},
+				onEditing: () => {},
+				submit,
+				focusedInput: () => (focused ? { blur } : null),
+			},
+		);
+		form.endEditing("current", "old-pw");
+		form.focus();
+		form.press();
+		expect(submit).not.toHaveBeenCalled();
+		focused = false;
+		// Declining "Use Strong Password?" may clear the field silently.
+		form.endEditing("next", "");
+		expect(submit).toHaveBeenCalledWith({ current: "old-pw", next: "" });
 	});
 });

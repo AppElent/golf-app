@@ -7,7 +7,7 @@ description: Verify that a code change actually does what it's supposed to by ex
 
 ## Route → module map
 
-Web routes are file routes: `/rounds/new` is `src/routes/rounds.new.tsx`, and that
+Web routes are file routes: `/courses/$courseId/edit` is `src/routes/courses.$courseId.edit.tsx`, and that
 file imports its components and Convex functions. Mobile routes are in
 `apps/mobile/app/`, each importing a screen from `apps/mobile/src/features`.
 
@@ -24,4 +24,4 @@ in the preview.
 Local-first: drive the affected flow via the dev server (`.claude/launch.json`,
 `preview_start`) and observe actual behavior, not just typecheck/lint/tests.
 On web (no Convex/Clerk runtime creds available), verification falls back to
-the static suite: `pnpm run typecheck`, `pnpm run check`, `pnpm test`, `pnpm build`.
+`pnpm verify && pnpm build`.

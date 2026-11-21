@@ -74,7 +74,7 @@ jobs:
             exit 1
           fi
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           fetch-depth: 0
 
@@ -210,7 +210,9 @@ jobs:
           EXPO_PUBLIC_COMMIT_SHA: ${{ steps.soaked.outputs.commit }}
           COMMIT: ${{ steps.soaked.outputs.commit }}
         run: |
-          message=$(git log -1 --format=%s "$COMMIT")
+          # The OTA label (developer-home standards/releases.md, "OTA label"); the
+          # app shows the same one, from EXPO_PUBLIC_COMMIT_SHA above.
+          message=$(node scripts/ota-label.mjs "$COMMIT")
           pnpm exec eas update --channel "$CHANNEL" --environment production \
             --platform "$PLATFORM" --non-interactive --message "$message"
           git tag -f "$TAG" "$COMMIT"

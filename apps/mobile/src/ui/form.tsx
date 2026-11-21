@@ -1,15 +1,17 @@
-import { HeaderHeightContext } from "expo-router/react-navigation";
 import { SymbolView } from "expo-symbols";
-import { Children, type ReactNode, useContext } from "react";
+import { Children, type ReactNode, type Ref, useRef, useState } from "react";
 import {
 	KeyboardAvoidingView,
 	Platform,
 	Pressable,
 	ScrollView,
 	StyleSheet,
+	Switch,
 	TextInput,
+	type TextInputInstance,
 	type TextInputProps,
 	View,
+	type ViewInstance,
 	type ViewStyle,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -60,7 +62,13 @@ export function FormScreen({
 }) {
 	const styles = useThemedStyles(createStyles);
 	const insets = useSafeAreaInsets();
-	const headerHeight = useContext(HeaderHeightContext) ?? 0;
+	// How far below the top of the window this form starts. A navigator header
+	// that pushes the content down counts; a transparent one the content slides
+	// under does not, so it is measured instead of read from the header height.
+	const frame = useRef<ViewInstance>(null);
+	const [windowTop, setWindowTop] = useState(0);
+	const measureTop = () =>
+		frame.current?.measureInWindow((_x, y) => setWindowTop(y));
 
 	const content = (
 		<>
@@ -97,13 +105,15 @@ export function FormScreen({
 	if (nativeSheet) return content;
 	if (!avoidKeyboard) return <View style={styles.screen}>{content}</View>;
 	return (
-		<KeyboardAvoidingView
-			behavior={Platform.OS === "ios" ? "padding" : "height"}
-			keyboardVerticalOffset={header ? 0 : headerHeight}
-			style={styles.screen}
-		>
-			{content}
-		</KeyboardAvoidingView>
+		<View ref={frame} onLayout={measureTop} style={styles.screen}>
+			<KeyboardAvoidingView
+				behavior={Platform.OS === "ios" ? "padding" : "height"}
+				keyboardVerticalOffset={windowTop}
+				style={styles.screen}
+			>
+				{content}
+			</KeyboardAvoidingView>
+		</View>
 	);
 }
 
@@ -149,12 +159,15 @@ export function GroupedSurface({
 }
 
 export function FormTextField({
+	ref,
 	label,
 	error,
 	appearance = "inset",
 	style,
 	...props
 }: TextInputProps & {
+	/** React 19 plain prop, so a form can move focus to the next field. */
+	ref?: Ref<TextInputInstance>;
 	label: string;
 	error?: string;
 	appearance?: "inset" | "plain";
@@ -167,12 +180,16 @@ export function FormTextField({
 		>
 			<AppText variant="label">{label}</AppText>
 			<TextInput
+				ref={ref}
 				{...props}
 				accessibilityLabel={props.accessibilityLabel ?? label}
 				placeholderTextColor={colors.textFaint}
 				style={[
 					styles.textInput,
 					appearance === "plain" && styles.plainInput,
+					// Read-only (the account name above a new password): information,
+					// not a field to fill in.
+					props.editable === false && styles.readOnlyInput,
 					style,
 				]}
 			/>
@@ -208,6 +225,32 @@ export function FormSegmentedRow<Value extends string>({
 			<View style={label && Platform.OS === "ios" ? { flex: 1.2 } : undefined}>
 				<Segmented options={options} value={value} onChange={onChange} />
 			</View>
+		</View>
+	);
+}
+
+/** An on/off setting as one grouped form row: the label, then a native switch. */
+export function FormSwitchRow({
+	label,
+	value,
+	onValueChange,
+	disabled,
+}: {
+	label: string;
+	value: boolean;
+	onValueChange: (next: boolean) => void;
+	disabled?: boolean;
+}) {
+	const styles = useThemedStyles(createStyles);
+	return (
+		<View style={styles.inlineRow}>
+			<AppText style={styles.rowLabel}>{label}</AppText>
+			<Switch
+				value={value}
+				onValueChange={onValueChange}
+				disabled={disabled}
+				accessibilityLabel={label}
+			/>
 		</View>
 	);
 }
@@ -371,6 +414,7 @@ const createStyles = (colors: Tokens) =>
 			color: colors.text,
 			fontSize: 15,
 		},
+		readOnlyInput: { color: colors.textMuted, backgroundColor: "transparent" },
 		error: { color: colors.danger },
 		inlineRow: {
 			minHeight: metrics.rowMinHeight,

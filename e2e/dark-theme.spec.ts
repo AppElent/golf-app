@@ -16,33 +16,6 @@ function luminance(rgb: string): number {
 	return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 }
 
-/** Opens the scorecard, starting a simulated round (never counted) if none is active. */
-async function openRound(page: Page) {
-	await page.goto("/card");
-	const empty = page.getByText("No active round.");
-	const title = page.getByRole("heading", { level: 1 });
-	await expect(title).toBeVisible();
-	if (await empty.isVisible()) {
-		await page.goto("/rounds/new?simulate=1");
-		await page
-			.getByRole("heading", { name: "Course" })
-			.locator("xpath=..")
-			.getByRole("button")
-			.first()
-			.click();
-		// A course with loops needs one picked before the round can start.
-		const loop = page.getByRole("button", { name: /^\d+–\d+$/ }).first();
-		const start = page.getByRole("button", { name: "Start simulation" });
-		await expect(start.or(loop).first()).toBeVisible();
-		if (await loop.isVisible()) await loop.click();
-		await start.click();
-		await page.waitForURL("**/play");
-		await page.goto("/card");
-	}
-	await expect(empty).toHaveCount(0);
-	await expect(title).not.toHaveText("Scorecard");
-}
-
 async function openCourseEditor(page: Page) {
 	await page.goto("/courses");
 	await page.getByRole("heading", { name: "Courses" }).waitFor();
@@ -68,11 +41,14 @@ async function openOwnedCopy(page: Page) {
 type Open = (page: Page) => Promise<void | (() => Promise<void>)>;
 
 const PAGES: Record<string, Open> = {
-	home: async (page) => {
+	"open-the-app": async (page) => {
 		await page.goto("/");
-		await page.locator("main").waitFor();
+		await page.getByRole("heading", { name: "Open the Fairway app" }).waitFor();
 	},
-	round: openRound,
+	account: async (page) => {
+		await page.goto("/profile");
+		await page.getByRole("heading", { name: "Account", level: 1 }).waitFor();
+	},
 	editor: openCourseEditor,
 	copy: openOwnedCopy,
 };
@@ -95,7 +71,7 @@ for (const scheme of ["light", "dark"] as const) {
 					expect(luminance(canvas)).toBeGreaterThan(0.7);
 				}
 
-				// The course editor has no tab of its own, so no tab is active there.
+				// "Open the Fairway app" is public and has no tab bar.
 				const tabs = await page.locator("nav a").evaluateAll((links) =>
 					links.map((a) => ({
 						active: a.getAttribute("aria-current") === "page",
@@ -124,7 +100,7 @@ for (const scheme of ["light", "dark"] as const) {
 			test.use({ storageState: { cookies: [], origins: [] } });
 
 			test("sign-in", async ({ page }, info) => {
-				await page.goto("/");
+				await page.goto("/courses");
 				const email = page.getByLabel(/email address/i);
 				await email.waitFor();
 				const field = await email.evaluate(

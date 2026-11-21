@@ -151,8 +151,11 @@ updates for its own fingerprint until the next store build.
 
 `expo.version` in `app.json` is the app's one SemVer; web reads it too
 ([deploy](deploy.md#versions)). Profile's footer shows the version, the build
-number, the channel, and the running update's ID (none when the bundled code
-runs). Updates published by CI report to Sentry as `fairway@<version>+<short sha>`
+number, the OTA label of the running update (`update 1.0.0 · 20 nov · a1b2c3d`,
+`geen update` when the bundled code runs) and the channel. The label is
+developer-home's `formatOtaLabel` (`src/updates/ota-label.mjs`, copied
+unchanged); the Mobile Update workflows use the same label as the EAS update
+message (`scripts/ota-label.mjs`). Updates published by CI report to Sentry as `fairway@<version>+<short sha>`
 (`EXPO_PUBLIC_COMMIT_SHA`, `src/monitoring/release.ts`); a store or local
 build's bundled code keeps the SDK's default release, the name its source
 maps are uploaded under.
@@ -375,6 +378,6 @@ so live distances show. Upload with
   builds; a development bundle stays silent unless
   `EXPO_PUBLIC_SENTRY_DEBUG=1`. "Report a problem" opens Sentry User Feedback
   when reporting is on, otherwise shows an explanation. Convex backend errors
-  go through the production log forwarder in [Sentry](sentry.md).
+  go through the shared incident inbox's log forwarder in [Sentry](sentry.md).
 - Courses: the catalog is read-only on the phone; round setup links to
   "Suggest a correction". See [course catalog](course-catalog.md).

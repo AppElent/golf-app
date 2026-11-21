@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when changing Fairway's Sentry coverage, project binding, sampling, or source-map uploads.
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Sentry (Fairway)
@@ -18,7 +18,7 @@ Every surface reports to one Sentry project, `appelent/fairway`, with one DSN
 | --- | --- | --- | --- |
 | Browser | `fairway-web` | `src/instrument.client.ts`, `src/client.tsx`, `src/router.tsx` | React render/query errors (`onUncaughtError`/`onCaughtError`/`onRecoverableError`), failed Convex mutations/actions returned to this browser, route navigation traces |
 | Worker SSR | `fairway-web-server` | `src/server.ts` (`wrangler.jsonc` `main`) | Uncaught Worker exceptions and SSR responses ≥ 500 that TanStack Start turned into a response, request traces |
-| Convex | `fairway-convex` | `scripts/convex-sentry.mjs` (`pnpm sentry:convex`) | Failed function executions, including scheduled ones — production only, from the always-on forwarder (see below) |
+| Convex | `fairway-convex` | `scripts/convex-sentry.mjs` (`pnpm sentry:convex`) | Failed function executions, including scheduled ones — production only, from the shared incident inbox (see below) |
 | Mobile | `fairway-mobile` | `apps/mobile/src/monitoring/` | See the [mobile runbook](mobile.md) |
 
 One project because it is one product with one team and low volume: a broken
@@ -110,8 +110,7 @@ over both.
 SENTRY_DSN=<dsn> SENTRY_ENVIRONMENT=development pnpm sentry:convex --deployment <dev deployment>
 ```
 
-Production runs as a service; see [Production service](#production-service)
-for how it gets the DSN and log access.
+Production does not use this script; see [Production](#production).
 
 It runs `convex logs --jsonl` (CLI login, or a private deploy key with
 `deployment:logs:view` for that deployment), forwards failed completions only
@@ -125,62 +124,30 @@ attribution and no backend tracing.
 Run one reader per deployment. If managed Convex reporting is ever enabled,
 stop the reader for that deployment first to avoid duplicates.
 
-### Production service
+### Production
 
-**Status: active for production.** One reader runs on Eric's always-on Mac
-Studio as a launchd user agent. Staging, previews and dev deployments have no
-reader. The service lives outside this repo:
+Production failures are forwarded by the shared
+[incident inbox](https://github.com/AppElent/developer-home/blob/main/services/incident-inbox/README.md) in `AppElent/developer-home`, not by this repo's
+script (since 17 Nov 2026). One launchd agent on Eric's always-on Mac,
+`com.appelent.incident-inbox` (run from `~/Developer/.services/developer-home`),
+reads `eric-jansen:golf:prod` with the logged-in Convex CLI and sends failed executions to this
+app's Sentry project with the same `app=fairway-convex` tag and
+`environment=production`. Its incident poll then files each new Sentry issue in
+Linear (team `APP`, labels `app:fairway` and Source `convex`). Events are grouped
+by throwing function and message, so one helper failing under several queries
+is one Sentry issue; the `func` tag still names the query.
 
-| What | Where |
-| --- | --- |
-| launchd label | `com.appelent.convex-sentry.fairway` (`~/Library/LaunchAgents/com.appelent.convex-sentry.fairway.plist`) |
-| Wrapper | `~/Developer/.services/bin/convex-sentry-run fairway`; host notes in `~/Developer/.services/README.md` |
-| Checkout | `~/Developer/.services/golf-app`, a dedicated clone |
-| Log | `~/Library/Logs/convex-sentry-fairway.log` |
+- Log: `~/Library/Logs/incident-inbox.log`. A healthy start logs
+  `convex fairway: reading eric-jansen:golf:prod`.
+- Restart: `launchctl kickstart -k "gui/$(id -u)/com.appelent.incident-inbox"`.
+- Deployment, tag and DSN (`SENTRY_DSN_FAIRWAY`) are set in the inbox's `config.mjs` and
+  its env file; change them there, not here.
 
-The agent has `RunAtLoad`, `KeepAlive` and `ThrottleInterval` 30, so it
-restarts after a crash (at most every 30 s) and after a reboot once this user
-is logged in. On each start the wrapper updates the checkout to `origin/main`
-when its tree is clean (otherwise it keeps the existing checkout and logs
-why), installs dependencies when the lockfile changed, then runs the
-equivalent of:
-
-```sh
-pnpm env:exec production --only github -- \
-  sh -c 'unset CONVEX_DEPLOY_KEY CONVEX_DEPLOYMENT_TOKEN
-         SENTRY_ENVIRONMENT=production pnpm sentry:convex --deployment eric-jansen:golf:prod'
-```
-
-- **DSN**: `env:exec` loads Infisical `sentry-dsn` as `VITE_SENTRY_DSN`; the
-  `sentry:convex` script maps it to `SENTRY_DSN` and sets
-  `SENTRY_APP=fairway-convex`.
-- **Log access**: the logged-in Convex CLI on the Mac. The deploy keys are
-  unset because the production deploy key can deploy but lacks
-  `deployment:logs:view`.
-- **Deployment**: `--deployment eric-jansen:golf:prod` (the public project
-  selector from `env.manifest.ts`). `--prod` alone fails here: the service
-  clone has no `.env.local`, so there is no `CONVEX_DEPLOYMENT` to resolve it.
-
-Do not run the production forwarder from a T3 worktree or from
-`~/Developer/golf-app`: keep one reader per deployment, and only the service
-is supervised.
-
-Restart, then watch the log:
-
-```sh
-launchctl kickstart -k "gui/$(id -u)/com.appelent.convex-sentry.fairway"
-tail -f ~/Library/Logs/convex-sentry-fairway.log
-```
-
-A healthy start logs `[Production] eric-jansen:golf:production (prod)` and a
-`Watching logs for …` line. Stop it with:
-
-```sh
-launchctl bootout "gui/$(id -u)/com.appelent.convex-sentry.fairway"
-```
-
-`bootout` unloads the agent until the next login; to start it again without
-logging out, `launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/com.appelent.convex-sentry.fairway.plist`.
+Do not run `pnpm sentry:convex` against production while the inbox runs:
+Sentry would get each failure twice. The old per-app agent
+`com.appelent.convex-sentry.fairway`, its clone `~/Developer/.services/golf-app`
+and the `convex-sentry-run` wrapper are retired
+([APP-98](https://linear.app/appelent/issue/APP-98), [APP-222](https://linear.app/appelent/issue/APP-222)).
 
 ## Acceptance (not yet done)
 
