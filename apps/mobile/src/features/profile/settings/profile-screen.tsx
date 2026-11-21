@@ -24,7 +24,6 @@ import {
 	useAppearance,
 	useThemedStyles,
 } from "../../../theme";
-import { useConfirm } from "../../../ui/confirm-dialog";
 import { FormSegmentedRow } from "../../../ui/form";
 import { InsetList, InsetRow } from "../../../ui/inset-list";
 import { AppText } from "../../../ui/text";
@@ -51,7 +50,6 @@ export function ProfileScreen() {
 	const router = useRouter();
 	const styles = useThemedStyles(createStyles);
 	const toast = useToast();
-	const confirm = useConfirm();
 	const { preference, setPreference } = useAppearance();
 	const { signOut } = useAuth();
 	const { user } = useUser();
@@ -60,10 +58,8 @@ export function ProfileScreen() {
 	const courses = useQuery(api.courses.list);
 	const clubs = useQuery(api.clubs.list);
 	const updateSettings = useMutation(api.settings.update);
-	const deleteMyData = useMutation(api.account.deleteMyData);
 	const convex = useConvex();
 	const [exporting, setExporting] = useState(false);
-	const [deleting, setDeleting] = useState(false);
 	const [lockedGps, setLockedGps] = useState(backgroundLocationPreferred);
 
 	async function onLockedGps(on: boolean) {
@@ -98,27 +94,6 @@ export function ProfileScreen() {
 			toast.error(convexErrorMessage(e, t.profile.exportError));
 		} finally {
 			setExporting(false);
-		}
-	}
-
-	async function onDeleteAccount() {
-		const ok = await confirm({
-			title: t.profile.deleteTitle,
-			message: t.profile.deleteMessage,
-			confirmLabel: t.profile.deleteConfirm,
-			destructive: true,
-		});
-		if (!ok) return;
-		setDeleting(true);
-		try {
-			// App data first, while the session can still authenticate.
-			await deleteMyData({});
-			// The saved round copy and its account marker go with the data.
-			clearLastKnown();
-			await user?.delete();
-		} catch (e) {
-			setDeleting(false);
-			toast.error(convexErrorMessage(e, t.profile.deleteError));
 		}
 	}
 
@@ -291,11 +266,10 @@ export function ProfileScreen() {
 					}}
 				/>
 				<InsetRow
-					title={
-						deleting ? `${t.profile.deleteAccount}…` : t.profile.deleteAccount
-					}
+					title={t.profile.deleteAccount}
 					destructive
-					onPress={deleting ? undefined : () => void onDeleteAccount()}
+					chevron
+					onPress={() => router.push("/profile/delete-account")}
 				/>
 			</InsetList>
 		</ScrollView>

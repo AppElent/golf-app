@@ -21,14 +21,31 @@ signing in with Clerk.
   Clerk returns the tab to `afterSignOutUrl` (`/`, the public "Open the
   Fairway app" page), and `AuthGate` shows the sign-in card on every protected
   path.
-- **Account deletion:** the same Account section deletes the account after an
-  inline confirm step: `account.deleteMyData` first, while Convex still accepts
-  the session, then that account's leftover web score queue
-  (`fairway.scoreQueue:<userId>` in localStorage, written by the round screens
-  retired in APP-235), then the Clerk user (`user.delete()`, behind Clerk's
-  reverification prompt when the instance asks for one). If the data cannot go, nothing is deleted
-  and the golfer stays signed in; if Clerk refuses, the data is gone and a retry
-  deletes the Clerk user. With the user gone, `AuthGate` shows the sign-in card.
+- **Account deletion:** the same Account section (and Profile → Delete
+  account on the phone) first asks what to delete, because Gather, Foundry,
+  Fairway and Arcade Club share one AppElent (Clerk) login (APP-392):
+  - **Fairway data only** (listed first): `account.deleteMyData` with the
+    caller's `expectedSubject`, repeated until it returns `done`, then that
+    account's leftover web score queue (`fairway.scoreQueue:<userId>` in
+    localStorage, written by the round screens retired in APP-235; phone: the
+    last-known copy), then sign-out on this device (web: to the gated
+    `/profile`, since the public `/` has no sign-in card). The Clerk user and any
+    Apple grant are untouched, no tombstone is kept, and a one-time notice
+    (phone: an alert) confirms that the login still works in the other apps.
+    Signing in again starts an empty profile.
+  - **Whole AppElent account**: the same purge, then the Clerk user
+    (`user.delete()`, behind Clerk's reverification prompt on the web when the
+    instance asks for one). If Clerk refuses, the data is gone and a retry
+    deletes the Clerk user.
+  - If the purge fails partway, the golfer stays signed in and a retry
+    deletes what is left.
+- **Clerk webhook:** `POST /clerk/webhook` (`convex/http.ts`) verifies the
+  Svix signature against `CLERK_WEBHOOK_SECRET` and, on `user.deleted`, runs
+  the same purge (`purgeUserData` in `convex/userData.ts`) for `data.id`
+  through `account.purgeDeletedUser`, which reschedules itself until done. So
+  a login deleted in another app or the Clerk dashboard takes its Fairway data
+  with it. Unsigned or badly signed deliveries get 401 and do nothing; other
+  events get 200 and do nothing.
 - **Public pages:** the paths in `PUBLIC_PATHS` (`src/components/LegalPage.tsx`),
   `/` ("Open the Fairway app"), `/privacy` and `/support`, render without
   `AuthGate` and without the tab bar, so anyone, App Store Connect and the phone

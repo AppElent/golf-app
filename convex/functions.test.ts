@@ -9,13 +9,19 @@
 import { collectExport, type DataExport } from "@fairway/core/data-export";
 import { ConvexError } from "convex/values";
 import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
+import { Webhook } from "svix";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { TableNames } from "./_generated/dataModel";
 import schema from "./schema";
 import * as seed from "./seed";
 import * as seedPreview from "./seedPreview";
-import { OWNED_TABLES, USER_DATA } from "./userData";
+import {
+	OWNED_TABLES,
+	PURGE_BATCH,
+	purgeUserData,
+	USER_DATA,
+} from "./userData";
 
 // Function modules plus `_generated`, which convex-test uses to find the root.
 const modules = import.meta.glob([
@@ -734,44 +740,44 @@ describe("account", () => {
 	});
 });
 
+type Who = Awaited<ReturnType<typeof setup>>["alice"];
+type Course = Awaited<ReturnType<typeof setup>>["course"];
+
+/** A row in every user-owned table: settings, clubs, a scored round with
+ *  a shot, two course copies (tees, holes, geometry) and a suggestion. */
+async function fillEveryTable(who: Who, course: Course, name: string) {
+	const catalogId = course.course._id;
+	await who.mutation(api.settings.update, {
+		homeCourseId: catalogId,
+		handicapIndex: 12.4,
+	});
+	await who.mutation(api.clubs.create, { name: "7i", carryMeters: 150 });
+	const roundId = await startRound(who, course);
+	await who.mutation(api.rounds.setScore, {
+		roundId,
+		holeIndex: 0,
+		playerIndex: 0,
+		strokes: 5,
+		putts: 2,
+	});
+	await who.mutation(api.shots.mark, {
+		roundId,
+		holeIndex: 0,
+		position: { lat: 51.6, lng: 4.87 },
+	});
+	const copyId = await who.mutation(api.courses.fork, {
+		courseId: catalogId,
+		name: `${name}'s copy`,
+	});
+	await who.mutation(api.courses.fork, { courseId: catalogId });
+	await who.mutation(api.courses.suggest, {
+		courseId: catalogId,
+		message: `${name}: hole 1 is a par 4`,
+	});
+	return { roundId, copyId };
+}
+
 describe("data export", () => {
-	type Who = Awaited<ReturnType<typeof setup>>["alice"];
-	type Course = Awaited<ReturnType<typeof setup>>["course"];
-
-	/** A row in every user-owned table: settings, clubs, a scored round with
-	 *  a shot, two course copies (tees, holes, geometry) and a suggestion. */
-	async function fillEveryTable(who: Who, course: Course, name: string) {
-		const catalogId = course.course._id;
-		await who.mutation(api.settings.update, {
-			homeCourseId: catalogId,
-			handicapIndex: 12.4,
-		});
-		await who.mutation(api.clubs.create, { name: "7i", carryMeters: 150 });
-		const roundId = await startRound(who, course);
-		await who.mutation(api.rounds.setScore, {
-			roundId,
-			holeIndex: 0,
-			playerIndex: 0,
-			strokes: 5,
-			putts: 2,
-		});
-		await who.mutation(api.shots.mark, {
-			roundId,
-			holeIndex: 0,
-			position: { lat: 51.6, lng: 4.87 },
-		});
-		const copyId = await who.mutation(api.courses.fork, {
-			courseId: catalogId,
-			name: `${name}'s copy`,
-		});
-		await who.mutation(api.courses.fork, { courseId: catalogId });
-		await who.mutation(api.courses.suggest, {
-			courseId: catalogId,
-			message: `${name}: hole 1 is a par 4`,
-		});
-		return { roundId, copyId };
-	}
-
 	const exportOf = (who: Who) =>
 		collectExport((step) => who.query(api.account.exportPage, { step }));
 
@@ -911,6 +917,241 @@ describe("data export", () => {
 				step: { table: "holes", cursor: null },
 			}),
 		).rejects.toThrow("Unknown export table.");
+	});
+});
+
+describe("account deletion", () => {
+	/** A fresh Svix-style signing secret, never a committed literal. */
+	const randomSecret = () =>
+		[
+			"whsec",
+			btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(24)))),
+		].join("_");
+	const SECRET = randomSecret();
+
+	/** Every registry table's row ids, to compare whole-database states. */
+	const snapshot = (t: ReturnType<typeof convexTest>) =>
+		t.run(async (ctx) => {
+			const ids: Record<string, string[]> = {};
+			for (const table of Object.keys(USER_DATA) as TableNames[]) {
+				const rows = await ctx.db.query(table).collect();
+				ids[table] = rows.map((row) => row._id as string).sort();
+			}
+			return ids;
+		});
+
+	/** Alice and Bob each fill every table; `before` holds only Bob's rows. */
+	async function filled() {
+		const ctx = await setup();
+		await fillEveryTable(ctx.bob, ctx.course, "Bob");
+		const before = await snapshot(ctx.t);
+		await fillEveryTable(ctx.alice, ctx.course, "Alice");
+		return { ...ctx, before };
+	}
+
+	/** A Clerk delivery signed the way Svix signs it. */
+	function signed(
+		body: unknown,
+		{ secret = SECRET, id = "msg_1" }: { secret?: string; id?: string } = {},
+	) {
+		const payload = JSON.stringify(body);
+		const now = new Date();
+		return {
+			method: "POST",
+			headers: {
+				"svix-id": id,
+				"svix-timestamp": String(Math.floor(now.getTime() / 1000)),
+				"svix-signature": new Webhook(secret).sign(id, now, payload),
+			},
+			body: payload,
+		};
+	}
+
+	const deleted = (id: string) => ({
+		type: "user.deleted",
+		object: "event",
+		data: { id, object: "user", deleted: true },
+	});
+
+	beforeEach(() => {
+		vi.stubEnv("CLERK_WEBHOOK_SECRET", SECRET);
+	});
+	afterEach(() => {
+		vi.unstubAllEnvs();
+	});
+
+	it("deletes in batches until done, leaving only other people's rows", async () => {
+		const { t, before } = await filled();
+		let batches = 0;
+		for (;;) {
+			batches += 1;
+			const { done } = await t.run((ctx) =>
+				purgeUserData(ctx, ALICE.subject, 3),
+			);
+			if (done) break;
+		}
+		expect(batches).toBeGreaterThan(2);
+		expect(await snapshot(t)).toEqual(before);
+	});
+
+	it("repeats with the caller's subject until it says done", async () => {
+		const { t, alice, before } = await filled();
+		expect(
+			await alice.mutation(api.account.deleteMyData, {
+				expectedSubject: ALICE.subject,
+			}),
+		).toEqual({ done: true });
+		expect(await snapshot(t)).toEqual(before);
+		// Nothing left: a repeat is a no-op, and the login can start afresh.
+		expect(
+			await alice.mutation(api.account.deleteMyData, {
+				expectedSubject: ALICE.subject,
+			}),
+		).toEqual({ done: true });
+		expect(await alice.query(api.settings.get, {})).toMatchObject({
+			handicapIndex: null,
+		});
+		await alice.mutation(api.clubs.create, { name: "7i", carryMeters: 150 });
+		expect(await alice.query(api.clubs.list, {})).toHaveLength(1);
+	});
+
+	it("refuses when another account is signed in, deleting nothing", async () => {
+		const { t, alice } = await filled();
+		const full = await snapshot(t);
+		const refused = await alice
+			.mutation(api.account.deleteMyData, { expectedSubject: BOB.subject })
+			.catch((e: unknown) => e);
+		expect(refused).toBeInstanceOf(ConvexError);
+		expect((refused as ConvexError<{ code: string }>).data.code).toBe(
+			"accountChanged",
+		);
+		expect(await snapshot(t)).toEqual(full);
+	});
+
+	it("purges the deleted Clerk user's data from a signed webhook, as in-app deletion does", async () => {
+		const inApp = await filled();
+		await inApp.alice.mutation(api.account.deleteMyData, {
+			expectedSubject: ALICE.subject,
+		});
+		const viaWebhook = await filled();
+
+		const res = await viaWebhook.t.fetch(
+			"/clerk/webhook",
+			signed(deleted(ALICE.subject)),
+		);
+
+		expect(res.status).toBe(200);
+		expect(await snapshot(viaWebhook.t)).toEqual(viaWebhook.before);
+		// Same rows survive either way: Bob's and the catalog.
+		const counts = (ids: Record<string, string[]>) =>
+			Object.fromEntries(Object.entries(ids).map(([k, v]) => [k, v.length]));
+		expect(counts(await snapshot(viaWebhook.t))).toEqual(
+			counts(await snapshot(inApp.t)),
+		);
+	});
+
+	it("finishes a purge too big for one batch through scheduled batches", async () => {
+		vi.useFakeTimers();
+		try {
+			const { t, before } = await filled();
+			// More rows than one batch deletes.
+			await t.run(async (ctx) => {
+				for (let i = 0; i < PURGE_BATCH + 5; i += 1) {
+					await ctx.db.insert("clubs", {
+						userId: ALICE.subject,
+						name: `club ${i}`,
+						carryMeters: 100,
+						sortOrder: i,
+					});
+				}
+			});
+			const res = await t.fetch(
+				"/clerk/webhook",
+				signed(deleted(ALICE.subject)),
+			);
+			expect(res.status).toBe(200);
+			await t.finishAllScheduledFunctions(vi.runAllTimers);
+			expect(await snapshot(t)).toEqual(before);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("is idempotent: a second delivery and an unknown user are no-ops", async () => {
+		const { t, before } = await filled();
+		const first = await t.fetch(
+			"/clerk/webhook",
+			signed(deleted(ALICE.subject)),
+		);
+		const again = await t.fetch(
+			"/clerk/webhook",
+			signed(deleted(ALICE.subject)),
+		);
+		const stranger = await t.fetch(
+			"/clerk/webhook",
+			signed(deleted("user_never_used_fairway"), { id: "msg_2" }),
+		);
+		expect([first.status, again.status, stranger.status]).toEqual([
+			200, 200, 200,
+		]);
+		expect(await snapshot(t)).toEqual(before);
+	});
+
+	it("acknowledges other events and does nothing", async () => {
+		const { t } = await filled();
+		const full = await snapshot(t);
+		for (const type of ["user.created", "user.updated", "session.ended"]) {
+			const res = await t.fetch(
+				"/clerk/webhook",
+				signed({ type, data: { id: ALICE.subject } }),
+			);
+			expect(res.status, type).toBe(200);
+		}
+		expect(await snapshot(t)).toEqual(full);
+	});
+
+	it("rejects bad, missing and stale signatures with no side effects", async () => {
+		const { t } = await filled();
+		const full = await snapshot(t);
+		const body = deleted(ALICE.subject);
+		const wrongSecret = signed(body, {
+			secret: randomSecret(),
+		});
+		const tampered = {
+			...signed(body),
+			body: JSON.stringify(deleted(BOB.subject)),
+		};
+		const unsigned = { method: "POST", body: JSON.stringify(body) };
+		const payload = JSON.stringify(body);
+		const old = new Date(Date.now() - 60 * 60 * 1000);
+		const stale = {
+			method: "POST",
+			headers: {
+				"svix-id": "msg_old",
+				"svix-timestamp": String(Math.floor(old.getTime() / 1000)),
+				"svix-signature": new Webhook(SECRET).sign("msg_old", old, payload),
+			},
+			body: payload,
+		};
+		for (const [name, init] of Object.entries({
+			wrongSecret,
+			tampered,
+			unsigned,
+			stale,
+		})) {
+			const res = await t.fetch("/clerk/webhook", init);
+			expect(res.status, name).toBe(401);
+		}
+		expect(await snapshot(t)).toEqual(full);
+	});
+
+	it("refuses every delivery while the secret is not configured", async () => {
+		const { t } = await filled();
+		const full = await snapshot(t);
+		vi.stubEnv("CLERK_WEBHOOK_SECRET", "");
+		const res = await t.fetch("/clerk/webhook", signed(deleted(ALICE.subject)));
+		expect(res.status).toBe(500);
+		expect(await snapshot(t)).toEqual(full);
 	});
 });
 

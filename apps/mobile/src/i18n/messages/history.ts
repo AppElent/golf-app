@@ -189,11 +189,31 @@ export const profileEn = {
 	exportData: "Export my data",
 	exportError: "Export failed. Check your connection and try again.",
 	deleteAccount: "Delete account",
-	deleteTitle: "Delete your account?",
-	deleteMessage:
-		"Your rounds, scores, shots, clubs and settings are deleted, then your sign-in. This can't be undone.",
-	deleteConfirm: "Delete account",
-	deleteError: "Account not deleted. Check your connection and try again.",
+	deleteIntro:
+		"Gather, Foundry, Fairway and Arcade Club share one AppElent login. Choose what to delete.",
+	deleteAppOnly: "Delete Fairway data only",
+	deleteAppOnlyHint:
+		"Your rounds, scores, shots, clubs, settings, course copies and suggestions are deleted, and you're signed out on this phone. Your AppElent login stays, so Gather, Foundry and Arcade Club keep working.",
+	deleteWhole: "Delete my whole AppElent account",
+	deleteWholeHint:
+		"Also deletes your AppElent login and your data in Gather, Foundry, Fairway and Arcade Club. You can't sign in to any of them with it again.",
+	deleteAppTitle: "Delete your Fairway data?",
+	deleteAppMessage:
+		"Your Fairway data is deleted and you're signed out here. Your login keeps working in the other AppElent apps. This can't be undone.",
+	deleteAppConfirm: "Delete Fairway data",
+	deleteWholeTitle: "Delete your whole AppElent account?",
+	deleteWholeMessage:
+		"Your AppElent login and your data in Gather, Foundry, Fairway and Arcade Club are deleted. This can't be undone.",
+	deleteWholeConfirm: "Delete AppElent account",
+	deleteAppDoneTitle: "Your Fairway data is deleted",
+	deleteAppDoneMessage:
+		"Your AppElent login still works in Gather, Foundry and Arcade Club. Signing in here again starts a fresh, empty Fairway profile.",
+	deleteError:
+		"Couldn't finish deleting your Fairway data. Your login wasn't touched. Check your connection and try again.",
+	deleteSignOutError:
+		"Your Fairway data is deleted, but signing out failed. Sign out to finish.",
+	deleteLoginError:
+		"Your Fairway data is deleted, but your AppElent login isn't. Try again to finish.",
 	saveError: "Not saved. Check your connection and try again.",
 	version: "Version {v}",
 	noUpdate: "no update",
@@ -236,12 +256,31 @@ export const profileNl: typeof profileEn = {
 	exportError:
 		"Exporteren mislukt. Controleer je verbinding en probeer opnieuw.",
 	deleteAccount: "Account verwijderen",
-	deleteTitle: "Je account verwijderen?",
-	deleteMessage:
-		"Je rondes, scores, slagen, clubs en instellingen worden verwijderd, daarna je login. Dit kan niet ongedaan worden.",
-	deleteConfirm: "Account verwijderen",
+	deleteIntro:
+		"Gather, Foundry, Fairway en Arcade Club delen één AppElent-login. Kies wat je wilt verwijderen.",
+	deleteAppOnly: "Alleen Fairway-gegevens verwijderen",
+	deleteAppOnlyHint:
+		"Je rondes, scores, slagen, clubs, instellingen, baankopieën en suggesties worden verwijderd en je wordt op deze telefoon uitgelogd. Je AppElent-login blijft, dus Gather, Foundry en Arcade Club blijven werken.",
+	deleteWhole: "Mijn hele AppElent-account verwijderen",
+	deleteWholeHint:
+		"Verwijdert ook je AppElent-login en je gegevens in Gather, Foundry, Fairway en Arcade Club. Je kunt daarna bij geen van deze apps meer inloggen met deze login.",
+	deleteAppTitle: "Je Fairway-gegevens verwijderen?",
+	deleteAppMessage:
+		"Je Fairway-gegevens worden verwijderd en je wordt hier uitgelogd. Je login blijft werken in de andere AppElent-apps. Dit kan niet ongedaan worden.",
+	deleteAppConfirm: "Fairway-gegevens verwijderen",
+	deleteWholeTitle: "Je hele AppElent-account verwijderen?",
+	deleteWholeMessage:
+		"Je AppElent-login en je gegevens in Gather, Foundry, Fairway en Arcade Club worden verwijderd. Dit kan niet ongedaan worden.",
+	deleteWholeConfirm: "AppElent-account verwijderen",
+	deleteAppDoneTitle: "Je Fairway-gegevens zijn verwijderd",
+	deleteAppDoneMessage:
+		"Je AppElent-login werkt nog in Gather, Foundry en Arcade Club. Log je hier opnieuw in, dan begin je met een nieuw, leeg Fairway-profiel.",
 	deleteError:
-		"Account niet verwijderd. Controleer je verbinding en probeer opnieuw.",
+		"Je Fairway-gegevens zijn niet helemaal verwijderd. Je login is niet aangeraakt. Controleer je verbinding en probeer opnieuw.",
+	deleteSignOutError:
+		"Je Fairway-gegevens zijn verwijderd, maar uitloggen is mislukt. Log uit om het af te ronden.",
+	deleteLoginError:
+		"Je Fairway-gegevens zijn verwijderd, maar je AppElent-login niet. Probeer opnieuw om het af te ronden.",
 	saveError: "Niet opgeslagen. Controleer je verbinding en probeer opnieuw.",
 	version: "Versie {v}",
 	noUpdate: "geen update",

@@ -63,6 +63,21 @@ export const ENTRIES = [
 		},
 	},
 
+	{
+		key: "clerkWebhookSecret",
+		infisicalKey: "clerk-webhook-secret",
+		description:
+			"Svix signing secret (`whsec_`) of the Clerk `user.deleted` webhook endpoint `<convex site>/clerk/webhook`. Without it the route refuses every delivery. Production waits for Eric's go.",
+		optional: true,
+		secret: true,
+		lands: {
+			"convex-functions": {
+				name: "CLERK_WEBHOOK_SECRET",
+				environments: ["local", "production"],
+			},
+		},
+	},
+
 	// ---------- Convex ----------
 	{
 		key: "convexUrl",
