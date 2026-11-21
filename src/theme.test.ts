@@ -159,19 +159,20 @@ describe.each(Object.entries(THEMES))("%s theme", (_name, theme) => {
 	});
 });
 
+describe.each(Object.entries(THEMES))("%s control edges", (_name, theme) => {
+	// APP-276: light reaches the target too; see DESIGN_SYSTEM.md, Contrast.
+	it("reach 3:1 against the field and the ground around it", () => {
+		const edge = color(theme, "control-line");
+		for (const ground of ["field", "surface", "canvas"]) {
+			expect(ratio(edge, color(theme, ground))).toBeGreaterThanOrEqual(3);
+		}
+	});
+});
+
 describe("dark theme", () => {
 	it("darkens the app column", () => {
 		expect(luminance(color(dark, "canvas"))).toBeLessThan(0.05);
 		expect(luminance(color(dark, "surface"))).toBeLessThan(0.05);
-	});
-
-	// Light mode keeps its existing field edge (APP-191: light looks
-	// unchanged); see DESIGN_SYSTEM.md, Contrast.
-	it("field edges reach 3:1 against the field and the ground around it", () => {
-		const edge = color(dark, "control-line");
-		for (const ground of ["field", "surface", "canvas"]) {
-			expect(ratio(edge, color(dark, ground))).toBeGreaterThanOrEqual(3);
-		}
 	});
 
 	// Clerk draws links and its primary button label from these variables.

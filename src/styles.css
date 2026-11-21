@@ -15,9 +15,10 @@
 	/* bar: the bottom tab bar */
 	--color-bar: rgb(255 255 255 / 0.9);
 	--color-card-line: #e9e2d2;
-	/* control-line: the edge of a field. Light keeps the card line; dark
-	   strengthens it to 3:1 against the field and the ground around it. */
-	--color-control-line: #e9e2d2;
+	/* control-line: the edge of a field, button or toggle. It reaches 3:1
+	   against the field and the ground around it in both themes (light
+	   #80877f, dark #6b7a71); a card keeps the quieter card-line. */
+	--color-control-line: #80877f;
 	/* cream: text on pine fills; not themed */
 	--color-cream: #f3efe4;
 	/* greens */
