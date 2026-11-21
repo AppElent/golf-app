@@ -200,6 +200,14 @@ describe("dark theme", () => {
 		).toBeGreaterThanOrEqual(4.5);
 	});
 
+	it("swaps in a dark-card logo that exists in public/", () => {
+		const m = clerk.match(/logoImageUrl: "(\/[\w.-]+)"/);
+		if (!m) throw new Error("logoImageUrl not set");
+		expect(() =>
+			readFileSync(join(import.meta.dirname, "../public", m[1])),
+		).not.toThrow();
+	});
+
 	it("leaves the brand fills and map colours alone", () => {
 		for (const token of Object.keys(darkOverrides)) {
 			expect(token).not.toMatch(
