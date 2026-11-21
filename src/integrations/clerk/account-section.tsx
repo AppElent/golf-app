@@ -1,8 +1,9 @@
 import { useClerk, useReverification, useUser } from "@clerk/react";
 import { deleteInBatches } from "@fairway/core/account-deletion";
 import { useMutation } from "convex/react";
-import { useEffect, useId, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { api } from "../../../convex/_generated/api";
+import { ConfirmPanel } from "../../components/ConfirmPanel";
 import { CONTROL } from "../../components/classes";
 import { Section } from "../../components/Page";
 import { forgetDataDeleted, rememberDataDeleted } from "./data-deleted-notice";
@@ -62,17 +63,8 @@ export function AccountSection() {
 	const email = user?.primaryEmailAddress?.emailAddress;
 
 	const deleteButton = useRef<HTMLButtonElement>(null);
-	const cancelButton = useRef<HTMLButtonElement>(null);
-	const moveFocus = useRef(false);
-	const titleId = useId();
-	useEffect(() => {
-		if (!moveFocus.current) return;
-		moveFocus.current = false;
-		(step === "closed" ? deleteButton : cancelButton).current?.focus();
-	}, [step]);
 
 	function goTo(next: Step) {
-		moveFocus.current = true;
 		setStep(next);
 		setFailed(null);
 	}
@@ -152,85 +144,57 @@ export function AccountSection() {
 				{busy === "signing-out" ? "Signing out…" : "Sign out"}
 			</button>
 			{step === "choose" ? (
-				<section
-					aria-labelledby={titleId}
-					className="mt-3 rounded-2xl border border-flag/40 bg-flag/5 p-4"
+				<ConfirmPanel
+					title="What do you want to delete?"
+					description="Gather, Foundry, Fairway and Arcade Club share one AppElent login."
+					onCancel={() => goTo("closed")}
+					disabled={disabled}
+					returnFocusTo={deleteButton}
+					className="mt-3"
 				>
-					<p id={titleId} className="text-label font-semibold text-ink">
-						What do you want to delete?
-					</p>
-					<p className="mt-1 text-label text-moss">
-						Gather, Foundry, Fairway and Arcade Club share one AppElent login.
-					</p>
-					<div className="mt-3 flex flex-col gap-2">
-						<button
-							type="button"
-							disabled={disabled}
-							onClick={() => goTo("app")}
-							className={optionClass}
-						>
-							<span className="block font-display text-callout font-semibold text-flag-ink">
-								Delete Fairway data only
-							</span>
-							<span className="mt-0.5 block text-label text-moss">
-								Your rounds, scores, clubs and course copies go. Your login
-								stays, so your other AppElent apps keep working.
-							</span>
-						</button>
-						<button
-							type="button"
-							disabled={disabled}
-							onClick={() => goTo("account")}
-							className={optionClass}
-						>
-							<span className="block font-display text-callout font-semibold text-flag-ink">
-								Delete my whole AppElent account
-							</span>
-							<span className="mt-0.5 block text-label text-moss">
-								Also deletes your login and your data in Gather, Foundry,
-								Fairway and Arcade Club.
-							</span>
-						</button>
-						<button
-							ref={cancelButton}
-							type="button"
-							disabled={disabled}
-							onClick={() => goTo("closed")}
-							className="rounded-full border border-control-line px-4 py-3 font-display text-callout font-semibold text-ink disabled:opacity-40"
-						>
-							Cancel
-						</button>
-					</div>
-				</section>
+					<button
+						type="button"
+						disabled={disabled}
+						onClick={() => goTo("app")}
+						className={optionClass}
+					>
+						<span className="block font-display text-callout font-semibold text-flag-ink">
+							Delete Fairway data only
+						</span>
+						<span className="mt-0.5 block text-label text-moss">
+							Your rounds, scores, clubs and course copies go. Your login stays,
+							so your other AppElent apps keep working.
+						</span>
+					</button>
+					<button
+						type="button"
+						disabled={disabled}
+						onClick={() => goTo("account")}
+						className={optionClass}
+					>
+						<span className="block font-display text-callout font-semibold text-flag-ink">
+							Delete my whole AppElent account
+						</span>
+						<span className="mt-0.5 block text-label text-moss">
+							Also deletes your login and your data in Gather, Foundry, Fairway
+							and Arcade Club.
+						</span>
+					</button>
+				</ConfirmPanel>
 			) : step === "app" || step === "account" ? (
-				<section
-					aria-labelledby={titleId}
-					className="mt-3 rounded-2xl border border-flag/40 bg-flag/5 p-4"
-				>
-					<p id={titleId} className="text-label font-semibold text-ink">
-						{CONFIRM[step].title}
-					</p>
-					<p className="mt-1 text-label text-moss">{CONFIRM[step].body}</p>
-					<div className="mt-3 flex gap-2">
-						<button
-							type="button"
-							disabled={disabled}
-							onClick={() => onDelete(step)}
-							className="flex-1 rounded-full bg-flag px-4 py-3 font-display text-callout font-bold text-white disabled:opacity-40"
-						>
-							{busy === "deleting" ? CONFIRM[step].busy : CONFIRM[step].action}
-						</button>
-						<button
-							ref={cancelButton}
-							type="button"
-							disabled={disabled}
-							onClick={() => goTo("closed")}
-							className="rounded-full border border-control-line px-4 py-3 font-display text-callout font-semibold text-ink disabled:opacity-40"
-						>
-							Cancel
-						</button>
-					</div>
-				</section>
+				<ConfirmPanel
+					key={step}
+					title={CONFIRM[step].title}
+					description={CONFIRM[step].body}
+					confirmLabel={
+						busy === "deleting" ? CONFIRM[step].busy : CONFIRM[step].action
+					}
+					onConfirm={() => onDelete(step)}
+					onCancel={() => goTo("closed")}
+					disabled={disabled}
+					returnFocusTo={deleteButton}
+					className="mt-3"
+				/>
 			) : (
 				<button
 					ref={deleteButton}
