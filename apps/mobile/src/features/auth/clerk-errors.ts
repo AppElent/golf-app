@@ -41,7 +41,8 @@ const CODE_MAP: Record<string, AuthErrorKey> = {
 	form_password_validation_failed: "passwordWeak",
 	form_password_not_strong_enough: "passwordWeak",
 	form_code_incorrect: "codeIncorrect",
-	verification_failed: "codeIncorrect",
+	// Too many wrong codes: this code is spent, a new one works (APP-527).
+	verification_failed: "codeAttemptsExceeded",
 	verification_expired: "codeExpired",
 	form_param_format_invalid: "emailInvalid",
 	form_param_nil: "required",
