@@ -1,0 +1,41 @@
+{
+  "$comment": "Labels the store-screenshots flow taps or waits for, per language (developer-home scripts/store-screenshots.mjs passes them with maestro -e). Words come from apps/mobile/src/i18n/messages/{common,start,play,history}.ts; L_TAB_BAR is the tab bar's accessibility name; L_BACK is the system back button; L_ALLOW is iOS's location prompt button; L_COURSE is the demo course the account's rounds are on.",
+  "languages": {
+    "en": {
+      "L_TAB_BAR": "Tab Bar",
+      "L_ROUNDS": "Rounds",
+      "L_STATS": "Stats",
+      "L_RECENT_ROUNDS": "Recent rounds",
+      "L_ROUND_IN_PROGRESS": "Round in progress",
+      "L_MARK_SHOT": "Mark shot",
+      "L_OFF_HOLE": "Not on this hole — distances from the tee",
+      "L_NO_GPS": "No GPS — distances from the tee",
+      "L_ALLOW": "Allow While Using App",
+      "L_SCORECARD": "Scorecard",
+      "L_DONE": "Done",
+      "L_CLOSE": "Close",
+      "L_DETAIL_SCORE": "Differential",
+      "L_AVERAGES": "Averages",
+      "L_BACK": "Back",
+      "L_COURSE": "De Oosterhoutse Golf Club"
+    },
+    "nl": {
+      "L_TAB_BAR": "Tabbladbalk",
+      "L_ROUNDS": "Rondes",
+      "L_STATS": "Statistieken",
+      "L_RECENT_ROUNDS": "Recente rondes",
+      "L_ROUND_IN_PROGRESS": "Ronde bezig",
+      "L_MARK_SHOT": "Slag markeren",
+      "L_OFF_HOLE": "Niet op deze hole — afstanden vanaf de tee",
+      "L_NO_GPS": "Geen GPS — afstanden vanaf de tee",
+      "L_ALLOW": "Bij gebruik van app",
+      "L_SCORECARD": "Scorekaart",
+      "L_DONE": "Klaar",
+      "L_CLOSE": "Sluiten",
+      "L_DETAIL_SCORE": "Differential",
+      "L_AVERAGES": "Gemiddelden",
+      "L_BACK": "Vorige",
+      "L_COURSE": "De Oosterhoutse Golf Club"
+    }
+  }
+}

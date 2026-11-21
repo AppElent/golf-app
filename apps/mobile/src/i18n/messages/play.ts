@@ -71,7 +71,7 @@ export const playNl: typeof playEn = {
 	back: "Achter",
 	greenView: "Greenweergave",
 	holeView: "Holeweergave",
-	scoreHole: "Score hole {n}",
+	scoreHole: "Score hole {n} invoeren",
 	noGps: "Geen GPS — afstanden vanaf de tee",
 	offHole: "Niet op deze hole — afstanden vanaf de tee",
 	hazards: "Hindernissen",
