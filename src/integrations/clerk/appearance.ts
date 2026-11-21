@@ -25,8 +25,11 @@ export function usePrefersDark(): boolean {
  * Clerk also draws its links ("Sign up", "Forgot password?") in colorPrimary,
  * so the primary is the mint pine-ink text colour, not the pine-fill button
  * fill (2.80:1 on the card); src/theme.test.ts checks these pairs.
+ * The dashboard logo is dark on transparent and disappears on the dark card,
+ * so dark mode swaps in the mint lockup from public/ (scripts/brand/make-icons.mjs).
  */
 export const DARK_APPEARANCE = {
+	layout: { logoImageUrl: "/fairway-logo-dark.png" },
 	variables: {
 		colorBackground: "var(--color-surface)",
 		colorForeground: "var(--color-ink)",
