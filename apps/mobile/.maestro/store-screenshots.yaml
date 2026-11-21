@@ -105,7 +105,3 @@ appId: com.appelent.fairway.dev
 - waitForAnimationToEnd:
     timeout: 5000
 - takeScreenshot: 05-round
-- scroll
-- waitForAnimationToEnd:
-    timeout: 5000
-- takeScreenshot: 06-round-scorecard

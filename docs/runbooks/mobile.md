@@ -359,9 +359,9 @@ the reviewer for every Appelent app: recreate it before the next submission.
 
 #### Store screenshots
 
-`node scripts/store-screenshots.mjs --issue APP-433 --name fairway` (synced from
-developer-home; [mobile run](../standards/mobile-run.md#store-screenshots)) makes the
-iPhone 6.9" and iPad 13" sets in en-US and nl-NL under
+`node scripts/store-screenshots.mjs --issue APP-433 --name fairway --devices iphone`
+(synced from developer-home; [mobile run](../standards/mobile-run.md#store-screenshots))
+makes the iPhone 6.9" set in en-US and nl-NL under
 `~/Developer/.screenshots/APP-433/fairway/`. It drives
 `apps/mobile/.maestro/store-screenshots.yaml` on the dev client, with the labels
 of `store-screenshots.json`. It needs:
@@ -382,14 +382,15 @@ of `store-screenshots.json`. It needs:
 - The flow only reads. The simulator location is set on hole 5 with Maestro's
   `setLocation`, so the live distances show.
 
-The set is the home screen, the live hole, the live scorecard, stats, a finished
-round and its scorecard. The course picker and round setup are not in it: with a
-round in progress they show "A round is in progress".
+Fairway is iPhone-only (`supportsTablet: false`), so there is no iPad set and the
+store does not ask for one: always pass `--devices iphone`. The set is the home
+screen, the live hole, the live scorecard, stats and a finished round. The course
+picker and round setup are not in it: with a round in progress they show "A round is
+in progress".
 
 Store screenshots are 1320×2868 (iPhone 6.9"), one set per locale. Upload with
 `asc screenshots upload --app 6833832527 --version <v> --locale <l> --path <dir> --device-type IPHONE_69`
-(`IPAD_PRO_3GEN_129` for the iPad 13" set) after reading the contact sheets; never
-`--replace` an existing set without Eric's go.
+after reading the contact sheets; never `--replace` an existing set without Eric's go.
 
 ## Runtime notes
 
