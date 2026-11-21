@@ -17,7 +17,7 @@ import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { canSee } from "./courses";
-import { getUserId } from "./lib";
+import { getOptionalUserId, getUserId } from "./lib";
 import { upsertSettings } from "./settings";
 import { roundFormat, scoreUpdateFields } from "./validators";
 
@@ -127,11 +127,21 @@ function perCourse<T>(load: (courseId: Id<"courses">) => Promise<T>) {
 	};
 }
 
+/** The round, if it is the signed-in user's; `null` when it is gone (deleted
+ *  while a screen still subscribes), someone else's, or nobody is signed in.
+ *  For read queries; writes use `requireOwnRound`. */
+export async function findOwnRound(ctx: QueryCtx, roundId: Id<"rounds">) {
+	const userId = await getOptionalUserId(ctx);
+	if (!userId) return null;
+	const round = await ctx.db.get(roundId);
+	return round && round.userId === userId ? round : null;
+}
+
 /** The round, if it is the signed-in user's. */
 export async function requireOwnRound(ctx: QueryCtx, roundId: Id<"rounds">) {
-	const userId = await getUserId(ctx);
-	const round = await ctx.db.get(roundId);
-	if (!round || round.userId !== userId) throw new Error("Round not found.");
+	await getUserId(ctx);
+	const round = await findOwnRound(ctx, roundId);
+	if (!round) throw new Error("Round not found.");
 	return round;
 }
 
@@ -249,7 +259,8 @@ export const start = mutation({
 export const lastTee = query({
 	args: { courseId: v.id("courses") },
 	handler: async (ctx, { courseId }) => {
-		const userId = await getUserId(ctx);
+		const userId = await getOptionalUserId(ctx);
+		if (!userId) return null;
 		// Newest first: a round is inserted when it starts.
 		const round = await ctx.db
 			.query("rounds")
@@ -272,7 +283,8 @@ export const lastTee = query({
 export const active = query({
 	args: {},
 	handler: async (ctx) => {
-		const userId = await getUserId(ctx);
+		const userId = await getOptionalUserId(ctx);
+		if (!userId) return null;
 		const round = await findActiveRound(ctx, userId);
 		return round ? assembleRound(ctx, round) : null;
 	},
@@ -282,7 +294,8 @@ export const active = query({
 export const activeSimulation = query({
 	args: {},
 	handler: async (ctx) => {
-		const userId = await getUserId(ctx);
+		const userId = await getOptionalUserId(ctx);
+		if (!userId) return null;
 		const round = await findSimulation(ctx, userId);
 		return round ? assembleRound(ctx, round) : null;
 	},
@@ -468,7 +481,8 @@ export const finish = mutation({
 export const history = query({
 	args: { limit: v.optional(v.number()) },
 	handler: async (ctx, { limit }) => {
-		const userId = await getUserId(ctx);
+		const userId = await getOptionalUserId(ctx);
+		if (!userId) return [];
 		const rounds = await finishedRounds(ctx, userId, limit);
 		const holesOf = perCourse((courseId) => courseHoles(ctx, courseId));
 		const nameOf = perCourse(
@@ -502,10 +516,8 @@ export const history = query({
 export const detail = query({
 	args: { roundId: v.id("rounds") },
 	handler: async (ctx, { roundId }) => {
-		const userId = await getUserId(ctx);
-		const round = await ctx.db.get(roundId);
-		if (!round || round.userId !== userId) return null;
-		return assembleRound(ctx, round);
+		const round = await findOwnRound(ctx, roundId);
+		return round ? assembleRound(ctx, round) : null;
 	},
 });
 
@@ -525,7 +537,8 @@ export const remove = mutation({
 export const holeResults = query({
 	args: { limit: v.optional(v.number()) },
 	handler: async (ctx, { limit }) => {
-		const userId = await getUserId(ctx);
+		const userId = await getOptionalUserId(ctx);
+		if (!userId) return [];
 		const rounds = await finishedRounds(ctx, userId, limit);
 		const holesOf = perCourse((courseId) => courseHoles(ctx, courseId));
 		const results: Array<{ par: number; strokes: number | null }> = [];

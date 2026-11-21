@@ -1,18 +1,15 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { getUserId } from "./lib";
-import {
-	assertHoleOfRound,
-	requireActiveRound,
-	requireOwnRound,
-} from "./rounds";
+import { getOptionalUserId, getUserId } from "./lib";
+import { assertHoleOfRound, findOwnRound, requireActiveRound } from "./rounds";
 import { latLng } from "./validators";
 
-/** Shots of one round, in marking order. */
+/** Shots of one round, in marking order; `null` when the round is gone,
+ *  someone else's, or nobody is signed in. */
 export const forRound = query({
 	args: { roundId: v.id("rounds") },
 	handler: async (ctx, { roundId }) => {
-		await requireOwnRound(ctx, roundId);
+		if (!(await findOwnRound(ctx, roundId))) return null;
 		const shots = await ctx.db
 			.query("shots")
 			.withIndex("by_round", (q) => q.eq("roundId", roundId))
@@ -25,7 +22,8 @@ export const forRound = query({
 export const mine = query({
 	args: {},
 	handler: async (ctx) => {
-		const userId = await getUserId(ctx);
+		const userId = await getOptionalUserId(ctx);
+		if (!userId) return [];
 		return await ctx.db
 			.query("shots")
 			.withIndex("by_user", (q) => q.eq("userId", userId))

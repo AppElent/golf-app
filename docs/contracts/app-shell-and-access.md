@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing sign-in, the web app shell, or who may read or write a user's data in Convex.
-version: 1.3.0
+version: 1.4.0
 status: current
 ---
 
@@ -59,9 +59,14 @@ signing in with Clerk.
   (`src/integrations/convex/provider.tsx`). `convex/auth.config.ts` trusts the
   issuer in `CLERK_JWT_ISSUER_DOMAIN`, a Convex deployment variable. Which Clerk
   instance each environment uses is in the [deploy runbook](../runbooks/deploy.md#auth).
-- **Ownership:** every per-user Convex function calls `getUserId`
-  (`convex/lib.ts`) and checks that the caller owns each document it reads or
-  writes.
+- **Ownership:** every per-user Convex function checks that the caller owns
+  each document it reads or writes. Mutations call `getUserId`
+  (`convex/lib.ts`) and throw without a session. Read queries a live screen
+  subscribes to call `getOptionalUserId` and answer empty (`[]`, `null`, or
+  default settings) without a session, and `null` for a round that is gone or
+  someone else's (`findOwnRound`), because Convex re-runs subscriptions
+  without an identity when the Clerk token lapses and a play screen can
+  outlive a discarded round (APP-249).
 - **Admin-only functions:** seeds and the course catalog sync are internal
   functions, callable only with an admin key. Catalog courses are read-only to
   users ([course catalog](../runbooks/course-catalog.md#users)).

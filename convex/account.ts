@@ -8,7 +8,7 @@ import {
 	type QueryCtx,
 	query,
 } from "./_generated/server";
-import { getUserId } from "./lib";
+import { getOptionalUserId, getUserId } from "./lib";
 import {
 	type CatalogIds,
 	childTables,
@@ -26,7 +26,7 @@ import {
  */
 export const viewer = query({
 	args: {},
-	handler: async (ctx) => (await ctx.auth.getUserIdentity())?.subject ?? null,
+	handler: (ctx) => getOptionalUserId(ctx),
 });
 
 /**

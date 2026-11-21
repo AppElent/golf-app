@@ -1,11 +1,12 @@
 import { v } from "convex/values";
 import { mutation, query } from "./_generated/server";
-import { getUserId } from "./lib";
+import { getOptionalUserId, getUserId } from "./lib";
 
 export const list = query({
 	args: {},
 	handler: async (ctx) => {
-		const userId = await getUserId(ctx);
+		const userId = await getOptionalUserId(ctx);
+		if (!userId) return [];
 		const clubs = await ctx.db
 			.query("clubs")
 			.withIndex("by_user", (q) => q.eq("userId", userId))

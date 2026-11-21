@@ -115,8 +115,9 @@ Project facts (identity, env, builds): [mobile runbook](docs/runbooks/mobile.md)
   and a final `check` step that fails the PR when one drops out of a
   fingerprint ([mobile runbook](docs/runbooks/mobile.md#runtime-fingerprint-check)).
 - **Not yet migrated** (differences from shared standards, to be agreed or fixed):
-  - [Convex backend](docs/standards/convex.md): the auth helper is `getUserId`
-    in `convex/lib.ts`, not `convex/lib/auth.ts`; public functions declare no
+  - [Convex backend](docs/standards/convex.md): the auth helpers are `getUserId`
+    (the standard's `requireUserId`) and `getOptionalUserId` in
+    `convex/lib.ts`, not `convex/lib/auth.ts`; public functions declare no
     `returns` validators; `ConvexError` codes are not typed against a shared
     catalog. `account:deleteMyData` walks the per-table registry
     (`convex/userData.ts`) in bounded batches and takes `expectedSubject`
