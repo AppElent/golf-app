@@ -1,0 +1,111 @@
+# App Store screenshots (APP-558). Run by developer-home
+# scripts/store-screenshots.mjs from the repo root:
+#   node scripts/store-screenshots.mjs --issue APP-433 --name fairway
+# It sets the language, light appearance and 9:41 status bar, launches the dev
+# client against Metro and passes the L_* labels for the language with -e
+# (.maestro/store-screenshots.json). Screenshots land in --test-output-dir.
+#
+# The flow only reads. It needs a signed-in test account that already has the
+# demo data (convex seed:seedDummyData: three finished rounds and a round in
+# progress on hole 5 of the seeded course) and a Convex deployment with the
+# course catalog synced. See docs/runbooks/mobile.md, "Store screenshots".
+# The account signs in through the pre-filled dev login (pk_test_ keys with
+# EXPO_PUBLIC_TEST_USER_*); a reinstall keeps the Clerk session in the
+# keychain, so the sign-in button is tapped only when the sign-in screen is up.
+# The sign-in screen itself is never captured: it shows the test email.
+# Profile is never visited for the same reason.
+appId: com.appelent.fairway.dev
+---
+- extendedWaitUntil:
+    visible:
+      id: "sign-in-submit|home-summary"
+    timeout: 90000
+- runFlow:
+    when:
+      visible:
+        id: sign-in-submit
+    commands:
+      - tapOn:
+          id: sign-in-submit
+- extendedWaitUntil:
+    visible:
+      id: home-summary
+    timeout: 60000
+- extendedWaitUntil:
+    visible: ${L_RECENT_ROUNDS}
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 01-home
+
+# On hole 5 of the course: the live hole view with distances.
+- setLocation:
+    latitude: 51.61354
+    longitude: 4.87448
+- tapOn: "${L_ROUND_IN_PROGRESS}.*"
+# iOS asks once per install; the prompt can take a moment.
+- extendedWaitUntil:
+    visible: ${L_ALLOW}
+    timeout: 8000
+    optional: true
+- runFlow:
+    when:
+      visible: ${L_ALLOW}
+    commands:
+      - tapOn: ${L_ALLOW}
+- extendedWaitUntil:
+    visible: ${L_MARK_SHOT}
+    timeout: 30000
+- extendedWaitUntil:
+    notVisible: ${L_OFF_HOLE}
+    timeout: 30000
+- extendedWaitUntil:
+    notVisible: ${L_NO_GPS}
+    timeout: 30000
+- waitForAnimationToEnd:
+    timeout: 8000
+- takeScreenshot: 02-play
+
+- tapOn: ${L_SCORECARD}
+- extendedWaitUntil:
+    visible: ${L_DONE}
+    timeout: 15000
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 03-scorecard
+- tapOn: ${L_DONE}
+- tapOn: ${L_CLOSE}
+
+# The stats, then a finished round. The tab bar folds away once a screen
+# scrolls, so the round's scroll comes last.
+- tapOn:
+    text: ${L_STATS}
+    childOf:
+      text: ${L_TAB_BAR}
+- extendedWaitUntil:
+    visible: "${L_AVERAGES}.*"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 04-stats
+
+- tapOn:
+    text: ${L_ROUNDS}
+    childOf:
+      text: ${L_TAB_BAR}
+- extendedWaitUntil:
+    visible: "${L_COURSE}.*"
+    timeout: 20000
+- tapOn:
+    text: "${L_COURSE}.*"
+    index: 0
+- extendedWaitUntil:
+    visible: ".*${L_DETAIL_SCORE}.*"
+    timeout: 20000
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 05-round
+- scroll
+- waitForAnimationToEnd:
+    timeout: 5000
+- takeScreenshot: 06-round-scorecard

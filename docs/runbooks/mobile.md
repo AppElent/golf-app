@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when running, building, or releasing the Fairway mobile app (apps/mobile).
-version: 1.3.0
+version: 1.4.0
 ---
 
 # Mobile app (Fairway)
@@ -357,12 +357,39 @@ Profile links to the policy page (`src/routes/privacy.tsx`). Profile → Delete
 account deletes the shared Appelent Clerk user, so a review that tests it removes
 the reviewer for every Appelent app: recreate it before the next submission.
 
-Store screenshots are 1320×2868 (iPhone 6.9"), one set per locale. Take them on
-a Release simulator build of the dev variant with the display name set to
-"Fairway", seeded with a finished-rounds history and a round in progress, the
-status bar overridden to 9:41 with a full battery, and the location on the hole
-so live distances show. Upload with
-`asc screenshots upload --app 6833832527 --version <v> --locale <l> --path <dir> --device-type IPHONE_69`.
+#### Store screenshots
+
+`node scripts/store-screenshots.mjs --issue APP-433 --name fairway` (synced from
+developer-home; [mobile run](../standards/mobile-run.md#store-screenshots)) makes the
+iPhone 6.9" and iPad 13" sets in en-US and nl-NL under
+`~/Developer/.screenshots/APP-433/fairway/`. It drives
+`apps/mobile/.maestro/store-screenshots.yaml` on the dev client, with the labels
+of `store-screenshots.json`. It needs:
+
+- A dev client build of `com.appelent.fairway.dev`. The script looks in Xcode
+  DerivedData and `~/Developer/.builds/<checkout folder>/`; for a build elsewhere set
+  `RUN_MOBILE_APP=/path/FairwayDev.app`.
+- `apps/mobile/.env.local` with the dev-login credentials (the flow signs in with the
+  pre-filled form and never shows the sign-in screen or Profile, which carry the
+  test email).
+- A dev Convex deployment with the catalog synced (`pnpm courses:sync`) and the
+  demo data for the test user: three finished rounds and a round in progress on hole
+  5 of De Oosterhoutse. `seed:seedDummyData` is an internal action and
+  `convex run --identity` only runs public functions, so push a throwaway public
+  action that calls it with `ctx.runAction(internal.seed.seedDummyData, {})`, run
+  that with `--identity '{"subject":"user_…"}'`, then delete it again. A deployment
+  made by `node scripts/workspace.mjs prepare` is disposable and fits.
+- The flow only reads. The simulator location is set on hole 5 with Maestro's
+  `setLocation`, so the live distances show.
+
+The set is the home screen, the live hole, the live scorecard, stats, a finished
+round and its scorecard. The course picker and round setup are not in it: with a
+round in progress they show "A round is in progress".
+
+Store screenshots are 1320×2868 (iPhone 6.9"), one set per locale. Upload with
+`asc screenshots upload --app 6833832527 --version <v> --locale <l> --path <dir> --device-type IPHONE_69`
+(`IPAD_PRO_3GEN_129` for the iPad 13" set) after reading the contact sheets; never
+`--replace` an existing set without Eric's go.
 
 ## Runtime notes
 
