@@ -28,7 +28,8 @@ signing in with Clerk.
     caller's `expectedSubject`, repeated until it returns `done`, then that
     account's leftover web score queue (`fairway.scoreQueue:<userId>` in
     localStorage, written by the round screens retired in APP-235; phone: the
-    last-known copy), then sign-out on this device. The Clerk user and any
+    last-known copy), then sign-out on this device (web: to the gated
+    `/profile`, since the public `/` has no sign-in card). The Clerk user and any
     Apple grant are untouched, no tombstone is kept, and a one-time notice
     (phone: an alert) confirms that the login still works in the other apps.
     Signing in again starts an empty profile.

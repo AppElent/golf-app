@@ -47,8 +47,9 @@ const CONFIRM: Record<
 
 /** Who is signed in, the web's sign-out (features.ts `sign-out`) and account
  *  deletion (`account-deletion`). Clerk ends the session and sends the tab to
- *  `afterSignOutUrl`, or drops it when the user is deleted; either way
- *  `AuthGate` then shows the sign-in card. */
+ *  `afterSignOutUrl` (`/`), to `/profile` after "Fairway data only" (the
+ *  public `/` has no sign-in card for the notice), or drops it when the user
+ *  is deleted; on a protected path `AuthGate` then shows the sign-in card. */
 export function AccountSection() {
 	const { user } = useUser();
 	const { signOut } = useClerk();
