@@ -34,23 +34,6 @@ vi.mock("convex/react", () => ({
 
 import { AccountSection } from "./account-section";
 
-const QUEUE = "fairway.scoreQueue:user_golfer";
-
-/** This jsdom has no working localStorage; a Map stands in for it. */
-function memoryStorage(): Storage {
-	const items = new Map<string, string>();
-	return {
-		get length() {
-			return items.size;
-		},
-		key: (i) => [...items.keys()][i] ?? null,
-		getItem: (k) => items.get(k) ?? null,
-		setItem: (k, v) => void items.set(k, String(v)),
-		removeItem: (k) => void items.delete(k),
-		clear: () => items.clear(),
-	};
-}
-
 beforeEach(() => {
 	vi.clearAllMocks();
 	mocks.email = "golfer@example.com";
@@ -58,10 +41,6 @@ beforeEach(() => {
 	mocks.deleteMyData.mockResolvedValue({ done: true });
 	window.sessionStorage.clear();
 	mocks.deleteUser.mockResolvedValue(undefined);
-	Object.defineProperty(window, "localStorage", {
-		configurable: true,
-		value: memoryStorage(),
-	});
 });
 afterEach(cleanup);
 
@@ -140,7 +119,6 @@ describe("account deletion", () => {
 	});
 
 	it("cancelling at either step deletes nothing", () => {
-		window.localStorage.setItem(QUEUE, "[]");
 		render(<AccountSection />);
 		open();
 		fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
@@ -158,12 +136,10 @@ describe("account deletion", () => {
 		expect(mocks.deleteMyData).not.toHaveBeenCalled();
 		expect(mocks.deleteUser).not.toHaveBeenCalled();
 		expect(mocks.signOut).not.toHaveBeenCalled();
-		expect(window.localStorage.getItem(QUEUE)).toBe("[]");
 	});
 
 	describe("Fairway data only", () => {
 		it("deletes the data in batches, then signs out and keeps the Clerk user", async () => {
-			window.localStorage.setItem(QUEUE, "[]");
 			mocks.deleteMyData
 				.mockResolvedValueOnce({ done: false })
 				.mockResolvedValueOnce({ done: true });
@@ -188,7 +164,6 @@ describe("account deletion", () => {
 			);
 			// The login is shared with the other AppElent apps.
 			expect(mocks.deleteUser).not.toHaveBeenCalled();
-			expect(window.localStorage.getItem(QUEUE)).toBeNull();
 			// The sign-in card confirms it once.
 			expect(window.sessionStorage.getItem("fairway.dataDeleted")).toBe("1");
 		});
@@ -212,13 +187,9 @@ describe("account deletion", () => {
 	});
 
 	describe("whole AppElent account", () => {
-		it("deletes the app data, then the local queue, then the Clerk user", async () => {
-			window.localStorage.setItem(QUEUE, "[]");
-			window.localStorage.setItem("fairway.scoreQueue", "[]");
+		it("deletes the app data, then the Clerk user", async () => {
 			let finish = () => {};
 			mocks.deleteUser.mockImplementation(() => {
-				// The account's queue is gone before Clerk ends the session.
-				expect(window.localStorage.getItem(QUEUE)).toBeNull();
 				return new Promise<void>((resolve) => {
 					finish = resolve;
 				});
@@ -236,8 +207,6 @@ describe("account deletion", () => {
 				mocks.deleteUser.mock.invocationCallOrder[0],
 			);
 			expect(mocks.signOut).not.toHaveBeenCalled();
-			// The unclaimed queue is nobody's to delete.
-			expect(window.localStorage.getItem("fairway.scoreQueue")).toBe("[]");
 			// Nothing can start a second run, or sign out halfway.
 			expect(confirmButton().textContent).toBe("Deleting…");
 			expect((confirmButton() as HTMLButtonElement).disabled).toBe(true);
@@ -248,7 +217,6 @@ describe("account deletion", () => {
 		});
 
 		it("keeps the golfer signed in when the data cannot go", async () => {
-			window.localStorage.setItem(QUEUE, "[]");
 			mocks.deleteMyData.mockRejectedValueOnce(new Error("offline"));
 			render(<AccountSection />);
 			open();
@@ -260,7 +228,6 @@ describe("account deletion", () => {
 			);
 			expect(mocks.deleteUser).not.toHaveBeenCalled();
 			expect(mocks.signOut).not.toHaveBeenCalled();
-			expect(window.localStorage.getItem(QUEUE)).toBe("[]");
 			expect((confirmButton() as HTMLButtonElement).disabled).toBe(false);
 			await act(async () => fireEvent.click(confirmButton()));
 			expect(mocks.deleteUser).toHaveBeenCalledTimes(1);

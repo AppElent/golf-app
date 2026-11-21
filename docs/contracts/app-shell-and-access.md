@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing sign-in, the web app shell, or who may read or write a user's data in Convex.
-version: 1.4.0
+version: 1.4.1
 status: current
 ---
 
@@ -25,10 +25,8 @@ signing in with Clerk.
   account on the phone) first asks what to delete, because Gather, Foundry,
   Fairway and Arcade Club share one AppElent (Clerk) login (APP-392):
   - **Fairway data only** (listed first): `account.deleteMyData` with the
-    caller's `expectedSubject`, repeated until it returns `done`, then that
-    account's leftover web score queue (`fairway.scoreQueue:<userId>` in
-    localStorage, written by the round screens retired in APP-235; phone: the
-    last-known copy), then sign-out on this device (web: to the gated
+    caller's `expectedSubject`, repeated until it returns `done`, then (phone)
+    the last-known copy, then sign-out on this device (web: to the gated
     `/profile`, since the public `/` has no sign-in card). The Clerk user and any
     Apple grant are untouched, no tombstone is kept, and a one-time notice
     (phone: an alert) confirms that the login still works in the other apps.
@@ -53,6 +51,11 @@ signing in with Clerk.
 - **Retired paths:** `/play`, `/card`, `/rounds/new` and `/progress` answer a
   301 to `/` from the Worker (`src/server.ts`), before the app renders.
   `isPublicPath` matches them exactly (case-sensitive, trailing slashes ignored).
+- **Retired score queues:** on every page load the web client removes the
+  score queues the retired round screens left in localStorage
+  (`fairway.scoreQueue` and `fairway.scoreQueue:<userId>`, APP-235/APP-386),
+  for every account on that browser (`src/lib/storage/retired-score-queue.ts`).
+  Nothing reads them any more, so their unsent scores could never be sent.
 - **Theme:** dark mode follows the OS through a `prefers-color-scheme` media query
   in `src/styles.css`.
 - **Clerk ↔ Convex:** the web client uses `ConvexProviderWithClerk`
