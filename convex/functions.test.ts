@@ -63,12 +63,50 @@ async function startRound(
 }
 
 describe("auth", () => {
-	it("refuses per-user functions without a session", async () => {
+	it("refuses per-user writes without a session", async () => {
 		const t = convexTest(schema, modules);
-		await expect(t.query(api.rounds.active, {})).rejects.toThrow(
+		await expect(t.mutation(api.account.deleteMyData, {})).rejects.toThrow(
 			"Not signed in.",
 		);
-		await expect(t.mutation(api.account.deleteMyData, {})).rejects.toThrow(
+	});
+
+	it("answers live reads empty without a session, never another user's data", async () => {
+		// Convex re-runs a screen's subscriptions without an identity when the
+		// Clerk token lapses (APP-249): they answer empty rather than throw.
+		const { t, alice, course } = await setup();
+		const roundId = await startRound(alice, course);
+		await alice.mutation(api.clubs.create, { name: "7i", carryMeters: 150 });
+		await alice.mutation(api.shots.mark, {
+			roundId,
+			holeIndex: 0,
+			position: { lat: 51.6, lng: 4.87 },
+		});
+		await alice.mutation(api.settings.update, { units: "yd" });
+
+		expect(await t.query(api.rounds.active, {})).toBeNull();
+		expect(await t.query(api.rounds.activeSimulation, {})).toBeNull();
+		expect(await t.query(api.rounds.detail, { roundId })).toBeNull();
+		expect(
+			await t.query(api.rounds.lastTee, { courseId: course.course._id }),
+		).toBeNull();
+		expect(await t.query(api.rounds.history, {})).toEqual([]);
+		expect(await t.query(api.rounds.holeResults, {})).toEqual([]);
+		expect(await t.query(api.shots.forRound, { roundId })).toBeNull();
+		expect(await t.query(api.shots.mine, {})).toEqual([]);
+		expect(await t.query(api.clubs.list, {})).toEqual([]);
+		expect(await t.query(api.settings.get, {})).toEqual({
+			units: "m",
+			homeCourseId: null,
+			handicapIndex: null,
+		});
+		await expect(
+			t.mutation(api.shots.mark, {
+				roundId,
+				holeIndex: 0,
+				position: { lat: 51.6, lng: 4.87 },
+			}),
+		).rejects.toThrow("Not signed in.");
+		await expect(t.mutation(api.rounds.abandon, { roundId })).rejects.toThrow(
 			"Not signed in.",
 		);
 	});
@@ -275,6 +313,29 @@ describe("rounds", () => {
 		const active = await alice.query(api.rounds.active, {});
 		expect(active?.scores).toEqual([]);
 		expect(active?.round.currentHoleIndex).toBe(0);
+	});
+
+	it("answers a deleted round's reads with null, as a play screen still subscribed sees it", async () => {
+		const { alice, course } = await setup();
+		const roundId = await startRound(alice, course);
+		await alice.mutation(api.shots.mark, {
+			roundId,
+			holeIndex: 0,
+			position: { lat: 51.6, lng: 4.87 },
+		});
+		expect(await alice.query(api.shots.forRound, { roundId })).toHaveLength(1);
+		await alice.mutation(api.rounds.abandon, { roundId });
+
+		expect(await alice.query(api.shots.forRound, { roundId })).toBeNull();
+		expect(await alice.query(api.rounds.detail, { roundId })).toBeNull();
+		expect(await alice.query(api.rounds.active, {})).toBeNull();
+		await expect(
+			alice.mutation(api.shots.mark, {
+				roundId,
+				holeIndex: 0,
+				position: { lat: 51.6, lng: 4.87 },
+			}),
+		).rejects.toThrow("Round not found.");
 	});
 
 	it("hides one player's round from another", async () => {
@@ -650,9 +711,7 @@ describe("clubs and shots", () => {
 		await expect(bob.mutation(api.clubs.remove, { clubId })).rejects.toThrow(
 			"Club not found.",
 		);
-		await expect(bob.query(api.shots.forRound, { roundId })).rejects.toThrow(
-			"Round not found.",
-		);
+		expect(await bob.query(api.shots.forRound, { roundId })).toBeNull();
 		await expect(
 			bob.mutation(api.shots.setClub, { shotId, club: "PW" }),
 		).rejects.toThrow("Shot not found.");
@@ -1272,16 +1331,14 @@ describe("simulated rounds", () => {
 		expect(await alice.query(api.rounds.holeResults, {})).toEqual([]);
 	});
 
-	it("is private to its owner, and needs a session", async () => {
+	it("is private to its owner, and empty without a session", async () => {
 		const { t, alice, bob, course } = await setup();
 		const roundId = await startSimulation(alice, course);
 		expect(await bob.query(api.rounds.activeSimulation, {})).toBeNull();
 		await expect(bob.mutation(api.rounds.finish, { roundId })).rejects.toThrow(
 			"Round not found.",
 		);
-		await expect(t.query(api.rounds.activeSimulation, {})).rejects.toThrow(
-			"Not signed in.",
-		);
+		expect(await t.query(api.rounds.activeSimulation, {})).toBeNull();
 	});
 
 	it("shows the card length of the round's tee", async () => {

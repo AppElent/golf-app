@@ -7,7 +7,7 @@ import {
 	type QueryCtx,
 	query,
 } from "./_generated/server";
-import { getUserId } from "./lib";
+import { getOptionalUserId, getUserId } from "./lib";
 import { deleteRoundData } from "./rounds";
 
 /**
@@ -15,10 +15,6 @@ import { deleteRoundData } from "./rounds";
  * them) or are a user's own copy of one (`ownerId`, private, editable).
  * Corrections to the catalog go through `suggest`, not through edits.
  */
-
-async function viewerId(ctx: QueryCtx): Promise<string | null> {
-	return (await ctx.auth.getUserIdentity())?.subject ?? null;
-}
 
 /** The tables whose rows belong to one course: copied and deleted with it. */
 const COURSE_CHILD_TABLES = ["tees", "holes", "holeGeometry"] as const;
@@ -84,7 +80,7 @@ export async function deleteCourseData(
 export const list = query({
 	args: {},
 	handler: async (ctx) => {
-		const userId = await viewerId(ctx);
+		const userId = await getOptionalUserId(ctx);
 		const catalog = await ctx.db
 			.query("courses")
 			.withIndex("by_owner", (q) => q.eq("ownerId", undefined))
@@ -106,7 +102,7 @@ export const get = query({
 	args: { courseId: v.id("courses") },
 	handler: async (ctx, { courseId }) => {
 		const course = await ctx.db.get(courseId);
-		if (!course || !canSee(course, await viewerId(ctx))) return null;
+		if (!course || !canSee(course, await getOptionalUserId(ctx))) return null;
 		const [tees, holes, geometry] = await Promise.all([
 			ctx.db
 				.query("tees")
