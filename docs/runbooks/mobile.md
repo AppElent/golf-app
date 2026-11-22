@@ -374,11 +374,8 @@ of `store-screenshots.json`. It needs:
   test email).
 - A dev Convex deployment with the catalog synced (`pnpm courses:sync`) and the
   demo data for the test user: three finished rounds and a round in progress on hole
-  5 of De Oosterhoutse. `seed:seedDummyData` is an internal action and
-  `convex run --identity` only runs public functions, so push a throwaway public
-  action that calls it with `ctx.runAction(internal.seed.seedDummyData, {})`, run
-  that with `--identity '{"subject":"user_…"}'`, then delete it again. A deployment
-  made by `node scripts/workspace.mjs prepare` is disposable and fits.
+  5 of De Oosterhoutse. Seed it through a throwaway public wrapper, as
+  [Local development](development.md) describes for `seed:seedDummyData`.
 - The flow only reads. The simulator location is set on hole 5 with Maestro's
   `setLocation`, so the live distances show.
 

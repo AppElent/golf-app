@@ -9,8 +9,8 @@ export async function getOptionalUserId(ctx: QueryCtx): Promise<string | null> {
 
 /** Signed-in Clerk user id. Every mutation goes through this, so an
  *  unauthenticated call fails instead of reading a shared fallback account.
- *  Seed per-user demo data with
- *  `pnpm exec convex run seed:seedDummyData --identity '{"subject":"user_…"}'`. */
+ *  Per-user demo data comes from the internal `seed:seedDummyData`; see
+ *  docs/runbooks/development.md for running it as a user. */
 export async function getUserId(ctx: QueryCtx): Promise<string> {
 	const userId = await getOptionalUserId(ctx);
 	if (!userId) throw new Error("Not signed in.");
