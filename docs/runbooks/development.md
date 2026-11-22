@@ -50,8 +50,14 @@ signs in as the Clerk development test user. Set `E2E_BASE_URL` (default
 in and out in a session of its own, so it never revokes the session the
 `desktop` and `phone` projects share; `--project=phone` alone skips it.
 
-Demo rounds for one user:
-`pnpm exec convex run seed:seedDummyData --identity '{"subject":"user_…"}'`.
+Demo rounds for one user: `seed:seedDummyData` seeds the user it runs as, but it
+is an internal action and `convex run --identity` only runs public functions, so
+it cannot be called directly. On a dev or worktree deployment (never
+production), push a throwaway public action that calls it with
+`ctx.runAction(internal.seed.seedDummyData, {})`, run that with
+`pnpm exec convex run <file>:<name> --identity '{"subject":"user_…"}'`, then
+delete the file and push again. A deployment made by
+`node scripts/workspace.mjs prepare` is disposable and fits.
 
 ## Environment
 
