@@ -80,7 +80,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
  */
 function AboveModals({ children }: { children: ReactNode }) {
 	if (Platform.OS !== "ios") return children;
-	return <FullWindowOverlay>{children}</FullWindowOverlay>;
+	// Not modal: VoiceOver must keep reaching the screen under a passing toast.
+	return (
+		<FullWindowOverlay unstable_accessibilityContainerViewIsModal={false}>
+			{children}
+		</FullWindowOverlay>
+	);
 }
 
 export function useToast() {
