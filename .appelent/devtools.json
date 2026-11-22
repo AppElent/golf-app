@@ -4,7 +4,7 @@
   "scope": "project",
   "ref": "main",
   "commit": "local",
-  "manifestHash": "c6615b3662ccbee1d6d16157c179056fcd8688a5b45c28905556c5a71a657260",
+  "manifestHash": "7377996d673333b5f592f444b464cc2f6ca43c1bd2244b24575758852ddd3ec3",
   "files": {
     "docs/adr/.template.md": {
       "sha256": "f28b286102fb1a00512455a06896e5da3c47d67a14b0ee6c08fa84258af24adf",
@@ -416,7 +416,7 @@
       "sha256": "49d9bd9d3f7e177f3d20d27f0f6e95306f563c37ac1cdf76bfcce684ed50961d"
     },
     "scripts/sync-devtools.mjs": {
-      "sha256": "5c4737a7256ea35823e86e3551f74a3bb4be6c299a278f414829a7445c68aede"
+      "sha256": "bd773fec548584e4cc82994b5ce9783cf86a223856c76a7e60df3424cd47c124"
     },
     "scripts/workspace.mjs": {
       "sha256": "4a913d63a48fdebb952f1939d4719cc1b3096534bddcea966771440caeeca587"
@@ -535,7 +535,7 @@
   },
   "blocks": {
     "AGENTS.md": "5dd11c522805ab3041f27582a641d667534c3594f06ab023a435219f3894dcea",
-    "CLAUDE.md": "3a539a9496d276ff97cbc761a98a6db988880a0939a61e78fb156b237927cb24",
+    "CLAUDE.md": "05ec656f72dec6d13b6d836753684ba24107ef1a96e0ee4e980a4df1ad8141a5",
     "CODING_STANDARDS.md": "8a08769df4117fca963cbd69f76e1d5f3329baced09289061082e1c413c96a9c",
     "DESIGN_SYSTEM.md": "0b84f92d183be259e69372bff87939bdedda2ed81c215f3c1214d02d7f83de9a"
   }
