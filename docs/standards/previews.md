@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when adding or changing pull-request preview deployments.
-version: 5.1.0
+version: 5.1.1
 applies_to: [web, backend]
 ---
 
@@ -21,7 +21,7 @@ A same-repository pull request labelled `preview:web` gets an isolated, disposab
 - The seed function is safe for a fresh disposable backend and never writes production resources.
 - Previews use the Clerk development instance, and the per-PR backend trusts its issuer ([environments](environments.md)). Test-user values still never reach them: `VITE_*` values are public in the bundle.
 - Only same-repository PRs deploy. Never switch to `pull_request_target` with an untrusted PR checkout to reach secrets. Review deploy-token permissions and branch trust.
-- Cleanup deletes the Convex preview first, then attempts the Worker steps on `!cancelled()`, so a failed backend delete does not skip the Worker delete. Previews count against the Convex team's deployment quota until deleted, and the apps sharing a team share that quota: leftovers fail every app's preview deploy. Idle expiry is not cleanup. Every cleanup run also sweeps: it deletes each preview `pr-<M>` whose PR is no longer open, so a preview an earlier cleanup missed goes at the next close. It reads open PRs after listing deployments, so a new PR's preview is never swept, and it never touches previews with other identifiers or any non-preview deployment. One known gap: removing the label mid-deploy cancels the deploy, but Convex may finish creating `pr-<N>` after cleanup listed; that preview idle-expires or is deleted from the dashboard.
+- Cleanup deletes the Convex preview first, then attempts the Worker steps on `!cancelled()`, so a failed backend delete does not skip the Worker delete. Previews count against the Convex team's deployment quota until deleted, and the apps sharing a team share that quota: leftovers fail every app's preview deploy. Idle expiry is not cleanup. Every cleanup run also sweeps: it deletes each preview `pr-<M>` whose PR is no longer open, so a preview an earlier cleanup missed goes at the next close. It reads open PRs after listing deployments, so a new PR's preview is never swept; right before deleting another PR's preview it checks that PR is still closed, so a just-reopened PR keeps it; and the check after deleting looks only at this run's deletions, so a PR closing meanwhile cannot fail it. It never touches previews with other identifiers or any non-preview deployment. One known gap: removing the label mid-deploy cancels the deploy, but Convex may finish creating `pr-<N>` after cleanup listed; that preview idle-expires or is deleted from the dashboard.
 - The Convex delete goes through the management API with `PREVIEW_CONVEX_DEPLOY_KEY`. It refuses a key without the `preview:` prefix, deletes only a deployment whose `deploymentType` is `preview` and whose `previewIdentifier` is `pr-<N>`, retries with connect and total timeouts, then lists again and fails if `pr-<N>` remains. The Convex step fails when the list is not exactly one JSON array, when a listed row has no string `deploymentType` or a preview has no string `previewIdentifier`, or when a matched name is not a plain deployment slug, so an API change cannot silently leak previews or send a stray delete. A run without the key skips it: a notice for Dependabot, a warning for anyone else. The Worker delete skips the same way without a Cloudflare token.
 
 ## Implementation

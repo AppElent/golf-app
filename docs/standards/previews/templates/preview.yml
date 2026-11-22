@@ -145,15 +145,24 @@ jobs:
             # always belongs to a PR opened before this read and is never
             # mistaken for a closed one.
             open=$(gh api "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" --paginate --jq '[.[].number]' | jq -s 'add // []') || return 1
-            # Each matched name must be a plain slug string before it is printed,
-            # so a null, empty or multi-line name can never reach the delete URL.
-            # A Convex naming change fails the step on purpose.
+            # Prints "<name> <previewIdentifier>" per match. Each matched name
+            # must be a plain slug string before it is printed, so a null, empty
+            # or multi-line name can never reach the delete URL. A Convex naming
+            # change fails the step on purpose.
             jq -r --arg p "$PREVIEW" --argjson open "$open" '
               def closed_pr: [.previewIdentifier | capture("\\Apr-(?<n>[0-9]+)\\z") | .n | tonumber]
                 | length == 1 and (.[0] as $n | any($open[]; . == $n) | not);
-              [.[] | select(.deploymentType == "preview" and (.previewIdentifier == $p or closed_pr)) | .name]
-              | if all(type == "string" and test("\\A[a-z0-9]+(-[a-z0-9]+)*\\z")) then .[]
+              [.[] | select(.deploymentType == "preview" and (.previewIdentifier == $p or closed_pr))
+                | {name, id: .previewIdentifier}]
+              | if all(.name | type == "string" and test("\\A[a-z0-9]+(-[a-z0-9]+)*\\z")) then .[] | "\(.name) \(.id)"
                 else error("unexpected Convex deployment name in \(.)") end' "$list"
+          }
+          # Names of this project's deployments that are still listed among $@.
+          still_listed() {
+            local list
+            list=$(mktemp)
+            api "$API/projects/$PROJECT_ID/list_deployments" -o "$list" || return 1
+            jq -r '[.[] | .name | select(. as $n | any($ARGS.positional[]; . == $n))] | .[]' "$list" --args "$@"
           }
           OUT=$(matches)
           if [ -z "$OUT" ]; then
@@ -162,20 +171,35 @@ jobs:
             echo "No Convex preview to delete for $PREVIEW or closed PRs."
             exit 0
           fi
-          NAMES=(); while IFS= read -r NAME; do NAMES+=("$NAME"); done <<< "$OUT"
-          for NAME in "${NAMES[@]}"; do
+          PAIRS=(); while IFS= read -r PAIR; do PAIRS+=("$PAIR"); done <<< "$OUT"
+          DELETED=()
+          for PAIR in "${PAIRS[@]}"; do
+            read -r NAME ID <<< "$PAIR"
+            # Another PR's preview: ask again right before deleting, so a PR
+            # reopened since the list keeps its preview. A failed read fails
+            # the step and deletes nothing more.
+            if [ "$ID" != "$PREVIEW" ]; then
+              STATE=$(gh api "repos/$GITHUB_REPOSITORY/pulls/${ID#pr-}" --jq .state)
+              if [ "$STATE" != "closed" ]; then
+                echo "Keeping Convex preview $NAME: PR ${ID#pr-} is $STATE."
+                continue
+              fi
+            fi
             # Retries cover 5xx and timeouts; a 404 means it is already gone.
             CODE=$("${CURL[@]}" -o /dev/null -w '%{http_code}' -X POST "$API/deployments/$NAME/delete") || CODE=000
             case "$CODE" in
-              2??) echo "Deleted Convex preview $NAME." ;;
-              404) echo "Convex preview $NAME was already gone." ;;
+              2??) echo "Deleted Convex preview $NAME ($ID)."; DELETED+=("$NAME") ;;
+              404) echo "Convex preview $NAME ($ID) was already gone." ;;
               *) echo "::error::Deleting Convex preview $NAME returned HTTP $CODE"; exit 1 ;;
             esac
           done
+          [ "${#DELETED[@]}" -eq 0 ] && exit 0
           # A delete that answered 2xx but left the preview behind still fills
-          # the quota; list again and fail if it remains.
+          # the quota; list again and fail if one this run deleted remains.
+          # Only this run's names count, so another PR closing meanwhile
+          # cannot turn this step red.
           for attempt in 1 2 3 4 5 6; do
-            LEFT=$(matches)
+            LEFT=$(still_listed "${DELETED[@]}")
             [ -z "$LEFT" ] && exit 0
             if [ "$attempt" -lt 6 ]; then sleep 10; fi
           done

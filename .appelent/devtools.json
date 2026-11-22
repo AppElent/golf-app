@@ -257,11 +257,11 @@
       "version": "1.0.3"
     },
     "docs/standards/previews.md": {
-      "sha256": "b62aaefb51b5bc35f9daaa1e85c43328b94dbd642c74ccd7c8a2bc50c5d65a65",
-      "version": "5.1.0"
+      "sha256": "091624f8146087aa19c721aa6beaeeb6e0c2bcc9f2fab2f18cf58fcd9a399511",
+      "version": "5.1.1"
     },
     "docs/standards/previews/templates/preview.yml": {
-      "sha256": "6cf435ccdef96edc4e3906e5f8f646be09fe6ca51675c3be83920a36e1310026"
+      "sha256": "b2513d59d94c150761b4a285552d5b6aeaa4f2b8b141cf4b9453cf7a93d146b3"
     },
     "docs/standards/pwa.md": {
       "sha256": "847f3533259814cdac4afec4fe04622f96b04891cf04a52de89a1c040b289764",
