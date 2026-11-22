@@ -10,9 +10,6 @@ import { forgetDataDeleted, rememberDataDeleted } from "./data-deleted-notice";
 
 type ClerkUser = NonNullable<ReturnType<typeof useUser>["user"]>;
 
-/** The web score queue's storage key, per Clerk user id (`:<userId>`). */
-const SCORE_QUEUE_KEY = "fairway.scoreQueue";
-
 /** What the golfer chose to delete. The login is shared by every AppElent
  *  app, so "app" keeps it and "account" deletes it everywhere. */
 type Choice = "app" | "account";
@@ -93,13 +90,6 @@ export function AccountSection() {
 			setFailed("data");
 			setBusy(null);
 			return;
-		}
-		// Unsent scores the retired web round screens (APP-235) may have left
-		// in this browser belonged to rounds that are gone now.
-		try {
-			window.localStorage.removeItem(`${SCORE_QUEUE_KEY}:${user.id}`);
-		} catch {
-			// Storage blocked: there was no queue to forget.
 		}
 		if (choice === "app") {
 			// The shared login stays: no user.delete(), no Apple revocation.
