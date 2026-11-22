@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when adding, moving, or reviewing documentation or agent instructions.
-version: 4.0.0
+version: 4.0.1
 applies_to: [all]
 ---
 
@@ -27,7 +27,7 @@ file from its folder and frontmatter.
 | Domain vocabulary | `GLOSSARY.md` |
 | Everything else | One document type below |
 
-- AGENTS.md routes tasks and names each trigger; CLAUDE.md delegates to it.
+- AGENTS.md routes tasks and names each trigger; CLAUDE.md imports it with `@AGENTS.md`.
 - **Default:** delete text that changes no decision and facts that config or source
   already states. Keep rationale and hazards.
 

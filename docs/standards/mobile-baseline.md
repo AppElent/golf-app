@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when setting up or changing an Expo Router app, its native configuration, or its EAS build profiles.
-version: 3.4.0
+version: 3.5.0
 applies_to: [mobile]
 ---
 
@@ -75,6 +75,8 @@ Expo apps share one stack while preserving native identity and release boundarie
 - A missing provider credential or untested device path is reported as outstanding work.
 
 ## Migration
+
+From 3.4: the `eas-local-build.yml` and `mobile-build.yml` templates check production Convex drift before production-backend CI builds ([mobile distribution](mobile-distribution.md)).
 
 From 3.3: the `mobile-build.yml` template gates its Android job on `vars.ANDROID_ENABLED == 'true'` ([Android pause](releases.md#android-pause)).
 

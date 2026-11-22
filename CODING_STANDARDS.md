@@ -31,6 +31,7 @@ Read only what the task needs; never preload every standard.
 | Creating, preparing, or cleaning a worktree | [Workspaces](docs/standards/workspaces.md) |
 | Authentication | [Auth](docs/standards/auth.md) |
 | Convex functions, schema, migrations, seeds, tests, or account deletion and export | [Convex backend](docs/standards/convex.md) |
+| The central account portal: `convex/accountPortal.ts` or the portal that calls it | [Account portal](docs/standards/account-portal.md) |
 | Convex query reads, subscription retention, or local read caches | [Convex query caching](docs/standards/convex-query-caching.md) |
 | Localization | [i18n](docs/standards/i18n.md) |
 | Error reporting and source maps | [Sentry monitoring](docs/standards/sentry-monitoring.md) |

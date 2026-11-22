@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when adding or changing pull-request preview deployments.
-version: 5.0.0
+version: 5.0.1
 applies_to: [web, backend]
 ---
 

@@ -1,0 +1,33 @@
+{
+  "autoMode": {
+    "environment": [
+      "$defaults",
+      "Organization: AppElent, a one-person software studio run by Eric Jansen. Primary use: software development of the apps Foundry, Fairway, Gather and Arcade Club and their shared toolkit, by agents on Eric's Mac (Remote Control, T3 threads and local Claude Code sessions).",
+      "Source control: the GitHub account AppElent (github.com/AppElent, also written appelent) and every repository under it, including workouts, golf-app, gather, games and developer-home. All of them are trusted repos, whichever folder the session started in. Their main branches are protected by rulesets and change only through pull requests.",
+      "Trusted local folders: ~/Developer and everything under it: main checkouts in ~/Developer/<repo>, branch worktrees in ~/Developer/.worktrees/<repo>/<branch>, local builds in ~/Developer/.builds, screenshots in ~/Developer/.screenshots and briefs in ~/Developer/.briefs. Also ~/.t3/projects (T3 projects without a repo) and ~/.agents (shared agent tools such as ~/.agents/bin/sim). Sessions often start in ~/Developer itself and work across these repositories.",
+      "Key internal services: GitHub and GitHub Actions (CI, and the only path to production), Convex (backend: dev, preview and anonymous local deployments), Expo and EAS at expo.dev (development and preview builds, preview OTA updates), Linear workspace appelent at linear.app (issue tracking), Sentry at sentry.io (errors), Clerk (auth, development instances), Cloudflare Workers through wrangler (web hosting), Notion and UptimeRobot.",
+      "Trusted internal domains: appelent.nl and its subdomains, AppElent's own deployments on convex.cloud and convex.site, AppElent's Workers on workers.dev, expo.dev, linear.app, sentry.io and github.com/AppElent.",
+      "Secrets management: Infisical, with tiers dev, staging and prod. Values reach apps only through each repo's env scripts (pnpm env:generate, env:apply), which write them to their destination without printing them. Production deploy keys live only in Infisical and GitHub Environments.",
+      "CI/CD deploy targets: a merge to main ships web (Cloudflare Workers) and Convex through staging to production in GitHub Actions. Production OTA updates for the mobile apps run only from a daily gated GitHub job. Store builds and submissions run only after Eric's explicit go.",
+      "Sensitive remote targets: Convex production deployments (anything run with --prod or a prod: deploy key), production Workers and the wrangler production environment, the EAS production profile and production channel, App Store Connect and Google Play Console, Clerk production instances and the Infisical prod tier.",
+      "Sensitive data locations: .env and .env.* files, .dev.vars* files, ~/Developer/.services/*.env, key, keystore and credentials.json files, and ~/.ssh, ~/.aws, ~/.gnupg, ~/.config/gh, ~/.convex, ~/.expo, ~/.netrc and ~/.npmrc. Only Eric reads these.",
+      "Local iOS simulators and Android emulators on this Mac are disposable test devices. Agents drive them with agent-device, maestro, adb and xcrun simctl, always passing the claimed UDID or serial."
+    ],
+    "allow": [
+      "$defaults",
+      "Pushing feature branches and opening, updating or commenting on pull requests in any AppElent repository is routine work, also from a session that started in ~/Developer, in a sibling repository or in a worktree under ~/Developer/.worktrees.",
+      "Creating and removing git worktrees under ~/Developer/.worktrees, and deleting local branches whose pull request is merged, is expected cleanup.",
+      "Development and preview releases are routine: eas build with a development or preview profile, eas update to a preview or pull request channel, Convex dev and anonymous local deployments (convex dev), and wrangler deploys to a non-production environment (dev or pr).",
+      "Pushing Convex functions to golf-app's dev deployment with `convex dev --once` and no deploy key (`CONVEX_DEPLOY_KEY` unset, `CONVEX_DEPLOYMENT` set only to that project's `dev:\u2026` value) is expected. Production Convex, `--prod`, a `prod:` deployment and deploy keys stay denied.",
+      "Creating and updating Linear issues and comments in workspace appelent, and updating Sentry issues, is routine tracking work.",
+      "Tapping, typing, deleting data or deleting the account inside a development build (bundle ids ending in .dev or .preview) on a local simulator or emulator, against a dev or anonymous local backend, is expected testing.",
+      "Creating, booting, shutting down, erasing and deleting simulators named agent-* with xcrun simctl or ~/.agents/bin/sim is expected cleanup."
+    ],
+    "hard_deny": [
+      "$defaults",
+      "Production deploys: never run convex deploy or any Convex command against production (--prod, a prod: deploy key), wrangler deploy without a non-production environment, wrangler versions deploy, rollback or secret commands on production, or package scripts that deploy or ship to production (deploy, deploy:prod*, ship:production, mobile:update:production). Production ships only through a merge to main and its GitHub Actions workflow.",
+      "Store submissions and production mobile releases: never run eas submit, --auto-submit, eas build with the production profile or without --profile, or eas update to the production channel. Production OTA runs only through the daily gated GitHub job, and store builds and submissions are Eric's to start.",
+      "Reading secrets: never read, print, copy or upload the contents of the sensitive data locations, and never print secret values from Infisical. Reading env.manifest.ts for variable names, and the repo env scripts that write values without printing them, are fine."
+    ]
+  }
+}

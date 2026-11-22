@@ -12,7 +12,7 @@ import { resolveWorkspaceIdentity } from "./identity.mjs";
 import { defaultWorkspaceStateRoot, readWorkspaceLedger, withWorkspaceLock, writeWorkspaceLedger, } from "./ledger.mjs";
 import { readWorkspacePolicy } from "./policy.mjs";
 import { describeFailure, runWorkspaceCommand } from "./process.mjs";
-import { createScopedCredential, PROVIDER_ENV_REMOVALS, prepareBackend, pushBackend, writeClientOutputs, } from "./provider.mjs";
+import { createScopedCredential, diagnoseLocalBackend, localBackendListening, PROVIDER_ENV_REMOVALS, prepareBackend, pushBackend, writeClientOutputs, } from "./provider.mjs";
 const STEP_IDS = [
     "prerequisites",
     "install",
@@ -197,7 +197,12 @@ export async function prepareWorkspace(options) {
                     },
                 ],
             };
-        if (ledger.status === "ready") {
+        // A ready local workspace can still owe its backend values: prepare defers
+        // `backend-environment` until this worktree's backend runs. Rerunning
+        // prepare resumes that step; completed steps are skipped.
+        const deferred = ledger.status === "ready" &&
+            ledger.steps.some((item) => item.status === "pending");
+        if (ledger.status === "ready" && !deferred) {
             const drift = [];
             for (const file of ledger.generatedFiles) {
                 const text = await readProjectText(options.root, file.path);
@@ -302,10 +307,17 @@ export async function prepareWorkspace(options) {
             record.attempts += 1;
             record.updatedAt = now().toISOString();
             try {
-                const evidence = await task();
+                const outcome = await task();
                 await syncGeneratedFiles(true);
-                record.status = "complete";
-                record.evidence = evidence ?? [];
+                if (outcome && !Array.isArray(outcome) && outcome.deferred) {
+                    // Left pending so a later prepare runs it; not a failure.
+                    record.status = "pending";
+                    record.evidence = outcome.deferred;
+                }
+                else {
+                    record.status = "complete";
+                    record.evidence = outcome ?? [];
+                }
             }
             catch (error) {
                 await syncGeneratedFiles(false);
@@ -437,6 +449,16 @@ export async function prepareWorkspace(options) {
             await step("backend-environment", async () => {
                 if (!backendReference)
                     return ["no backend selected"];
+                if (policy.backend.mode === "local" &&
+                    !(await (dependencies.isLocalBackendListening ?? localBackendListening)(publicUrl))) {
+                    findings.push({
+                        level: "warning",
+                        code: "workspace.backend-environment.deferred",
+                        message: "Backend values were not applied: no local Convex backend is running for this worktree. " +
+                            `Start it (\`pnpm exec convex dev --env-file ${policy.outputs.rootEnv}\`), then run prepare again with the same options to apply them`,
+                    });
+                    return { deferred: ["deferred: local backend not running"] };
+                }
                 const result = await (dependencies.applyBackendEnvironment ?? defaultApplyBackendEnvironment)({
                     root: options.root,
                     manifestPath: manifest.envManifest,
@@ -444,8 +466,14 @@ export async function prepareWorkspace(options) {
                     isolationRoot: join(stateRoot, "runtime", identity.id, "env"),
                     runCommand: run,
                 });
-                if (result.exitCode !== 0)
-                    throw new Error("Selected backend environment routing failed");
+                if (result.exitCode !== 0) {
+                    const reason = policy.backend.mode === "local"
+                        ? await (dependencies.diagnoseLocalBackend ?? diagnoseLocalBackend)(publicUrl)
+                        : undefined;
+                    throw new Error(reason
+                        ? `Selected backend environment routing failed: ${reason}`
+                        : "Selected backend environment routing failed");
+                }
                 operations.push({
                     action: "write",
                     target: `convex:${backendReference}`,
@@ -541,6 +569,8 @@ export async function prepareWorkspace(options) {
             const commands = [];
             if (policy.backend.mode === "local")
                 commands.push(`pnpm exec convex dev --env-file ${policy.outputs.rootEnv}`);
+            if (ledger.steps.some((item) => item.id === "backend-environment" && item.status === "pending"))
+                commands.push(`node scripts/workspace.mjs prepare --backend local${options.editor ? ` --editor ${options.editor}` : ""}`);
             if (policy.ports.web)
                 commands.push(`pnpm dev -- --port ${policy.ports.web}`);
             if (policy.ports.mobile)

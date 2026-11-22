@@ -4,7 +4,10 @@
 	--auth-fg: oklch(25% 0.02 240);
 	--auth-muted: oklch(50% 0.018 240);
 	--auth-card-bg: oklch(100% 0 0);
-	--auth-border: oklch(90% 0.008 240);
+	/* Edge of cards, fields and menus: at least 3:1 against bg, card and field (WCAG 1.4.11). */
+	--auth-border: oklch(62% 0.008 240);
+	/* Quiet fill for hovered menu items and buttons; text on it stays above 4.5:1. */
+	--auth-hover-bg: oklch(90% 0.008 240);
 	--auth-radius: 0.625rem;
 	--auth-field-bg: oklch(100% 0 0);
 	--auth-accent: oklch(58% 0.16 145);
@@ -17,7 +20,8 @@
 	--auth-fg: oklch(92% 0.01 240);
 	--auth-muted: oklch(70% 0.02 240);
 	--auth-card-bg: oklch(20% 0.012 250);
-	--auth-border: oklch(30% 0.01 240);
+	--auth-border: oklch(56% 0.01 240);
+	--auth-hover-bg: oklch(30% 0.01 240);
 	--auth-radius: 0.625rem;
 	--auth-field-bg: oklch(24% 0.012 250);
 	--auth-accent: oklch(64% 0.15 145);

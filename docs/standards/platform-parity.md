@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when deciding which platforms a feature ships on, adding or moving a route on web or mobile, or adding shareable links.
-version: 1.1.0
+version: 1.2.0
 applies_to: [web, mobile]
 ---
 
@@ -22,7 +22,9 @@ Each platform has a stated goal that decides which features it gets. A typed fea
 
 - Each project records its platform goals in one decision record in `docs/adr/`, the parity ADR. It names the leading platform (or states that both are equal), what each platform is for, and any reduced floor with its reason.
 - `packages/core/src/features.ts` lists every feature with its `status`, `platforms`, route patterns, and, unless the status is `parity`, a `reason`. Copy the types from [`features.ts`](platform-parity/examples/features.ts).
-- Every web and mobile route file belongs to at least one feature, and every route pattern matches at least one file. A feature can list a platform without routes when it lives inside another screen. A floor feature that exists on neither platform is `pending-port` with no platforms.
+- Every web and mobile route file belongs to exactly one feature, and every route pattern matches at least one file. Expo's `+not-found` is a screen and needs a feature too. A feature can list a platform without routes when it lives inside another screen. A floor feature that exists on neither platform is `pending-port` with no platforms.
+- A `pending-port` feature meant for one platform only (a reduced floor) sets `targetPlatforms` and links the parity ADR in its reason, like an `exclusive` floor feature.
+- Prefer patterns that name a file or a folder the feature owns (`recipes/*`). A `**` pattern, or a `*` inside a name (`nutrition-*`), takes in new screens without anyone placing them; the check prints a warning for each.
 - Floor features and share targets are `parity` or `pending-port`, never `exclusive`. A project that reduces its floor records the reduction in its parity ADR, and lists the affected features as `exclusive` with a reason that links to that ADR.
 - Data parity: data export and account deletion cover every table on both platforms. A platform does not need to *show* data whose feature is exclusive to the other platform.
 - Share targets are fully usable in a browser by someone without the app. Shared links are `https` links on the web origin. The apps claim those links with iOS universal links and Android app links, so the same link opens the app when it is installed.
@@ -34,22 +36,28 @@ Each platform has a stated goal that decides which features it gets. A typed fea
 ## Implementation
 
 1. Copy [`features.ts`](platform-parity/examples/features.ts) to `packages/core/src/features.ts` and fill `FEATURES`.
-2. Copy [`feature-manifest-check.ts`](platform-parity/examples/feature-manifest-check.ts) to `scripts/` and add a test next to it that the root Vitest run picks up:
+2. Copy [`feature-manifest-check.ts`](platform-parity/examples/feature-manifest-check.ts) to `scripts/` unchanged (fix it here first) and add a test next to it that the root Vitest run picks up:
 
    ```ts
+   import path from "node:path";
+   import { fileURLToPath } from "node:url";
    import { FEATURES } from "@app/core/features";
    import { expect, it } from "vitest";
-   import { checkFeatureManifest, listRouteFiles } from "./feature-manifest-check";
+   import { checkFeatureManifest, findBroadPatterns, listRouteFiles } from "./feature-manifest-check";
+
+   const repo = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 
    it("maps every route to a feature", () => {
      const routes = {
-       web: listRouteFiles("src/routes"),
-       mobile: listRouteFiles("apps/mobile/app"),
+       web: listRouteFiles(path.join(repo, "src/routes"), "web"),
+       mobile: listRouteFiles(path.join(repo, "apps/mobile/app"), "mobile"),
      };
      expect(checkFeatureManifest(FEATURES, routes)).toEqual([]);
+     for (const warning of findBroadPatterns(FEATURES)) console.warn(warning);
    });
    ```
 
+   The checker reads route files as TanStack Router and Expo Router load them. It does not read TanStack's `routeFilePrefix` or `routeFileIgnorePattern`; an app that sets them passes a matching `ignore` list. A native variant (`home.ios.tsx`) counts for the whole mobile platform.
 3. Make share targets open the app per [app links](app-links.md).
 
 ## Verify

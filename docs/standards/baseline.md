@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when setting up or changing repository, package-manager, formatter, type, test, or CI configuration, or when installing or updating the toolkit.
-version: 2.3.2
+version: 2.4.1
 applies_to: [all]
 ---
 
@@ -30,7 +30,8 @@ Every JavaScript/TypeScript repository uses the same package manager, checks, an
 - Every tsconfig keeps the root's strictness: `strict`, `noUnusedLocals`, `noUnusedParameters`, `noUncheckedSideEffectImports`. `noUncheckedIndexedAccess`: optional, per app, all targets at once.
 - New TypeScript configuration comes from the framework scaffold. Never overwrite a framework-specific tsconfig with a generic one.
 - Merge the [Biome fragment](baseline/templates/biome.fragment.json) into `biome.json`: tabs and double quotes; in `apps/mobile`, `noReactNativeRawText` (skipping the app's `AppText`) and `noRestrictedImports` that sends Convex query hooks through `src/convex/query-cache` ([Convex query caching](convex-query-caching.md)).
-- CI starts from the [shared workflow](baseline/templates/ci.yml): check, env:check, typecheck for web, core, and mobile, Vitest, mobile Jest when present, and build. The job is named `check`, the status check a `main` ruleset requires ([deployments](deployments.md)). Monorepos apply root settings once and run target-specific workflows in the target's working directory. An optional [lefthook pre-commit](baseline/templates/lefthook.yml) runs `biome check --staged`.
+- Every repository has a root `verify` script that chains check, typecheck, and tests for every target (web, core, mobile, including mobile Jest when present). Agents run it before they report done, and CI runs the same command.
+- CI starts from the [shared workflow](baseline/templates/ci.yml): env:check, `pnpm verify`, and build. The job is named `check`, the status check a `main` ruleset requires ([deployments](deployments.md)). Monorepos apply root settings once and run target-specific workflows in the target's working directory. An optional [lefthook pre-commit](baseline/templates/lefthook.yml) runs `biome check --staged`.
 
 ### Toolkit
 
@@ -73,6 +74,8 @@ Run from the repository root.
 - Install, check, typecheck, test, and build pass for every target.
 
 ## Migration
+
+From 2.3: add a root `verify` script that chains check, typecheck, and tests for every target, then replace the separate check, typecheck, and test steps in CI with `pnpm verify`. Keep `env:check`, `check-project.mjs --strict`, and build as their own steps.
 
 From 2.2: rename the CI gate job to `check` and update any ruleset or factory setting that names the old id. Run `node scripts/check-project.mjs` and fix its new warnings, or record each one as an exception; add `node scripts/check-project.mjs --strict` to the `check` job only once no warnings remain. `--strict` does not read recorded exceptions, so leave it out while any exist.
 

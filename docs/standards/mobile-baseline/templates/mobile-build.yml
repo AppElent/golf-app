@@ -9,6 +9,9 @@ name: Mobile Build
 # - Manual run (Actions tab): pick platform, profile and branch.
 #
 # The .ipa/.apk is a workflow artifact; nothing is submitted to a store.
+# Profiles that talk to production Convex first check that production runs
+# every Convex change on the branch, and stop when it does not unless
+# allow_convex_drift is set (see eas-local-build.yml).
 on:
   pull_request:
     types: [opened, synchronize, reopened, labeled]
@@ -22,6 +25,10 @@ on:
         type: choice
         options: [development, preview-internal]
         default: development
+      allow_convex_drift:
+        description: Build even when production Convex lacks this branch's Convex changes
+        type: boolean
+        default: false
 
 jobs:
   ios:
@@ -33,12 +40,15 @@ jobs:
     concurrency:
       group: mobile-ios-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
+    # deployments: read is for the production Convex check (eas-local-build.yml).
     permissions:
       contents: read
+      deployments: read
     uses: ./.github/workflows/eas-local-build.yml
     with:
       platform: ios
       profile: ${{ inputs.profile || 'development' }}
+      allow_convex_drift: ${{ inputs.allow_convex_drift == true }}
     secrets: inherit
 
   # Android is paused until the repository variable ANDROID_ENABLED is `true`
@@ -53,10 +63,13 @@ jobs:
     concurrency:
       group: mobile-android-${{ github.event.pull_request.number || github.ref }}
       cancel-in-progress: true
+    # deployments: read is for the production Convex check (eas-local-build.yml).
     permissions:
       contents: read
+      deployments: read
     uses: ./.github/workflows/eas-local-build.yml
     with:
       platform: android
       profile: ${{ inputs.profile || 'development' }}
+      allow_convex_drift: ${{ inputs.allow_convex_drift == true }}
     secrets: inherit
