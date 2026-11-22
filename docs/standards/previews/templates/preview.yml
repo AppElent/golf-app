@@ -79,6 +79,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      # Lists open PRs so previews of already closed PRs are swept too.
+      pull-requests: read
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.PREVIEW_CLOUDFLARE_API_TOKEN }}
       CLOUDFLARE_ACCOUNT_ID: ${{ vars.PREVIEW_CLOUDFLARE_ACCOUNT_ID }}
@@ -87,15 +89,18 @@ jobs:
       # are deleted, and every app on the team shares it: leftovers fail every
       # new preview deploy. The preview deploy key
       # (`preview:<team>:<project>|<token>`) may list and delete its own
-      # project's previews through the management API. Only a deployment of
-      # type `preview` whose previewIdentifier is pr-<N> is ever deleted; none
-      # is a no-op. Runs first and needs only curl and jq, so a failed install
-      # cannot skip it.
+      # project's previews through the management API. Only deployments of
+      # type `preview` are ever deleted: this PR's pr-<N>, plus any pr-<M>
+      # whose PR is no longer open (a preview an earlier cleanup missed), so
+      # every close sweeps leftovers. Previews with other identifiers are left
+      # alone. None is a no-op. Runs first and needs only curl, jq and gh, so a
+      # failed install cannot skip it.
       - name: Delete Convex preview
         env:
           CONVEX_DEPLOY_KEY: ${{ secrets.PREVIEW_CONVEX_DEPLOY_KEY }}
           PREVIEW: pr-${{ github.event.pull_request.number }}
           ACTOR: ${{ github.actor }}
+          GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           case "$CONVEX_DEPLOY_KEY" in
@@ -114,9 +119,10 @@ jobs:
           CURL=(curl -sS --connect-timeout 10 --max-time 60 --retry 3 -H "$AUTH")
           api() { "${CURL[@]}" -f --retry-all-errors "$@"; }
           PROJECT_ID=$(api "$API/teams/$TEAM/projects/$PROJECT" | jq -er .id)
-          # Deployment names (generated slugs) of this project's previews for pr-<N>.
+          # Deployment names (generated slugs) of this project's previews for
+          # pr-<N> and for every other pr-<M> whose PR is not open.
           matches() {
-            local list
+            local list open
             # jq reads the response from a file: shell capture would silently
             # drop bytes (such as NUL) that make the JSON invalid.
             list=$(mktemp)
@@ -135,11 +141,17 @@ jobs:
               echo "::error::Convex list_deployments rows changed shape; update this step." >&2
               return 1
             fi
+            # Open PRs are read after the deployments, so a preview in the list
+            # always belongs to a PR opened before this read and is never
+            # mistaken for a closed one.
+            open=$(gh api "repos/$GITHUB_REPOSITORY/pulls?state=open&per_page=100" --paginate --jq '[.[].number]' | jq -s 'add // []') || return 1
             # Each matched name must be a plain slug string before it is printed,
             # so a null, empty or multi-line name can never reach the delete URL.
             # A Convex naming change fails the step on purpose.
-            jq -r --arg p "$PREVIEW" '
-              [.[] | select(.deploymentType == "preview" and .previewIdentifier == $p) | .name]
+            jq -r --arg p "$PREVIEW" --argjson open "$open" '
+              def closed_pr: [.previewIdentifier | capture("\\Apr-(?<n>[0-9]+)\\z") | .n | tonumber]
+                | length == 1 and (.[0] as $n | any($open[]; . == $n) | not);
+              [.[] | select(.deploymentType == "preview" and (.previewIdentifier == $p or closed_pr)) | .name]
               | if all(type == "string" and test("\\A[a-z0-9]+(-[a-z0-9]+)*\\z")) then .[]
                 else error("unexpected Convex deployment name in \(.)") end' "$list"
           }
@@ -147,7 +159,7 @@ jobs:
           if [ -z "$OUT" ]; then
             # Other open PRs' previews are listed too, so no match while
             # previews exist is normal: it does not mean the API's fields changed.
-            echo "No Convex preview $PREVIEW to delete."
+            echo "No Convex preview to delete for $PREVIEW or closed PRs."
             exit 0
           fi
           NAMES=(); while IFS= read -r NAME; do NAMES+=("$NAME"); done <<< "$OUT"
@@ -155,8 +167,8 @@ jobs:
             # Retries cover 5xx and timeouts; a 404 means it is already gone.
             CODE=$("${CURL[@]}" -o /dev/null -w '%{http_code}' -X POST "$API/deployments/$NAME/delete") || CODE=000
             case "$CODE" in
-              2??) echo "Deleted Convex preview $PREVIEW ($NAME)." ;;
-              404) echo "Convex preview $PREVIEW ($NAME) was already gone." ;;
+              2??) echo "Deleted Convex preview $NAME." ;;
+              404) echo "Convex preview $NAME was already gone." ;;
               *) echo "::error::Deleting Convex preview $NAME returned HTTP $CODE"; exit 1 ;;
             esac
           done
@@ -167,7 +179,7 @@ jobs:
             [ -z "$LEFT" ] && exit 0
             if [ "$attempt" -lt 6 ]; then sleep 10; fi
           done
-          echo "::error::Convex preview $PREVIEW is still listed after delete: $LEFT"
+          echo "::error::Convex previews still listed after delete: $LEFT"
           exit 1
       # The Worker is deleted even when the Convex step failed.
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
