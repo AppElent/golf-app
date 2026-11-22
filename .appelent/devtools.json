@@ -4,7 +4,7 @@
   "scope": "project",
   "ref": "main",
   "commit": "local",
-  "manifestHash": "af2b267d11c1600b3ed722d9243ced9372e65c0ca166b097e22d97b4df3d69f2",
+  "manifestHash": "d1c8e14baab98456b02d7626a3e2f845653294b0bea8152673c36d866a7e004e",
   "files": {
     "docs/adr/.template.md": {
       "sha256": "f28b286102fb1a00512455a06896e5da3c47d67a14b0ee6c08fa84258af24adf",
@@ -68,8 +68,8 @@
       "sha256": "b09f650bab6759fccefe0bf42a298d249373fc99cb7bd8c4802d2268011fd4c0"
     },
     "docs/standards/auth.md": {
-      "sha256": "4bd622f66d0ac87bb499058717b1128b64c0111330d7fde803f08b3a769313bd",
-      "version": "3.4.1"
+      "sha256": "b431f45ca56848e133038f50746ebf4cfaa1895377b0f0636a5b8c240ddf70ab",
+      "version": "3.5.0"
     },
     "docs/standards/auth/examples/native.ts": {
       "sha256": "3cb78db51701a6eaddb5d07a6e11d65ed911bc2ae556bff54e4025551a50117a"
@@ -123,7 +123,7 @@
       "sha256": "5fa39547071ad4d10ba0ce9aa40770ae4313ff3c70da0c077c4970cb1b10bfd4"
     },
     "docs/standards/auth/examples/web/tokens.css": {
-      "sha256": "ada9d454e35c6cd316dd1b8f5422cc9afc7be328612072a2dd89cc85aafd95ec"
+      "sha256": "96fdc68084eb74fa1b7b9fa147e9e6eebc12e5834e9e718913799f2b2a444f86"
     },
     "docs/standards/auth/examples/web/types.ts": {
       "sha256": "802c3d7f8bf8fc09ad8a10bd25727907c51769d83198e2ffbc722543ae28c00c"
@@ -498,7 +498,7 @@
       "version": "1.6.0"
     },
     "docs/standards/agent-permissions/irreversible-guard.mjs": {
-      "sha256": "9b9ce7d2d603f4bba66aa3b043ce166e3f4dd43561005954e505bae0474c6d28"
+      "sha256": "fe1ac3b0b4f68365aa08e4cb1aefc4ebedf6f6498171cdde406e41877c6a7524"
     },
     "scripts/lib/project/agent-permissions.mjs": {
       "sha256": "3676673615c25e7ceb75fa7534b68dcdbe99856c715fb79a11c4bafab99e4ea6"

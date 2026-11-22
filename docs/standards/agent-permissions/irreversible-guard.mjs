@@ -774,7 +774,49 @@ function pipedScript(from) {
   else if (program !== "printf") return undefined;
   // A `$` marks an expansion whose value the guard cannot see.
   if (args.some((word) => word.includes("$"))) return undefined;
-  return args.join(" ");
+  return program === "printf" ? printfOutput(args) : args.join(" ");
+}
+
+// Backslash escapes `printf` reads in its format and in `%b` arguments.
+const PRINTF_ESCAPES = { n: "\n", t: "\t", r: "\r", "\\": "\\", '"': '"', "'": "'", a: "\x07", b: "\b", f: "\f", v: "\v" };
+
+// Replaces the escapes in `text`. Undefined for an escape it does not know (`\0101`, `\x41`).
+function printfEscapes(text) {
+  let unknown = false;
+  const out = text.replace(/\\(.?)/gs, (_, char) => {
+    if (char in PRINTF_ESCAPES) return PRINTF_ESCAPES[char];
+    unknown = true;
+    return "";
+  });
+  return unknown ? undefined : out;
+}
+
+// What `printf format args…` prints: the format is applied to the arguments and
+// reused while arguments remain. Undefined for a conversion other than `%s`,
+// `%b` and `%%`, an unknown escape, or an option (`printf -v name …` prints nothing).
+function printfOutput(args) {
+  if (args[0] === "--") args = args.slice(1);
+  const [format, ...rest] = args;
+  if (format === undefined) return "";
+  if (format.startsWith("-")) return undefined;
+  let output = "";
+  let index = 0;
+  do {
+    const start = index;
+    let unknown = false;
+    const text = format.replace(/%(.?)|\\(.?)/gs, (_, conversion, escape) => {
+      if (escape !== undefined) return printfEscapes(`\\${escape}`) ?? ((unknown = true), "");
+      if (conversion === "%") return "%";
+      if (conversion === "s") return rest[index++] ?? "";
+      if (conversion === "b") return printfEscapes(rest[index++] ?? "") ?? ((unknown = true), "");
+      unknown = true;
+      return "";
+    });
+    if (unknown) return undefined;
+    output += text;
+    if (index === start) break;
+  } while (index < rest.length);
+  return output;
 }
 
 // True when a shell's words (`bash`, `sh -s -- x`) make it read its script
@@ -959,12 +1001,16 @@ export function check(command, options) {
         continue;
       }
       if (program === "mkdir") {
+        // `mkdir -p a/b` creates `a` too; without `-p` it fails unless `a` exists.
+        const parents = args.some((word) => word === "--parents" || /^-[a-zA-Z]*p/.test(word));
         for (let j = 0; j < args.length; j++) {
           if (args[j] === "-m" || args[j] === "--mode") { j++; continue; }
           if (args[j].startsWith("-")) continue;
           const path = resolvePath(args[j]);
-          // `mkdir -p a/b` creates `a` too.
-          for (let dir = path === undefined ? undefined : resolve(path); dir && dir !== dirname(dir); dir = dirname(dir)) created.add(dir);
+          if (path === undefined) continue;
+          const dir = resolve(path);
+          if (parents) for (let up = dir; up !== dirname(up); up = dirname(up)) created.add(up);
+          else if (isDirectory(dirname(dir)) || created.has(dirname(dir))) created.add(dir);
         }
       }
       dispatch(program, args, env);
