@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when creating, preparing, or cleaning a worktree and its backend resources.
-version: 3.1.0
+version: 3.3.0
 applies_to: [all]
 ---
 
@@ -22,7 +22,15 @@ every app and editor, and cleans up what it created.
   Infisical `dev`. Its data and functions are shared: use throwaway accounts for
   destructive checks, and push backend changes from a `local` or `cloud` worktree.
 - `local` mode selects the project's local Convex deployment (`<project>:local`, run on
-  this machine) for offline work or isolation without a cloud deployment.
+  this machine) for offline work or isolation without a cloud deployment. Prepare does
+  not start the backend: start it as a separate editor action (`convex dev` takes the
+  next free port from 3210). When no backend listens on the selected URL, prepare
+  finishes `ready` with a `workspace.backend-environment.deferred` warning and leaves
+  `backend-environment` pending; start the backend, then run prepare again with the
+  same options to apply the backend values (only that step runs). When routing values
+  into a running backend fails, the error names the port and the process that holds it.
+  `clean` and `gc --apply` only release a local deployment's ledger entry; the shared
+  deployment and other worktrees' backends stay.
 - Use `cloud` (policy `backend.mode`, or `prepare --backend cloud` for one worktree,
   with a `team:project` and a finite `expiration`) when a change needs its own
   backend: schema migrations, seeds, destructive data work. The script provisions it,

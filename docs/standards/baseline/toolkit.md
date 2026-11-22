@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when a toolkit sync stops on conflicts or interruption, or when upgrading from an earlier updater.
-version: 1.1.1
+version: 1.1.2
 applies_to: [all]
 ---
 
@@ -16,7 +16,7 @@ An update resolves its ref (default `main`) once and fetches every file from tha
 
 ## Ownership and conflicts
 
-Standards, guides, scripts, and templates are toolkit-owned. `CODING_STANDARDS.md` and `DESIGN_SYSTEM.md` are project-owned: sync creates them when missing, then updates only their `appelent-standards` blocks. `AGENTS.md` owns the task entry point; the managed `CLAUDE.md` block only points to it. Content outside managed blocks is preserved. Files created from templates belong to the application.
+Standards, guides, scripts, and templates are toolkit-owned. `CODING_STANDARDS.md` and `DESIGN_SYSTEM.md` are project-owned: sync creates them when missing, then updates only their `appelent-standards` blocks. `AGENTS.md` owns the task entry point; the managed `CLAUDE.md` block only imports it (`@AGENTS.md`), so Claude Code loads it in every session. Content outside managed blocks is preserved. Files created from templates belong to the application.
 
 A locally changed toolkit file stops the whole update before any write; reconcile deliberately instead of deleting the receipt. Files that already match the release are adopted without overwriting. A legacy `.appelent/guidelines.json` receipt supplies ownership for unchanged files during first adoption and stays as history. Existing `project-coding.md`, `project-design.md`, and `app.md` are preserved; move their decisions into the root files when migrating that project.
 

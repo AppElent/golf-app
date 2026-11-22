@@ -105,7 +105,9 @@ async function cleanLedger(ledger, stateRoot, dependencies) {
                         ? "remove"
                         : "retain",
                     target: `${updated.kind}:${updated.id}`,
-                    detail: updated.status,
+                    detail: updated.status === "removed" && updated.cleanup === "release"
+                        ? "released (shared resource kept)"
+                        : updated.status,
                 });
                 ledger.updatedAt = (dependencies.now?.() ?? new Date()).toISOString();
                 await writeWorkspaceLedger(stateRoot, ledger);

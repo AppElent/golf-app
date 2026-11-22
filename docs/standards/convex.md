@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when writing or reviewing Convex functions, schema changes, migrations, seeds, tests, or account deletion and export.
-version: 2.2.1
+version: 2.3.0
 applies_to: [backend]
 ---
 
@@ -32,6 +32,7 @@ Every public function authenticates and validates its caller, fails with a keyed
 
 ### Migrations
 
+- A schema change starts from a data model Eric approved before the build (tables, relations, and what happens to existing data; RUNBOOK `Data model`). Build to it; a deviation goes back to Eric.
 - Change schema in steps that each deploy cleanly: widen (add an optional field or a new table), backfill, switch readers, then narrow in a later deploy.
 - A backfill is an `internalMutation` in `convex/migrations.ts`, run by hand with `convex run migrations:<name> --prod`, never by a deploy or a request. It is idempotent, processes a bounded batch per call with a resumable cursor, and its comment names what retires it. Delete it once every deployment has run it.
 

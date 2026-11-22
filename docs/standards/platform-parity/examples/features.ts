@@ -7,7 +7,8 @@ export type Platform = "web" | "mobile";
 
 /**
  * parity: on both platforms. exclusive: on one platform by design.
- * pending-port: meant for both platforms, on one for now.
+ * pending-port: meant for both platforms (or for targetPlatforms), not on all
+ * of them yet.
  */
 export type FeatureStatus = "parity" | "exclusive" | "pending-port";
 
@@ -25,6 +26,11 @@ export interface Feature {
 	readonly status: FeatureStatus;
 	/** Platforms that ship the feature today. Empty only for a pending-port feature that exists nowhere yet. */
 	readonly platforms: readonly Platform[];
+	/**
+	 * pending-port only: the platforms the feature is meant for, when not both
+	 * (a reduced floor in the parity ADR). Defaults to both.
+	 */
+	readonly targetPlatforms?: readonly Platform[];
 	/** Why the feature is not on both platforms. Required unless status is "parity". */
 	readonly reason?: string;
 	/** Web layout. Defaults to "responsive"; "large-screen" needs layoutReason. */

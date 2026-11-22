@@ -13,8 +13,22 @@
 //   profile), and `eas update`/`channel`/`branch`/`env` writes on production
 // - `wrangler deploy`/`secret`/`versions deploy`/`rollback` without a
 //   non-production `--env`
+// - `wrangler pages deploy` without a preview `--branch`, Pages secrets and
+//   deletes, and remote D1 writes (`d1 execute|migrations apply --remote`,
+//   `d1 delete`, `d1 time-travel restore`) without a non-production `--env`
+// - `eas workflow:run`, `npm`/`pnpm`/`yarn`/`bun publish` (except `--dry-run`)
+// - `git clean` with `-x`/`-X` (it deletes ignored files such as `.env`)
+// - `find … -delete` or `find … -exec rm` outside the project, or on a project
+//   root without a name or path filter
 // - package scripts that deploy or ship (`deploy`, `deploy:*`, `ship:*`
 //   except `:dev`, and any script ending in `:prod`/`:production`)
+// It asks when it cannot tell what runs: a shell reading its script from a
+// pipe other than `echo`, `printf` or a heredoc (`curl … | sh`), a shell
+// reading a script file it cannot read (`bash < missing.sh`; a readable one is
+// checked), an interpreter reading its program from such a pipe
+// (`curl … | node`, `| python3`), a recursive `rm` whose targets come from
+// `xargs`, or a command name built by substitution (`$(echo eas) submit`)
+// whose arguments would be denied for one of the guarded programs.
 // Everything else exits silently and keeps the normal permission flow. An
 // unreadable hook input asks. Approved irreversible steps run in their CI
 // workflow or by Eric himself, never through this agent.
@@ -54,8 +68,17 @@ export function parse(source) {
   let hereString = false;
   // A redirect target is not an argument, but its $(…) and backticks still run.
   let redirectTarget = false;
+  // An input redirect (`bash < script.sh`): its target is the command's stdin.
+  let redirectInput = false;
+  // The command before a `|`; the next command gets it as `pipedFrom`, so a
+  // shell that reads its script from the pipe can be checked.
+  let pendingPipe = null;
   const endWord = () => {
-    if (inWord && redirectTarget) redirectTarget = false;
+    if (inWord && redirectTarget) {
+      if (redirectInput) words.stdinFile = word;
+      redirectTarget = false;
+      redirectInput = false;
+    }
     else if (inWord && hereString) hereStrings.push(word);
     else if (inWord) words.push(word);
     if (inWord) hereString = false;
@@ -66,13 +89,18 @@ export function parse(source) {
     endWord();
     hereString = false;
     redirectTarget = false;
+    redirectInput = false;
     if (hereStrings.length) {
       const recipient = words.length ? unwrap(words).words?.[0] : undefined;
       // Checked as `<recipient> -c <body>`, so wrappers such as `env -C` apply.
       if (recipient !== undefined && SHELLS.has(programName(recipient))) for (const body of hereStrings) commands.push([...words, "-c", body]);
       hereStrings.length = 0;
     }
-    if (words.length) commands.push(words);
+    if (words.length) {
+      if (pendingPipe) words.pipedFrom = pendingPipe;
+      pendingPipe = null;
+      commands.push(words);
+    }
     words = [];
   };
   // Returns the index just past the matching `)` for a `$(` at i.
@@ -163,7 +191,16 @@ export function parse(source) {
       word += "$";
       inWord = true;
       i = stop + 1;
-    } else if (";&|()\n".includes(c) && !(c === "\n" && heredocs.length)) {
+    } else if (c === "|" && source[i + 1] !== "|") {
+      // A pipe (`|` or `|&`); `||` is a plain separator below.
+      const from = words;
+      endCommand();
+      pendingPipe = from;
+      i += source[i + 1] === "&" ? 2 : 1;
+    } else if (c === "|") {
+      endCommand();
+      i += 2;
+    } else if (";&()\n".includes(c) && !(c === "\n" && heredocs.length)) {
       endCommand();
       i++;
     } else if (c === "<" && source[i + 1] === "<" && source[i + 2] === "<") {
@@ -195,6 +232,8 @@ export function parse(source) {
           lines.push(line);
         }
         const body = lines.join("\n");
+        // What the command writes to a pipe (`cat <<EOF | sh`).
+        doc.words.stdin = body;
         // The recipient may sit behind a wrapper (`env bash <<EOF`).
         const recipient = doc.words.length ? unwrap(doc.words).words?.[0] : undefined;
         if (recipient !== undefined && SHELLS.has(programName(recipient))) commands.push([...doc.words, "-c", body]);
@@ -208,10 +247,13 @@ export function parse(source) {
       // A redirect and its target (and a leading fd number) are not arguments.
       if (inWord && /^\d+$/.test(word)) { word = ""; inWord = false; }
       endWord();
+      // `<` reads a file; `<&` duplicates a descriptor and `<>` opens read-write.
+      const input = c === "<" && source[i + 1] !== "&" && source[i + 1] !== ">";
       i++;
       while (source[i] === ">" || source[i] === "&") i++;
       while (source[i] === " " || source[i] === "\t") i++;
       redirectTarget = true;
+      redirectInput = input;
     } else if (c === " " || c === "\t") {
       endWord();
       i++;
@@ -231,6 +273,15 @@ const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
 // `/usr/bin/rm` -> rm, `eas-cli@latest` -> eas-cli.
 const programName = (word) => basename(word).replace(/(.)@[^/]*$/, "$1");
 const SHELLS = new Set(["sh", "bash", "zsh", "dash", "ksh"]);
+// Interpreters that read their program from stdin when given no script, and
+// the options that give them an inline program instead (`node -e`, `python -c`).
+const INTERPRETERS = [
+  [/^(node|nodejs)$/, /^(-[a-zA-Z]*[ep]|--(eval|print)(=.*)?)$/],
+  [/^python[0-9.]*$/, /^-[a-zA-Z]*[cm]/],
+  [/^perl$/, /^-[a-zA-Z]*[eE]/],
+  [/^ruby$/, /^-[a-zA-Z]*e/],
+  [/^php$/, /^(-[a-zA-Z]*[rf]|--run)/],
+];
 // Words that start a compound or negated command; the command follows them.
 const KEYWORDS = new Set(["if", "then", "elif", "else", "while", "until", "do", "!", "{", "}", "time"]);
 const WRAPPER_VALUE_FLAGS = {
@@ -343,10 +394,20 @@ function unwrap(words) {
       rest.shift(); // duration
     } else if (program === "xargs") {
       rest.shift();
-      while (rest.length && rest[0].startsWith("-")) {
+      // xargs adds words read from stdin (`find … | xargs rm -rf`); the guard
+      // cannot see them, so they stand in as an unresolvable `$XARGS`.
+      let replace;
+      while (rest.length && rest[0].startsWith("-") && rest[0] !== "--") {
         const flag = rest.shift();
-        if (/^-[IdEnLPs]$/.test(flag)) rest.shift();
+        if (flag === "-I") replace = rest.shift();
+        else if (flag.startsWith("-I")) replace = flag.slice(2);
+        else if (flag === "-i" || flag === "--replace") replace = "{}";
+        else if (flag.startsWith("-i") || flag.startsWith("--replace=")) replace = flag.slice(flag.startsWith("-i") ? 2 : 10);
+        else if (/^-[adEnLPs]$/.test(flag)) rest.shift();
       }
+      if (rest[0] === "--") rest.shift();
+      if (replace) rest = rest.map((word) => word.split(replace).join("$XARGS"));
+      else rest.push("$XARGS");
     } else if (program === "npx" || program === "bunx") {
       rest.shift();
       const call = shellCall(rest);
@@ -457,6 +518,7 @@ function checkGit(args, context, env = {}) {
     else if (flag.startsWith("--git-dir=") || flag.startsWith("--work-tree=")) configured = true;
     else if (flag === "--namespace") i++;
   }
+  if (args[i] === "clean") return checkGitClean(args.slice(i + 1));
   if (args[i] !== "push") return;
   const rest = args.slice(i + 1);
   let force = false;
@@ -505,6 +567,27 @@ function checkGit(args, context, env = {}) {
   }
   const hit = targets.find((target) => PROTECTED_BRANCHES.has(target));
   if (hit) deny(`${remove ? "Deleting" : "Force pushing"} ${hit} rewrites shared history.`);
+}
+
+// `git clean -x`/`-X` also deletes ignored files: `.env` files, local
+// secrets and build caches that git cannot restore.
+function checkGitClean(args) {
+  let ignored = false;
+  let dryRun = false;
+  for (let j = 0; j < args.length; j++) {
+    const word = args[j];
+    if (word === "--") break;
+    if (word === "--dry-run") dryRun = true;
+    else if (word === "-e" || word === "--exclude") j++;
+    else if (/^-[a-zA-Z]+$/.test(word)) {
+      // `-e` takes the rest of the cluster (or the next word) as its pattern.
+      const flags = word.includes("e") ? word.slice(1, word.indexOf("e")) : word.slice(1);
+      if (/[xX]/.test(flags)) ignored = true;
+      if (flags.includes("n")) dryRun = true;
+      if (word.endsWith("e")) j++;
+    }
+  }
+  if (ignored && !dryRun) deny("git clean -x deletes ignored files such as .env files and local secrets, which git cannot restore.");
 }
 
 // Expands an absolute glob the way bash does, following symlinked folders.
@@ -600,6 +683,7 @@ function checkEas(args) {
   if (sub === "submit" || sub.startsWith("submit:")) deny("eas submit uploads to the App Store or Play Store; that stays with Eric.");
   if (args.some((word) => word === "--auto-submit" || word.startsWith("--auto-submit-with-profile"))) deny("--auto-submit uploads to the App Store or Play Store; that stays with Eric.");
   if (sub === "deploy" && args.some((word) => word === "--prod" || word === "--production")) deny("eas deploy --prod ships the production web app.");
+  if (sub === "workflow:run") deny("eas workflow:run starts an EAS workflow, which can build, submit or update production.");
   if (sub === "build") {
     if (args.includes("--local")) return;
     const profile = optionValue(args, ["--profile", "-e"]);
@@ -613,13 +697,31 @@ function checkEas(args) {
   }
 }
 
+const nonProduction = (environment) => environment !== undefined && environment !== "" && !PRODUCTION.test(environment);
+
 function checkWrangler(args) {
   const words = args.filter((word) => !word.startsWith("-"));
-  const [sub, second] = words;
+  const [sub, second, third] = words;
+  const environment = optionValue(args, ["--env", "-e"]);
+  if (sub === "pages") {
+    if (second === "deploy" || second === "publish") {
+      // Without --branch, Pages uses the checked-out git branch, which may be the production one.
+      const branch = optionValue(args, ["--branch"]);
+      if (!branch || PROTECTED_BRANCHES.has(branch) || PRODUCTION.test(branch)) deny(`wrangler pages ${second} without a preview --branch publishes the production site.`);
+    }
+    if (second === "secret" && ["put", "delete", "bulk"].includes(third) && environment !== "preview") deny(`wrangler pages secret ${third} without --env preview changes the production site.`);
+    if ((second === "project" || second === "deployment") && third === "delete") deny(`wrangler pages ${second} delete cannot be taken back.`);
+    return;
+  }
+  if (sub === "d1") {
+    const remoteWrite = args.includes("--remote") && (second === "execute" || (second === "migrations" && third === "apply"));
+    const destructive = second === "delete" || (second === "time-travel" && third === "restore");
+    if ((remoteWrite || destructive) && !nonProduction(environment)) deny(`wrangler d1 ${second}${third && second !== "execute" && second !== "delete" ? ` ${third}` : ""} against the remote database without a non-production --env changes production data.`);
+    return;
+  }
   const shipping = sub === "deploy" || sub === "publish" || sub === "rollback" || (sub === "versions" && second === "deploy") || (sub === "secret" && ["put", "delete", "bulk"].includes(second));
   if (!shipping) return;
-  const environment = optionValue(args, ["--env", "-e"]);
-  if (environment === undefined || environment === "" || PRODUCTION.test(environment)) {
+  if (!nonProduction(environment)) {
     deny(`wrangler ${sub}${second && sub !== "deploy" ? ` ${second}` : ""} without a non-production --env changes the production Worker.`);
   }
 }
@@ -637,6 +739,11 @@ function checkScript(program, args) {
   };
   let j = skip(0);
   let script = args[j];
+  // `npm publish`, `pnpm -r publish`, `yarn npm publish`: a published version cannot be taken back.
+  if (script === "publish" || (program === "yarn" && script === "npm" && args[j + 1] === "publish")) {
+    if (!args.includes("--dry-run")) deny(`${program} publish releases a package version to the registry, which cannot be taken back.`);
+    return undefined;
+  }
   if (script === "run" || script === "run-script") {
     j = skip(j + 1);
     script = args[j];
@@ -649,6 +756,53 @@ function checkScript(program, args) {
 }
 
 const BINS = new Set(["convex", "eas", "eas-cli", "wrangler", "rm", "git"]);
+// Programs a substituted command name (`$(echo eas) submit`) is tried as.
+const GUARDED = ["rm", "git", "convex", "eas", "wrangler", "pnpm", "npm", "yarn", "find", "sh"];
+const FIND_EXEC = new Set(["-exec", "-execdir", "-ok", "-okdir"]);
+// Tests that narrow what `find` deletes in a project root (`-name '*.log'`).
+const FIND_FILTER = /^-(i?name|i?path|i?wholename|i?regex|empty|newer\w*|[acm](time|min))$/;
+
+// The script a shell reads from a pipe: a heredoc body or the words of `echo`
+// or `printf`. Undefined when it cannot be known (`curl … | sh`).
+function pipedScript(from) {
+  if (typeof from.stdin === "string") return from.stdin;
+  const { words } = unwrap(from);
+  if (!words?.length) return undefined;
+  const program = programName(words[0]);
+  let args = words.slice(1);
+  if (program === "echo") while (args.length && /^-[neE]+$/.test(args[0])) args = args.slice(1);
+  else if (program !== "printf") return undefined;
+  // A `$` marks an expansion whose value the guard cannot see.
+  if (args.some((word) => word.includes("$"))) return undefined;
+  return args.join(" ");
+}
+
+// True when a shell's words (`bash`, `sh -s -- x`) make it read its script
+// from stdin rather than from `-c` or a script file.
+function readsStdin(args) {
+  for (let j = 0; j < args.length; j++) {
+    const word = args[j];
+    if (word === "--") return args[j + 1] === undefined;
+    if (/^[-+]o$/.test(word) || word === "--rcfile" || word === "--init-file") { j++; continue; }
+    if (/^-[a-zA-Z]*s[a-zA-Z]*$/.test(word)) return true;
+    if (!word.startsWith("-") && !word.startsWith("+")) return false;
+  }
+  return true;
+}
+
+// True when an interpreter (`node`, `python3 -u`, `perl -`) reads its program
+// from stdin rather than from an inline option or a script file.
+function interpreterReadsStdin(program, args) {
+  const inline = INTERPRETERS.find(([name]) => name.test(program))?.[1];
+  if (!inline) return false;
+  for (let j = 0; j < args.length; j++) {
+    const word = args[j];
+    if (word === "-") return true;
+    if (word === "--") return args[j + 1] === undefined || args[j + 1] === "-";
+    if (inline.test(word) || !word.startsWith("-")) return false;
+  }
+  return true;
+}
 
 export function check(command, options) {
   const cwdStart = options.cwd;
@@ -696,7 +850,10 @@ export function check(command, options) {
     if (last === undefined) return current;
     return last === ".." ? dirname(current) : join(current, last);
   };
-  const realRoot = (root) => { try { return realpathSync(root); } catch { return resolve(root); } };
+  // Resolves a root the same way as a target, so a root that does not exist
+  // yet under a symlinked folder (macOS `/tmp` -> `/private/tmp`) still
+  // matches the target it names.
+  const realRoot = (root) => real(`${resolve(root)}/`);
   const roots = [project, ...extraRoots, ...tempRoots].filter(Boolean).map(realRoot);
   // A root itself or a folder holding one (a checkout under /tmp) is never
   // deletable, even when another allowed root contains it.
@@ -707,7 +864,11 @@ export function check(command, options) {
   };
   const isRoot = (path) => roots.some((root) => root === real(path));
   let cdSeen = false;
+  // Folders a `mkdir` earlier in this call creates, so a later `cd` into one succeeds.
+  const created = new Set();
   const hasSubshell = /[()`]/.test(command);
+  // Script files a `bash < file` is reading, so a file that feeds itself stops.
+  const reading = new Set();
   const context = { get cwd() { return cwd; }, get cdSeen() { return cdSeen; }, resolvePath, isDeletable, isRoot };
 
   // `inherited` holds variables set for a wrapping command (`KEY=x sh -c '…'`).
@@ -745,13 +906,98 @@ export function check(command, options) {
         else {
           const next = target === undefined ? home : resolvePath(target);
           // (Only when the current folder exists, so a missing target means a failed cd.)
-          const failed = next === undefined || (!isDirectory(next) && (cwd === undefined || isDirectory(cwd)));
+          const failed = next === undefined || (!isDirectory(next) && !created.has(resolve(next)) && (cwd === undefined || isDirectory(cwd)));
           cwd = failed ? undefined : next;
         }
         continue;
       }
+      if (/\$/.test(words[0])) {
+        // `$(echo eas) submit`, `$CMD -rf /`: the guard cannot see which
+        // program runs, so it asks when any guarded program would be denied.
+        for (const candidate of [args, ...GUARDED.map((name) => [name, ...args])]) {
+          if (!candidate.length) continue;
+          const before = cwd;
+          try {
+            visit([candidate], env);
+          } catch (error) {
+            if (error instanceof Decision) ask(`could not tell which program "${words[0]}" runs, and with these arguments it may be irreversible.`);
+            throw error;
+          } finally {
+            cwd = before;
+          }
+        }
+        if (restore) cwd = saved;
+        continue;
+      }
+      if (SHELLS.has(program) && raw.stdinFile !== undefined && readsStdin(args)) {
+        // `bash < script.sh`: the file is the script, so its commands are checked.
+        const path = resolvePath(raw.stdinFile);
+        const key = path === undefined ? undefined : resolve(path);
+        let script;
+        try { if (key !== undefined && !reading.has(key)) script = readFileSync(key, "utf8"); } catch { /* unreadable: ask below */ }
+        if (script === undefined) ask(`could not tell what ${program} runs: it reads its script from "${raw.stdinFile}".`);
+        const before = cwd;
+        reading.add(key);
+        visit(parse(script), env);
+        reading.delete(key);
+        cwd = before;
+        if (restore) cwd = saved;
+        continue;
+      }
+      if (raw.pipedFrom && interpreterReadsStdin(program, args) && pipedScript(raw.pipedFrom) === undefined) {
+        // `curl … | node`: like `node -e`, a visible program passes; an unknown one asks.
+        ask(`could not tell what ${program} runs: it reads its program from a pipe.`);
+      }
+      if (SHELLS.has(program) && raw.pipedFrom && readsStdin(args)) {
+        // `echo 'eas submit' | sh`, `cat <<EOF | bash`: the pipe is the script.
+        const script = pipedScript(raw.pipedFrom);
+        if (script === undefined) ask(`could not tell what ${program} runs: it reads its script from a pipe.`);
+        const before = cwd;
+        visit(parse(script), env);
+        cwd = before;
+        if (restore) cwd = saved;
+        continue;
+      }
+      if (program === "mkdir") {
+        for (let j = 0; j < args.length; j++) {
+          if (args[j] === "-m" || args[j] === "--mode") { j++; continue; }
+          if (args[j].startsWith("-")) continue;
+          const path = resolvePath(args[j]);
+          // `mkdir -p a/b` creates `a` too.
+          for (let dir = path === undefined ? undefined : resolve(path); dir && dir !== dirname(dir); dir = dirname(dir)) created.add(dir);
+        }
+      }
       dispatch(program, args, env);
       if (restore) cwd = saved;
+    }
+  };
+  // `find … -delete` and `find … -exec rm`: every start folder must be
+  // deletable, or a project root with a name or path filter.
+  const checkFind = (args, env) => {
+    let j = 0;
+    while (j < args.length && (/^-[HLP]$/.test(args[j]) || /^-O\d*$/.test(args[j]) || args[j] === "-D")) j += args[j] === "-D" ? 2 : 1;
+    const starts = [];
+    while (j < args.length && !args[j].startsWith("-") && args[j] !== "(" && args[j] !== "!") starts.push(args[j++]);
+    const expression = args.slice(j);
+    let deletes = expression.includes("-delete");
+    for (let k = 0; k < expression.length; k++) {
+      if (!FIND_EXEC.has(expression[k])) continue;
+      const end = expression.findIndex((word, n) => n > k && (word === ";" || word === "+"));
+      const command = expression.slice(k + 1, end === -1 ? undefined : end);
+      if (command.length) {
+        visit([command], env);
+        const inner = unwrap(command).words;
+        if (inner?.length && programName(inner[0]) === "rm") deletes = true;
+      }
+      k = end === -1 ? expression.length : end;
+    }
+    if (!deletes) return;
+    const filtered = expression.some((word) => FIND_FILTER.test(word));
+    for (const start of starts.length ? starts : ["."]) {
+      if (/[*?[{]/.test(start)) ask(`could not tell which folders the find start "${start}" expands to.`);
+      const path = context.resolvePath(start);
+      if (path === undefined) ask(`could not resolve the find start "${start}".`);
+      if (!(isDeletable(path) || (filtered && isRoot(path)))) deny(`find ${start} with -delete or -exec rm reaches outside the project, or empties a project root.`);
     }
   };
   const dispatch = (program, args, env) => {
@@ -760,6 +1006,7 @@ export function check(command, options) {
     else if (program === "convex") checkConvex(args, env);
     else if (program === "eas" || program === "eas-cli") checkEas(args);
     else if (program === "wrangler") checkWrangler(args);
+    else if (program === "find") checkFind(args, env);
     else if (["pnpm", "npm", "yarn", "bun"].includes(program)) {
       const bin = checkScript(program, args);
       if (bin) dispatch(bin.program, bin.args, env);

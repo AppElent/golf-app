@@ -56,8 +56,11 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
       # Add each package listed in patchedDependencies.
 
+  # Actions are pinned to commit SHAs with a `# vX.Y.Z` comment; Dependabot
+  # updates both. List composite action directories next to "/", which alone
+  # covers only .github/workflows.
   - package-ecosystem: github-actions
-    directory: "/"
+    directories: ["/", "/.github/actions/*"]
     schedule: { interval: monthly }
     commit-message: { prefix: "chore(ci)" }
     labels: [dependencies]
