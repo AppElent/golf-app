@@ -15,15 +15,13 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: ./.github/actions/setup
-      - run: pnpm run check
       # Manifest and .env.example only; needs no credentials.
       - run: pnpm env:check
       # Toolkit conformance; any new drift fails the PR.
       - run: node scripts/check-project.mjs --strict
-      # Web, convex, packages/core and apps/mobile in one root script.
-      - run: pnpm run typecheck
-      - run: pnpm test
-      - run: pnpm test:mobile
+      # The gate agents run locally: check, typecheck (web, convex,
+      # packages/core, apps/mobile), test and test:mobile in one root script.
+      - run: pnpm verify
       # Build catches bundling/plugin/SSR-compile breakage that typecheck + tests
       # miss, before deploy.yml builds again with real environment values.
       # No SENTRY_AUTH_TOKEN or DSN: this artifact is never deployed, so it
