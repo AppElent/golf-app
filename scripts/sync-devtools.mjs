@@ -19,7 +19,8 @@ const standardsStart = '<!-- appelent-standards:start -->';
 const standardsEnd = '<!-- appelent-standards:end -->';
 const standardsPaths = ['CODING_STANDARDS.md', 'DESIGN_SYSTEM.md'];
 const block = `${start}\nBefore implementing or reviewing code, read CODING_STANDARDS.md.\nFor UI work, also read DESIGN_SYSTEM.md. Follow their task-specific links.\n${end}`;
-const claudeBlock = `${start}\nRead [AGENTS.md](AGENTS.md).\n${end}`;
+// `@AGENTS.md` imports the file into every Claude Code session; a plain link is only read when a session opens it.
+const claudeBlock = `${start}\n@AGENTS.md\n${end}`;
 // Retired: pointed at the appelent plugin and appelent-packages feature catalog.
 const retiredStart = '<!-- appelent-managed:start -->';
 const retiredEnd = '<!-- appelent-managed:end -->';
