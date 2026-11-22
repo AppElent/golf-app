@@ -1,7 +1,7 @@
 ---
 type: contract
 description: Read when changing sign-in, the web app shell, or who may read or write a user's data in Convex.
-version: 1.4.1
+version: 1.5.0
 status: current
 ---
 
@@ -44,6 +44,14 @@ signing in with Clerk.
   a login deleted in another app or the Clerk dashboard takes its Fairway data
   with it. Unsigned or badly signed deliveries get 401 and do nothing; other
   events get 200 and do nothing.
+- **Account portal:** `convex/accountPortal.ts` serves account.appelent.nl
+  (developer-home `standards/account-portal.md`, contract 1): `summary`
+  (counts per kind, capped at 1,000 reads, `null` when Fairway holds nothing),
+  `deletionBlocker` (always `null`: nothing blocks deleting Fairway data) and
+  `exportPage` (the in-app export's rows, page by page, behind an opaque
+  cursor). They read the caller from the Clerk token only, answer a caller
+  without data or session with `null` or an empty export, and write nothing.
+  `deleteAppData` follows APP-392.
 - **Public pages:** the paths in `PUBLIC_PATHS` (`src/components/LegalPage.tsx`),
   `/` ("Open the Fairway app"), `/privacy` and `/support`, render without
   `AuthGate` and without the tab bar, so anyone, App Store Connect and the phone

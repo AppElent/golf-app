@@ -1,4 +1,4 @@
-import type { ExportPage } from "@fairway/core/data-export";
+import type { ExportPage, ExportStep } from "@fairway/core/data-export";
 import { ConvexError, v } from "convex/values";
 import { internal } from "./_generated/api";
 import type { Doc, Id, TableNames } from "./_generated/dataModel";
@@ -89,43 +89,52 @@ export const exportPage = query({
 			v.object({ table: v.string(), cursor: v.union(v.string(), v.null()) }),
 		),
 	},
-	handler: async (ctx, { step }): Promise<ExportPage> => {
-		const userId = await getUserId(ctx);
-		const table = step?.table ?? OWNED_TABLES[0];
-		const at = OWNED_TABLES.indexOf(table as TableNames);
-		if (at === -1) throw new Error("Unknown export table.");
-		const owned = USER_DATA[OWNED_TABLES[at]] as Owned<TableNames>;
-		const page = await loose(ctx, OWNED_TABLES[at])
-			.withIndex(owned.index, (q) => q.eq(owned.field, userId))
-			.paginate({ cursor: step?.cursor ?? null, numItems: owned.pageSize });
-
-		const tables: Record<string, unknown[]> = {
-			[table]: page.page.map((doc) => omit(doc, owned.field)),
-		};
-		for (const child of childTables(OWNED_TABLES[at])) {
-			const treatment = USER_DATA[child];
-			if (treatment.kind !== "child") continue;
-			const rows = await Promise.all(
-				page.page.map((parent) =>
-					loose(ctx, child)
-						.withIndex(treatment.index, (q) =>
-							q.eq(treatment.field, parent._id),
-						)
-						.collect(),
-				),
-			);
-			tables[child] = rows.flat();
-		}
-
-		const refs = page.page.map((doc) => owned.references?.(doc) ?? {});
-		const next = page.isDone
-			? OWNED_TABLES[at + 1]
-				? { table: OWNED_TABLES[at + 1], cursor: null }
-				: null
-			: { table, cursor: page.continueCursor };
-		return { tables, catalog: await catalogRows(ctx, refs), next };
-	},
+	handler: async (ctx, { step }): Promise<ExportPage> =>
+		exportStep(ctx, await getUserId(ctx), step),
 });
+
+/**
+ * The body of `exportPage` for a given user: one owned table's page, the rows
+ * under it and the catalog rows it names. `accountPortal.exportPage` walks the
+ * same steps, so both exports share one registry walk.
+ */
+export async function exportStep(
+	ctx: QueryCtx,
+	userId: string,
+	step: ExportStep | undefined,
+): Promise<ExportPage> {
+	const table = step?.table ?? OWNED_TABLES[0];
+	const at = OWNED_TABLES.indexOf(table as TableNames);
+	if (at === -1) throw new Error("Unknown export table.");
+	const owned = USER_DATA[OWNED_TABLES[at]] as Owned<TableNames>;
+	const page = await loose(ctx, OWNED_TABLES[at])
+		.withIndex(owned.index, (q) => q.eq(owned.field, userId))
+		.paginate({ cursor: step?.cursor ?? null, numItems: owned.pageSize });
+
+	const tables: Record<string, unknown[]> = {
+		[table]: page.page.map((doc) => omit(doc, owned.field)),
+	};
+	for (const child of childTables(OWNED_TABLES[at])) {
+		const treatment = USER_DATA[child];
+		if (treatment.kind !== "child") continue;
+		const rows = await Promise.all(
+			page.page.map((parent) =>
+				loose(ctx, child)
+					.withIndex(treatment.index, (q) => q.eq(treatment.field, parent._id))
+					.collect(),
+			),
+		);
+		tables[child] = rows.flat();
+	}
+
+	const refs = page.page.map((doc) => owned.references?.(doc) ?? {});
+	const next = page.isDone
+		? OWNED_TABLES[at + 1]
+			? { table: OWNED_TABLES[at + 1], cursor: null }
+			: null
+		: { table, cursor: page.continueCursor };
+	return { tables, catalog: await catalogRows(ctx, refs), next };
+}
 
 function omit(doc: Doc<TableNames>, field: string) {
 	const { [field]: _subject, ...rest } = doc as Record<string, unknown>;

@@ -13,6 +13,7 @@ import { Webhook } from "svix";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { TableNames } from "./_generated/dataModel";
+import { COUNT_KEYS, type PortalExportPage } from "./accountPortal";
 import schema from "./schema";
 import * as seed from "./seed";
 import * as seedPreview from "./seedPreview";
@@ -976,6 +977,208 @@ describe("data export", () => {
 				step: { table: "holes", cursor: null },
 			}),
 		).rejects.toThrow("Unknown export table.");
+	});
+});
+
+describe("account portal", () => {
+	/** Every page from the first (`cursor: null`) until `next` is null. */
+	async function drain(who: Pick<Who, "query">): Promise<PortalExportPage[]> {
+		const pages: PortalExportPage[] = [];
+		let cursor: string | null = null;
+		for (let i = 0; i < 1000; i++) {
+			const page: PortalExportPage = await who.query(
+				api.accountPortal.exportPage,
+				{ cursor },
+			);
+			expect(page).toMatchObject({ contract: 1, app: "fairway" });
+			pages.push(page);
+			if (page.next === null) return pages;
+			cursor = page.next;
+		}
+		throw new Error("Portal export did not finish.");
+	}
+
+	const merged = (pages: PortalExportPage[]) => {
+		const tables: Record<string, unknown[]> = {};
+		for (const page of pages) {
+			for (const [table, rows] of Object.entries(page.tables)) {
+				tables[table] = [...(tables[table] ?? []), ...rows];
+			}
+		}
+		return tables;
+	};
+
+	/** Every row in the database, to show a portal call writes nothing. */
+	const everything = (t: ReturnType<typeof convexTest>) =>
+		t.run(async (ctx) => {
+			const ids: Record<string, string[]> = {};
+			for (const table of Object.keys(USER_DATA) as TableNames[]) {
+				const rows = await ctx.db.query(table).collect();
+				ids[table] = rows.map((row) => row._id as string).sort();
+			}
+			return ids;
+		});
+
+	it("answers a never-used caller with null and an empty export, writing nothing", async () => {
+		const { t, alice, bob, course } = await setup();
+		await fillEveryTable(bob, course, "Bob");
+		const before = await everything(t);
+
+		expect(await alice.query(api.accountPortal.summary, {})).toBeNull();
+		expect(await alice.query(api.accountPortal.deletionBlocker, {})).toBeNull();
+		expect(await drain(alice)).toEqual([
+			{ contract: 1, app: "fairway", tables: {}, next: null },
+		]);
+
+		expect(await everything(t)).toEqual(before);
+	});
+
+	it("answers without a session as a never-used caller", async () => {
+		const t = convexTest(schema, modules);
+		expect(await t.query(api.accountPortal.summary, {})).toBeNull();
+		expect(await t.query(api.accountPortal.deletionBlocker, {})).toBeNull();
+		expect(await drain(t)).toEqual([
+			{ contract: 1, app: "fairway", tables: {}, next: null },
+		]);
+	});
+
+	it("counts the caller's rows and exports them across pages to the end", async () => {
+		const { alice, bob, course } = await setup();
+		const { roundId, copyId } = await fillEveryTable(alice, course, "Alice");
+		await fillEveryTable(bob, course, "Bob");
+
+		expect(await alice.query(api.accountPortal.summary, {})).toEqual({
+			contract: 1,
+			lastActiveAt: null,
+			counts: [
+				{ key: "rounds", count: 1, more: false },
+				{ key: "shots", count: 1, more: false },
+				{ key: "clubs", count: 1, more: false },
+				{ key: "courseCopies", count: 2, more: false },
+				{ key: "courseSuggestions", count: 1, more: false },
+				{ key: "settings", count: 1, more: false },
+			],
+		});
+
+		const pages = await drain(alice);
+		// One course copy per page: the walk goes past several pages.
+		expect(pages.length).toBeGreaterThan(2);
+		for (const page of pages.slice(0, -1)) {
+			expect(typeof page.next).toBe("string");
+		}
+		const tables = merged(pages);
+		// The same rows as the in-app export, catalog rows under their own keys.
+		const inApp = await collectExport((step) =>
+			alice.query(api.account.exportPage, { step }),
+		);
+		for (const [table, rows] of Object.entries(inApp.tables)) {
+			expect(tables[table] ?? [], table).toEqual(rows);
+		}
+		expect(tables.catalogCourses).toEqual(
+			expect.arrayContaining(inApp.catalog.courses),
+		);
+		expect(new Set(tables.catalogTees)).toEqual(new Set(inApp.catalog.tees));
+		expect(tables.rounds).toEqual([expect.objectContaining({ _id: roundId })]);
+		expect(tables.courses).toEqual(
+			expect.arrayContaining([expect.objectContaining({ _id: copyId })]),
+		);
+		// Rows only: a cursor is opaque and goes back to the caller alone.
+		const text = JSON.stringify(tables);
+		expect(text).not.toContain(ALICE.subject);
+		expect(text).not.toContain(BOB.subject);
+		expect(text).not.toContain("Bob: hole 1");
+	});
+
+	it("caps a count at 1,000 rows and says there are more", async () => {
+		const { t, alice } = await setup();
+		await t.run(async (ctx) => {
+			for (let i = 0; i < 1001; i++) {
+				await ctx.db.insert("clubs", {
+					userId: ALICE.subject,
+					name: `Club ${i}`,
+					carryMeters: 100,
+					sortOrder: i,
+				});
+			}
+		});
+		const summary = await alice.query(api.accountPortal.summary, {});
+		expect(summary?.counts).toContainEqual({
+			key: "clubs",
+			count: 1000,
+			more: true,
+		});
+	});
+
+	// Fairway has no deletion blocker: deleteMyData refuses no one, and an
+	// open round (fillEveryTable leaves one active) is the caller's own.
+	it("reports no blocker for a caller mid-round", async () => {
+		const { alice, course } = await setup();
+		await fillEveryTable(alice, course, "Alice");
+		expect(await alice.query(api.rounds.active, {})).not.toBeNull();
+		expect(await alice.query(api.accountPortal.deletionBlocker, {})).toBeNull();
+	});
+
+	it("shows a second account none of the first account's rows", async () => {
+		const { t, alice, bob, course } = await setup();
+		await fillEveryTable(alice, course, "Alice");
+		await fillEveryTable(bob, course, "Bob");
+
+		const aliceIds = await t.run(async (ctx) => {
+			const ids: string[] = [];
+			for (const table of OWNED_TABLES) {
+				const owned = USER_DATA[table];
+				if (owned.kind !== "owned") continue;
+				const rows = await ctx.db.query(table).collect();
+				for (const row of rows) {
+					if ((row as Record<string, unknown>)[owned.field] === ALICE.subject) {
+						ids.push(row._id);
+					}
+				}
+			}
+			return ids;
+		});
+		expect(aliceIds.length).toBeGreaterThan(0);
+
+		const bobRows = Object.values(merged(await drain(bob))).flat();
+		const bobIds = bobRows.map((row) => (row as { _id: string })._id);
+		expect(bobIds.filter((id) => aliceIds.includes(id))).toEqual([]);
+		const bobText = JSON.stringify(bobRows);
+		expect(bobText).not.toContain("Alice: hole 1");
+		expect(bobText).not.toContain("Alice's copy");
+		expect(bobText).not.toContain(ALICE.subject);
+		// Bob's counts are his own, not the sum of both accounts.
+		const summary = await bob.query(api.accountPortal.summary, {});
+		expect(summary?.counts).toContainEqual({
+			key: "courseCopies",
+			count: 2,
+			more: false,
+		});
+	});
+
+	it("names every owned table in the summary, each once", async () => {
+		expect(COUNT_KEYS.map((c) => c.table).sort()).toEqual(
+			[...OWNED_TABLES].sort(),
+		);
+		expect(new Set(COUNT_KEYS.map((c) => c.key)).size).toBe(COUNT_KEYS.length);
+		const { alice, course } = await setup();
+		await fillEveryTable(alice, course, "Alice");
+		const summary = await alice.query(api.accountPortal.summary, {});
+		expect(summary?.counts).toHaveLength(OWNED_TABLES.length);
+		expect(summary?.counts.every((c) => c.count > 0)).toBe(true);
+	});
+
+	it("refuses a cursor it did not write", async () => {
+		const { alice } = await setup();
+		for (const cursor of [
+			"not json",
+			"null",
+			JSON.stringify({ table: "holes", cursor: null }),
+			JSON.stringify({ table: "rounds", cursor: 7 }),
+		]) {
+			await expect(
+				alice.query(api.accountPortal.exportPage, { cursor }),
+			).rejects.toThrow(ConvexError);
+		}
 	});
 });
 

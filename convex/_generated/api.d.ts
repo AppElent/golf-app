@@ -9,6 +9,7 @@
  */
 
 import type * as account from "../account.js";
+import type * as accountPortal from "../accountPortal.js";
 import type * as catalog_index from "../catalog/index.js";
 import type * as clubs from "../clubs.js";
 import type * as courseCatalog from "../courseCatalog.js";
@@ -31,6 +32,7 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   account: typeof account;
+  accountPortal: typeof accountPortal;
   "catalog/index": typeof catalog_index;
   clubs: typeof clubs;
   courseCatalog: typeof courseCatalog;
