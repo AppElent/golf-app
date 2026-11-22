@@ -22,14 +22,12 @@ const APP = "fairway";
 /** The most rows one count reads; `more` means "this many or more". */
 const COUNT_CAP = 1000;
 
-type OwnedTable = (typeof OWNED_TABLES)[number];
-
 /**
- * The portal's stable key per owned table, in display order. Every owned table
- * in the registry needs a key here (the test fails otherwise); the portal owns
- * the labels.
+ * The portal's stable key per owned table, in display order. Exactly the
+ * registry's owned tables, each once (`functions.test.ts` compares the sets);
+ * the portal owns the labels.
  */
-const COUNT_KEYS: readonly { table: OwnedTable; key: string }[] = [
+export const COUNT_KEYS: readonly { table: TableNames; key: string }[] = [
 	{ table: "rounds", key: "rounds" },
 	{ table: "shots", key: "shots" },
 	{ table: "clubs", key: "clubs" },
@@ -51,7 +49,11 @@ export interface PortalSummary {
 	counts: PortalCount[];
 }
 
-/** The caller's rows per kind, or null when Fairway holds nothing for them. */
+/**
+ * The caller's rows per kind, or null when Fairway holds nothing for them.
+ * Child rows (scores, holes) hang under owned rows, so all-zero owned counts
+ * mean no data at all. Reads at most 1,001 small rows per owned table.
+ */
 export const summary = query({
 	args: {},
 	handler: async (ctx): Promise<PortalSummary | null> => {

@@ -13,7 +13,7 @@ import { Webhook } from "svix";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { TableNames } from "./_generated/dataModel";
-import type { PortalExportPage } from "./accountPortal";
+import { COUNT_KEYS, type PortalExportPage } from "./accountPortal";
 import schema from "./schema";
 import * as seed from "./seed";
 import * as seedPreview from "./seedPreview";
@@ -1155,7 +1155,11 @@ describe("account portal", () => {
 		});
 	});
 
-	it("names every owned table in the summary", async () => {
+	it("names every owned table in the summary, each once", async () => {
+		expect(COUNT_KEYS.map((c) => c.table).sort()).toEqual(
+			[...OWNED_TABLES].sort(),
+		);
+		expect(new Set(COUNT_KEYS.map((c) => c.key)).size).toBe(COUNT_KEYS.length);
 		const { alice, course } = await setup();
 		await fillEveryTable(alice, course, "Alice");
 		const summary = await alice.query(api.accountPortal.summary, {});
