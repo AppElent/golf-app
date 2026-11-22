@@ -3,7 +3,7 @@
 
 /* Colours marked "themed" change in dark mode (the media query below), so
    the app column follows the system setting. The rest are brand fills that
-   look the same in both themes: pine (the Play screen), flag, live, mint. */
+   look the same in both themes: pine, flag, live, mint. */
 @theme {
 	/* surfaces & lines (themed) */
 	/* canvas: the app column's background */
@@ -23,7 +23,6 @@
 	--color-cream: #f3efe4;
 	/* greens */
 	--color-pine: #0f3d2a;
-	--color-pine-light: #144d34;
 	/* pine-fill: a pine button or badge under cream text (themed: lifted in
 	   dark mode so it stands off the canvas) */
 	--color-pine-fill: #0f3d2a;
@@ -31,17 +30,14 @@
 	--color-pine-ink: #0f3d2a;
 	/* live: green button fill under white text (course editor Save, Send suggestion) */
 	--color-live: #247a4d;
-	/* live-ink: green text on cream or on a live/15 tint */
+	/* live-ink: green text on cream */
 	--color-live-ink: #1f6b43;
 	--color-mint: #7fe0a6;
-	--color-mint-soft: #9fc7ae;
 	/* accents & ink */
 	/* flag: the CTA fill under white text */
 	--color-flag: #c93f1d;
 	/* flag-ink: orange-red text (errors, offline) on cream or a flag tint */
 	--color-flag-ink: #a73619;
-	/* flag-soft: orange-red text on pine (the web Play screen) */
-	--color-flag-soft: #ffa48a;
 	/* ink, moss, stone, live-ink and flag-ink are themed */
 	--color-ink: #16241c;
 	--color-moss: #5e6e64;
@@ -51,20 +47,6 @@
 	--color-on-stone: #ffffff;
 	--color-sand: #eadfb8;
 	--color-water: #8fbfd0;
-	/* map layers */
-	--color-map-rough: #8fa86b;
-	--color-map-semi: #a9c07e;
-	--color-map-fairway: #c6da9c;
-	--color-map-green: #6fc188;
-	--color-map-green-edge: #4fa76c;
-	--color-map-green-light: #8fd6a2;
-	--color-map-fairway-edge: #d8e7b4;
-	--color-map-fairway-stripe: #cee0a6;
-	--color-map-water-edge: #6fa9bd;
-	--color-map-water-light: #a9d3e0;
-	--color-map-sand-edge: #cdbd84;
-	/* map-ink: dark label fill and label text on the hole map; not themed */
-	--color-map-ink: #16241c;
 	/* type: body text in Hanken Grotesk, titles and numbers in Space Grotesk;
 	   both come from the font import above */
 	--font-sans: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;

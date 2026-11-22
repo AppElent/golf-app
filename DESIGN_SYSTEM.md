@@ -78,9 +78,8 @@ Designers and coding agents start from it; product decisions below still bind th
   `text-jumbo` 56. Two old sizes were folded in: 10.5 (bottom-nav labels)
   became `text-caption` 11, and 12.5 became `text-label` 13.
 - **Colour roles:** `flag` and `live` are fills under white text. Text in those
-  hues uses `flag-ink` and `live-ink`, which pass on cream and on a `/15` tint.
-  On the pine Play screen, error text is `flag-soft` and quiet text `mint-soft`;
-  `stone` and `moss` are for cream and white cards only.
+  hues uses `flag-ink` and `live-ink`, which pass on cream. `stone` and `moss`
+  are for cream and white cards only.
 - **Links:** `--page-link` is themed with the app column (light `#246f76`,
   hover `--page-link-hover`; dark `#6fcfc6`). The link rule sits in the base
   layer, so a `text-*` class on a link (bottom nav, inline links) applies.
@@ -94,8 +93,9 @@ Designers and coding agents start from it; product decisions below still bind th
   `pine-ink` (pine text, icons and rings, mint in dark) and `pine-fill` (a pine
   button under cream text, lifted in dark so it stands off the canvas). Never
   `bg-cream`, `bg-white/N` or `text-pine` in the column. The brand fills
-  (`pine` and `pine-light` for the Play screen, `flag`, `live`, `mint`) and the
-  `map-*` colours, including `map-ink` for hole-map labels, are not themed.
+  (`pine`, `flag`, `live`, `mint`) are not themed; the round-era `pine-light`,
+  `mint-soft`, `flag-soft` and `map-*` tokens went with the web round screens
+  (APP-235, APP-502).
   `src/theme.test.ts` checks every text token against every ground and tint
   in both themes. Field placeholders are `stone`. Clerk's sign-in card takes
   the same tokens in dark mode through `appearance` variables
@@ -123,15 +123,10 @@ and the "Connecting…" note (`text-muted`, near-white, → `stone`).
 | Web: `stone` text on white/60 card | light + dark | **2.91** | 5.03 |
 | Web: `stone` text on white/90 nav | light + dark | **3.03** | 5.24 |
 | Web: green text on cream (`live` → `live-ink`) | light + dark | **2.95** | 5.64 |
-| Web: green text on a `live/15` tint (SyncPill) | light + dark | **2.54** | 4.65 |
 | Web: white on `live` (selected PillToggle) | light + dark | **3.39** | 5.30 |
 | Web: white on `flag` (CTA) | light + dark | **3.85** | 4.99 |
 | Web: Home CTA subtitle (white/80 → white) on `flag` | light + dark | **2.99** | 4.99 |
 | Web: error text on cream (`flag` → `flag-ink`) | light + dark | **3.36** | 5.74 |
-| Web: error text on a `flag/15` tint (SyncPill offline) | light + dark | **2.81** | 4.67 |
-| Web: error text on pine Play (`flag` → `flag-soft`) | light + dark | **3.17** | 6.35 |
-| Web: OSM credit on pine Play (`stone` → `mint-soft`) | light + dark | **3.97** | 6.54 |
-| Web: Play "No active round" text on cream (`mint-soft` → `moss`) | light + dark | **1.62** | 4.70 |
 | Web: link on `page-base` | light | **3.34** | 5.10 |
 | Web: link in the app column (cream) | light | **3.32** | 5.06 |
 | Web: link in the app column (cream) | dark | **1.27** | 5.06 |
