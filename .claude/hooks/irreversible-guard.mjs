@@ -137,7 +137,13 @@ export function parse(source) {
       inWord = true;
       i++;
       while (i < source.length && source[i] !== '"') {
-        if (source[i] === "\\" && i + 1 < source.length) { word += source[i + 1]; i += 2; continue; }
+        // Inside double quotes a backslash escapes only $ ` " \ and a newline;
+        // before anything else it stays (`"a\n"` is `a\n`, which printf reads).
+        if (source[i] === "\\" && i + 1 < source.length && '$`"\\\n'.includes(source[i + 1])) {
+          if (source[i + 1] !== "\n") word += source[i + 1];
+          i += 2;
+          continue;
+        }
         if (source[i] === "$" && source[i + 1] === "(") {
           const end = closeParen(i + 2);
           commands.push(...parse(source.slice(i + 2, end)));
