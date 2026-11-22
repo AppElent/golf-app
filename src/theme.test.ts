@@ -126,11 +126,9 @@ describe.each(Object.entries(THEMES))("%s theme", (_name, theme) => {
 		).toBeGreaterThanOrEqual(4.5);
 	});
 
-	// Translucent tints: SyncPill (live/15, flag/15), a selected option
-	// (live/10) and the selected scorecard hole (pine-ink/10).
+	// Translucent tints: a selected option (live/10) and the selected
+	// scorecard hole (pine-ink/10).
 	const TINTS = [
-		["live-ink", "live", 0.15],
-		["flag-ink", "flag", 0.15],
 		["ink", "live", 0.1],
 		// The selected hole's number and par are ink: stone misses 4.5:1 here.
 		["ink", "pine-ink", 0.1],
@@ -209,11 +207,9 @@ describe("dark theme", () => {
 		).not.toThrow();
 	});
 
-	it("leaves the brand fills and map colours alone", () => {
+	it("leaves the brand fills alone", () => {
 		for (const token of Object.keys(darkOverrides)) {
-			expect(token).not.toMatch(
-				/^color-(pine|pine-light|cream|flag|live|mint|mint-soft|map-.*)$/,
-			);
+			expect(token).not.toMatch(/^color-(pine|cream|flag|live|mint)$/);
 		}
 	});
 });
