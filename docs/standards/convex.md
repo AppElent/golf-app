@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when writing or reviewing Convex functions, schema changes, migrations, seeds, tests, or account deletion and export.
-version: 2.3.0
+version: 2.3.1
 applies_to: [backend]
 ---
 
@@ -46,7 +46,7 @@ Every public function authenticates and validates its caller, fails with a keyed
 
 - Reference data is a committed catalog (JSON or TypeScript under `convex/`), written to the database by an idempotent internal seed that upserts by a stable key. It reruns safely on every deploy; the catalog wins over database edits.
 - Seeds and preview runs make no network calls. A separate script refreshes a catalog from its external source and commits the result for review.
-- A preview deployment runs one internal seed entry point (`--preview-run seedPreview:seedPreview`) that loads catalogs only. Per-user demo data needs an identity and is seeded on request with `convex run ... --identity`.
+- A preview deployment runs one internal seed entry point (`--preview-run seedPreview:seedPreview`) that loads catalogs only. Per-user demo data needs an identity and is seeded on request. `convex run --identity` only runs public functions, so on a dev or worktree deployment (never production) push a throwaway public wrapper that calls the internal seed (`ctx.runAction(internal.seed.seedDummyData, {})`), run it with `convex run <file>:<name> --identity '{"subject":"user_…"}'`, then delete it and push again.
 
 ### Development deployments
 
