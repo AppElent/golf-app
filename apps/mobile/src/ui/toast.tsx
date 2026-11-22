@@ -7,8 +7,9 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Platform, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { FullWindowOverlay } from "react-native-screens";
 import { radius, spacing, type Tokens, useThemedStyles } from "../theme";
 import { AppText } from "./text";
 
@@ -46,27 +47,40 @@ export function ToastProvider({ children }: { children: ReactNode }) {
 		<ToastContext.Provider value={api}>
 			{children}
 			{toast ? (
-				<View
-					style={[styles.wrap, { top: insets.top + spacing.sm }]}
-					pointerEvents="box-none"
-				>
-					<Pressable
-						accessibilityRole="alert"
-						accessibilityLiveRegion="assertive"
-						onPress={() => setToast(null)}
-						style={[
-							styles.toast,
-							toast.kind === "error" ? styles.error : styles.success,
-						]}
+				<AboveModals>
+					<View
+						style={[styles.wrap, { top: insets.top + spacing.sm }]}
+						pointerEvents="box-none"
 					>
-						<AppText variant="body" style={styles.text}>
-							{toast.message}
-						</AppText>
-					</Pressable>
-				</View>
+						<Pressable
+							accessibilityRole="alert"
+							accessibilityLiveRegion="assertive"
+							onPress={() => setToast(null)}
+							style={[
+								styles.toast,
+								toast.kind === "error" ? styles.error : styles.success,
+							]}
+						>
+							<AppText variant="body" style={styles.text}>
+								{toast.message}
+							</AppText>
+						</Pressable>
+					</View>
+				</AboveModals>
 			) : null}
 		</ToastContext.Provider>
 	);
+}
+
+/**
+ * iOS presents Play (`fullScreenModal`) and the sheets as their own view
+ * controllers over the root, so a toast drawn in the root sits behind them:
+ * "Mark shot" off the hole looked like it did nothing. A full-window overlay
+ * draws above every presented screen and lets touches outside the toast through.
+ */
+function AboveModals({ children }: { children: ReactNode }) {
+	if (Platform.OS !== "ios") return children;
+	return <FullWindowOverlay>{children}</FullWindowOverlay>;
 }
 
 export function useToast() {
