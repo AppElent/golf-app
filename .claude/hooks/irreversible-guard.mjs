@@ -777,8 +777,10 @@ function pipedScript(from) {
   return program === "printf" ? printfOutput(args) : args.join(" ");
 }
 
-// Backslash escapes `printf` reads in its format and in `%b` arguments.
-const PRINTF_ESCAPES = { n: "\n", t: "\t", r: "\r", "\\": "\\", '"': '"', "'": "'", a: "\x07", b: "\b", f: "\f", v: "\v" };
+// Backslash escapes `printf` reads alike in its format and in `%b` arguments.
+// `\"` and `\'` are left out: bash drops the backslash in a format but keeps it
+// in `%b`, and dash keeps it in both, so they make the shell ask.
+const PRINTF_ESCAPES = { n: "\n", t: "\t", r: "\r", "\\": "\\", a: "\x07", b: "\b", f: "\f", v: "\v" };
 
 // Replaces the escapes in `text`. Undefined for an escape it does not know (`\0101`, `\x41`).
 function printfEscapes(text) {

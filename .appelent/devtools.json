@@ -4,7 +4,7 @@
   "scope": "project",
   "ref": "main",
   "commit": "local",
-  "manifestHash": "d1c8e14baab98456b02d7626a3e2f845653294b0bea8152673c36d866a7e004e",
+  "manifestHash": "30a75e6236be7c1a6be4f05d72a02c1171f5fb61448c1c6aea2c50269c26327e",
   "files": {
     "docs/adr/.template.md": {
       "sha256": "f28b286102fb1a00512455a06896e5da3c47d67a14b0ee6c08fa84258af24adf",
@@ -434,8 +434,8 @@
       "sha256": "46b56e44bf07a901ca6f23c11b6bf4d78c68a11b70c01195efeb1e8d7cba8c81"
     },
     "docs/standards/convex.md": {
-      "sha256": "e5873e0eb3a8c3edee8f04cdf6a512108f0adaeec982d233f991377d03ef2e68",
-      "version": "2.3.0"
+      "sha256": "17947756b35e79b260b4ddcd3714a93190d0d1a08f16a71dafce6387240ab624",
+      "version": "2.3.1"
     },
     "docs/standards/deployments.md": {
       "sha256": "e9276f753c1c7fb2341b30c416326f785a6c16a880603523633a1851ba49a9bb",
@@ -498,7 +498,7 @@
       "version": "1.6.0"
     },
     "docs/standards/agent-permissions/irreversible-guard.mjs": {
-      "sha256": "fe1ac3b0b4f68365aa08e4cb1aefc4ebedf6f6498171cdde406e41877c6a7524"
+      "sha256": "084978224124b370fa220dff233f74adbfd07020c05f12bf8b1741b36bd57a76"
     },
     "scripts/lib/project/agent-permissions.mjs": {
       "sha256": "3676673615c25e7ceb75fa7534b68dcdbe99856c715fb79a11c4bafab99e4ea6"
