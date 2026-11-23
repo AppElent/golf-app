@@ -40,6 +40,11 @@ export interface InsetRowProps {
 	/** Custom trailing control; replaces the plain value. */
 	trailing?: ReactElement;
 	chevron?: boolean;
+	/**
+	 * The row opens a page outside the app (in-app browser); draws an
+	 * up-forward arrow in place of the chevron.
+	 */
+	external?: boolean;
 	/** Red title for a destructive row such as "Sign out". */
 	destructive?: boolean;
 	onPress?: () => void;

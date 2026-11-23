@@ -34,6 +34,7 @@ import {
 	setBackgroundLocationPreferred,
 } from "../../location/background/background-location-preference";
 import { displayName } from "../account/account-model";
+import { AccountPortalRow } from "../account/account-portal-row";
 import { useUnits } from "../use-units";
 import { shareDataExport } from "./data-export";
 
@@ -235,6 +236,7 @@ export function ProfileScreen() {
 					chevron
 					onPress={() => router.push("/profile/password")}
 				/>
+				<AccountPortalRow />
 				<InsetRow
 					leading={{ symbol: "exclamationmark.bubble" }}
 					title={t.profile.report}
@@ -247,6 +249,7 @@ export function ProfileScreen() {
 				<InsetRow
 					leading={{ symbol: "hand.raised" }}
 					title={t.profile.privacy}
+					external
 					onPress={() => {
 						openBrowserAsync(PRIVACY_POLICY_URL).catch(() => {});
 					}}

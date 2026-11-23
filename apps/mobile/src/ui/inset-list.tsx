@@ -52,6 +52,7 @@ export function InsetRow({
 	value,
 	trailing,
 	chevron = false,
+	external = false,
 	destructive = false,
 	onPress,
 	actions,
@@ -99,14 +100,14 @@ export function InsetRow({
 						{value}
 					</AppText>
 				) : null}
-				{chevron ? (
+				{chevron || external ? (
 					<AppText
 						variant="row"
 						style={[styles.chevron, { color: tokens.textFaint }]}
 						accessibilityElementsHidden
 						importantForAccessibility="no"
 					>
-						›
+						{external ? "↗" : "›"}
 					</AppText>
 				) : null}
 			</Pressable>

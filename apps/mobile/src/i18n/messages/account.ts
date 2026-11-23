@@ -139,6 +139,7 @@ export const accountEn = {
 	passwordHint: "Use at least 8 characters.",
 	setPasswordHint:
 		"You sign in with Apple, Google, Microsoft or an email code. A password lets you sign in with your email too. Use at least 8 characters.",
+	managePortal: "Manage your AppElent account",
 	signOutOthers: "Sign out other devices",
 	signOutOthersHint:
 		"Signs you out everywhere except this phone, for example after a lost device.",
@@ -196,6 +197,7 @@ export const accountNl: typeof accountEn = {
 	passwordHint: "Gebruik minstens 8 tekens.",
 	setPasswordHint:
 		"Je logt in met Apple, Google, Microsoft of een e-mailcode. Met een wachtwoord kun je ook met je e-mailadres inloggen. Gebruik minstens 8 tekens.",
+	managePortal: "Beheer je AppElent-account",
 	signOutOthers: "Andere apparaten uitloggen",
 	signOutOthersHint:
 		"Logt je overal uit behalve op deze telefoon, bijvoorbeeld na een verloren apparaat.",
