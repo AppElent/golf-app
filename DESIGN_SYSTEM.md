@@ -96,8 +96,12 @@ Designers and coding agents start from it; product decisions below still bind th
   (`pine`, `flag`, `live`, `mint`) are not themed; the round-era `pine-light`,
   `mint-soft`, `flag-soft` and `map-*` tokens went with the web round screens
   (APP-235, APP-502).
-  `src/theme.test.ts` checks every text token against every ground and tint
-  in both themes. Field placeholders are `stone`. Clerk's sign-in card takes
+  `src/theme.test.ts` checks every text token against every ground in both
+  themes, and the text on the two translucent tints in use: `flag-ink` on
+  `flag/10` (the course editor's "No map" chip) and `ink` / `moss` on
+  `flag/5` (`ConfirmPanel`). The round-era `live/10` and `pine-ink/10` tints
+  and the `sand` and `water` tokens went with the web round screens
+  (APP-598). Field placeholders are `stone`. Clerk's sign-in card takes
   the same tokens in dark mode through `appearance` variables
   (`src/integrations/clerk/appearance.ts`) and keeps Clerk's own look in light.
   Its primary is `pine-ink` (mint) with a `canvas` label, because Clerk also
@@ -114,8 +118,8 @@ them. Light-mode control edges (fields, bordered buttons and toggles) were
 `card-line`, 1.12:1 on cream; APP-276 gave them the same `control-line` token
 as dark, now `#80877f` in light, so every edge reaches 3:1. Cards, dividers and
 the tab bar keep `card-line`. APP-191's other deliberate light-mode changes are
-contrast fixes only: field placeholders, the selected scorecard hole's labels
-and the "Connecting…" note (`text-muted`, near-white, → `stone`).
+contrast fixes only: field placeholders and the "Connecting…" note
+(`text-muted`, near-white, → `stone`).
 
 | Pair | Theme | Old | New |
 | --- | --- | --- | --- |
@@ -144,7 +148,7 @@ and the "Connecting…" note (`text-muted`, near-white, → `stone`).
 | Web: field placeholder (ink at 50% → `stone`) on `field` (APP-191) | light / dark | **3.09** / n/a | 4.62 / 4.89 |
 | Web: dark control edge (`control-line`: fields, buttons, toggles) on `field` / `surface` / `canvas` (3:1) (APP-191) | dark | **1.53** (`card-line`) | 3.25 / 3.73 / 4.19 |
 | Web: light control edge (`control-line`: fields, buttons, toggles) on `field` / `surface` / `canvas` (3:1) (APP-276) | light | **1.12** (`card-line`) | 3.21 / 3.50 / 3.21 |
-| Web: selected scorecard hole number (`stone` → `ink`) on `pine-ink/10` (APP-191) | light / dark | **3.88** / n/a | 11.77 / 14.19 |
+| Web: `ConfirmPanel` description (`moss`, `#5e6e64` → `#5a6a60`) on `flag/5` over `canvas` (APP-598) | light | **4.39** | 4.66 |
 | Phone: `onAccent` on `accentFill` (primary button, selected segment) | light | **3.39** | 5.85 |
 | Phone: `onAccent` on `accentPressed` | light | **3.39** | 8.25 |
 | Phone: `accent` on `bg` | light | 4.82 | 5.29 |
