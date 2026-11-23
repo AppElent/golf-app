@@ -41,7 +41,16 @@ export function RoundsHistoryScreen() {
 		);
 	}
 	if (history.length === 0) {
-		return <EmptyState title={t.rounds.empty} body={t.rounds.emptyHint} />;
+		// Inside the scroll view, so it sits below the large title, not under
+		// the status bar.
+		return (
+			<ScrollView
+				contentInsetAdjustmentBehavior="automatic"
+				contentContainerStyle={styles.content}
+			>
+				<EmptyState title={t.rounds.empty} body={t.rounds.emptyHint} />
+			</ScrollView>
+		);
 	}
 
 	const locale_ = dateLocale(locale);
