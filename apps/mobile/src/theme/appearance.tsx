@@ -7,7 +7,7 @@ import {
 	useMemo,
 	useState,
 } from "react";
-import { Appearance, Platform, useColorScheme } from "react-native";
+import { Appearance, useColorScheme } from "react-native";
 import {
 	PREFERENCE_KEYS,
 	readPreference,
@@ -32,9 +32,7 @@ type AppearanceValue = {
 
 const AppearanceContext = createContext<AppearanceValue | null>(null);
 
-/** React Native Web has no native appearance to override. */
 function overrideNativeScheme(preference: AppearancePreference) {
-	if (Platform.OS === "web") return;
 	Appearance.setColorScheme(
 		preference === "system" ? "unspecified" : preference,
 	);

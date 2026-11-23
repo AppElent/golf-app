@@ -51,7 +51,6 @@ const mono = await sharp({ create: { width: 1024, height: 1024, channels: 3, bac
 await save(`${mobile}android-icon-monochrome.png`, mono);
 const splash = await mark(400, 360, onSurface);
 await save(`${mobile}splash-icon.png`, splash);
-await save(`${mobile}favicon.png`, await sharp(icon).resize(48).png().toBuffer());
 for (const size of [192, 512]) {
   await save(`public/logo${size}.png`, await sharp(icon).resize(size).png().toBuffer());
 }
