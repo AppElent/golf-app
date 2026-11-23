@@ -1,5 +1,5 @@
 /**
- * The `email` param of `/sign-in-code`.
+ * The `email` param of `/sign-in-code`, `/forgot-password` and `/reset-password`.
  *
  * Expo Router decodes a deep link's query and rebuilds it unencoded, so a
  * `+` (valid in an email, as in `me+golf@example.com`) comes out as a space

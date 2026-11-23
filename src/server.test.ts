@@ -14,6 +14,7 @@ vi.mock("@sentry/cloudflare", () => ({
 	captureMessage: mocks.captureMessage,
 }));
 
+import { convexDeployment } from "./lib/release/version";
 import server from "./server";
 
 const ctx = {} as ExecutionContext;
@@ -24,7 +25,7 @@ beforeEach(() => vi.clearAllMocks());
 it("reports nothing for a local SSR 500, even with production bindings", async () => {
 	const response = new Response("SSR failure", { status: 500 });
 	mocks.startFetch.mockResolvedValue(response);
-	const request = new Request("http://localhost:8787/play");
+	const request = new Request("http://localhost:8787/courses");
 
 	expect(
 		await server.fetch(request, { environment_name: "production" }, ctx),
@@ -63,6 +64,10 @@ it("answers /version without rendering the app", async () => {
 		app: "fairway",
 		environment: "staging",
 	});
+	expect(convexDeployment("https://fine-heron-5.eu-west-1.convex.cloud")).toBe(
+		"fine-heron-5",
+	);
+	expect(convexDeployment("not a url")).toBeNull();
 });
 
 it("leaves other methods on /version to the app", async () => {
@@ -75,4 +80,37 @@ it("leaves other methods on /version to the app", async () => {
 		ctx,
 	);
 	expect(mocks.startFetch).toHaveBeenCalledTimes(1);
+});
+
+it("sends the retired round paths to Open the Fairway app", async () => {
+	for (const path of [
+		"/play",
+		"/card",
+		"/rounds/new",
+		"/progress/",
+		"/rounds/new?simulate=1",
+	]) {
+		const response = await server.fetch(
+			new Request(`https://fairway.appelent.nl${path}`),
+			{},
+			ctx,
+		);
+		expect(response.status).toBe(301);
+		expect(response.headers.get("location")).toBe(
+			"https://fairway.appelent.nl/",
+		);
+	}
+	expect(mocks.startFetch).not.toHaveBeenCalled();
+});
+
+it("leaves kept and look-alike paths to the app", async () => {
+	mocks.startFetch.mockResolvedValue(new Response("ok"));
+	for (const path of ["/", "/profile", "/courses", "/rounds", "/players"]) {
+		await server.fetch(
+			new Request(`https://fairway.appelent.nl${path}`),
+			{},
+			ctx,
+		);
+	}
+	expect(mocks.startFetch).toHaveBeenCalledTimes(5);
 });

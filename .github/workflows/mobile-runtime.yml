@@ -8,11 +8,14 @@ name: Mobile runtime
 # new build is due after merging; if not, the merge ships as an update. The
 # comparison is informational and never fails a PR for changing native code.
 #
-# `check` does fail a PR: when a fingerprint has no Expo-autolinked module
-# (APP-71), or a package in WATCHED (apps/mobile/scripts/fingerprint.mjs)
-# drops out of one, such as `@clerk/expo` or the `expo-application` module
-# Clerk's minimum-version check reads the build's version from. The
-# comparison also lists their version changes.
+# `check` does fail a PR, per variant and platform: when a module Expo
+# autolinking resolves for it (with that APP_VARIANT) has no hashed source in
+# its fingerprint (APP-71, APP-103), when the fingerprint has no
+# Expo-autolinked module at all, or when a package in WATCHED
+# (apps/mobile/scripts/fingerprint.mjs) drops out, such as `@clerk/expo` or
+# the `expo-application` module Clerk's minimum-version check reads the
+# build's version from. A module that links on one platform only is expected
+# on that platform only. The comparison also lists WATCHED version changes.
 on:
   pull_request:
     paths:

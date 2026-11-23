@@ -3,7 +3,7 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { type MutationCtx, mutation, query } from "./_generated/server";
 import { canSee } from "./courses";
-import { getUserId } from "./lib";
+import { getOptionalUserId, getUserId } from "./lib";
 import { unitPreference } from "./validators";
 
 /** Patch the user's settings row, creating it when missing. */
@@ -31,15 +31,18 @@ export async function upsertSettings(
 	});
 }
 
-/** Current user's settings, with defaults when no row exists yet. */
+/** Current user's settings, with defaults when no row exists yet or nobody
+ *  is signed in (same shape either way, so installed builds keep working). */
 export const get = query({
 	args: {},
 	handler: async (ctx) => {
-		const userId = await getUserId(ctx);
-		const row = await ctx.db
-			.query("userSettings")
-			.withIndex("by_user", (q) => q.eq("userId", userId))
-			.first();
+		const userId = await getOptionalUserId(ctx);
+		const row = userId
+			? await ctx.db
+					.query("userSettings")
+					.withIndex("by_user", (q) => q.eq("userId", userId))
+					.first()
+			: null;
 		return {
 			units: row?.units ?? DEFAULT_UNITS,
 			homeCourseId: row?.homeCourseId ?? null,

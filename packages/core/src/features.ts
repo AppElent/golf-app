@@ -50,6 +50,9 @@ export const defineFeatures = <const T extends readonly Feature[]>(
 const ADR =
 	"docs/adr/0001-the-phone-plays-rounds-and-the-web-authors-courses.md";
 
+/** Reason of a round or golfer-profile feature the web no longer ships. */
+const WEB_RETIRED = `The web retired its round screens and golfer settings (APP-235, ${ADR}); web visitors are pointed to the app.`;
+
 export const FEATURES = defineFeatures([
 	// Floor. The web floor is reduced to sign-in (with sign-up and password
 	// reset), sign-out, privacy, account deletion and data export (ADR). The
@@ -67,18 +70,22 @@ export const FEATURES = defineFeatures([
 	{
 		id: "password-reset",
 		kind: "floor",
-		status: "pending-port",
-		platforms: ["web"],
-		reason: `Owed on the phone (${ADR}). The web's Clerk <SignIn> card has Clerk's forgot-password step; the phone has none. Emailed-code sign-in gets a user in but does not change the password.`,
-		routes: {},
+		status: "parity",
+		platforms: ["web", "mobile"],
+		// Web: the forgot-password step of Clerk's prebuilt <SignIn> card, no
+		// route. Mobile: "Forgot password?" on sign-in, then Clerk's
+		// reset_password_email_code; ends signed in (APP-120).
+		routes: {
+			mobile: ["(auth)/forgot-password", "(auth)/reset-password"],
+		},
 	},
 	{
 		id: "sign-out",
 		kind: "floor",
 		status: "parity",
 		platforms: ["web", "mobile"],
-		// Both sign out from the Profile tab. Web: the Account section of the
-		// profile page (src/integrations/clerk/account-section.tsx).
+		// Web: the Account page (/profile, src/integrations/clerk/account-section.tsx).
+		// Mobile: the Profile tab.
 		routes: { web: ["profile"], mobile: ["(app)/(tabs)/profile/index"] },
 	},
 	{
@@ -86,19 +93,28 @@ export const FEATURES = defineFeatures([
 		kind: "floor",
 		status: "parity",
 		platforms: ["web", "mobile"],
-		// Both delete from the Profile tab after a confirm step: convex/account.ts
-		// deleteMyData first, while the session still authenticates, then the
-		// Clerk user. Web: the Account section of the profile page.
-		routes: { web: ["profile"], mobile: ["(app)/(tabs)/profile/index"] },
+		// Both delete from the Account page (web: the Account section of
+		// /profile; phone: Profile → Delete account): a choice between Fairway's
+		// data only (keeps the shared AppElent login, signs out) and the whole
+		// AppElent account, then a confirm step. convex/account.ts deleteMyData
+		// first, batch by batch while the session still authenticates, then
+		// (whole account only) the Clerk user.
+		routes: {
+			web: ["profile"],
+			mobile: [
+				"(app)/(tabs)/profile/index",
+				"(app)/(tabs)/profile/delete-account",
+			],
+		},
 	},
 	{
 		id: "data-export",
 		kind: "floor",
 		status: "parity",
 		platforms: ["web", "mobile"],
-		// "Export my data" on the Profile tab: one JSON file of every user-owned
-		// table (convex/userData.ts, account.exportPage). Web downloads it; the
-		// phone opens the share sheet on it.
+		// "Export my data" (web: the Account page; mobile: the Profile tab): one
+		// JSON file of every user-owned table (convex/userData.ts,
+		// account.exportPage). Web downloads it; the phone opens the share sheet.
 		routes: { web: ["profile"], mobile: ["(app)/(tabs)/profile/index"] },
 	},
 	{
@@ -112,10 +128,19 @@ export const FEATURES = defineFeatures([
 	{
 		id: "account-profile",
 		kind: "floor",
-		status: "pending-port",
-		platforms: [],
-		reason: `Not in the reduced web floor (${ADR}), so only the phone owes it. The phone shows the email read-only and cannot change name, email or password yet.`,
-		routes: {},
+		status: "exclusive",
+		platforms: ["mobile"],
+		reason: `Not in the reduced web floor (${ADR}): the phone edits name, email addresses and password through Clerk from the Profile tab (APP-120); the web has no account editing.`,
+		routes: {
+			mobile: [
+				"(app)/(tabs)/profile/name",
+				"(app)/(tabs)/profile/emails",
+				"(app)/(tabs)/profile/add-email",
+				"(app)/(tabs)/profile/verify-email",
+				"(app)/(tabs)/profile/password",
+				"(app)/(tabs)/profile/reverify",
+			],
+		},
 	},
 	{
 		id: "language",
@@ -138,28 +163,28 @@ export const FEATURES = defineFeatures([
 	{
 		id: "home",
 		kind: "product",
-		status: "parity",
-		platforms: ["web", "mobile"],
-		routes: { web: ["index"], mobile: ["(app)/(tabs)/(home)/index"] },
+		status: "exclusive",
+		platforms: ["mobile"],
+		reason: WEB_RETIRED,
+		routes: { mobile: ["(app)/(tabs)/(home)/index"] },
 	},
 	{
 		id: "round-setup",
 		kind: "product",
-		status: "parity",
-		platforms: ["web", "mobile"],
+		status: "exclusive",
+		platforms: ["mobile"],
+		reason: WEB_RETIRED,
 		routes: {
-			web: ["rounds.new"],
 			mobile: ["(app)/(tabs)/(home)/courses", "(app)/(tabs)/(home)/setup/*"],
 		},
 	},
 	{
 		id: "round-play",
 		kind: "product",
-		status: "parity",
-		platforms: ["web", "mobile"],
-		// The web copy predates the phone app; see the ADR before extending it.
+		status: "exclusive",
+		platforms: ["mobile"],
+		reason: WEB_RETIRED,
 		routes: {
-			web: ["play", "card"],
 			mobile: ["(app)/play", "(app)/score", "(app)/scorecard"],
 		},
 	},
@@ -169,7 +194,7 @@ export const FEATURES = defineFeatures([
 		status: "exclusive",
 		platforms: ["mobile"],
 		reason:
-			"Reviewing past rounds is the phone's job (ADR 0001). The web home shows only the last round. Includes sharing a round as an image and text, which is not a link.",
+			"Reviewing past rounds is the phone's job (ADR 0001). Includes sharing a round as an image and text, which is not a link.",
 		routes: { mobile: ["(app)/(tabs)/rounds/**"] },
 	},
 	{
@@ -184,50 +209,52 @@ export const FEATURES = defineFeatures([
 	{
 		id: "stats",
 		kind: "product",
-		status: "parity",
-		platforms: ["web", "mobile"],
-		routes: { web: ["progress"], mobile: ["(app)/(tabs)/stats/index"] },
+		status: "exclusive",
+		platforms: ["mobile"],
+		reason: WEB_RETIRED,
+		routes: { mobile: ["(app)/(tabs)/stats/index"] },
 	},
 	{
 		id: "simulator",
 		kind: "product",
-		status: "parity",
-		platforms: ["web", "mobile"],
-		// Web: rounds.new?simulate, opened from the profile page.
-		routes: { web: ["rounds.new"], mobile: ["(app)/(tabs)/profile/simulator"] },
+		status: "exclusive",
+		platforms: ["mobile"],
+		reason: WEB_RETIRED,
+		routes: { mobile: ["(app)/(tabs)/profile/simulator"] },
 	},
 
 	// Product: the golfer's profile.
 	{
 		id: "settings",
 		kind: "product",
-		status: "parity",
-		platforms: ["web", "mobile"],
+		status: "exclusive",
+		platforms: ["mobile"],
+		reason: WEB_RETIRED,
 		// Units, GPS notes, and the entry to the profile sub-pages.
-		routes: { web: ["profile"], mobile: ["(app)/(tabs)/profile/index"] },
+		routes: { mobile: ["(app)/(tabs)/profile/index"] },
 	},
 	{
 		id: "handicap",
 		kind: "product",
-		status: "parity",
-		platforms: ["web", "mobile"],
-		// Web: a section of the profile page.
+		status: "exclusive",
+		platforms: ["mobile"],
+		reason: WEB_RETIRED,
 		routes: { mobile: ["(app)/(tabs)/profile/handicap"] },
 	},
 	{
 		id: "home-course",
 		kind: "product",
-		status: "parity",
-		platforms: ["web", "mobile"],
-		// Web: a section of the profile page.
+		status: "exclusive",
+		platforms: ["mobile"],
+		reason: WEB_RETIRED,
 		routes: { mobile: ["(app)/(tabs)/profile/home-course"] },
 	},
 	{
 		id: "club-bag",
 		kind: "product",
-		status: "parity",
-		platforms: ["web", "mobile"],
-		// Web: a section of the profile page.
+		status: "exclusive",
+		platforms: ["mobile"],
+		reason: WEB_RETIRED,
 		routes: {
 			mobile: ["(app)/(tabs)/profile/clubs", "(app)/(tabs)/profile/club"],
 		},
@@ -259,6 +286,15 @@ export const FEATURES = defineFeatures([
 	},
 
 	// Product: help.
+	{
+		id: "open-the-app",
+		kind: "product",
+		status: "exclusive",
+		platforms: ["web"],
+		reason:
+			"The web's public home: it points visitors to the phone app, and the retired round paths (/play, /card, /rounds/new, /progress) redirect to it (APP-235). The phone is the app.",
+		routes: { web: ["index"] },
+	},
 	{
 		id: "support",
 		kind: "product",

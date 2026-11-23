@@ -122,7 +122,9 @@ export function AuthInput({
 				if (typeof ref === "function") ref(node);
 				else if (ref) ref.current = node;
 			}}
-			style={styles.input}
+			// A read-only field (the account name above a new password) reads
+			// as information, not as something to fill in.
+			style={[styles.input, rest.editable === false && styles.readOnly]}
 			placeholderTextColor={colors.textFaint}
 			accessibilityLabel={rest.accessibilityLabel ?? rest.placeholder}
 			{...rest}
@@ -241,6 +243,7 @@ const createStyles = (colors: Tokens) =>
 			fontSize: typeRamp.control.fontSize,
 			color: colors.text,
 		},
+		readOnly: { color: colors.textMuted, backgroundColor: colors.bg },
 		disabled: { opacity: 0.5 },
 		footer: { marginTop: spacing.md, alignItems: "center", gap: spacing.sm },
 		linkRow: {

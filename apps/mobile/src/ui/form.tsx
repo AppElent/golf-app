@@ -1,12 +1,14 @@
 import { SymbolView } from "expo-symbols";
-import { Children, type ReactNode, useRef, useState } from "react";
+import { Children, type ReactNode, type Ref, useRef, useState } from "react";
 import {
 	KeyboardAvoidingView,
 	Platform,
 	Pressable,
 	ScrollView,
 	StyleSheet,
+	Switch,
 	TextInput,
+	type TextInputInstance,
 	type TextInputProps,
 	View,
 	type ViewInstance,
@@ -157,12 +159,15 @@ export function GroupedSurface({
 }
 
 export function FormTextField({
+	ref,
 	label,
 	error,
 	appearance = "inset",
 	style,
 	...props
 }: TextInputProps & {
+	/** React 19 plain prop, so a form can move focus to the next field. */
+	ref?: Ref<TextInputInstance>;
 	label: string;
 	error?: string;
 	appearance?: "inset" | "plain";
@@ -175,12 +180,16 @@ export function FormTextField({
 		>
 			<AppText variant="label">{label}</AppText>
 			<TextInput
+				ref={ref}
 				{...props}
 				accessibilityLabel={props.accessibilityLabel ?? label}
 				placeholderTextColor={colors.textFaint}
 				style={[
 					styles.textInput,
 					appearance === "plain" && styles.plainInput,
+					// Read-only (the account name above a new password): information,
+					// not a field to fill in.
+					props.editable === false && styles.readOnlyInput,
 					style,
 				]}
 			/>
@@ -216,6 +225,32 @@ export function FormSegmentedRow<Value extends string>({
 			<View style={label && Platform.OS === "ios" ? { flex: 1.2 } : undefined}>
 				<Segmented options={options} value={value} onChange={onChange} />
 			</View>
+		</View>
+	);
+}
+
+/** An on/off setting as one grouped form row: the label, then a native switch. */
+export function FormSwitchRow({
+	label,
+	value,
+	onValueChange,
+	disabled,
+}: {
+	label: string;
+	value: boolean;
+	onValueChange: (next: boolean) => void;
+	disabled?: boolean;
+}) {
+	const styles = useThemedStyles(createStyles);
+	return (
+		<View style={styles.inlineRow}>
+			<AppText style={styles.rowLabel}>{label}</AppText>
+			<Switch
+				value={value}
+				onValueChange={onValueChange}
+				disabled={disabled}
+				accessibilityLabel={label}
+			/>
 		</View>
 	);
 }
@@ -379,6 +414,7 @@ const createStyles = (colors: Tokens) =>
 			color: colors.text,
 			fontSize: 15,
 		},
+		readOnlyInput: { color: colors.textMuted, backgroundColor: "transparent" },
 		error: { color: colors.danger },
 		inlineRow: {
 			minHeight: metrics.rowMinHeight,

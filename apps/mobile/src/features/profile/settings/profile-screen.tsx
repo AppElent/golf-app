@@ -13,7 +13,7 @@ import { convexErrorMessage } from "../../../convex/error-message";
 import { clearLastKnown } from "../../../convex/last-known";
 import { useQuery } from "../../../convex/query-cache";
 import { fmt, type Locale, plural, useI18n } from "../../../i18n";
-import { buildLabel } from "../../../monitoring/release";
+import { buildLabel, otaLabel } from "../../../monitoring/release";
 import { openProblemReport } from "../../../monitoring/report-problem";
 import {
 	type AppearancePreference,
@@ -24,7 +24,6 @@ import {
 	useAppearance,
 	useThemedStyles,
 } from "../../../theme";
-import { useConfirm } from "../../../ui/confirm-dialog";
 import { FormSegmentedRow } from "../../../ui/form";
 import { InsetList, InsetRow } from "../../../ui/inset-list";
 import { AppText } from "../../../ui/text";
@@ -33,6 +32,7 @@ import {
 	backgroundLocationPreferred,
 	setBackgroundLocationPreferred,
 } from "../../location/background/background-location-preference";
+import { displayName } from "../account/account-model";
 import { useUnits } from "../use-units";
 import { shareDataExport } from "./data-export";
 
@@ -50,7 +50,6 @@ export function ProfileScreen() {
 	const router = useRouter();
 	const styles = useThemedStyles(createStyles);
 	const toast = useToast();
-	const confirm = useConfirm();
 	const { preference, setPreference } = useAppearance();
 	const { signOut } = useAuth();
 	const { user } = useUser();
@@ -59,10 +58,8 @@ export function ProfileScreen() {
 	const courses = useQuery(api.courses.list);
 	const clubs = useQuery(api.clubs.list);
 	const updateSettings = useMutation(api.settings.update);
-	const deleteMyData = useMutation(api.account.deleteMyData);
 	const convex = useConvex();
 	const [exporting, setExporting] = useState(false);
-	const [deleting, setDeleting] = useState(false);
 	const [lockedGps, setLockedGps] = useState(backgroundLocationPreferred);
 
 	async function onLockedGps(on: boolean) {
@@ -97,27 +94,6 @@ export function ProfileScreen() {
 			toast.error(convexErrorMessage(e, t.profile.exportError));
 		} finally {
 			setExporting(false);
-		}
-	}
-
-	async function onDeleteAccount() {
-		const ok = await confirm({
-			title: t.profile.deleteTitle,
-			message: t.profile.deleteMessage,
-			confirmLabel: t.profile.deleteConfirm,
-			destructive: true,
-		});
-		if (!ok) return;
-		setDeleting(true);
-		try {
-			// App data first, while the session can still authenticate.
-			await deleteMyData({});
-			// The saved round copy and its account marker go with the data.
-			clearLastKnown();
-			await user?.delete();
-		} catch (e) {
-			setDeleting(false);
-			toast.error(convexErrorMessage(e, t.profile.deleteError));
 		}
 	}
 
@@ -222,15 +198,42 @@ export function ProfileScreen() {
 						channel: Updates.channel,
 						updateId: Updates.updateId,
 						embedded: Updates.isEmbeddedLaunch,
+						noUpdate: t.profile.noUpdate,
+						label: otaLabel({
+							version: Constants.expoConfig?.version,
+							createdAt: Updates.createdAt,
+							commit: process.env.EXPO_PUBLIC_COMMIT_SHA,
+							embedded: Updates.isEmbeddedLaunch,
+						}),
 					}),
 				})}
 			>
-				{user?.primaryEmailAddress ? (
-					<InsetRow
-						leading={{ symbol: "person.crop.circle" }}
-						title={user.primaryEmailAddress.emailAddress}
-					/>
-				) : null}
+				<InsetRow
+					leading={{ symbol: "person.crop.circle" }}
+					title={t.account.name}
+					value={
+						displayName(user?.firstName, user?.lastName) ?? t.account.nameUnset
+					}
+					chevron
+					onPress={() => router.push("/profile/name")}
+				/>
+				<InsetRow
+					leading={{ symbol: "envelope" }}
+					title={t.account.email}
+					secondary={user?.primaryEmailAddress?.emailAddress}
+					chevron
+					onPress={() => router.push("/profile/emails")}
+				/>
+				<InsetRow
+					leading={{ symbol: "key" }}
+					title={
+						user?.passwordEnabled
+							? t.account.changePassword
+							: t.account.setPassword
+					}
+					chevron
+					onPress={() => router.push("/profile/password")}
+				/>
 				<InsetRow
 					leading={{ symbol: "exclamationmark.bubble" }}
 					title={t.profile.report}
@@ -263,11 +266,10 @@ export function ProfileScreen() {
 					}}
 				/>
 				<InsetRow
-					title={
-						deleting ? `${t.profile.deleteAccount}…` : t.profile.deleteAccount
-					}
+					title={t.profile.deleteAccount}
 					destructive
-					onPress={deleting ? undefined : () => void onDeleteAccount()}
+					chevron
+					onPress={() => router.push("/profile/delete-account")}
 				/>
 			</InsetList>
 		</ScrollView>

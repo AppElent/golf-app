@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when getting an iOS build onto a phone, choosing between internal distribution and TestFlight, building in CI, or publishing an over-the-air update.
-version: 2.4.0
+version: 2.5.0
 applies_to: [mobile]
 ---
 
@@ -26,6 +26,7 @@ Your own phone runs a standalone build within minutes of a change, without Apple
 - Every profile built on EAS's macOS image sets `SHARP_IGNORE_GLOBAL_LIBVIPS=1` when `sharp` is in the workspace (for example through wrangler or miniflare). The image ships Homebrew libvips, so sharp's install check chooses a from-source build that has no `node-gyp`, and `pnpm install` fails.
 - A profile whose EAS environment has no `SENTRY_AUTH_TOKEN` sets `SENTRY_DISABLE_AUTO_UPLOAD=true`, or the Release build fails at the upload step. Profiles that report errors keep the upload; see [Sentry monitoring](sentry-monitoring.md).
 - **Default:** CI builds are opt-in, through PR labels `build:ios` / `build:android` or a manual run of the [caller](mobile-baseline/templates/mobile-build.yml) and [reusable build](mobile-baseline/templates/eas-local-build.yml) workflows: `eas build --local` on the runner, with the binary as a workflow artifact. Gate each platform at job level so an unlabelled push never starts a macOS runner. The Android job also requires the repository variable `ANDROID_ENABLED` to be `true` ([Android pause](releases.md#android-pause)). Pin `eas-cli` as a dev dependency so CI and local builds match.
+- A CI build of a profile that uses the production backend (`preview-internal`, store profiles) first checks that production Convex runs every Convex change in the commit, and stops on drift or when it cannot tell. The reusable build workflow runs the repository's `scripts/eas-build-convex-guard.mjs` in a small Ubuntu job before the build, with `deployments: read`; development builds skip it. A manual run's `allow_convex_drift` input builds anyway. AppElent/workouts holds the reference guard (with `scripts/convex-drift.mjs`); a repository without the script gets a notice and no check.
 - CI builds need an `EXPO_TOKEN` secret, cannot read Secret-visibility EAS variables, and cannot answer signing prompts, so iOS ad hoc credentials with registered devices must already exist. GitHub-hosted macOS minutes are free only for public repositories; check a private repository's budget before enabling iOS.
 
 ### Updates
@@ -78,6 +79,8 @@ Your own phone runs a standalone build within minutes of a change, without Apple
 - After a test update, a cold start followed by a second cold start shows the change; or resuming shows the restart prompt, and tapping it shows the change.
 
 ## Migration
+
+From 2.4: copy the `convex-drift` job and the `allow_convex_drift` input from the build templates, and add `deployments: read` to the caller's build jobs. Add `scripts/eas-build-convex-guard.mjs` (adapt the repository name and `eas.json` path from AppElent/workouts) once production deploys record GitHub deployments in the `production` Environment.
 
 From 2.3: gate the Android build job on `vars.ANDROID_ENABLED == 'true'` ([Android pause](releases.md#android-pause)).
 

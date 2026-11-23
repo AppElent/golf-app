@@ -3,6 +3,7 @@
  * `satisfies Messages`, so a key added here without a Dutch counterpart fails
  * `pnpm --filter @fairway/mobile typecheck`.
  */
+import { accountEn, authErrorsEn, resetPasswordEn } from "./account";
 import { signInEn, signUpEn, verifyEmailEn } from "./auth";
 import { commonEn, tabsEn } from "./common";
 import { clubsEn, profileEn, roundsEn, statsEn } from "./history";
@@ -16,6 +17,8 @@ export const en = {
 	signIn: signInEn,
 	signUp: signUpEn,
 	verifyEmail: verifyEmailEn,
+	resetPassword: resetPasswordEn,
+	authErrors: authErrorsEn,
 	home: homeEn,
 	courses: coursesEn,
 	setup: setupEn,
@@ -27,6 +30,7 @@ export const en = {
 	rounds: roundsEn,
 	stats: statsEn,
 	profile: profileEn,
+	account: accountEn,
 	clubs: clubsEn,
 };
 

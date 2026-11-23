@@ -14,6 +14,8 @@ import type { CodedError } from "./clerk-errors";
  */
 type BusyPolicy = "release" | "hold" | "none";
 
+const THROWN: CodedError = { code: "network_error" };
+
 export function useClerkStep() {
 	const [busy, setBusy] = useState(false);
 	const [returned, setReturned] = useState<CodedError | null>(null);
@@ -36,10 +38,17 @@ export function useClerkStep() {
 				setBusy(true);
 			}
 			setReturned(null);
-			const succeeded = await flow((result) => {
-				if (result.error) setReturned(result.error);
-				return !result.error;
-			});
+			let succeeded = false;
+			try {
+				succeeded = await flow((result) => {
+					if (result.error) setReturned(result.error);
+					return !result.error;
+				});
+			} catch {
+				// Core 3 resolves Clerk errors, but a dropped connection can still
+				// throw; never leave the screen busy over it.
+				setReturned(THROWN);
+			}
 			if (policy === "release" || (policy === "hold" && !succeeded)) {
 				busyNow.current = false;
 				setBusy(false);

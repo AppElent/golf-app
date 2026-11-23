@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when adding or changing how a web app and its backend deploy to staging or production.
-version: 1.4.0
+version: 1.4.1
 applies_to: [web, backend]
 ---
 

@@ -74,7 +74,11 @@ export function RoundSetupScreen({
 		);
 	}
 	if (detail === null) {
-		return <EmptyState body={t.setup.notFound} />;
+		return (
+			<FormScreen>
+				<EmptyState body={t.setup.notFound} />
+			</FormScreen>
+		);
 	}
 	return (
 		<RoundSetupForm

@@ -126,11 +126,9 @@ describe.each(Object.entries(THEMES))("%s theme", (_name, theme) => {
 		).toBeGreaterThanOrEqual(4.5);
 	});
 
-	// Translucent tints: SyncPill (live/15, flag/15), a selected option
-	// (live/10) and the selected scorecard hole (pine-ink/10).
+	// Translucent tints: a selected option (live/10) and the selected
+	// scorecard hole (pine-ink/10).
 	const TINTS = [
-		["live-ink", "live", 0.15],
-		["flag-ink", "flag", 0.15],
 		["ink", "live", 0.1],
 		// The selected hole's number and par are ink: stone misses 4.5:1 here.
 		["ink", "pine-ink", 0.1],
@@ -159,19 +157,20 @@ describe.each(Object.entries(THEMES))("%s theme", (_name, theme) => {
 	});
 });
 
+describe.each(Object.entries(THEMES))("%s control edges", (_name, theme) => {
+	// APP-276: light reaches the target too; see DESIGN_SYSTEM.md, Contrast.
+	it("reach 3:1 against the field and the ground around it", () => {
+		const edge = color(theme, "control-line");
+		for (const ground of ["field", "surface", "canvas"]) {
+			expect(ratio(edge, color(theme, ground))).toBeGreaterThanOrEqual(3);
+		}
+	});
+});
+
 describe("dark theme", () => {
 	it("darkens the app column", () => {
 		expect(luminance(color(dark, "canvas"))).toBeLessThan(0.05);
 		expect(luminance(color(dark, "surface"))).toBeLessThan(0.05);
-	});
-
-	// Light mode keeps its existing field edge (APP-191: light looks
-	// unchanged); see DESIGN_SYSTEM.md, Contrast.
-	it("field edges reach 3:1 against the field and the ground around it", () => {
-		const edge = color(dark, "control-line");
-		for (const ground of ["field", "surface", "canvas"]) {
-			expect(ratio(edge, color(dark, ground))).toBeGreaterThanOrEqual(3);
-		}
 	});
 
 	// Clerk draws links and its primary button label from these variables.
@@ -200,11 +199,17 @@ describe("dark theme", () => {
 		).toBeGreaterThanOrEqual(4.5);
 	});
 
-	it("leaves the brand fills and map colours alone", () => {
+	it("swaps in a dark-card logo that exists in public/", () => {
+		const m = clerk.match(/logoImageUrl: "(\/[\w.-]+)"/);
+		if (!m) throw new Error("logoImageUrl not set");
+		expect(() =>
+			readFileSync(join(import.meta.dirname, "../public", m[1])),
+		).not.toThrow();
+	});
+
+	it("leaves the brand fills alone", () => {
 		for (const token of Object.keys(darkOverrides)) {
-			expect(token).not.toMatch(
-				/^color-(pine|pine-light|cream|flag|live|mint|mint-soft|map-.*)$/,
-			);
+			expect(token).not.toMatch(/^color-(pine|cream|flag|live|mint)$/);
 		}
 	});
 });
@@ -218,8 +223,7 @@ describe("app column classes", () => {
 		.filter((f) => !f.includes(".test.") && !f.endsWith(".gen.ts"))
 		.sort();
 
-	// Fixed light colours that would stay light in dark mode. bg-pine and
-	// bg-pine-light remain for the always-dark Play screen only.
+	// Fixed light colours that would stay light in dark mode.
 	const FIXED =
 		/\b(bg-cream|bg-white\/(60|90)|text-pine|ring-pine|bg-pine\/\d+|text-muted)\b(?![-\w])/;
 
@@ -230,12 +234,13 @@ describe("app column classes", () => {
 		expect(source).not.toMatch(/"rounded-full border border-card-line/);
 	});
 
-	it("the Play screen is the only user of bg-pine", () => {
+	// bg-pine was for the always-dark web Play screen, retired in APP-235.
+	it("no page uses the unthemed bg-pine fill", () => {
 		const users = files.filter((file) =>
 			/\bbg-pine\b(?![-\w/])/.test(
 				readFileSync(join(import.meta.dirname, file), "utf8"),
 			),
 		);
-		expect(users).toEqual(["routes/play.tsx"]);
+		expect(users).toEqual([]);
 	});
 });

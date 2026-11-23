@@ -2,9 +2,10 @@ import { MAX_SUGGESTION_LENGTH } from "@fairway/core/course-suggestion";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation, useQuery } from "convex/react";
 import { ConvexError } from "convex/values";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "../../convex/_generated/api";
 import type { Id } from "../../convex/_generated/dataModel";
+import { ConfirmPanel } from "../components/ConfirmPanel";
 import { FIELD, SURFACE } from "../components/classes";
 import { Page, PageNote, PageTitle, SectionTitle } from "../components/Page";
 
@@ -154,31 +155,70 @@ function CourseEditor() {
 				) : null}
 			</Columns>
 
-			<button
-				type="button"
-				onClick={async () => {
-					if (!window.confirm("Delete this copy?")) return;
-					try {
-						await remove({ courseId: course._id });
-					} catch (error) {
-						if (
-							error instanceof ConvexError &&
-							error.data?.code === "courseInActiveRound"
-						) {
-							window.alert(
-								"Finish or abandon the round you're playing on this copy first.",
-							);
-							return;
-						}
-						throw error;
-					}
+			<DeleteCopy
+				onDelete={async () => {
+					await remove({ courseId: course._id });
 					navigate({ to: "/courses" });
 				}}
-				className="mt-8 rounded-full border border-flag/40 px-5 py-2 font-display text-label font-semibold text-flag-ink"
-			>
-				Delete my copy
-			</button>
+			/>
 		</Page>
+	);
+}
+
+/** "Delete my copy", confirmed in place. A copy a round is being played on
+ *  can't be deleted; the panel says so and stays open. */
+function DeleteCopy({ onDelete }: { onDelete: () => Promise<void> }) {
+	const [open, setOpen] = useState(false);
+	const [busy, setBusy] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+	const trigger = useRef<HTMLButtonElement>(null);
+
+	async function confirm() {
+		setBusy(true);
+		setError(null);
+		try {
+			await onDelete();
+		} catch (e) {
+			setBusy(false);
+			if (e instanceof ConvexError && e.data?.code === "courseInActiveRound") {
+				setError(
+					"Finish or abandon the round you're playing on this copy first.",
+				);
+				return;
+			}
+			setError(
+				"Couldn't delete this copy. Check your connection and try again.",
+			);
+		}
+	}
+
+	if (open) {
+		return (
+			<ConfirmPanel
+				title="Delete this copy?"
+				description="It's removed from your courses. Rounds you finished on it keep their scores. This can't be undone."
+				confirmLabel={busy ? "Deleting…" : "Delete copy"}
+				onConfirm={confirm}
+				onCancel={() => {
+					setOpen(false);
+					setError(null);
+				}}
+				disabled={busy}
+				error={error}
+				returnFocusTo={trigger}
+				className="mt-8 max-w-md"
+			/>
+		);
+	}
+	return (
+		<button
+			ref={trigger}
+			type="button"
+			onClick={() => setOpen(true)}
+			className="mt-8 rounded-full border border-flag/40 px-5 py-2 font-display text-label font-semibold text-flag-ink"
+		>
+			Delete my copy
+		</button>
 	);
 }
 

@@ -128,7 +128,9 @@ jobs:
           # fairway@<version>+<short sha> (src/monitoring/release.ts).
           EXPO_PUBLIC_COMMIT_SHA: ${{ github.sha }}
         run: |
-          message=$(git log -1 --format=%s)
+          # The OTA label (developer-home standards/releases.md, "OTA label"); the
+          # app shows the same one, from EXPO_PUBLIC_COMMIT_SHA above.
+          message=$(node scripts/ota-label.mjs "$GITHUB_SHA")
           for platform in ${{ steps.match.outputs.platforms }}; do
             pnpm exec eas update --channel "$CHANNEL" --environment preview \
               --platform "$platform" --non-interactive --message "$message"

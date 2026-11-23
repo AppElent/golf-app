@@ -1,7 +1,7 @@
 {
 	"name": "Fairway — Golf Companion",
 	"short_name": "Fairway",
-	"description": "Track your golf rounds and get a GPS caddie on the course.",
+	"description": "Edit Fairway golf courses. Rounds, scores and GPS distances live in the Fairway phone app.",
 	"start_url": "/",
 	"scope": "/",
 	"display": "standalone",

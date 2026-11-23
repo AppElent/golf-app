@@ -70,6 +70,8 @@ export type WorkspaceResource = {
 export type WorkspaceGeneratedFile = {
 	path: string;
 	digest: string;
+	/** Digest without deployment selectors, which the Convex CLI may rewrite. */
+	selectorFreeDigest?: string;
 	createdByWorkspace: boolean;
 	status: "active" | "removed" | "modified" | "missing";
 };

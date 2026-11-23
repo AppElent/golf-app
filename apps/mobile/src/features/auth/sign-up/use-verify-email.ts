@@ -4,6 +4,7 @@
  * a session; the `(auth)` layout then redirects and the caller unmounts.
  */
 import { useSignUp } from "@clerk/expo";
+import { useI18n } from "../../../i18n";
 import { pickError } from "../clerk-errors";
 import { useClerkStep } from "../use-clerk-step";
 import { useResend } from "../use-resend";
@@ -12,6 +13,7 @@ import { pendingSignUpEmail } from "./verify-email-model";
 /** `emailParam`: where the sign-up screen says the code went. */
 export function useVerifyEmail(emailParam: string | undefined) {
 	const { signUp, errors } = useSignUp();
+	const messages = useI18n().t.authErrors;
 	const { busy, returned, run } = useClerkStep();
 	const { resend, resending, notice, clearNotice } = useResend(() =>
 		run(async (ok) => ok(await signUp.verifications.sendEmailCode()), "none"),
@@ -34,6 +36,6 @@ export function useVerifyEmail(emailParam: string | undefined) {
 		resending,
 		busy,
 		notice,
-		error: pickError(errors, returned),
+		error: pickError(errors, returned, messages),
 	};
 }

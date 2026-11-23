@@ -6,7 +6,8 @@ import { internalAction } from "./_generated/server";
  * only accepts one function name). Syncs the course catalog only — from
  * committed data, no network calls:
  * per-user demo rounds need a signed-in identity, which a deploy hook does
- * not have — run `seed:seedDummyData --identity …` for a specific user.
+ * not have — seed one user with `seed:seedDummyData` as
+ * docs/runbooks/development.md describes.
  * Safe to re-run on every push (the sync is idempotent).
  *
  * Wired into .github/workflows/preview.yml as `--preview-run seedPreview:seedPreview`.
