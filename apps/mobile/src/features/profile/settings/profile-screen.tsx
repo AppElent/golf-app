@@ -7,12 +7,13 @@ import { useRouter } from "expo-router";
 import * as Updates from "expo-updates";
 import { openBrowserAsync } from "expo-web-browser";
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet, Switch, View } from "react-native";
+import { ScrollView, StyleSheet, Switch, View } from "react-native";
 import { api } from "../../../convex/api";
 import { convexErrorMessage } from "../../../convex/error-message";
 import { clearLastKnown } from "../../../convex/last-known";
 import { useQuery } from "../../../convex/query-cache";
 import { fmt, type Locale, plural, useI18n } from "../../../i18n";
+import { showAlert } from "../../../monitoring/native-presentation";
 import { buildLabel, otaLabel } from "../../../monitoring/release";
 import { openProblemReport } from "../../../monitoring/report-problem";
 import {
@@ -67,7 +68,7 @@ export function ProfileScreen() {
 		const result = await setBackgroundLocationPreferred(on);
 		setLockedGps(result.on);
 		if (result.needsSettings) {
-			Alert.alert(t.profile.locationLocked, t.profile.locationLockedDenied);
+			showAlert(t.profile.locationLocked, t.profile.locationLockedDenied);
 		}
 	}
 
@@ -239,7 +240,7 @@ export function ProfileScreen() {
 					title={t.profile.report}
 					onPress={() => {
 						if (!openProblemReport()) {
-							Alert.alert(t.profile.report, t.profile.reportUnavailable);
+							showAlert(t.profile.report, t.profile.reportUnavailable);
 						}
 					}}
 				/>

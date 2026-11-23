@@ -1,9 +1,16 @@
-import type { ErrorEvent } from "@sentry/react-native";
+import type { ErrorEvent, Event } from "@sentry/react-native";
+import { en } from "../i18n/messages/en";
+import { nl } from "../i18n/messages/nl";
+import { darkColors, lightColors } from "../theme/tokens";
 import {
 	buildSentryOptions,
 	environmentFromChannel,
+	FEEDBACK_OPTIONS,
+	feedbackLabels,
+	feedbackTheme,
 	sanitizeBreadcrumb,
 	sanitizeEvent,
+	sanitizeFeedbackEvent,
 	shouldInitSentry,
 } from "./options";
 
@@ -78,5 +85,51 @@ describe("privacy", () => {
 				data: { url: "https://x.dev/a?code=ABC" },
 			})?.data,
 		).toEqual({ url: "https://x.dev/a" });
+	});
+});
+
+describe("feedback", () => {
+	it("strips the user, contact fields and query string from a report", () => {
+		const event = sanitizeFeedbackEvent({
+			type: "feedback",
+			user: { id: "u1", email: "a@b.c" },
+			request: { url: "fairway://play?round=1" },
+			contexts: {
+				feedback: {
+					message: "Distance is wrong",
+					contact_email: "a@b.c",
+					name: "Ann",
+					url: "fairway://play?round=1",
+				},
+			},
+		} as Event);
+		expect(event.user).toBeUndefined();
+		expect(event.request).toBeUndefined();
+		expect(event.contexts?.feedback).toEqual({
+			message: "Distance is wrong",
+			url: "fairway://play",
+		});
+	});
+
+	it("leaves other events to the error hooks", () => {
+		const event = { type: undefined, user: { id: "u1" } } as ErrorEvent;
+		expect(sanitizeFeedbackEvent(event)).toBe(event);
+	});
+
+	it("asks for no name or email and starts no shake on its own", () => {
+		expect(FEEDBACK_OPTIONS).toMatchObject({
+			showName: false,
+			showEmail: false,
+			enableShakeToReport: false,
+		});
+	});
+
+	it("labels the form in both languages and themes it from the tokens", () => {
+		expect(feedbackLabels(en.feedback).formTitle).toBe("Report a problem");
+		expect(feedbackLabels(nl.feedback).formTitle).toBe("Probleem melden");
+		expect(feedbackTheme(lightColors).accentBackground).toBe(
+			lightColors.accentFill,
+		);
+		expect(feedbackTheme(darkColors).background).toBe(darkColors.bg);
 	});
 });

@@ -8,6 +8,6 @@ import { sentryEnabled } from "./init";
 
 export function openProblemReport(): boolean {
 	if (!sentryEnabled) return false;
-	Sentry.showFeedbackWidget();
+	Sentry.showFeedbackForm();
 	return true;
 }

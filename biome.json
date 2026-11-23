@@ -18,6 +18,7 @@
 			"apps/mobile/app/**/*",
 			"apps/mobile/*.{ts,tsx,js}",
 			"apps/mobile/scripts/**/*",
+			"apps/mobile/plugins/**/*",
 			"**/.vscode/**/*",
 			"**/vite.config.ts",
 			"e2e/**/*.ts",
@@ -77,6 +78,7 @@
 				"apps/mobile/src/**",
 				"apps/mobile/app/**",
 				"!**/*.test.*",
+				"!apps/mobile/src/monitoring/native-presentation.ts",
 				"!apps/mobile/src/convex/query-cache.tsx"
 			],
 			"linter": {
@@ -93,6 +95,15 @@
 											"usePaginatedQuery"
 										],
 										"message": "Import query hooks from src/convex/query-cache (docs/standards/convex-query-caching.md)."
+									},
+									"react-native": {
+										"importNames": [
+											"Modal",
+											"Alert",
+											"ActionSheetIOS",
+											"Share"
+										],
+										"message": "Import Modal from src/ui/modal, and showAlert / showActionSheet / share from src/monitoring/native-presentation: they pause shake-to-report while visible (APP-438)."
 									}
 								}
 							}

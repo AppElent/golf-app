@@ -73,7 +73,8 @@
 					"imageWidth": 76,
 					"dark": { "backgroundColor": "#08130d" }
 				}
-			]
+			],
+			"./plugins/disable-shake-to-edit"
 		],
 		"locales": {
 			"en": "./locales/en.json",

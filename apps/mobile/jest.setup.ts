@@ -17,3 +17,15 @@ jest.mock("expo-sqlite/kv-store", () => {
 		},
 	};
 });
+
+/**
+ * The native Sentry SDK does not load in Jest. Shake-to-report and the
+ * presentation wrappers call into it from screens' modules.
+ */
+jest.mock("@sentry/react-native", () => ({
+	enableFeedbackOnShake: jest.fn(),
+	disableFeedbackOnShake: jest.fn(),
+	showFeedbackForm: jest.fn(),
+	captureException: jest.fn(),
+	addBreadcrumb: jest.fn(),
+}));

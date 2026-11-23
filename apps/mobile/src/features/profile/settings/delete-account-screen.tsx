@@ -2,10 +2,11 @@ import { useAuth, useUser } from "@clerk/expo";
 import { useMutation } from "convex/react";
 import { Stack } from "expo-router";
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet } from "react-native";
+import { ScrollView, StyleSheet } from "react-native";
 import { api } from "../../../convex/api";
 import { clearLastKnown } from "../../../convex/last-known";
 import { useI18n } from "../../../i18n";
+import { showAlert } from "../../../monitoring/native-presentation";
 import { metrics, spacing } from "../../../theme";
 import { useConfirm } from "../../../ui/confirm-dialog";
 import { InsetList, InsetRow } from "../../../ui/inset-list";
@@ -53,10 +54,7 @@ export function DeleteAccountScreen() {
 		if (result === "done") {
 			// Signed out or deleted: the auth stack replaces this screen.
 			if (app) {
-				Alert.alert(
-					t.profile.deleteAppDoneTitle,
-					t.profile.deleteAppDoneMessage,
-				);
+				showAlert(t.profile.deleteAppDoneTitle, t.profile.deleteAppDoneMessage);
 			}
 			return;
 		}

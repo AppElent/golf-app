@@ -13,7 +13,6 @@ import { type ReactNode, useCallback, useMemo, useRef, useState } from "react";
 import {
 	type AccessibilityActionEvent,
 	Animated,
-	Modal,
 	Pressable,
 	ScrollView,
 	StyleSheet,
@@ -32,6 +31,7 @@ import {
 	useTokens,
 } from "../theme";
 import { type RowAction, swipeActions } from "./inset-list.shared";
+import { Modal } from "./modal";
 import { AppText } from "./text";
 
 /** Spread onto the row's own focusable element so the actions reach a screen reader. */
