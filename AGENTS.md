@@ -23,6 +23,12 @@ Before the task, read the matching project doc:
 | Reviewing the app, or capturing a user-led review session | `review-app` skill |
 | Watching a PR through CI and review | `babysit-pr` skill |
 
+`upgrade-dependencies` and `review-app` are toolkit skills from developer-home
+[`skills/`](https://github.com/AppElent/developer-home/tree/main/skills), installed
+globally with `npx skills add`. `babysit-pr` is not in the toolkit and is installed
+only on Eric's Mac; without it, follow the runbook's
+[Review by risk tier](https://github.com/AppElent/developer-home/blob/main/RUNBOOK.md#review-by-risk-tier).
+
 Adding, moving, or finding docs: [docs map](docs/README.md).
 
 ## Factory workflow
