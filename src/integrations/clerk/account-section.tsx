@@ -1,6 +1,8 @@
 import { useClerk, useReverification, useUser } from "@clerk/react";
 import { deleteInBatches } from "@fairway/core/account-deletion";
+import { ACCOUNT_PORTAL_URL } from "@fairway/core/account-portal";
 import { useMutation } from "convex/react";
+import { ExternalLink } from "lucide-react";
 import { useRef, useState } from "react";
 import { api } from "../../../convex/_generated/api";
 import { ConfirmPanel } from "../../components/ConfirmPanel";
@@ -125,6 +127,21 @@ export function AccountSection() {
 					Signed in as <span className="font-semibold text-ink">{email}</span>
 				</p>
 			) : null}
+			{/* The full AppElent account lives in the portal (APP-667); this
+			    page keeps Fairway's own sign-out, export and deletion. */}
+			<a
+				href={ACCOUNT_PORTAL_URL}
+				target="_blank"
+				rel="noopener noreferrer"
+				className={`mb-3 flex w-full items-center justify-between gap-3 rounded-xl border ${CONTROL} px-4 py-3 font-display text-callout font-semibold text-ink no-underline`}
+			>
+				Manage your AppElent account
+				<ExternalLink
+					aria-hidden="true"
+					className="size-4 shrink-0 text-moss"
+				/>
+				<span className="sr-only"> (opens in a new tab)</span>
+			</a>
 			<button
 				type="button"
 				disabled={disabled}

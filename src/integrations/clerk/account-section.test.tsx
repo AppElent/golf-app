@@ -83,6 +83,21 @@ it("says so and allows a retry when sign-out fails", async () => {
 	expect(mocks.signOut).toHaveBeenCalledTimes(2);
 });
 
+it("links to the AppElent account portal in a new tab", () => {
+	render(<AccountSection />);
+	const link = screen.getByRole("link", {
+		name: /^manage your appelent account/i,
+	});
+	expect(link.getAttribute("href")).toBe("https://account.appelent.nl");
+	expect(link.getAttribute("target")).toBe("_blank");
+	expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+	// Screen readers hear that it leaves the page.
+	expect(link.textContent).toMatch(/opens in a new tab/);
+	// Fairway's own account actions stay.
+	expect(signOutButton()).toBeTruthy();
+	expect(screen.getByRole("button", { name: "Delete account…" })).toBeTruthy();
+});
+
 it("still offers sign-out before Clerk has loaded the user", () => {
 	mocks.email = undefined;
 	render(<AccountSection />);

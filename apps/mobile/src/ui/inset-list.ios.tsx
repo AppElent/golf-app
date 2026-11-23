@@ -107,6 +107,7 @@ export function InsetRow({
 	value,
 	trailing,
 	chevron = false,
+	external = false,
 	destructive = false,
 	onPress,
 	actions,
@@ -192,9 +193,9 @@ export function InsetRow({
 					{value}
 				</Text>
 			) : null}
-			{chevron ? (
+			{chevron || external ? (
 				<Image
-					systemName="chevron.right"
+					systemName={external ? "arrow.up.forward" : "chevron.right"}
 					size={13}
 					color={tokens.textFaint}
 					modifiers={[font({ weight: "semibold" })]}
