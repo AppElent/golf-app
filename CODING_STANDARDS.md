@@ -31,6 +31,7 @@ Read only what the task needs; never preload every standard.
 | Creating, preparing, or cleaning a worktree | [Workspaces](docs/standards/workspaces.md) |
 | Authentication | [Auth](docs/standards/auth.md) |
 | Convex functions, schema, migrations, seeds, tests, or account deletion and export | [Convex backend](docs/standards/convex.md) |
+| The central account portal: `convex/accountPortal.ts` or the portal that calls it | [Account portal](docs/standards/account-portal.md) |
 | Convex query reads, subscription retention, or local read caches | [Convex query caching](docs/standards/convex-query-caching.md) |
 | Localization | [i18n](docs/standards/i18n.md) |
 | Error reporting and source maps | [Sentry monitoring](docs/standards/sentry-monitoring.md) |
@@ -115,12 +116,13 @@ Project facts (identity, env, builds): [mobile runbook](docs/runbooks/mobile.md)
   and a final `check` step that fails the PR when one drops out of a
   fingerprint ([mobile runbook](docs/runbooks/mobile.md#runtime-fingerprint-check)).
 - **Not yet migrated** (differences from shared standards, to be agreed or fixed):
-  - [Convex backend](docs/standards/convex.md): the auth helper is `getUserId`
-    in `convex/lib.ts`, not `convex/lib/auth.ts`; public functions declare no
+  - [Convex backend](docs/standards/convex.md): the auth helpers are `getUserId`
+    (the standard's `requireUserId`) and `getOptionalUserId` in
+    `convex/lib.ts`, not `convex/lib/auth.ts`; public functions declare no
     `returns` validators; `ConvexError` codes are not typed against a shared
-    catalog; `account:deleteMyData` has no `expectedSubject` or batching and
-    does not walk the per-table registry (`convex/userData.ts`) that data
-    export (`account:exportPage`) reads by; a test checks that an export after
-    deletion is empty.
+    catalog. `account:deleteMyData` walks the per-table registry
+    (`convex/userData.ts`) in bounded batches and takes `expectedSubject`
+    (APP-399); a call without it, from installed apps that predate it, still
+    deletes everything in one transaction.
   - [i18n](docs/standards/i18n.md): the web app hardcodes English; only
     `apps/mobile` has a catalog.

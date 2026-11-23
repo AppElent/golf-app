@@ -9,13 +9,20 @@
 import { collectExport, type DataExport } from "@fairway/core/data-export";
 import { ConvexError } from "convex/values";
 import { convexTest } from "convex-test";
-import { describe, expect, it } from "vitest";
+import { Webhook } from "svix";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { api, internal } from "./_generated/api";
 import type { TableNames } from "./_generated/dataModel";
+import { COUNT_KEYS, type PortalExportPage } from "./accountPortal";
 import schema from "./schema";
 import * as seed from "./seed";
 import * as seedPreview from "./seedPreview";
-import { OWNED_TABLES, USER_DATA } from "./userData";
+import {
+	OWNED_TABLES,
+	PURGE_BATCH,
+	purgeUserData,
+	USER_DATA,
+} from "./userData";
 
 // Function modules plus `_generated`, which convex-test uses to find the root.
 const modules = import.meta.glob([
@@ -57,12 +64,50 @@ async function startRound(
 }
 
 describe("auth", () => {
-	it("refuses per-user functions without a session", async () => {
+	it("refuses per-user writes without a session", async () => {
 		const t = convexTest(schema, modules);
-		await expect(t.query(api.rounds.active, {})).rejects.toThrow(
+		await expect(t.mutation(api.account.deleteMyData, {})).rejects.toThrow(
 			"Not signed in.",
 		);
-		await expect(t.mutation(api.account.deleteMyData, {})).rejects.toThrow(
+	});
+
+	it("answers live reads empty without a session, never another user's data", async () => {
+		// Convex re-runs a screen's subscriptions without an identity when the
+		// Clerk token lapses (APP-249): they answer empty rather than throw.
+		const { t, alice, course } = await setup();
+		const roundId = await startRound(alice, course);
+		await alice.mutation(api.clubs.create, { name: "7i", carryMeters: 150 });
+		await alice.mutation(api.shots.mark, {
+			roundId,
+			holeIndex: 0,
+			position: { lat: 51.6, lng: 4.87 },
+		});
+		await alice.mutation(api.settings.update, { units: "yd" });
+
+		expect(await t.query(api.rounds.active, {})).toBeNull();
+		expect(await t.query(api.rounds.activeSimulation, {})).toBeNull();
+		expect(await t.query(api.rounds.detail, { roundId })).toBeNull();
+		expect(
+			await t.query(api.rounds.lastTee, { courseId: course.course._id }),
+		).toBeNull();
+		expect(await t.query(api.rounds.history, {})).toEqual([]);
+		expect(await t.query(api.rounds.holeResults, {})).toEqual([]);
+		expect(await t.query(api.shots.forRound, { roundId })).toBeNull();
+		expect(await t.query(api.shots.mine, {})).toEqual([]);
+		expect(await t.query(api.clubs.list, {})).toEqual([]);
+		expect(await t.query(api.settings.get, {})).toEqual({
+			units: "m",
+			homeCourseId: null,
+			handicapIndex: null,
+		});
+		await expect(
+			t.mutation(api.shots.mark, {
+				roundId,
+				holeIndex: 0,
+				position: { lat: 51.6, lng: 4.87 },
+			}),
+		).rejects.toThrow("Not signed in.");
+		await expect(t.mutation(api.rounds.abandon, { roundId })).rejects.toThrow(
 			"Not signed in.",
 		);
 	});
@@ -269,6 +314,29 @@ describe("rounds", () => {
 		const active = await alice.query(api.rounds.active, {});
 		expect(active?.scores).toEqual([]);
 		expect(active?.round.currentHoleIndex).toBe(0);
+	});
+
+	it("answers a deleted round's reads with null, as a play screen still subscribed sees it", async () => {
+		const { alice, course } = await setup();
+		const roundId = await startRound(alice, course);
+		await alice.mutation(api.shots.mark, {
+			roundId,
+			holeIndex: 0,
+			position: { lat: 51.6, lng: 4.87 },
+		});
+		expect(await alice.query(api.shots.forRound, { roundId })).toHaveLength(1);
+		await alice.mutation(api.rounds.abandon, { roundId });
+
+		expect(await alice.query(api.shots.forRound, { roundId })).toBeNull();
+		expect(await alice.query(api.rounds.detail, { roundId })).toBeNull();
+		expect(await alice.query(api.rounds.active, {})).toBeNull();
+		await expect(
+			alice.mutation(api.shots.mark, {
+				roundId,
+				holeIndex: 0,
+				position: { lat: 51.6, lng: 4.87 },
+			}),
+		).rejects.toThrow("Round not found.");
 	});
 
 	it("hides one player's round from another", async () => {
@@ -644,9 +712,7 @@ describe("clubs and shots", () => {
 		await expect(bob.mutation(api.clubs.remove, { clubId })).rejects.toThrow(
 			"Club not found.",
 		);
-		await expect(bob.query(api.shots.forRound, { roundId })).rejects.toThrow(
-			"Round not found.",
-		);
+		expect(await bob.query(api.shots.forRound, { roundId })).toBeNull();
 		await expect(
 			bob.mutation(api.shots.setClub, { shotId, club: "PW" }),
 		).rejects.toThrow("Shot not found.");
@@ -734,44 +800,44 @@ describe("account", () => {
 	});
 });
 
+type Who = Awaited<ReturnType<typeof setup>>["alice"];
+type Course = Awaited<ReturnType<typeof setup>>["course"];
+
+/** A row in every user-owned table: settings, clubs, a scored round with
+ *  a shot, two course copies (tees, holes, geometry) and a suggestion. */
+async function fillEveryTable(who: Who, course: Course, name: string) {
+	const catalogId = course.course._id;
+	await who.mutation(api.settings.update, {
+		homeCourseId: catalogId,
+		handicapIndex: 12.4,
+	});
+	await who.mutation(api.clubs.create, { name: "7i", carryMeters: 150 });
+	const roundId = await startRound(who, course);
+	await who.mutation(api.rounds.setScore, {
+		roundId,
+		holeIndex: 0,
+		playerIndex: 0,
+		strokes: 5,
+		putts: 2,
+	});
+	await who.mutation(api.shots.mark, {
+		roundId,
+		holeIndex: 0,
+		position: { lat: 51.6, lng: 4.87 },
+	});
+	const copyId = await who.mutation(api.courses.fork, {
+		courseId: catalogId,
+		name: `${name}'s copy`,
+	});
+	await who.mutation(api.courses.fork, { courseId: catalogId });
+	await who.mutation(api.courses.suggest, {
+		courseId: catalogId,
+		message: `${name}: hole 1 is a par 4`,
+	});
+	return { roundId, copyId };
+}
+
 describe("data export", () => {
-	type Who = Awaited<ReturnType<typeof setup>>["alice"];
-	type Course = Awaited<ReturnType<typeof setup>>["course"];
-
-	/** A row in every user-owned table: settings, clubs, a scored round with
-	 *  a shot, two course copies (tees, holes, geometry) and a suggestion. */
-	async function fillEveryTable(who: Who, course: Course, name: string) {
-		const catalogId = course.course._id;
-		await who.mutation(api.settings.update, {
-			homeCourseId: catalogId,
-			handicapIndex: 12.4,
-		});
-		await who.mutation(api.clubs.create, { name: "7i", carryMeters: 150 });
-		const roundId = await startRound(who, course);
-		await who.mutation(api.rounds.setScore, {
-			roundId,
-			holeIndex: 0,
-			playerIndex: 0,
-			strokes: 5,
-			putts: 2,
-		});
-		await who.mutation(api.shots.mark, {
-			roundId,
-			holeIndex: 0,
-			position: { lat: 51.6, lng: 4.87 },
-		});
-		const copyId = await who.mutation(api.courses.fork, {
-			courseId: catalogId,
-			name: `${name}'s copy`,
-		});
-		await who.mutation(api.courses.fork, { courseId: catalogId });
-		await who.mutation(api.courses.suggest, {
-			courseId: catalogId,
-			message: `${name}: hole 1 is a par 4`,
-		});
-		return { roundId, copyId };
-	}
-
 	const exportOf = (who: Who) =>
 		collectExport((step) => who.query(api.account.exportPage, { step }));
 
@@ -914,6 +980,443 @@ describe("data export", () => {
 	});
 });
 
+describe("account portal", () => {
+	/** Every page from the first (`cursor: null`) until `next` is null. */
+	async function drain(who: Pick<Who, "query">): Promise<PortalExportPage[]> {
+		const pages: PortalExportPage[] = [];
+		let cursor: string | null = null;
+		for (let i = 0; i < 1000; i++) {
+			const page: PortalExportPage = await who.query(
+				api.accountPortal.exportPage,
+				{ cursor },
+			);
+			expect(page).toMatchObject({ contract: 1, app: "fairway" });
+			pages.push(page);
+			if (page.next === null) return pages;
+			cursor = page.next;
+		}
+		throw new Error("Portal export did not finish.");
+	}
+
+	const merged = (pages: PortalExportPage[]) => {
+		const tables: Record<string, unknown[]> = {};
+		for (const page of pages) {
+			for (const [table, rows] of Object.entries(page.tables)) {
+				tables[table] = [...(tables[table] ?? []), ...rows];
+			}
+		}
+		return tables;
+	};
+
+	/** Every row in the database, to show a portal call writes nothing. */
+	const everything = (t: ReturnType<typeof convexTest>) =>
+		t.run(async (ctx) => {
+			const ids: Record<string, string[]> = {};
+			for (const table of Object.keys(USER_DATA) as TableNames[]) {
+				const rows = await ctx.db.query(table).collect();
+				ids[table] = rows.map((row) => row._id as string).sort();
+			}
+			return ids;
+		});
+
+	it("answers a never-used caller with null and an empty export, writing nothing", async () => {
+		const { t, alice, bob, course } = await setup();
+		await fillEveryTable(bob, course, "Bob");
+		const before = await everything(t);
+
+		expect(await alice.query(api.accountPortal.summary, {})).toBeNull();
+		expect(await alice.query(api.accountPortal.deletionBlocker, {})).toBeNull();
+		expect(await drain(alice)).toEqual([
+			{ contract: 1, app: "fairway", tables: {}, next: null },
+		]);
+
+		expect(await everything(t)).toEqual(before);
+	});
+
+	it("answers without a session as a never-used caller", async () => {
+		const t = convexTest(schema, modules);
+		expect(await t.query(api.accountPortal.summary, {})).toBeNull();
+		expect(await t.query(api.accountPortal.deletionBlocker, {})).toBeNull();
+		expect(await drain(t)).toEqual([
+			{ contract: 1, app: "fairway", tables: {}, next: null },
+		]);
+	});
+
+	it("counts the caller's rows and exports them across pages to the end", async () => {
+		const { alice, bob, course } = await setup();
+		const { roundId, copyId } = await fillEveryTable(alice, course, "Alice");
+		await fillEveryTable(bob, course, "Bob");
+
+		expect(await alice.query(api.accountPortal.summary, {})).toEqual({
+			contract: 1,
+			lastActiveAt: null,
+			counts: [
+				{ key: "rounds", count: 1, more: false },
+				{ key: "shots", count: 1, more: false },
+				{ key: "clubs", count: 1, more: false },
+				{ key: "courseCopies", count: 2, more: false },
+				{ key: "courseSuggestions", count: 1, more: false },
+				{ key: "settings", count: 1, more: false },
+			],
+		});
+
+		const pages = await drain(alice);
+		// One course copy per page: the walk goes past several pages.
+		expect(pages.length).toBeGreaterThan(2);
+		for (const page of pages.slice(0, -1)) {
+			expect(typeof page.next).toBe("string");
+		}
+		const tables = merged(pages);
+		// The same rows as the in-app export, catalog rows under their own keys.
+		const inApp = await collectExport((step) =>
+			alice.query(api.account.exportPage, { step }),
+		);
+		for (const [table, rows] of Object.entries(inApp.tables)) {
+			expect(tables[table] ?? [], table).toEqual(rows);
+		}
+		expect(tables.catalogCourses).toEqual(
+			expect.arrayContaining(inApp.catalog.courses),
+		);
+		expect(new Set(tables.catalogTees)).toEqual(new Set(inApp.catalog.tees));
+		expect(tables.rounds).toEqual([expect.objectContaining({ _id: roundId })]);
+		expect(tables.courses).toEqual(
+			expect.arrayContaining([expect.objectContaining({ _id: copyId })]),
+		);
+		// Rows only: a cursor is opaque and goes back to the caller alone.
+		const text = JSON.stringify(tables);
+		expect(text).not.toContain(ALICE.subject);
+		expect(text).not.toContain(BOB.subject);
+		expect(text).not.toContain("Bob: hole 1");
+	});
+
+	it("caps a count at 1,000 rows and says there are more", async () => {
+		const { t, alice } = await setup();
+		await t.run(async (ctx) => {
+			for (let i = 0; i < 1001; i++) {
+				await ctx.db.insert("clubs", {
+					userId: ALICE.subject,
+					name: `Club ${i}`,
+					carryMeters: 100,
+					sortOrder: i,
+				});
+			}
+		});
+		const summary = await alice.query(api.accountPortal.summary, {});
+		expect(summary?.counts).toContainEqual({
+			key: "clubs",
+			count: 1000,
+			more: true,
+		});
+	});
+
+	// Fairway has no deletion blocker: deleteMyData refuses no one, and an
+	// open round (fillEveryTable leaves one active) is the caller's own.
+	it("reports no blocker for a caller mid-round", async () => {
+		const { alice, course } = await setup();
+		await fillEveryTable(alice, course, "Alice");
+		expect(await alice.query(api.rounds.active, {})).not.toBeNull();
+		expect(await alice.query(api.accountPortal.deletionBlocker, {})).toBeNull();
+	});
+
+	it("shows a second account none of the first account's rows", async () => {
+		const { t, alice, bob, course } = await setup();
+		await fillEveryTable(alice, course, "Alice");
+		await fillEveryTable(bob, course, "Bob");
+
+		const aliceIds = await t.run(async (ctx) => {
+			const ids: string[] = [];
+			for (const table of OWNED_TABLES) {
+				const owned = USER_DATA[table];
+				if (owned.kind !== "owned") continue;
+				const rows = await ctx.db.query(table).collect();
+				for (const row of rows) {
+					if ((row as Record<string, unknown>)[owned.field] === ALICE.subject) {
+						ids.push(row._id);
+					}
+				}
+			}
+			return ids;
+		});
+		expect(aliceIds.length).toBeGreaterThan(0);
+
+		const bobRows = Object.values(merged(await drain(bob))).flat();
+		const bobIds = bobRows.map((row) => (row as { _id: string })._id);
+		expect(bobIds.filter((id) => aliceIds.includes(id))).toEqual([]);
+		const bobText = JSON.stringify(bobRows);
+		expect(bobText).not.toContain("Alice: hole 1");
+		expect(bobText).not.toContain("Alice's copy");
+		expect(bobText).not.toContain(ALICE.subject);
+		// Bob's counts are his own, not the sum of both accounts.
+		const summary = await bob.query(api.accountPortal.summary, {});
+		expect(summary?.counts).toContainEqual({
+			key: "courseCopies",
+			count: 2,
+			more: false,
+		});
+	});
+
+	it("names every owned table in the summary, each once", async () => {
+		expect(COUNT_KEYS.map((c) => c.table).sort()).toEqual(
+			[...OWNED_TABLES].sort(),
+		);
+		expect(new Set(COUNT_KEYS.map((c) => c.key)).size).toBe(COUNT_KEYS.length);
+		const { alice, course } = await setup();
+		await fillEveryTable(alice, course, "Alice");
+		const summary = await alice.query(api.accountPortal.summary, {});
+		expect(summary?.counts).toHaveLength(OWNED_TABLES.length);
+		expect(summary?.counts.every((c) => c.count > 0)).toBe(true);
+	});
+
+	it("refuses a cursor it did not write", async () => {
+		const { alice } = await setup();
+		for (const cursor of [
+			"not json",
+			"null",
+			JSON.stringify({ table: "holes", cursor: null }),
+			JSON.stringify({ table: "rounds", cursor: 7 }),
+		]) {
+			await expect(
+				alice.query(api.accountPortal.exportPage, { cursor }),
+			).rejects.toThrow(ConvexError);
+		}
+	});
+});
+
+describe("account deletion", () => {
+	/** A fresh Svix-style signing secret, never a committed literal. */
+	const randomSecret = () =>
+		[
+			"whsec",
+			btoa(String.fromCharCode(...crypto.getRandomValues(new Uint8Array(24)))),
+		].join("_");
+	const SECRET = randomSecret();
+
+	/** Every registry table's row ids, to compare whole-database states. */
+	const snapshot = (t: ReturnType<typeof convexTest>) =>
+		t.run(async (ctx) => {
+			const ids: Record<string, string[]> = {};
+			for (const table of Object.keys(USER_DATA) as TableNames[]) {
+				const rows = await ctx.db.query(table).collect();
+				ids[table] = rows.map((row) => row._id as string).sort();
+			}
+			return ids;
+		});
+
+	/** Alice and Bob each fill every table; `before` holds only Bob's rows. */
+	async function filled() {
+		const ctx = await setup();
+		await fillEveryTable(ctx.bob, ctx.course, "Bob");
+		const before = await snapshot(ctx.t);
+		await fillEveryTable(ctx.alice, ctx.course, "Alice");
+		return { ...ctx, before };
+	}
+
+	/** A Clerk delivery signed the way Svix signs it. */
+	function signed(
+		body: unknown,
+		{ secret = SECRET, id = "msg_1" }: { secret?: string; id?: string } = {},
+	) {
+		const payload = JSON.stringify(body);
+		const now = new Date();
+		return {
+			method: "POST",
+			headers: {
+				"svix-id": id,
+				"svix-timestamp": String(Math.floor(now.getTime() / 1000)),
+				"svix-signature": new Webhook(secret).sign(id, now, payload),
+			},
+			body: payload,
+		};
+	}
+
+	const deleted = (id: string) => ({
+		type: "user.deleted",
+		object: "event",
+		data: { id, object: "user", deleted: true },
+	});
+
+	beforeEach(() => {
+		vi.stubEnv("CLERK_WEBHOOK_SECRET", SECRET);
+	});
+	afterEach(() => {
+		vi.unstubAllEnvs();
+	});
+
+	it("deletes in batches until done, leaving only other people's rows", async () => {
+		const { t, before } = await filled();
+		let batches = 0;
+		for (;;) {
+			batches += 1;
+			const { done } = await t.run((ctx) =>
+				purgeUserData(ctx, ALICE.subject, 3),
+			);
+			if (done) break;
+		}
+		expect(batches).toBeGreaterThan(2);
+		expect(await snapshot(t)).toEqual(before);
+	});
+
+	it("repeats with the caller's subject until it says done", async () => {
+		const { t, alice, before } = await filled();
+		expect(
+			await alice.mutation(api.account.deleteMyData, {
+				expectedSubject: ALICE.subject,
+			}),
+		).toEqual({ done: true });
+		expect(await snapshot(t)).toEqual(before);
+		// Nothing left: a repeat is a no-op, and the login can start afresh.
+		expect(
+			await alice.mutation(api.account.deleteMyData, {
+				expectedSubject: ALICE.subject,
+			}),
+		).toEqual({ done: true });
+		expect(await alice.query(api.settings.get, {})).toMatchObject({
+			handicapIndex: null,
+		});
+		await alice.mutation(api.clubs.create, { name: "7i", carryMeters: 150 });
+		expect(await alice.query(api.clubs.list, {})).toHaveLength(1);
+	});
+
+	it("refuses when another account is signed in, deleting nothing", async () => {
+		const { t, alice } = await filled();
+		const full = await snapshot(t);
+		const refused = await alice
+			.mutation(api.account.deleteMyData, { expectedSubject: BOB.subject })
+			.catch((e: unknown) => e);
+		expect(refused).toBeInstanceOf(ConvexError);
+		expect((refused as ConvexError<{ code: string }>).data.code).toBe(
+			"accountChanged",
+		);
+		expect(await snapshot(t)).toEqual(full);
+	});
+
+	it("purges the deleted Clerk user's data from a signed webhook, as in-app deletion does", async () => {
+		const inApp = await filled();
+		await inApp.alice.mutation(api.account.deleteMyData, {
+			expectedSubject: ALICE.subject,
+		});
+		const viaWebhook = await filled();
+
+		const res = await viaWebhook.t.fetch(
+			"/clerk/webhook",
+			signed(deleted(ALICE.subject)),
+		);
+
+		expect(res.status).toBe(200);
+		expect(await snapshot(viaWebhook.t)).toEqual(viaWebhook.before);
+		// Same rows survive either way: Bob's and the catalog.
+		const counts = (ids: Record<string, string[]>) =>
+			Object.fromEntries(Object.entries(ids).map(([k, v]) => [k, v.length]));
+		expect(counts(await snapshot(viaWebhook.t))).toEqual(
+			counts(await snapshot(inApp.t)),
+		);
+	});
+
+	it("finishes a purge too big for one batch through scheduled batches", async () => {
+		vi.useFakeTimers();
+		try {
+			const { t, before } = await filled();
+			// More rows than one batch deletes.
+			await t.run(async (ctx) => {
+				for (let i = 0; i < PURGE_BATCH + 5; i += 1) {
+					await ctx.db.insert("clubs", {
+						userId: ALICE.subject,
+						name: `club ${i}`,
+						carryMeters: 100,
+						sortOrder: i,
+					});
+				}
+			});
+			const res = await t.fetch(
+				"/clerk/webhook",
+				signed(deleted(ALICE.subject)),
+			);
+			expect(res.status).toBe(200);
+			await t.finishAllScheduledFunctions(vi.runAllTimers);
+			expect(await snapshot(t)).toEqual(before);
+		} finally {
+			vi.useRealTimers();
+		}
+	});
+
+	it("is idempotent: a second delivery and an unknown user are no-ops", async () => {
+		const { t, before } = await filled();
+		const first = await t.fetch(
+			"/clerk/webhook",
+			signed(deleted(ALICE.subject)),
+		);
+		const again = await t.fetch(
+			"/clerk/webhook",
+			signed(deleted(ALICE.subject)),
+		);
+		const stranger = await t.fetch(
+			"/clerk/webhook",
+			signed(deleted("user_never_used_fairway"), { id: "msg_2" }),
+		);
+		expect([first.status, again.status, stranger.status]).toEqual([
+			200, 200, 200,
+		]);
+		expect(await snapshot(t)).toEqual(before);
+	});
+
+	it("acknowledges other events and does nothing", async () => {
+		const { t } = await filled();
+		const full = await snapshot(t);
+		for (const type of ["user.created", "user.updated", "session.ended"]) {
+			const res = await t.fetch(
+				"/clerk/webhook",
+				signed({ type, data: { id: ALICE.subject } }),
+			);
+			expect(res.status, type).toBe(200);
+		}
+		expect(await snapshot(t)).toEqual(full);
+	});
+
+	it("rejects bad, missing and stale signatures with no side effects", async () => {
+		const { t } = await filled();
+		const full = await snapshot(t);
+		const body = deleted(ALICE.subject);
+		const wrongSecret = signed(body, {
+			secret: randomSecret(),
+		});
+		const tampered = {
+			...signed(body),
+			body: JSON.stringify(deleted(BOB.subject)),
+		};
+		const unsigned = { method: "POST", body: JSON.stringify(body) };
+		const payload = JSON.stringify(body);
+		const old = new Date(Date.now() - 60 * 60 * 1000);
+		const stale = {
+			method: "POST",
+			headers: {
+				"svix-id": "msg_old",
+				"svix-timestamp": String(Math.floor(old.getTime() / 1000)),
+				"svix-signature": new Webhook(SECRET).sign("msg_old", old, payload),
+			},
+			body: payload,
+		};
+		for (const [name, init] of Object.entries({
+			wrongSecret,
+			tampered,
+			unsigned,
+			stale,
+		})) {
+			const res = await t.fetch("/clerk/webhook", init);
+			expect(res.status, name).toBe(401);
+		}
+		expect(await snapshot(t)).toEqual(full);
+	});
+
+	it("refuses every delivery while the secret is not configured", async () => {
+		const { t } = await filled();
+		const full = await snapshot(t);
+		vi.stubEnv("CLERK_WEBHOOK_SECRET", "");
+		const res = await t.fetch("/clerk/webhook", signed(deleted(ALICE.subject)));
+		expect(res.status).toBe(500);
+		expect(await snapshot(t)).toEqual(full);
+	});
+});
+
 describe("simulated rounds", () => {
 	async function startSimulation(
 		who: Awaited<ReturnType<typeof setup>>["alice"],
@@ -1031,16 +1534,14 @@ describe("simulated rounds", () => {
 		expect(await alice.query(api.rounds.holeResults, {})).toEqual([]);
 	});
 
-	it("is private to its owner, and needs a session", async () => {
+	it("is private to its owner, and empty without a session", async () => {
 		const { t, alice, bob, course } = await setup();
 		const roundId = await startSimulation(alice, course);
 		expect(await bob.query(api.rounds.activeSimulation, {})).toBeNull();
 		await expect(bob.mutation(api.rounds.finish, { roundId })).rejects.toThrow(
 			"Round not found.",
 		);
-		await expect(t.query(api.rounds.activeSimulation, {})).rejects.toThrow(
-			"Not signed in.",
-		);
+		expect(await t.query(api.rounds.activeSimulation, {})).toBeNull();
 	});
 
 	it("shows the card length of the round's tee", async () => {

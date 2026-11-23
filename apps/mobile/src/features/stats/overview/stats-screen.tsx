@@ -48,7 +48,16 @@ export function StatsScreen() {
 		);
 	}
 	if (history.length === 0) {
-		return <EmptyState title={t.stats.empty} body={t.stats.emptyHint} />;
+		// Inside the scroll view, so it sits below the large title, not under
+		// the status bar.
+		return (
+			<ScrollView
+				contentInsetAdjustmentBehavior="automatic"
+				contentContainerStyle={styles.content}
+			>
+				<EmptyState title={t.stats.empty} body={t.stats.emptyHint} />
+			</ScrollView>
+		);
 	}
 
 	const toPar = (v: number | null) => (v === null ? "—" : numbers.vsPar(v));

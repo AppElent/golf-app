@@ -1,8 +1,9 @@
 import type { DataModel, Doc, Id, TableNames } from "./_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "./_generated/server";
 
 /**
- * What every table holds for one user: the registry data export walks
- * (convex standard, "Account deletion and export"). Typed by every table in
+ * What every table holds for one user: the registry data export and account
+ * deletion walk (convex standard, "Account deletion and export"). Typed by every table in
  * the schema, so a new table fails typecheck until it states its treatment,
  * and `functions.test.ts` fails until the export returns its rows.
  */
@@ -122,4 +123,78 @@ export function childTables(parent: TableNames): TableNames[] {
 		const treatment = USER_DATA[table];
 		return treatment.kind === "child" && treatment.parent === parent;
 	});
+}
+
+/**
+ * `ctx.db.query` for a table chosen at runtime. The registry's types already
+ * tie each index to its table and lead field; TypeScript cannot follow that
+ * through a union of tables, so this view drops it.
+ */
+export function loose(ctx: QueryCtx, table: TableNames) {
+	type Eq = { eq(field: string, value: unknown): Eq };
+	type Query = {
+		withIndex(
+			index: string,
+			range: (q: Eq) => Eq,
+		): {
+			collect(): Promise<Doc<TableNames>[]>;
+			take(n: number): Promise<Doc<TableNames>[]>;
+			paginate(opts: { cursor: string | null; numItems: number }): Promise<{
+				page: Doc<TableNames>[];
+				isDone: boolean;
+				continueCursor: string;
+			}>;
+		};
+	};
+	return ctx.db.query(table) as unknown as Query;
+}
+
+/** Rows one purge batch deletes at most: far below a mutation's write limits,
+ *  and a course copy's geometry (about 300 kB) fits several times over. */
+export const PURGE_BATCH = 1000;
+
+/**
+ * Delete up to `PURGE_BATCH` of one user's rows, walking `USER_DATA`: each
+ * owned row after the rows under it, tables in registry order. `done` once
+ * nothing of theirs is left. The only purge: "Delete Fairway data only",
+ * whole-account deletion and the Clerk `user.deleted` webhook all run it.
+ * Shared rows (catalog courses) are never read by an owner index, so they stay.
+ */
+export async function purgeUserData(
+	ctx: MutationCtx,
+	userId: string,
+	budget = PURGE_BATCH,
+): Promise<{ done: boolean }> {
+	let left = budget;
+	for (const table of OWNED_TABLES) {
+		const owned = USER_DATA[table] as Owned<TableNames>;
+		const children = childTables(table).map((child) => ({
+			table: child,
+			treatment: USER_DATA[child] as Child<TableNames>,
+		}));
+		for (;;) {
+			const rows = await loose(ctx, table)
+				.withIndex(owned.index, (q) => q.eq(owned.field, userId))
+				.take(Math.min(left, 100));
+			if (rows.length === 0) break;
+			for (const row of rows) {
+				for (const child of children) {
+					const under = await loose(ctx, child.table)
+						.withIndex(child.treatment.index, (q) =>
+							q.eq(child.treatment.field, row._id),
+						)
+						.take(left);
+					for (const doc of under) await ctx.db.delete(doc._id);
+					left -= under.length;
+					// Out of budget: the parent waits for the next batch, so no
+					// row under it is ever left without one.
+					if (left === 0) return { done: false };
+				}
+				await ctx.db.delete(row._id);
+				left -= 1;
+				if (left === 0) return { done: false };
+			}
+		}
+	}
+	return { done: true };
 }

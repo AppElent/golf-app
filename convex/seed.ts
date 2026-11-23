@@ -179,7 +179,10 @@ async function seedActiveRound(
  * Requires the course catalog to be synced. Idempotent — skips entirely if any
  * round already exists for the seeding user.
  *
- * Run with: pnpm exec convex run seed:seedDummyData --identity '{"subject":"user_…"}'
+ * Internal, so `convex run --identity` cannot call it directly (that only runs
+ * public functions): call it from a throwaway public action with
+ * `ctx.runAction(internal.seed.seedDummyData, {})` and run that as the user.
+ * Recipe: docs/runbooks/development.md.
  */
 export const seedDummyData = internalAction({
 	args: {},

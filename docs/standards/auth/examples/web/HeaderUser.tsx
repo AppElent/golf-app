@@ -77,14 +77,14 @@ export default function HeaderUser() {
 						<a
 							href={config.paths.account}
 							onClick={() => setOpen(false)}
-							className="block rounded px-3 py-2 text-sm text-[var(--auth-fg)] hover:bg-[var(--auth-border)]"
+							className="block rounded px-3 py-2 text-sm text-[var(--auth-fg)] hover:bg-[var(--auth-hover-bg)]"
 						>
 							Account
 						</a>
 						<button
 							type="button"
 							onClick={() => signOut()}
-							className="block w-full rounded px-3 py-2 text-left text-sm text-[var(--auth-fg)] hover:bg-[var(--auth-border)]"
+							className="block w-full rounded px-3 py-2 text-left text-sm text-[var(--auth-fg)] hover:bg-[var(--auth-hover-bg)]"
 						>
 							Sign out
 						</button>

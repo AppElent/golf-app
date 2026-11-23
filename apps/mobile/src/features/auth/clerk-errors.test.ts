@@ -38,6 +38,20 @@ describe("readError", () => {
 		warn.mockRestore();
 	});
 
+	it("tells too many wrong codes apart from one wrong code", () => {
+		// Clerk: three wrong codes give `form_code_incorrect`, the fourth
+		// `verification_failed` ("Too many failed attempts") (APP-507).
+		expect(readError({ code: "form_code_incorrect" }, messages)).toBe(
+			"That code is not right.",
+		);
+		expect(readError({ code: "verification_failed" }, messages)).toBe(
+			"Too many wrong codes. Send a new one.",
+		);
+		expect(readError({ code: "verification_failed" }, nl.authErrors)).toBe(
+			"Te veel foute codes. Vraag een nieuwe aan.",
+		);
+	});
+
 	it("falls back to a generic message for an unknown code", () => {
 		const warn = jest.spyOn(console, "warn").mockImplementation(() => {});
 		expect(readError({ code: "something_new" }, messages)).toBe(

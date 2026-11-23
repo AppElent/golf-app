@@ -1,7 +1,7 @@
 ---
 type: decision
 description: Read before deciding which platform a feature ships on, adding or moving a web or phone route, or adding a shareable link.
-version: 1.0.2
+version: 1.1.0
 status: accepted
 date: 2026-11-14
 ---
@@ -36,11 +36,25 @@ needs a large screen and a keyboard. Its routes leave the 430px web shell and
 use the window's width; at phone width they show a "best on a larger screen"
 notice (`src/components/large-screen.tsx`, APP-117).
 
-**The web's round screens are legacy.** `/`, `/play`, `/card`, `/rounds/new`,
-`/progress` and `/profile` predate the phone app. They are `parity` in
-`features.ts` because they exist on both platforms today. Do not grow them:
-new play and review features go to the phone. Whether to retire them is
-Eric's call and a separate change; this ADR changes no runtime behaviour.
+**The web's round screens are retired** (Eric, 17 Nov 2026, APP-123; removed
+in APP-235). `/`, `/play`, `/card`, `/rounds/new`, `/progress` and the golfer
+parts of `/profile` predated the phone app. Now:
+
+- `/` is "Open the Fairway app" (`open-the-app`, public): the TestFlight
+  beta (and the App Store once `APP_STORE_LIVE` in
+  `src/components/app-links.ts` is flipped at the first store release), and
+  links to course authoring and the Account page.
+- The Worker (`src/server.ts`) answers `/play`, `/card`, `/rounds/new` and
+  `/progress` with a 301 to `/` (`RETIRED_PATHS` in
+  `src/components/app-links.ts`); their routes and components are gone.
+- `/profile` is the Account page: data export, sign-out and account deletion.
+- `home`, `round-setup`, `round-play`, `stats`, `simulator`, `settings`,
+  `handicap`, `home-course` and `club-bag` are `exclusive` to the phone in
+  `features.ts`.
+- The tab bar holds Courses and Account.
+
+The Convex functions the web screens called are unchanged: the phone calls
+them too.
 
 **The web floor is reduced** to sign-in (with sign-up and password reset),
 sign-out, the privacy page, account deletion and data export. People manage their golf on the phone; the web is a
@@ -88,7 +102,8 @@ native build.
 
 - Full floor on the web: account editing, language and theme on a web app
   used only for course authoring cost more than they return.
-- Declaring the web round screens `exclusive` to the phone now: they still
-  ship, and the manifest records what ships, not what is planned.
+- Declaring the web round screens `exclusive` to the phone while they still
+  shipped (14 Nov 2026): the manifest records what ships, not what is planned.
+  They became `exclusive` when APP-235 removed them.
 - Declaring `course-authoring` responsive: its role is large-screen editing,
   and the declaration makes the missing large-screen layout visible.

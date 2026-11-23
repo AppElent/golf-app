@@ -51,7 +51,6 @@ const mono = await sharp({ create: { width: 1024, height: 1024, channels: 3, bac
 await save(`${mobile}android-icon-monochrome.png`, mono);
 const splash = await mark(400, 360, onSurface);
 await save(`${mobile}splash-icon.png`, splash);
-await save(`${mobile}favicon.png`, await sharp(icon).resize(48).png().toBuffer());
 for (const size of [192, 512]) {
   await save(`public/logo${size}.png`, await sharp(icon).resize(size).png().toBuffer());
 }
@@ -90,11 +89,15 @@ frames.forEach((frame, i) => {
 await save("public/favicon.ico", Buffer.concat([header, ...frames]));
 
 // Avenir Next is shipped on macOS; portable sans-serif fallbacks remain usable.
-const wordmark = svg(900, 280, `<text x="0" y="195" font-family="Avenir Next, Avenir, Arial, sans-serif" font-weight="600" font-size="188" letter-spacing="-7" fill="#1c7a4c">Fairway</text>`);
-await save("docs/brand/fairway-logo.png", await clear(1200, 320).composite([
+// The dark lockup (mint wordmark, `--color-pine-ink` in dark) is the sign-in
+// card's logo in dark mode (src/integrations/clerk/appearance.ts).
+const wordmarkSvg = (fill) => svg(900, 280, `<text x="0" y="195" font-family="Avenir Next, Avenir, Arial, sans-serif" font-weight="600" font-size="188" letter-spacing="-7" fill="${fill}">Fairway</text>`);
+const lockup = async (fill) => clear(1200, 320).composite([
   { input: await mark(280, 252, onSurface), left: 0, top: 20 },
-  { input: wordmark, left: 300, top: 20 },
-]).png().toBuffer());
+  { input: wordmarkSvg(fill), left: 300, top: 20 },
+]).png().toBuffer();
+await save("docs/brand/fairway-logo.png", await lockup("#1c7a4c"));
+await save("public/fairway-logo-dark.png", await lockup("#7fe0a6"));
 
 // Contact sheet: each iOS appearance, small sizes and the Android layers.
 const width = 2220;

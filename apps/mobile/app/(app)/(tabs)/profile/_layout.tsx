@@ -17,6 +17,7 @@ export default function ProfileStack() {
 			<Stack.Screen name="verify-email" options={small} />
 			<Stack.Screen name="password" options={small} />
 			<Stack.Screen name="reverify" options={small} />
+			<Stack.Screen name="delete-account" options={small} />
 		</Stack>
 	);
 }

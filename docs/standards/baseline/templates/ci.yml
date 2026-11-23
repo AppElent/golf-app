@@ -1,6 +1,8 @@
-# Copy to .github/workflows/ci.yml. Delete steps for targets the app does not
-# have, and steps a root script already covers (a root `typecheck` that filters
-# into core and mobile replaces the two filtered typecheck steps).
+# Copy to .github/workflows/ci.yml. The gate is the root `verify` script, the
+# same command agents run before they report done, so CI and local checks never
+# drift. `verify` chains every target's check, typecheck, and tests, for example:
+#   "verify": "pnpm check && pnpm typecheck && pnpm --filter ./apps/mobile typecheck && pnpm test"
+# Delete the build step when the app has no build.
 name: CI
 on:
   pull_request:
@@ -18,29 +20,19 @@ jobs:
     permissions:
       contents: read
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: pnpm/action-setup@b906affcce14559ad1aafd4ab0e942779e9f58b1 # v4.3.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version: 22.15.0
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      # Biome plus repository checks such as the mobile structure check.
-      - run: pnpm check
       # Manifest and .env.example only; needs no credentials.
       - run: pnpm env:check
       # Toolkit drift (CI job name, Wrangler environments, dependency ranges). Once
       # `node scripts/check-project.mjs` shows no warnings, add:
       #   - run: node scripts/check-project.mjs --strict
-      - name: Typecheck web
-        run: pnpm typecheck
-      - name: Typecheck core
-        run: pnpm --filter "./packages/core" typecheck
-      - name: Typecheck mobile
-        run: pnpm --filter "./apps/mobile" typecheck
-      - name: Vitest
-        run: pnpm test
-      - name: Mobile Jest
-        run: pnpm --filter "./apps/mobile" run --if-present test
+      # Biome, repository checks, typecheck, and tests for every target.
+      - run: pnpm verify
       # Catches bundling, plugin, and SSR-compile failures that types and tests miss.
       - run: pnpm build

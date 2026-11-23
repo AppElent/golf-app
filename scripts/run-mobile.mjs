@@ -28,6 +28,18 @@ const SIM = join(homedir(), ".agents/bin/sim");
 // ---------------------------------------------------------------------------
 // Pure helpers (tested in developer-home tests/run-mobile.test.mjs)
 
+/** The sign-in button's label in every app language `up --lang` offers. */
+export const SIGN_IN_LABELS = ["Sign in", "Inloggen"];
+
+/**
+ * An agent-device selector for the sign-in submit button in any app language:
+ * the `sign-in-submit` testID where the app sets it, else an element whose
+ * label is one of SIGN_IN_LABELS (`||` is agent-device's fallback chain).
+ */
+export function signInSelector(labels = SIGN_IN_LABELS) {
+	return ['id="sign-in-submit"', ...labels.map((label) => `label=${JSON.stringify(label)}`)].join(" || ");
+}
+
 /** Stable 8-character id for a checkout path. */
 export function checkoutId(dir) {
 	return createHash("sha1").update(dir).digest("hex").slice(0, 8);
@@ -360,7 +372,8 @@ function cmdSignin(ctx, args) {
 		else die(`signin: unknown option ${args[i]}`);
 	}
 	if (Boolean(email) !== Boolean(password)) die("signin: --email and --password go together");
-	if (!ad(ctx, ["wait", "text", "Sign in", "20000"], { quiet: true }).ok) die("sign-in screen not visible (already signed in?)");
+	const submit = signInSelector();
+	if (!ad(ctx, ["wait", submit, "20000"], { quiet: true }).ok) die("sign-in screen not visible (already signed in?)");
 	if (email) {
 		const ref = (kind) => new RegExp(`\\[${kind}\\][^\\n]*?(@e\\d+)|(@e\\d+)[^\\n]*\\[${kind}\\]`).exec(ad(ctx, ["snapshot", "-i"], { quiet: true }).out);
 		const field = ref("text-field");
@@ -369,7 +382,7 @@ function cmdSignin(ctx, args) {
 		if (!secure || !ad(ctx, ["fill", secure[1] ?? secure[2], password], { quiet: true }).ok) die("could not fill password");
 		if (!ad(ctx, ["snapshot", "-i"], { quiet: true }).out.includes(`"${email}"`)) die(`email field does not show ${email}; not signing in`);
 	}
-	ad(ctx, ["press", 'label="Sign in"'], { quiet: true });
+	ad(ctx, ["press", submit], { quiet: true });
 	if (!ad(ctx, ["wait", "role=tab-bar", "30000"], { quiet: true }).ok) die("tab bar not visible after sign-in");
 	log("signed in");
 }

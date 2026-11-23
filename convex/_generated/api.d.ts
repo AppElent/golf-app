@@ -9,10 +9,12 @@
  */
 
 import type * as account from "../account.js";
+import type * as accountPortal from "../accountPortal.js";
 import type * as catalog_index from "../catalog/index.js";
 import type * as clubs from "../clubs.js";
 import type * as courseCatalog from "../courseCatalog.js";
 import type * as courses from "../courses.js";
+import type * as http from "../http.js";
 import type * as lib from "../lib.js";
 import type * as rounds from "../rounds.js";
 import type * as seed from "../seed.js";
@@ -30,10 +32,12 @@ import type {
 
 declare const fullApi: ApiFromModules<{
   account: typeof account;
+  accountPortal: typeof accountPortal;
   "catalog/index": typeof catalog_index;
   clubs: typeof clubs;
   courseCatalog: typeof courseCatalog;
   courses: typeof courses;
+  http: typeof http;
   lib: typeof lib;
   rounds: typeof rounds;
   seed: typeof seed;

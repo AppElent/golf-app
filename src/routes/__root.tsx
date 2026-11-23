@@ -13,7 +13,6 @@ import { ServiceWorker } from "../components/ServiceWorker";
 import { AuthGate } from "../integrations/clerk/auth-gate";
 import ClerkProvider from "../integrations/clerk/provider";
 import ConvexProvider from "../integrations/convex/provider";
-import { SimulationModeProvider } from "../play/simulation";
 import appCss from "../styles.css?url";
 
 export const Route = createRootRoute({
@@ -61,17 +60,15 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			<body>
 				<ClerkProvider>
 					<ConvexProvider>
-						<SimulationModeProvider>
-							<div
-								className={
-									largeScreen
-										? "relative min-h-dvh w-full bg-canvas"
-										: "relative mx-auto min-h-dvh w-full max-w-[430px] bg-canvas shadow-2xl"
-								}
-							>
-								{isPublic ? children : <AuthGate>{children}</AuthGate>}
-							</div>
-						</SimulationModeProvider>
+						<div
+							className={
+								largeScreen
+									? "relative min-h-dvh w-full bg-canvas"
+									: "relative mx-auto min-h-dvh w-full max-w-[430px] bg-canvas shadow-2xl"
+							}
+						>
+							{isPublic ? children : <AuthGate>{children}</AuthGate>}
+						</div>
 						{isPublic ? null : <BottomNav wide={largeScreen} />}
 						<ServiceWorker />
 						<TanStackDevtools

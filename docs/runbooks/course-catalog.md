@@ -93,6 +93,6 @@ the card than max(12 m, 5%), so a wrong tee cannot be merged by accident.
 
 ## Try a course without playing it
 
-Profile → Course simulator starts a simulated round: you set where you stand and
+In the phone app, Profile → Course simulator starts a simulated round: you set where you stand and
 play the holes. It is one server row per user, kept out of history, statistics and
 handicap, and deleted when finished.

@@ -16,33 +16,6 @@ function luminance(rgb: string): number {
 	return 0.2126 * lin(r) + 0.7152 * lin(g) + 0.0722 * lin(b);
 }
 
-/** Opens the scorecard, starting a simulated round (never counted) if none is active. */
-async function openRound(page: Page) {
-	await page.goto("/card");
-	const empty = page.getByText("No active round.");
-	const title = page.getByRole("heading", { level: 1 });
-	await expect(title).toBeVisible();
-	if (await empty.isVisible()) {
-		await page.goto("/rounds/new?simulate=1");
-		await page
-			.getByRole("heading", { name: "Course" })
-			.locator("xpath=..")
-			.getByRole("button")
-			.first()
-			.click();
-		// A course with loops needs one picked before the round can start.
-		const loop = page.getByRole("button", { name: /^\d+–\d+$/ }).first();
-		const start = page.getByRole("button", { name: "Start simulation" });
-		await expect(start.or(loop).first()).toBeVisible();
-		if (await loop.isVisible()) await loop.click();
-		await start.click();
-		await page.waitForURL("**/play");
-		await page.goto("/card");
-	}
-	await expect(empty).toHaveCount(0);
-	await expect(title).not.toHaveText("Scorecard");
-}
-
 async function openCourseEditor(page: Page) {
 	await page.goto("/courses");
 	await page.getByRole("heading", { name: "Courses" }).waitFor();
@@ -51,28 +24,38 @@ async function openCourseEditor(page: Page) {
 }
 
 /** Opens an owned copy of a catalog course, so its fields are editable.
- *  Returns the step that deletes the copy again. */
+ *  Returns the step that deletes the copy again. If a step after the copy
+ *  exists fails, the copy is deleted before the error is rethrown. */
 async function openOwnedCopy(page: Page) {
 	await openCourseEditor(page);
 	await page.getByRole("button", { name: "Make my copy" }).click();
 	const remove = page.getByRole("button", { name: "Delete my copy" });
-	await remove.waitFor();
-	await expect(page.locator("main input").first()).toBeVisible();
-	return async () => {
+	const cleanUp = async () => {
 		page.once("dialog", (dialog) => dialog.accept());
 		await remove.click();
 		await page.waitForURL("**/courses");
 	};
+	try {
+		await remove.waitFor();
+		await expect(page.locator("main input").first()).toBeVisible();
+	} catch (error) {
+		await cleanUp().catch(() => {});
+		throw error;
+	}
+	return cleanUp;
 }
 
 type Open = (page: Page) => Promise<void | (() => Promise<void>)>;
 
 const PAGES: Record<string, Open> = {
-	home: async (page) => {
+	"open-the-app": async (page) => {
 		await page.goto("/");
-		await page.locator("main").waitFor();
+		await page.getByRole("heading", { name: "Open the Fairway app" }).waitFor();
 	},
-	round: openRound,
+	account: async (page) => {
+		await page.goto("/profile");
+		await page.getByRole("heading", { name: "Account", level: 1 }).waitFor();
+	},
 	editor: openCourseEditor,
 	copy: openOwnedCopy,
 };
@@ -84,39 +67,43 @@ for (const scheme of ["light", "dark"] as const) {
 		for (const [name, open] of Object.entries(PAGES)) {
 			test(name, async ({ page }, info) => {
 				const cleanUp = await open(page);
-				await page.waitForLoadState("networkidle");
+				// A failed assertion must not leave the owned course copy behind.
+				try {
+					await page.waitForLoadState("networkidle");
 
-				const canvas = await shell(page).evaluate(
-					(el) => getComputedStyle(el).backgroundColor,
-				);
-				if (scheme === "dark") {
-					expect(luminance(canvas)).toBeLessThan(0.05);
-				} else {
-					expect(luminance(canvas)).toBeGreaterThan(0.7);
-				}
-
-				// The course editor has no tab of its own, so no tab is active there.
-				const tabs = await page.locator("nav a").evaluateAll((links) =>
-					links.map((a) => ({
-						active: a.getAttribute("aria-current") === "page",
-						color: getComputedStyle(a).color,
-					})),
-				);
-				const active = tabs.find((t) => t.active)?.color;
-				const inactive = tabs.find((t) => !t.active)?.color ?? "";
-				if (active) {
-					expect(active).not.toBe(inactive);
-					const [hi, lo] = [luminance(active), luminance(inactive)].sort(
-						(a, b) => b - a,
+					const canvas = await shell(page).evaluate(
+						(el) => getComputedStyle(el).backgroundColor,
 					);
-					expect((hi + 0.05) / (lo + 0.05)).toBeGreaterThanOrEqual(1.5);
-				}
+					if (scheme === "dark") {
+						expect(luminance(canvas)).toBeLessThan(0.05);
+					} else {
+						expect(luminance(canvas)).toBeGreaterThan(0.7);
+					}
 
-				await page.screenshot({
-					path: info.outputPath(`${name}-${info.project.name}-${scheme}.png`),
-					fullPage: true,
-				});
-				await cleanUp?.();
+					// "Open the Fairway app" is public and has no tab bar.
+					const tabs = await page.locator("nav a").evaluateAll((links) =>
+						links.map((a) => ({
+							active: a.getAttribute("aria-current") === "page",
+							color: getComputedStyle(a).color,
+						})),
+					);
+					const active = tabs.find((t) => t.active)?.color;
+					const inactive = tabs.find((t) => !t.active)?.color ?? "";
+					if (active) {
+						expect(active).not.toBe(inactive);
+						const [hi, lo] = [luminance(active), luminance(inactive)].sort(
+							(a, b) => b - a,
+						);
+						expect((hi + 0.05) / (lo + 0.05)).toBeGreaterThanOrEqual(1.5);
+					}
+
+					await page.screenshot({
+						path: info.outputPath(`${name}-${info.project.name}-${scheme}.png`),
+						fullPage: true,
+					});
+				} finally {
+					await cleanUp?.();
+				}
 			});
 		}
 
@@ -124,7 +111,7 @@ for (const scheme of ["light", "dark"] as const) {
 			test.use({ storageState: { cookies: [], origins: [] } });
 
 			test("sign-in", async ({ page }, info) => {
-				await page.goto("/");
+				await page.goto("/courses");
 				const email = page.getByLabel(/email address/i);
 				await email.waitFor();
 				const field = await email.evaluate(

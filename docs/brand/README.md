@@ -17,7 +17,7 @@ Colours: icon field `#1cb45d` → `#013a27`, mint fairway, sand bunker, yellow f
 
 ## Generated assets
 
-- `apps/mobile/assets/images/icon.png`, `icon-dark.png`, `icon-tinted.png`: opaque 1024 px iOS appearances. `favicon.png`: opaque 48 px derivative.
+- `apps/mobile/assets/images/icon.png`, `icon-dark.png`, `icon-tinted.png`: opaque 1024 px iOS appearances.
 - `icon-dev.png`, `icon-test.png`, `icon-preview.png`: the light icon with a coloured install-variant band.
 - `android-icon-foreground.png`: transparent 1024 px canvas, mark bounded to 540 px so it fits inside the central 66% adaptive safe circle; `-dev`, `-test`, `-preview` add a label pill. `android-icon-background.png`: opaque field. `android-icon-monochrome.png`: white silhouette with matching alpha. Android is parked; these are regenerated but not verified on a device.
 - `splash-icon.png`: transparent 400 px mark for both app backgrounds.

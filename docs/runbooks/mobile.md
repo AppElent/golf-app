@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when running, building, or releasing the Fairway mobile app (apps/mobile).
-version: 1.3.0
+version: 1.4.0
 ---
 
 # Mobile app (Fairway)
@@ -151,8 +151,11 @@ updates for its own fingerprint until the next store build.
 
 `expo.version` in `app.json` is the app's one SemVer; web reads it too
 ([deploy](deploy.md#versions)). Profile's footer shows the version, the build
-number, the channel, and the running update's ID (none when the bundled code
-runs). Updates published by CI report to Sentry as `fairway@<version>+<short sha>`
+number, the OTA label of the running update (`update 1.0.0 · 20 nov · a1b2c3d`,
+`geen update` when the bundled code runs) and the channel. The label is
+developer-home's `formatOtaLabel` (`src/updates/ota-label.mjs`, copied
+unchanged); the Mobile Update workflows use the same label as the EAS update
+message (`scripts/ota-label.mjs`). Updates published by CI report to Sentry as `fairway@<version>+<short sha>`
 (`EXPO_PUBLIC_COMMIT_SHA`, `src/monitoring/release.ts`); a store or local
 build's bundled code keeps the SDK's default release, the name its source
 maps are uploaded under.
@@ -354,12 +357,37 @@ Profile links to the policy page (`src/routes/privacy.tsx`). Profile → Delete
 account deletes the shared Appelent Clerk user, so a review that tests it removes
 the reviewer for every Appelent app: recreate it before the next submission.
 
-Store screenshots are 1320×2868 (iPhone 6.9"), one set per locale. Take them on
-a Release simulator build of the dev variant with the display name set to
-"Fairway", seeded with a finished-rounds history and a round in progress, the
-status bar overridden to 9:41 with a full battery, and the location on the hole
-so live distances show. Upload with
-`asc screenshots upload --app 6833832527 --version <v> --locale <l> --path <dir> --device-type IPHONE_69`.
+#### Store screenshots
+
+`node scripts/store-screenshots.mjs --issue APP-433 --name fairway --devices iphone`
+(synced from developer-home; [mobile run](../standards/mobile-run.md#store-screenshots))
+makes the iPhone 6.9" set in en-US and nl-NL under
+`~/Developer/.screenshots/APP-433/fairway/`. It drives
+`apps/mobile/.maestro/store-screenshots.yaml` on the dev client, with the labels
+of `store-screenshots.json`. It needs:
+
+- A dev client build of `com.appelent.fairway.dev`. The script looks in Xcode
+  DerivedData and `~/Developer/.builds/<checkout folder>/`; for a build elsewhere set
+  `RUN_MOBILE_APP=/path/FairwayDev.app`.
+- `apps/mobile/.env.local` with the dev-login credentials (the flow signs in with the
+  pre-filled form and never shows the sign-in screen or Profile, which carry the
+  test email).
+- A dev Convex deployment with the catalog synced (`pnpm courses:sync`) and the
+  demo data for the test user: three finished rounds and a round in progress on hole
+  5 of De Oosterhoutse. Seed it through a throwaway public wrapper, as
+  [Local development](development.md) describes for `seed:seedDummyData`.
+- The flow only reads. The simulator location is set on hole 5 with Maestro's
+  `setLocation`, so the live distances show.
+
+Fairway is iPhone-only (`supportsTablet: false`), so there is no iPad set and the
+store does not ask for one: always pass `--devices iphone`. The set is the home
+screen, the live hole, the live scorecard, stats and a finished round. The course
+picker and round setup are not in it: with a round in progress they show "A round is
+in progress".
+
+Store screenshots are 1320×2868 (iPhone 6.9"), one set per locale. Upload with
+`asc screenshots upload --app 6833832527 --version <v> --locale <l> --path <dir> --device-type IPHONE_69`
+after reading the contact sheets; never `--replace` an existing set without Eric's go.
 
 ## Runtime notes
 
@@ -375,6 +403,6 @@ so live distances show. Upload with
   builds; a development bundle stays silent unless
   `EXPO_PUBLIC_SENTRY_DEBUG=1`. "Report a problem" opens Sentry User Feedback
   when reporting is on, otherwise shows an explanation. Convex backend errors
-  go through the production log forwarder in [Sentry](sentry.md).
+  go through the shared incident inbox's log forwarder in [Sentry](sentry.md).
 - Courses: the catalog is read-only on the phone; round setup links to
   "Suggest a correction". See [course catalog](course-catalog.md).

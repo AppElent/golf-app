@@ -61,6 +61,8 @@ export async function planBaseline(kind, options = {}) {
     else notes.push('TypeScript is not declared; preserve the language/tooling choice or install it before typecheck setup.');
     if (dependencies.vitest) script('test', 'vitest run');
     else notes.push('No Vitest dependency; keep the existing test runner or add one explicitly.');
+    const gates = ['check', 'typecheck', 'test'].filter(name => pkg.scripts[name]);
+    if (gates.length) script('verify', gates.map(name => `pnpm ${name}`).join(' && '));
     await create('pnpm-workspace.yaml', '# Start from docs/standards/baseline/templates/pnpm-workspace.yaml; give every allowBuilds entry a reason.\nminimumReleaseAge: 4320\nallowBuilds: {}\n');
     if (kind === 'web') {
       if (!dependencies['@tanstack/react-start'] || !dependencies.vite) throw new Error('Web baseline requires an existing TanStack Start + Vite scaffold.');
@@ -81,8 +83,9 @@ export async function planBaseline(kind, options = {}) {
     }
     if (options.ci) {
       const roles = kind === 'mobile' ? ['check', 'typecheck', 'test'] : ['check', 'typecheck', 'test', 'build'];
-      if (roles.some(role => !pkg.scripts[role])) throw new Error(`CI requires declared scripts: ${roles.join(', ')}`);
-      await create('.github/workflows/ci.yml', `name: CI\non:\n  pull_request:\n  push:\n    branches: [main]\njobs:\n  # Keep the id \`check\`: the main ruleset requires it. Add \`node scripts/check-project.mjs --strict\` once it shows no warnings.\n  check:\n    runs-on: ubuntu-latest\n    permissions:\n      contents: read\n    steps:\n      - uses: actions/checkout@v4\n      - uses: pnpm/action-setup@v4\n      - uses: actions/setup-node@v4\n        with:\n          node-version: 22.15.0\n          cache: pnpm\n      - run: pnpm install --frozen-lockfile\n${roles.map(role => `      - run: pnpm ${role}\n`).join('')}`);
+      if (roles.some(role => !pkg.scripts[role]) || !pkg.scripts.verify) throw new Error(`CI requires declared scripts: verify, ${roles.join(', ')}`);
+      const steps = kind === 'mobile' ? ['verify'] : ['verify', 'build'];
+      await create('.github/workflows/ci.yml', `name: CI\non:\n  pull_request:\n  push:\n    branches: [main]\njobs:\n  # Keep the id \`check\`: the main ruleset requires it. Add \`node scripts/check-project.mjs --strict\` once it shows no warnings.\n  check:\n    runs-on: ubuntu-latest\n    permissions:\n      contents: read\n    steps:\n      - uses: actions/checkout@v4\n      - uses: pnpm/action-setup@v4\n      - uses: actions/setup-node@v4\n        with:\n          node-version: 22.15.0\n          cache: pnpm\n      - run: pnpm install --frozen-lockfile\n${steps.map(step => `      - run: pnpm ${step}\n`).join('')}`);
     }
     const after = json(pkg);
     if (JSON.stringify(pkg) !== JSON.stringify(object(packageText, 'package.json'))) files.set('package.json', { path: 'package.json', before: packageText, after });

@@ -3,7 +3,7 @@
 
 /* Colours marked "themed" change in dark mode (the media query below), so
    the app column follows the system setting. The rest are brand fills that
-   look the same in both themes: pine (the Play screen), flag, live, mint. */
+   look the same in both themes: pine, flag, live, mint. */
 @theme {
 	/* surfaces & lines (themed) */
 	/* canvas: the app column's background */
@@ -15,32 +15,29 @@
 	/* bar: the bottom tab bar */
 	--color-bar: rgb(255 255 255 / 0.9);
 	--color-card-line: #e9e2d2;
-	/* control-line: the edge of a field. Light keeps the card line; dark
-	   strengthens it to 3:1 against the field and the ground around it. */
-	--color-control-line: #e9e2d2;
+	/* control-line: the edge of a field, button or toggle. It reaches 3:1
+	   against the field and the ground around it in both themes (light
+	   #80877f, dark #6b7a71); a card keeps the quieter card-line. */
+	--color-control-line: #80877f;
 	/* cream: text on pine fills; not themed */
 	--color-cream: #f3efe4;
 	/* greens */
 	--color-pine: #0f3d2a;
-	--color-pine-light: #144d34;
 	/* pine-fill: a pine button or badge under cream text (themed: lifted in
 	   dark mode so it stands off the canvas) */
 	--color-pine-fill: #0f3d2a;
 	/* pine-ink: pine text, icons and rings on the canvas or a card (themed) */
 	--color-pine-ink: #0f3d2a;
-	/* live: selected PillToggle fill under white text, and green text on cream */
+	/* live: green button fill under white text (course editor Save, Send suggestion) */
 	--color-live: #247a4d;
-	/* live-ink: green text on cream or on a live/15 tint */
+	/* live-ink: green text on cream */
 	--color-live-ink: #1f6b43;
 	--color-mint: #7fe0a6;
-	--color-mint-soft: #9fc7ae;
 	/* accents & ink */
 	/* flag: the CTA fill under white text */
 	--color-flag: #c93f1d;
 	/* flag-ink: orange-red text (errors, offline) on cream or a flag tint */
 	--color-flag-ink: #a73619;
-	/* flag-soft: orange-red text on pine (the web Play screen) */
-	--color-flag-soft: #ffa48a;
 	/* ink, moss, stone, live-ink and flag-ink are themed */
 	--color-ink: #16241c;
 	--color-moss: #5e6e64;
@@ -50,21 +47,6 @@
 	--color-on-stone: #ffffff;
 	--color-sand: #eadfb8;
 	--color-water: #8fbfd0;
-	--color-muted: var(--muted);
-	/* map layers */
-	--color-map-rough: #8fa86b;
-	--color-map-semi: #a9c07e;
-	--color-map-fairway: #c6da9c;
-	--color-map-green: #6fc188;
-	--color-map-green-edge: #4fa76c;
-	--color-map-green-light: #8fd6a2;
-	--color-map-fairway-edge: #d8e7b4;
-	--color-map-fairway-stripe: #cee0a6;
-	--color-map-water-edge: #6fa9bd;
-	--color-map-water-light: #a9d3e0;
-	--color-map-sand-edge: #cdbd84;
-	/* map-ink: dark label fill and label text on the hole map; not themed */
-	--color-map-ink: #16241c;
 	/* type: body text in Hanken Grotesk, titles and numbers in Space Grotesk;
 	   both come from the font import above */
 	--font-sans: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
@@ -91,9 +73,11 @@
 :root {
 	color-scheme: light dark;
 
-	--muted: oklch(0.967 0.001 286.375);
-	--default-border: oklch(0.92 0.004 286.32);
-	--focus-ring: oklch(0.871 0.006 286.286);
+	/* Base-layer edge and focus colours, drawn from the palette so both
+	   themes follow it: the default border is a card edge, the focus ring is
+	   pine-ink (pine in light, mint in dark). */
+	--default-border: var(--color-card-line);
+	--focus-ring: var(--color-pine-ink);
 
 	--page-ink: #173a40;
 	--page-link: #246f76;
@@ -105,14 +89,12 @@
 	--page-base: #e7f3ec;
 	--page-glow-a: rgba(79, 184, 178, 0.36);
 	--page-glow-b: rgba(47, 106, 74, 0.2);
+	/* page-halo: the soft light behind the app column, top left */
+	--page-halo: rgba(255, 255, 255, 0.8);
 }
 
 @media (prefers-color-scheme: dark) {
 	:root {
-		--muted: oklch(0.274 0.006 286.033);
-		--default-border: oklch(0.274 0.006 286.033);
-		--focus-ring: oklch(0.442 0.017 285.786);
-
 		--page-ink: #d7ece8;
 		--page-sand: #0f1a1e;
 		--page-top: var(--page-sand);
@@ -120,6 +102,8 @@
 		--page-base: #0a1418;
 		--page-glow-a: rgba(96, 215, 207, 0.18);
 		--page-glow-b: rgba(110, 200, 154, 0.12);
+		/* a white halo reads as grey haze on the dark ground: tint it instead */
+		--page-halo: rgba(96, 215, 207, 0.14);
 		--page-link: #6fcfc6;
 		--page-link-hover: #9be3dc;
 
@@ -194,7 +178,7 @@ body::before {
 	z-index: -1;
 	opacity: 0.28;
 	background:
-		radial-gradient(circle at 20% 15%, rgba(255, 255, 255, 0.8), transparent 34%),
+		radial-gradient(circle at 20% 15%, var(--page-halo), transparent 34%),
 		radial-gradient(circle at 78% 26%, rgba(79, 184, 178, 0.2), transparent 42%),
 		radial-gradient(circle at 42% 82%, rgba(47, 106, 74, 0.14), transparent 36%);
 }

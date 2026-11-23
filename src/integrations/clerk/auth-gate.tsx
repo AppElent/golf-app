@@ -1,5 +1,6 @@
 import { Show, SignIn, useAuth } from "@clerk/react";
 import { useConvexAuth } from "convex/react";
+import { DataDeletedNotice } from "./data-deleted-notice";
 
 /** Navigation follows Clerk (signed out → sign-in card); protected data
  *  follows Convex (children mount only once Convex has the token). While
@@ -12,7 +13,8 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
 	return (
 		<>
 			<Show when="signed-out">
-				<div className="flex min-h-dvh items-center justify-center p-4">
+				<div className="flex min-h-dvh flex-col items-center justify-center gap-4 p-4">
+					<DataDeletedNotice />
 					<SignIn routing="hash" />
 				</div>
 			</Show>

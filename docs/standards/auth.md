@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when adding or changing Clerk/Convex authentication, session readiness, or account flows.
-version: 3.4.0
+version: 3.6.0
 applies_to: [web, mobile, backend]
 ---
 
@@ -26,6 +26,7 @@ Clerk owns sessions and navigation; Convex verifies tokens and gates every prote
 ### Account flows
 
 - Use supported Clerk UI or custom flows covering verification, MFA, password reset, incomplete sessions, and activation/finalization. A successful password request is not a completed session. Preserve failed input, prevent duplicate submissions, and translate provider codes.
+- Change password: show the form only when the user has a password (`passwordEnabled`); passwordless accounts get a note instead. Show a wrong current password and a refused new one on their own fields, and pass `signOutOfOtherSessions: true` so other sessions end while this one stays.
 
 ### Password managers
 
@@ -63,7 +64,7 @@ Use the installed SDK's adapter; preserve its generation and app-specific router
 
 ### Web account UI
 
-For @clerk/react (Clerk Core 3) custom flows, copy the [web examples](auth/examples/web/index.ts) and their siblings into an app-owned directory; the index header lists what they provide and need. Import [tokens.css](auth/examples/web/tokens.css) from the app stylesheet, map its `--auth-*` variables onto the app palette, and add the [env typings](auth/examples/web/vite-env.d.ts) unless the app already declares those keys. Routes, labels, and branding stay app-owned through `AuthConfigProvider` and component props.
+For @clerk/react (Clerk Core 3) custom flows, copy the [web examples](auth/examples/web/index.ts) and their siblings into an app-owned directory; the index header lists what they provide and need. Import [tokens.css](auth/examples/web/tokens.css) from the app stylesheet, map its `--auth-*` variables onto the app palette (keep `--auth-border` at 3:1 or more against the page, card and field backgrounds, `--auth-fg` and `--auth-muted` at 4.5:1, and `--auth-accent-fg` at 4.5:1 on `--auth-accent`, also at the primary button's 90% hover opacity), and add the [env typings](auth/examples/web/vite-env.d.ts) unless the app already declares those keys. Routes, labels, and branding stay app-owned through `AuthConfigProvider` and component props.
 
 ### Native and headless behavior
 

@@ -53,8 +53,8 @@ Designers and coding agents start from it; product decisions below still bind th
 - **Live Activity** (`features/live/hole/hole-activity.tsx`) runs in the widget
   runtime and cannot import tokens, so it declares its palette inline; its
   `target` must equal `course.target` (`#ffd60a`).
-- **Tee marker colours** live in `@fairway/core/tee-colors` and are shared by the
-  phone's `course.teeMarker` and the web hole map.
+- **Tee marker colours** live in `@fairway/core/tee-colors` and are used by the
+  phone's `course.teeMarker` (the web hole map was retired in APP-235).
 - **HUD controls** float in `HudGlass` (Liquid Glass on iOS 26+, dark translucent
   fill elsewhere). The primary action (Score hole N) is the yellow pill.
 - **Building blocks:** lists use `InsetList`/`InsetRow`, forms `FormScreen` and its
@@ -78,9 +78,8 @@ Designers and coding agents start from it; product decisions below still bind th
   `text-jumbo` 56. Two old sizes were folded in: 10.5 (bottom-nav labels)
   became `text-caption` 11, and 12.5 became `text-label` 13.
 - **Colour roles:** `flag` and `live` are fills under white text. Text in those
-  hues uses `flag-ink` and `live-ink`, which pass on cream and on a `/15` tint.
-  On the pine Play screen, error text is `flag-soft` and quiet text `mint-soft`;
-  `stone` and `moss` are for cream and white cards only.
+  hues uses `flag-ink` and `live-ink`, which pass on cream. `stone` and `moss`
+  are for cream and white cards only.
 - **Links:** `--page-link` is themed with the app column (light `#246f76`,
   hover `--page-link-hover`; dark `#6fcfc6`). The link rule sits in the base
   layer, so a `text-*` class on a link (bottom nav, inline links) applies.
@@ -94,16 +93,15 @@ Designers and coding agents start from it; product decisions below still bind th
   `pine-ink` (pine text, icons and rings, mint in dark) and `pine-fill` (a pine
   button under cream text, lifted in dark so it stands off the canvas). Never
   `bg-cream`, `bg-white/N` or `text-pine` in the column. The brand fills
-  (`pine` and `pine-light` for the Play screen, `flag`, `live`, `mint`) and the
-  `map-*` colours, including `map-ink` for hole-map labels, are not themed.
+  (`pine`, `flag`, `live`, `mint`) are not themed; the round-era `pine-light`,
+  `mint-soft`, `flag-soft` and `map-*` tokens went with the web round screens
+  (APP-235, APP-502).
   `src/theme.test.ts` checks every text token against every ground and tint
   in both themes. Field placeholders are `stone`. Clerk's sign-in card takes
   the same tokens in dark mode through `appearance` variables
   (`src/integrations/clerk/appearance.ts`) and keeps Clerk's own look in light.
   Its primary is `pine-ink` (mint) with a `canvas` label, because Clerk also
   draws its links in the primary colour.
-- **Map colours** in `src/play/` use `--color-map-*` tokens and the shared tee
-  marker colours, never hex.
 
 ### Contrast
 
@@ -112,9 +110,10 @@ edges) reach 3:1. Ratios are WCAG 2 relative luminance, with translucent colours
 composited over their ground. Pairs changed in APP-184 and APP-191 (bold =
 failed before). The APP-184 web rows were measured when the app column was
 cream in both themes; since APP-191 the dark column has its own rows below
-them. Known gap: light-mode control edges (fields, bordered buttons and
-toggles: `control-line` = `card-line`, 1.12:1 on cream) stay as they were,
-because APP-191 keeps light mode unchanged. Its deliberate light-mode changes are
+them. Light-mode control edges (fields, bordered buttons and toggles) were
+`card-line`, 1.12:1 on cream; APP-276 gave them the same `control-line` token
+as dark, now `#80877f` in light, so every edge reaches 3:1. Cards, dividers and
+the tab bar keep `card-line`. APP-191's other deliberate light-mode changes are
 contrast fixes only: field placeholders, the selected scorecard hole's labels
 and the "Connecting…" note (`text-muted`, near-white, → `stone`).
 
@@ -124,15 +123,10 @@ and the "Connecting…" note (`text-muted`, near-white, → `stone`).
 | Web: `stone` text on white/60 card | light + dark | **2.91** | 5.03 |
 | Web: `stone` text on white/90 nav | light + dark | **3.03** | 5.24 |
 | Web: green text on cream (`live` → `live-ink`) | light + dark | **2.95** | 5.64 |
-| Web: green text on a `live/15` tint (SyncPill) | light + dark | **2.54** | 4.65 |
 | Web: white on `live` (selected PillToggle) | light + dark | **3.39** | 5.30 |
 | Web: white on `flag` (CTA) | light + dark | **3.85** | 4.99 |
 | Web: Home CTA subtitle (white/80 → white) on `flag` | light + dark | **2.99** | 4.99 |
 | Web: error text on cream (`flag` → `flag-ink`) | light + dark | **3.36** | 5.74 |
-| Web: error text on a `flag/15` tint (SyncPill offline) | light + dark | **2.81** | 4.67 |
-| Web: error text on pine Play (`flag` → `flag-soft`) | light + dark | **3.17** | 6.35 |
-| Web: OSM credit on pine Play (`stone` → `mint-soft`) | light + dark | **3.97** | 6.54 |
-| Web: Play "No active round" text on cream (`mint-soft` → `moss`) | light + dark | **1.62** | 4.70 |
 | Web: link on `page-base` | light | **3.34** | 5.10 |
 | Web: link in the app column (cream) | light | **3.32** | 5.06 |
 | Web: link in the app column (cream) | dark | **1.27** | 5.06 |
@@ -149,6 +143,7 @@ and the "Connecting…" note (`text-muted`, near-white, → `stone`).
 | Web: bottom-nav tabs in the dark column: each on `bar`; active (`pine-ink`, mint) against inactive (`stone`) (APP-191) | dark | cream column | each ≥ 5.67; 1.88 apart, plus the hue change |
 | Web: field placeholder (ink at 50% → `stone`) on `field` (APP-191) | light / dark | **3.09** / n/a | 4.62 / 4.89 |
 | Web: dark control edge (`control-line`: fields, buttons, toggles) on `field` / `surface` / `canvas` (3:1) (APP-191) | dark | **1.53** (`card-line`) | 3.25 / 3.73 / 4.19 |
+| Web: light control edge (`control-line`: fields, buttons, toggles) on `field` / `surface` / `canvas` (3:1) (APP-276) | light | **1.12** (`card-line`) | 3.21 / 3.50 / 3.21 |
 | Web: selected scorecard hole number (`stone` → `ink`) on `pine-ink/10` (APP-191) | light / dark | **3.88** / n/a | 11.77 / 14.19 |
 | Phone: `onAccent` on `accentFill` (primary button, selected segment) | light | **3.39** | 5.85 |
 | Phone: `onAccent` on `accentPressed` | light | **3.39** | 8.25 |
