@@ -1,4 +1,4 @@
-import { access, mkdir, writeFile } from "node:fs/promises";
+import { access, mkdir, rm, writeFile } from "node:fs/promises";
 import { createServer } from "node:net";
 import { join } from "node:path";
 import { runEnvCli } from "../env/cli.mjs";
@@ -6,13 +6,13 @@ import { assertSafeProjectPath } from "../env/files.mjs";
 import { loadEnvironmentManifest } from "../env/manifest.mjs";
 import { runProcess as runEnvironmentProcess } from "../env/process.mjs";
 import { loadManifest, MANIFEST_FILE } from "../project/manifest.mjs";
-import { digestText, readEnvValues, readProjectText } from "./dotenv.mjs";
+import { digestText, readEnvValues, readProjectText, removeEnvNames, } from "./dotenv.mjs";
 import { gcWorkspaces } from "./cleanup.mjs";
 import { resolveWorkspaceIdentity } from "./identity.mjs";
 import { defaultWorkspaceStateRoot, readWorkspaceLedger, withWorkspaceLock, writeWorkspaceLedger, } from "./ledger.mjs";
 import { readWorkspacePolicy } from "./policy.mjs";
 import { describeFailure, runWorkspaceCommand } from "./process.mjs";
-import { createScopedCredential, diagnoseLocalBackend, localBackendListening, PROVIDER_ENV_REMOVALS, prepareBackend, pushBackend, writeClientOutputs, } from "./provider.mjs";
+import { createScopedCredential, DEPLOYMENT_ENV_NAMES, diagnoseLocalBackend, localBackendListening, PROVIDER_ENV_REMOVALS, prepareBackend, pushBackend, writeClientOutputs, } from "./provider.mjs";
 const STEP_IDS = [
     "prerequisites",
     "install",
@@ -60,6 +60,57 @@ async function exists(path) {
     catch {
         return false;
     }
+}
+const CONVEX_CLI_COMMENT = /^#\s*Deployment used by `npx convex dev`\s*$/u;
+/**
+ * The file without what the Convex CLI rewrites: deployment selector lines, its
+ * own comment, and blank lines. `convex dev` can rewrite the selected URL (a local
+ * backend takes the next free port), which is not a hand edit.
+ */
+function withoutSelectors(text) {
+    return removeEnvNames(text, DEPLOYMENT_ENV_NAMES)
+        .split(/\r?\n/u)
+        .filter((line) => line.trim() !== "" && !CONVEX_CLI_COMMENT.test(line.trim()))
+        .join("\n");
+}
+function trackedFile(path, text, createdByWorkspace) {
+    return {
+        path,
+        digest: digestText(text),
+        selectorFreeDigest: digestText(withoutSelectors(text)),
+        createdByWorkspace,
+        status: "active",
+    };
+}
+/**
+ * True when a file holds nothing but what the Convex CLI writes into `.env.local`
+ * (its comment and deployment selectors). Prepare strips selectors anyway, so such
+ * a file carries nothing to keep and is replaced by the generated one.
+ */
+function onlyConvexSelectors(text) {
+    return withoutSelectors(text).trim() === "";
+}
+/**
+ * Generated files whose contents differ from what prepare last recorded. With
+ * `allowSelectors`, a change to deployment selectors alone is accepted.
+ */
+async function generatedFileDrift(root, files, allowSelectors) {
+    const changed = [];
+    for (const file of files) {
+        const text = await readProjectText(root, file.path);
+        if (!text) {
+            changed.push(file.path);
+            continue;
+        }
+        if (digestText(text) === file.digest)
+            continue;
+        if (allowSelectors &&
+            file.selectorFreeDigest &&
+            digestText(withoutSelectors(text)) === file.selectorFreeDigest)
+            continue;
+        changed.push(file.path);
+    }
+    return changed;
 }
 /**
  * Before a new cloud deployment is created, reconcile this repository's
@@ -246,23 +297,37 @@ export async function prepareWorkspace(options) {
         }
         const operations = [];
         if (ledger.status === "failed") {
-            const drift = [];
-            for (const file of ledger.generatedFiles) {
-                const text = await readProjectText(options.root, file.path);
-                if (!text || digestText(text) !== file.digest)
-                    drift.push({
-                        level: "error",
-                        code: "workspace.resume.drift",
-                        message: `${file.path} changed after an interrupted preparation; clean before resuming`,
-                    });
-            }
-            if (drift.length > 0)
+            const changed = await generatedFileDrift(options.root, ledger.generatedFiles, false);
+            if (changed.length > 0)
                 return {
                     command: "prepare",
                     workspaceId: identity.id,
                     status: "failed",
                     operations,
-                    findings: drift,
+                    findings: changed.map((path) => ({
+                        level: "error",
+                        code: "workspace.resume.drift",
+                        message: `${path} changed after an interrupted preparation; clean before resuming`,
+                    })),
+                };
+        }
+        // Resuming a deferred step must not adopt a hand edit as generated output:
+        // clean deletes files whose digest still matches, so the edit would be lost.
+        // The Convex CLI may rewrite deployment selectors while the backend runs.
+        if (deferred) {
+            const changed = await generatedFileDrift(options.root, ledger.generatedFiles, true);
+            if (changed.length > 0)
+                return {
+                    command: "prepare",
+                    workspaceId: identity.id,
+                    status: "failed",
+                    operations,
+                    findings: changed.map((path) => ({
+                        level: "error",
+                        code: "workspace.resume.drift",
+                        message: `${path} is missing or was edited after preparation; prepare does not adopt hand edits. ` +
+                            "Move the change into the canonical source, or run clean (it keeps the edited file), then prepare again",
+                    })),
                 };
         }
         ledger.status = "preparing";
@@ -289,12 +354,7 @@ export async function prepareWorkspace(options) {
                     continue;
                 ledger.generatedFiles = [
                     ...ledger.generatedFiles.filter((item) => item.path !== path),
-                    {
-                        path,
-                        digest: digestText(text),
-                        createdByWorkspace: previous?.createdByWorkspace ?? !wasPresent,
-                        status: "active",
-                    },
+                    trackedFile(path, text, previous?.createdByWorkspace ?? !wasPresent),
                 ];
             }
         };
@@ -393,9 +453,33 @@ export async function prepareWorkspace(options) {
                 }
             });
             await step("environment-source", async () => {
+                // `env apply` refuses to overwrite a file it did not generate. A file
+                // the Convex CLI wrote (selectors only) holds nothing prepare keeps.
+                const humanOwned = [];
+                for (const [path, wasPresent] of initiallyPresent) {
+                    if (!wasPresent ||
+                        ledger.generatedFiles.some((item) => item.path === path))
+                        continue;
+                    const text = await readProjectText(options.root, path);
+                    if (!text || isManagedEnvironment(text))
+                        continue;
+                    if (onlyConvexSelectors(text)) {
+                        await rm(join(options.root, path));
+                        operations.push({
+                            action: "remove",
+                            target: path,
+                            detail: "held only Convex CLI deployment selectors",
+                        });
+                    }
+                    else
+                        humanOwned.push(path);
+                }
                 const result = await (dependencies.prepareEnvironment ?? defaultPrepareEnvironment)({ root: options.root, manifestPath: manifest.envManifest });
                 if (result.exitCode !== 0)
-                    throw new Error("Canonical environment preparation failed");
+                    throw new Error(humanOwned.length > 0
+                        ? `Canonical environment preparation failed: ${humanOwned.join(", ")} exists and was not generated by env apply; ` +
+                            "move it aside (keep any values you need in the canonical source), then rerun prepare"
+                        : "Canonical environment preparation failed");
                 for (const [path, wasPresent] of initiallyPresent) {
                     const text = await readProjectText(options.root, path);
                     if (!text)
@@ -403,12 +487,7 @@ export async function prepareWorkspace(options) {
                     const previous = ledger.generatedFiles.find((item) => item.path === path);
                     ledger.generatedFiles = [
                         ...ledger.generatedFiles.filter((item) => item.path !== path),
-                        {
-                            path,
-                            digest: digestText(text),
-                            createdByWorkspace: previous?.createdByWorkspace ?? !wasPresent,
-                            status: "active",
-                        },
+                        trackedFile(path, text, previous?.createdByWorkspace ?? !wasPresent),
                     ];
                 }
                 operations.push({
@@ -557,13 +636,8 @@ export async function prepareWorkspace(options) {
                     continue;
                 ledger.generatedFiles = [
                     ...ledger.generatedFiles.filter((item) => item.path !== path),
-                    {
-                        path,
-                        digest: digestText(text),
-                        createdByWorkspace: ledger.generatedFiles.find((item) => item.path === path)
-                            ?.createdByWorkspace ?? !initiallyPresent.get(path),
-                        status: "active",
-                    },
+                    trackedFile(path, text, ledger.generatedFiles.find((item) => item.path === path)
+                        ?.createdByWorkspace ?? !initiallyPresent.get(path)),
                 ];
             }
             const commands = [];
