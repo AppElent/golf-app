@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read before running, driving, or screenshotting an app's mobile build on an iOS simulator.
-version: 2.0.0
+version: 2.1.0
 applies_to: [mobile]
 ---
 
@@ -47,7 +47,7 @@ R="node scripts/run-mobile.mjs"       # from the repo root
 $R up                                  # claim sim, install dev client, Metro, open app
 $R up --lang nl                        # Dutch simulator (en is the default)
 $R up --clear --env KEY=VALUE          # Metro without cache / with extra env (down first if running)
-$R signin                              # press "Sign in" on a pre-filled form, wait for the tab bar
+$R signin                              # press Sign in / Inloggen (en or nl) on a pre-filled form, wait for the tab bar
 $R signin --email E --password P       # another user (throwaway users for destructive flows)
 $R ad snapshot -i                      # accessibility tree with @refs
 $R ad press 'label="Settings"' --settle
@@ -80,12 +80,14 @@ node scripts/store-screenshots.mjs --issue APP-123 --name <app> [--devices iphon
 - agent-device sessions are keyed by cwd; always go through `$R ad`, which runs in the state dir. The pinned `npx agent-device` is used, not T3's host wrapper.
 - Refs such as `@e12` go stale after any action; use `label="…"` selectors or the `@eN~sNNN` form from the latest diff.
 - `up` takes over the simulator from a stale agent-device session (`DEVICE_IN_USE`).
-- New simulators inherit the Mac's language (Dutch); `up` forces English unless `--lang nl`.
+- New simulators inherit the Mac's language (Dutch); `up` forces English unless `--lang nl`. `signin` finds the submit button by the `sign-in-submit` testID, else by its English or Dutch label (`SIGN_IN_LABELS`), so it works in both; add the label there when an app gains a language.
 - `up` passes `disableOnboarding`, `disableFab` and `disableAutoLaunch` to expo-dev-launcher so the dev menu doesn't cover header buttons.
 - Wait with `$R ad wait …` or `simctl bootstatus -b`, not `sleep`, which the harness blocks.
 - Many Metros run at once; `up` never reuses or stops another checkout's Metro.
 - In an app, Biome skips `scripts/run-mobile.mjs` and `scripts/store-screenshots.mjs` like the other synced toolkit scripts (`"!scripts/run-mobile.mjs"`, `"!scripts/store-screenshots.mjs"` in `biome.json` `files.includes` where `scripts/**` is included).
 
 ## Migration
+
+From 2.0: `signin` works on a Dutch simulator too. Apps only need to sync the script; giving the sign-in submit button `testID="sign-in-submit"` (Foundry, Fairway and Arcade already do) makes it independent of language.
 
 From 1.2: simulator hygiene is new. Agents obey `MAX_BOOTED_IOS_SIMULATORS` (4), check for and shut down orphan booted simulators before booting, and shut theirs down when done. The relied-on "claim creates a per-checkout simulator, release deletes it" is replaced by the fixed `sim-pool-*` pool with shutdown; `sim claim`, `sim release` and `run-mobile.mjs` keep their current behavior until a follow-up points them at the pool. Apps need no change.

@@ -134,6 +134,9 @@ function validateLedger(value, id) {
             !safeRelativePath(file.path) ||
             typeof file.digest !== "string" ||
             !/^[a-f0-9]{64}$/u.test(file.digest) ||
+            (file.selectorFreeDigest !== undefined &&
+                (typeof file.selectorFreeDigest !== "string" ||
+                    !/^[a-f0-9]{64}$/u.test(file.selectorFreeDigest))) ||
             typeof file.createdByWorkspace !== "boolean" ||
             !["active", "removed", "modified", "missing"].includes(String(file.status)))
             throw new Error("Workspace ledger is invalid");

@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when adding or changing Clerk/Convex authentication, session readiness, or account flows.
-version: 3.5.0
+version: 3.6.0
 applies_to: [web, mobile, backend]
 ---
 
@@ -26,6 +26,7 @@ Clerk owns sessions and navigation; Convex verifies tokens and gates every prote
 ### Account flows
 
 - Use supported Clerk UI or custom flows covering verification, MFA, password reset, incomplete sessions, and activation/finalization. A successful password request is not a completed session. Preserve failed input, prevent duplicate submissions, and translate provider codes.
+- Change password: show the form only when the user has a password (`passwordEnabled`); passwordless accounts get a note instead. Show a wrong current password and a refused new one on their own fields, and pass `signOutOfOtherSessions: true` so other sessions end while this one stays.
 
 ### Password managers
 

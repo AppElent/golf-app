@@ -3,8 +3,8 @@
   "repository": "AppElent/developer-home",
   "scope": "project",
   "ref": "main",
-  "commit": "local",
-  "manifestHash": "99a1d1e8c418ef6236e514176292e99c6b661e6bcfd275242dfd2aaef763f217",
+  "commit": "3d948095c89cac63bde898d27f47f311b750dd79",
+  "manifestHash": "9ffcfa334a323664789a5cf3b0ef333ff13c91f852d48401e13bbc75232c396d",
   "files": {
     "docs/adr/.template.md": {
       "sha256": "f28b286102fb1a00512455a06896e5da3c47d67a14b0ee6c08fa84258af24adf",
@@ -68,8 +68,8 @@
       "sha256": "b09f650bab6759fccefe0bf42a298d249373fc99cb7bd8c4802d2268011fd4c0"
     },
     "docs/standards/auth.md": {
-      "sha256": "b431f45ca56848e133038f50746ebf4cfaa1895377b0f0636a5b8c240ddf70ab",
-      "version": "3.5.0"
+      "sha256": "45e51accd36eadd25b30ae682022adff5c49d36ad9f3ae1fc76d0708f296622b",
+      "version": "3.6.0"
     },
     "docs/standards/auth/examples/native.ts": {
       "sha256": "3cb78db51701a6eaddb5d07a6e11d65ed911bc2ae556bff54e4025551a50117a"
@@ -90,7 +90,7 @@
       "sha256": "46528aa424fbe84ab3b95737ab930107f805081a8de5b9a0854075e298dcc56b"
     },
     "docs/standards/auth/examples/web/AuthField.tsx": {
-      "sha256": "cd4e26298f4703e2cc475ade57fc67e34e49faf96a6e89ce320d23340fcc0552"
+      "sha256": "fd06fbc1a96958f11f3a968373ed3efab43558e3768b58646004172859a0a457"
     },
     "docs/standards/auth/examples/web/core.ts": {
       "sha256": "de90b631612a2c3f0e1ab52963ed9a0f27b356709922312158c869ae346729fb"
@@ -105,7 +105,7 @@
       "sha256": "94060a37c1d10d9d0ff2c23709c9526ab37a64ea13da0690286784ee27792de9"
     },
     "docs/standards/auth/examples/web/ProfilePanel.tsx": {
-      "sha256": "2772cc14fd1fc95ef8a5f0a3cc7bca617c3a05b5cc9160349a5d29ca018f2824"
+      "sha256": "531a4fb355ec3006261900c20d91ced97e92b97606cacab01cde27ba902a7b72"
     },
     "docs/standards/auth/examples/web/SignInForm.tsx": {
       "sha256": "a66558e1b2015d0ac401a0d62ed9dc2aba3df5ef70b10bec0114368908ff0440"
@@ -319,8 +319,8 @@
       "version": "1.2.1"
     },
     "docs/standards/workspaces.md": {
-      "sha256": "0050eb69304921f990758db915ce7eb2b909bbad103351b342daca36199f8495",
-      "version": "3.3.0"
+      "sha256": "70eee3e808bb6315b91b6d87a6964a5db7c8f3e3145c27e695aed011109f5d7e",
+      "version": "3.4.0"
     },
     "docs/standards/workspaces/examples/appelent.json": {
       "sha256": "59a478066a2c9e011cae362d6d917c177eb046912813c3c5e2b471e1a558cb1e"
@@ -398,13 +398,13 @@
       "sha256": "27335eb48c99cfb10af013c5b1e9d2c713c2285a3bed244278d109db1d0411b4"
     },
     "scripts/lib/workspace/ledger.mjs": {
-      "sha256": "ac45c8fbf14de52d1c96c9f31bfc52abad1b316074404e3e4307b5c34bf6f12b"
+      "sha256": "231cc4b11d97fe910970540120fc979f3847723e1e13cbb0eca9d6a13ce55b88"
     },
     "scripts/lib/workspace/policy.mjs": {
       "sha256": "29fec6978bf10ba038f2feab860add50f025b1dd5573663aa66347ba7113f066"
     },
     "scripts/lib/workspace/prepare.mjs": {
-      "sha256": "0317795acf637c7dbc5ad4137c56ce5638e777d453bebdc7f59d2690e658008a"
+      "sha256": "191d0e2f4163846136ab7cb17542843399e6bf1e44dc32eaf9fae2529ed0273c"
     },
     "scripts/lib/workspace/process.mjs": {
       "sha256": "87746377e3e418618d80f672b178dadcbfcf869f56fda43b78a7808bf1a1009d"
@@ -413,7 +413,7 @@
       "sha256": "e9f3e22c50aaf1580a194b0ab4f7775e26dd715c6d875175593389f9077b0261"
     },
     "scripts/lib/workspace/types.ts": {
-      "sha256": "49d9bd9d3f7e177f3d20d27f0f6e95306f563c37ac1cdf76bfcce684ed50961d"
+      "sha256": "9620c82d837201b3bcf3897d2c8f2334109747b7ac48b0741c329236d92fc4f9"
     },
     "scripts/sync-devtools.mjs": {
       "sha256": "bd773fec548584e4cc82994b5ce9783cf86a223856c76a7e60df3424cd47c124"
@@ -504,11 +504,11 @@
       "sha256": "3676673615c25e7ceb75fa7534b68dcdbe99856c715fb79a11c4bafab99e4ea6"
     },
     "docs/standards/mobile-run.md": {
-      "sha256": "f4f1f2c47f0897351a0611c9ab53125e87fe36c351af0e7ddd1fe32a1701b63e",
-      "version": "2.0.0"
+      "sha256": "d7ed1dfce22481953c726be17617174223d7c50bb60c265600fe466a576d937a",
+      "version": "2.1.0"
     },
     "scripts/run-mobile.mjs": {
-      "sha256": "eebbf04e30359b84b78339cda8b6355d4138c0676ddcc30d1c7957ab13d9cfee"
+      "sha256": "ebfd534e5e5871b15bf3b332f87b1403c329ec3af949d808ba83ee1e8fb7e0a9"
     },
     "docs/standards/app-links.md": {
       "sha256": "6e1d3681c54cb36bd244adb1a180cc1b05e8305f395949a3a958fe04b878ccd3",
