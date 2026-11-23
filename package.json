@@ -27,11 +27,11 @@
     "verify": "pnpm check && pnpm typecheck && pnpm test && pnpm test:mobile"
   },
   "dependencies": {
-    "@clerk/react": "^6.18.4",
-    "@cloudflare/vite-plugin": "^1.68.0",
+    "@clerk/react": "^6.18.8",
+    "@cloudflare/vite-plugin": "^1.69.1",
     "@fairway/core": "workspace:*",
-    "@sentry/cloudflare": "11.11.0",
-    "@sentry/react": "11.11.0",
+    "@sentry/cloudflare": "11.12.0",
+    "@sentry/react": "11.12.0",
     "@t3-oss/env-core": "^0.13.10",
     "@tailwindcss/vite": "^4.3.5",
     "@tanstack/react-devtools": "^0.10.14",
