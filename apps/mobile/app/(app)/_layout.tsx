@@ -99,7 +99,8 @@ export default function AppLayout() {
 											// iOS titles the sheet natively (see score-sheet-screen).
 											headerShown: Platform.OS === "ios",
 											presentation: "formSheet",
-											sheetAllowedDetents: [0.62, 1],
+											// One detent: four players fit without scrolling.
+											sheetAllowedDetents: [1],
 											sheetGrabberVisible: true,
 											sheetCornerRadius: 28,
 										}}

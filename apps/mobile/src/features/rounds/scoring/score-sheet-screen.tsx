@@ -1,29 +1,32 @@
-import { holeLabel } from "@fairway/core/format";
+import { formatDistance, holeLabel } from "@fairway/core/format";
 import { OWNER_INDEX, scoreAt } from "@fairway/core/round";
+import { strokesPerHole } from "@fairway/core/scoring";
 import { useMutation } from "convex/react";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Platform, StyleSheet, View } from "react-native";
 import { api } from "../../../convex/api";
 import { useSubmit } from "../../../convex/use-submit";
 import { haptics } from "../../../feedback/haptics";
-import { fmt, useI18n } from "../../../i18n";
-import { spacing, type Tokens, useThemedStyles } from "../../../theme";
+import { fmt, plural, useI18n } from "../../../i18n";
+import { radius, spacing, type Tokens, useThemedStyles } from "../../../theme";
 import { FormScreen } from "../../../ui/form";
 import { NavHeader } from "../../../ui/nav-header";
 import { SkeletonList } from "../../../ui/skeleton";
 import { AppText } from "../../../ui/text";
+import { useUnits } from "../../profile/use-units";
 import { NoActiveRound } from "../components/no-active-round";
 import { type ActiveRound, useActiveRound } from "../use-active-round";
-import { PlayerScoreForm } from "./player-score-form";
+import { FlightRow } from "./flight-row";
+import { OwnerScoreCard } from "./owner-score-card";
 import {
 	draftUpdate,
-	editDraft,
+	flightDetail,
 	initialDrafts,
 	type ScoreDraft,
 	type ScoreDraftPatch,
 } from "./score-model";
-import { ScoreSheetHeader } from "./score-sheet-header";
+import { HoleTitle, ScoreSheetHeader } from "./score-sheet-header";
 
 export function ScoreSheetScreen() {
 	const { t } = useI18n();
@@ -56,7 +59,8 @@ function ScoreSheet({
 	active: ActiveRound;
 	holeIndex: number;
 }) {
-	const { t } = useI18n();
+	const { t, locale } = useI18n();
+	const units = useUnits();
 	const router = useRouter();
 	const styles = useThemedStyles(createStyles);
 	const saveHole = useMutation(api.rounds.saveHole);
@@ -77,9 +81,7 @@ function ScoreSheet({
 
 	const update = (playerIndex: number, patch: ScoreDraftPatch) =>
 		setDrafts((all) =>
-			all.map((d, i) =>
-				i === playerIndex ? editDraft(d, patch, hole.par) : d,
-			),
+			all.map((d, i) => (i === playerIndex ? { ...d, ...patch } : d)),
 		);
 
 	// One mutation for every player and the move to the next hole: one round
@@ -90,10 +92,14 @@ function ScoreSheet({
 				saveHole({
 					roundId: round._id,
 					holeIndex,
-					scores: drafts.map((draft, playerIndex) => ({
-						playerIndex,
-						...draftUpdate(draft),
-					})),
+					// A player without a score yet is left out, not stored at par.
+					scores: drafts.flatMap((draft, playerIndex) => {
+						const update = draftUpdate(draft, {
+							par: hole.par,
+							owner: playerIndex === OWNER_INDEX,
+						});
+						return update ? [{ playerIndex, ...update }] : [];
+					}),
 					...(advances ? { advanceTo: holeIndex + 1 } : {}),
 				}),
 			{
@@ -109,10 +115,33 @@ function ScoreSheet({
 			},
 		);
 
-	const title = fmt(t.score.title, {
-		n: holeLabel(hole.ref),
-		par: hole.par,
-	});
+	const title = fmt(t.score.title, { n: holeLabel(hole.ref) });
+	const subtitle = [
+		fmt(t.play.holeMeta, { par: hole.par, si: hole.strokeIndex }),
+		hole.lengthMeters ? formatDistance(hole.lengthMeters, units) : null,
+	]
+		.filter(Boolean)
+		.join(" · ");
+	// Memoized: a new options object every render re-renders the header.
+	const sheetOptions = useMemo(
+		() => ({
+			gestureEnabled: !saving,
+			headerTitle: () => <HoleTitle title={title} subtitle={subtitle} />,
+		}),
+		[saving, title, subtitle],
+	);
+	const stableford = round.format === "stableford";
+	const received = useMemo(
+		() =>
+			round.players.map(
+				(p) => strokesPerHole(holes, p.playingHandicap ?? 0)[holeIndex],
+			),
+		[round.players, holes, holeIndex],
+	);
+	const strokesLabel = (n: number) =>
+		fmt(plural(locale, Math.abs(n), t.score.strokesReceived), {
+			sign: n < 0 ? "−" : "+",
+		});
 	const saveLabel = saving ? t.score.saving : t.score.save;
 	const ios = Platform.OS === "ios";
 
@@ -126,7 +155,7 @@ function ScoreSheet({
 						title={title}
 						left={{ label: t.common.cancel, onPress: () => router.back() }}
 					/>
-					<Stack.Screen options={{ gestureEnabled: !saving }} />
+					<Stack.Screen options={sheetOptions} />
 					<Stack.Toolbar placement="right">
 						<Stack.Toolbar.Button
 							onPress={() => void onSave()}
@@ -146,6 +175,7 @@ function ScoreSheet({
 						// sit below the fold.
 						<ScoreSheetHeader
 							title={title}
+							subtitle={subtitle}
 							cancelLabel={t.common.cancel}
 							onCancel={() => router.back()}
 							saveLabel={saveLabel}
@@ -160,17 +190,49 @@ function ScoreSheet({
 						{submit.error}
 					</AppText>
 				) : null}
-				{round.players.map((player, playerIndex) => (
-					<PlayerScoreForm
-						// biome-ignore lint/suspicious/noArrayIndexKey: players are fixed at round start; the index is their identity
-						key={playerIndex}
-						name={player.name}
+				<View style={styles.players}>
+					<OwnerScoreCard
+						name={round.players[OWNER_INDEX].name}
 						par={hole.par}
-						draft={drafts[playerIndex]}
-						owner={playerIndex === OWNER_INDEX}
-						onChange={(patch) => update(playerIndex, patch)}
+						draft={drafts[OWNER_INDEX]}
+						received={received[OWNER_INDEX]}
+						stableford={stableford}
+						onChange={(patch) => update(OWNER_INDEX, patch)}
 					/>
-				))}
+					{round.players.length > 1 ? (
+						<>
+							<AppText variant="caption" style={styles.flightLabel}>
+								{t.score.flight.toUpperCase()}
+							</AppText>
+							<View style={styles.flight}>
+								{round.players.map((player, playerIndex) =>
+									playerIndex === OWNER_INDEX ? null : (
+										<View
+											// biome-ignore lint/suspicious/noArrayIndexKey: players are fixed at round start; the index is their identity
+											key={playerIndex}
+											style={playerIndex > 1 && styles.flightDivider}
+										>
+											<FlightRow
+												name={player.name}
+												par={hole.par}
+												draft={drafts[playerIndex]}
+												detail={flightDetail({
+													draft: drafts[playerIndex],
+													par: hole.par,
+													received: received[playerIndex],
+													stableford,
+													copy: t.score,
+													strokesLabel: strokesLabel(received[playerIndex]),
+												})}
+												onChange={(patch) => update(playerIndex, patch)}
+											/>
+										</View>
+									),
+								)}
+							</View>
+						</>
+					) : null}
+				</View>
 			</FormScreen>
 		</>
 	);
@@ -179,4 +241,21 @@ function ScoreSheet({
 const createStyles = (colors: Tokens) =>
 	StyleSheet.create({
 		error: { color: colors.danger },
+		// One child of the form, so its rows sit tighter than form sections.
+		players: { gap: 10 },
+		flightLabel: {
+			paddingHorizontal: spacing.xs,
+			fontWeight: "700",
+			letterSpacing: 0.2,
+		},
+		flight: {
+			backgroundColor: colors.surface,
+			borderRadius: radius.sheet,
+			borderCurve: "continuous",
+			overflow: "hidden",
+		},
+		flightDivider: {
+			borderTopWidth: StyleSheet.hairlineWidth,
+			borderTopColor: colors.separator,
+		},
 	});

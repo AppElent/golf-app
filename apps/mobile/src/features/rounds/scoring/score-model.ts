@@ -1,20 +1,31 @@
-import { type HoleScore, type ScoreUpdate, scoreAt } from "@fairway/core/round";
+import {
+	derivedGir,
+	type HoleScore,
+	type MissSide,
+	OWNER_INDEX,
+	type ScoreUpdate,
+	scoreAt,
+} from "@fairway/core/round";
+import { formatVsPar, stablefordPoints } from "@fairway/core/scoring";
+import { fmt } from "../../../i18n/core";
+import type { Messages } from "../../../i18n/messages/en";
 
-/** What the sheet edits for one player on one hole. */
+type ScoreCopy = Messages["score"];
+
+/** What the sheet edits for one player on one hole. Only the owner has stats. */
 export interface ScoreDraft {
-	strokes: number;
+	/** null: no score yet (another player). The owner starts at par. */
+	strokes: number | null;
 	putts: number | null;
 	fir: boolean | null;
-	gir: boolean | null;
+	firMiss: MissSide | null;
+	bunker: boolean;
 	penalties: number;
 	/** Picked up: no score on this hole (counts 0 Stableford points). */
 	nr: boolean;
-	/** The user set GIR: stop deriving it. Not saved. */
-	girTouched: boolean;
 }
 
-/** An edit from the form. */
-export type ScoreDraftPatch = Partial<Omit<ScoreDraft, "girTouched">>;
+export type ScoreDraftPatch = Partial<ScoreDraft>;
 
 export function initialDrafts(
 	scores: readonly HoleScore[],
@@ -24,63 +35,164 @@ export function initialDrafts(
 ): ScoreDraft[] {
 	return Array.from({ length: playerCount }, (_, playerIndex) => {
 		const s = scoreAt(scores, holeIndex, playerIndex);
-		const draft = {
-			strokes: s?.strokes ?? par,
+		return {
+			strokes: s?.strokes ?? (playerIndex === OWNER_INDEX ? par : null),
 			putts: s?.putts ?? null,
 			fir: s?.fir ?? null,
-			// A picked-up hole has no GIR, even in rows saved before that rule.
-			gir: s?.nr ? null : (s?.gir ?? null),
+			firMiss: s?.firMiss ?? null,
+			bunker: s?.bunker ?? false,
 			penalties: s?.penalties ?? 0,
 			nr: s?.nr ?? false,
 		};
-		// A stored GIR the rule would also give was (or may as well have been)
-		// filled in automatically, so it keeps following a correction. One that
-		// disagrees with the rule was set by hand and sticks.
-		const girTouched =
-			draft.gir !== null && draft.gir !== inferredGir(draft, par);
-		return { ...draft, girTouched };
 	});
 }
 
-/** Birdie, par, bogey, double (never below 1). */
-export function quickStrokes(par: number): number[] {
-	return [par - 1, par, par + 1, par + 2].filter((n) => n >= 1);
+/** One tap for the owner: birdie to triple (never below 1). */
+export const ownerQuickStrokes = (par: number) => strokesFrom(par, 3);
+
+/** One tap for another player: birdie to double (never below 1). */
+export const flightQuickStrokes = (par: number) => strokesFrom(par, 2);
+
+function strokesFrom(par: number, over: number): number[] {
+	return Array.from({ length: over + 2 }, (_, i) => par - 1 + i).filter(
+		(n) => n >= 1,
+	);
 }
 
-/**
- * Green in regulation from strokes and putts: on in par − 2 or fewer.
- * Unknown without putts, with no stroke before the putts, and never for a
- * picked-up hole.
- */
-export function inferredGir(
-	draft: Pick<ScoreDraft, "strokes" | "putts" | "nr">,
+/** A result the one-tap buttons don't offer, so the ⋯ button shows it. */
+export function isOtherResult(draft: ScoreDraft, par: number): boolean {
+	return (
+		draft.nr ||
+		(draft.strokes !== null && !flightQuickStrokes(par).includes(draft.strokes))
+	);
+}
+
+/** Step another player's score from ⋯: the first step leaves the buttons. */
+export function stepOther(
+	strokes: number | null,
 	par: number,
-): boolean | null {
-	if (draft.nr || draft.putts === null || draft.putts >= draft.strokes) {
-		return null;
-	}
-	return draft.strokes - draft.putts <= par - 2;
+	by: 1 | -1,
+): number {
+	const from = strokes ?? (by > 0 ? par + 2 : par - 1);
+	return Math.max(1, from + by);
 }
 
-/**
- * Apply an edit. GIR follows strokes and putts until the user sets it; from
- * then on their choice sticks. Picking up clears GIR, set or not.
- */
-export function editDraft(
+export type TeeShot = MissSide | "fairway";
+
+/** null: not recorded, or an older score that missed without a side. */
+export function teeShotOf({
+	fir,
+	firMiss,
+}: Pick<ScoreDraft, "fir" | "firMiss">): TeeShot | null {
+	if (fir) return "fairway";
+	return fir === false ? firMiss : null;
+}
+
+/** Tap a band; tapping the selected one again clears it. */
+export function pickTeeShot(
 	draft: ScoreDraft,
-	patch: ScoreDraftPatch,
-	par: number,
-): ScoreDraft {
-	const next = { ...draft, ...patch };
-	if (next.nr) return { ...next, gir: null, girTouched: false };
-	if ("gir" in patch) return { ...next, girTouched: true };
-	return next.girTouched ? next : { ...next, gir: inferredGir(next, par) };
+	shot: TeeShot,
+): Pick<ScoreDraft, "fir" | "firMiss"> {
+	if (teeShotOf(draft) === shot) return { fir: null, firMiss: null };
+	return shot === "fairway"
+		? { fir: true, firMiss: null }
+		: { fir: false, firMiss: shot };
 }
 
-/** The fields a draft saves. */
-export function draftUpdate({
-	girTouched: _,
-	...fields
-}: ScoreDraft): ScoreUpdate {
-	return fields;
+/**
+ * The fields a draft saves; null when there is nothing to save yet. GIR is
+ * derived once putts are known and cleared on a picked-up hole. Without putts
+ * it is left out, which keeps what an older build stored by hand.
+ */
+export function draftUpdate(
+	draft: ScoreDraft,
+	{ par, owner }: { par: number; owner: boolean },
+): ScoreUpdate | null {
+	const { strokes, nr, ...stats } = draft;
+	if (strokes === null && !nr) return null;
+	const result = { ...(strokes === null ? {} : { strokes }), nr };
+	if (!owner) return result;
+	const gir = derivedGir(par, draft);
+	return {
+		...result,
+		...stats,
+		...(nr || stats.putts !== null ? { gir } : {}),
+	};
+}
+
+/** "Bogey · +1"; Stableford adds points instead: "Double bogey · 1 pt". */
+export function resultBadge({
+	draft,
+	par,
+	received,
+	stableford,
+	copy,
+}: {
+	draft: ScoreDraft;
+	par: number;
+	received: number;
+	stableford: boolean;
+	copy: ScoreCopy;
+}): string {
+	const strokes = draft.nr ? null : draft.strokes;
+	const points = stableford
+		? fmt(copy.points, { n: stablefordPoints({ par }, strokes, received) })
+		: null;
+	if (strokes === null) {
+		return [copy.pickedUp, points].filter(Boolean).join(" · ");
+	}
+	const toPar = strokes - par;
+	const name = resultName(toPar, copy);
+	const diff = formatVsPar(toPar);
+	// "Par · E" says the same thing twice, and "+4" has no name.
+	return [name ?? diff, points ?? (name && toPar !== 0 ? diff : null)]
+		.filter(Boolean)
+		.join(" · ");
+}
+
+function resultName(toPar: number, copy: ScoreCopy): string | null {
+	if (toPar <= -3) return copy.results.albatross;
+	const names: Record<number, string> = {
+		[-2]: copy.results.eagle,
+		[-1]: copy.results.birdie,
+		0: copy.results.par,
+		1: copy.results.bogey,
+		2: copy.results.double,
+		3: copy.results.triple,
+	};
+	return names[toPar] ?? null;
+}
+
+/** "+1 stroke · net 4"; Stableford "+1 stroke · 2 pt"; what is known so far. */
+export function flightDetail({
+	draft,
+	par,
+	received,
+	stableford,
+	copy,
+	strokesLabel,
+}: {
+	draft: ScoreDraft;
+	par: number;
+	received: number;
+	stableford: boolean;
+	copy: ScoreCopy;
+	/** "+1 stroke", in the locale's plural. */
+	strokesLabel: string;
+}): string {
+	const strokes = draft.nr ? null : draft.strokes;
+	const scored = draft.nr || strokes !== null;
+	let result: string | null = null;
+	if (scored && stableford) {
+		result = fmt(copy.points, {
+			n: stablefordPoints({ par }, strokes, received),
+		});
+	} else if (draft.nr) {
+		result = copy.pickedUp;
+	} else if (strokes !== null && received !== 0) {
+		result = fmt(copy.net, { n: strokes - received });
+	}
+	return [received === 0 ? null : strokesLabel, result]
+		.filter(Boolean)
+		.join(" · ");
 }
