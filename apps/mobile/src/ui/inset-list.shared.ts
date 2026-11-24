@@ -22,6 +22,10 @@ export interface RowAction {
 	dividerAfter?: boolean;
 }
 
+export type RowLeading =
+	| { symbol: SFSymbol; circle?: boolean }
+	| { initial: string };
+
 export interface InsetListProps {
 	/** Section header above the group; the platform decides its case. */
 	header?: string;
@@ -32,7 +36,8 @@ export interface InsetListProps {
 }
 
 export interface InsetRowProps {
-	leading?: { symbol: SFSymbol };
+	/** A symbol, or an avatar: an initial or a symbol in a tinted circle. */
+	leading?: RowLeading;
 	title: string;
 	secondary?: string;
 	/** Trailing value, tabular. */
@@ -40,6 +45,8 @@ export interface InsetRowProps {
 	/** Custom trailing control; replaces the plain value. */
 	trailing?: ReactElement;
 	chevron?: boolean;
+	/** Accent title for a row that adds something. */
+	accent?: boolean;
 	/**
 	 * The row opens a page outside the app (in-app browser); draws an
 	 * up-forward arrow in place of the chevron.
@@ -55,6 +62,9 @@ export interface InsetRowProps {
 	actions?: readonly RowAction[];
 }
 
+/** The diameter of an avatar, and the width a plain symbol takes. */
+export const ROW_AVATAR = 34;
+
 export function swipeActions(actions: readonly RowAction[]) {
 	return actions.filter((action) => action.swipe !== false);
 }
@@ -62,6 +72,7 @@ export function swipeActions(actions: readonly RowAction[]) {
 export function rowSpokenLabel({
 	title,
 	secondary,
-}: Pick<InsetRowProps, "title" | "secondary">) {
-	return secondary ? `${title}, ${secondary}` : title;
+	value,
+}: Pick<InsetRowProps, "title" | "secondary" | "value">) {
+	return [title, secondary, value].filter(Boolean).join(", ");
 }

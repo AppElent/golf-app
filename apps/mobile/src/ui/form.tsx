@@ -255,62 +255,41 @@ export function FormSwitchRow({
 	);
 }
 
-export function InlineNumberFieldRow({
+/** A text field on one line with its label; the value sits at the trailing edge. */
+export function FormInlineTextRow({
 	label,
-	suffix,
 	...props
-}: TextInputProps & {
-	label: string;
-	suffix: string;
-}) {
+}: TextInputProps & { label: string }) {
 	const colors = useTokens();
 	const styles = useThemedStyles(createStyles);
 	return (
 		<View style={styles.inlineRow}>
-			<AppText style={styles.rowLabel}>{label}</AppText>
-			<View style={styles.inlineControls}>
-				<TextInput
-					{...props}
-					accessibilityLabel={props.accessibilityLabel ?? label}
-					placeholderTextColor={colors.textFaint}
-					style={styles.numberInput}
-				/>
-				<AppText variant="caption" style={styles.suffix}>
-					{suffix}
-				</AppText>
-			</View>
+			<AppText variant="row" style={styles.inlineLabel}>
+				{label}
+			</AppText>
+			<TextInput
+				{...props}
+				accessibilityLabel={props.accessibilityLabel ?? label}
+				placeholderTextColor={colors.textFaint}
+				style={[
+					styles.inlineInput,
+					props.editable === false && { color: colors.textMuted },
+				]}
+			/>
 		</View>
-	);
-}
-
-export function AddRow({
-	label,
-	onPress,
-}: {
-	label: string;
-	onPress: () => void;
-}) {
-	const styles = useThemedStyles(createStyles);
-	return (
-		<Pressable
-			onPress={onPress}
-			accessibilityRole="button"
-			accessibilityLabel={label}
-			style={({ pressed }) => [styles.actionRow, pressed && styles.pressedRow]}
-		>
-			<AppText style={styles.addGlyph}>＋</AppText>
-			<AppText style={styles.actionLabel}>{label}</AppText>
-		</Pressable>
 	);
 }
 
 export function TextAction({
 	label,
 	onPress,
+	destructive = false,
 }: {
 	label: string;
 	onPress: () => void;
+	destructive?: boolean;
 }) {
+	const colors = useTokens();
 	const styles = useThemedStyles(createStyles);
 	return (
 		<Pressable
@@ -318,7 +297,14 @@ export function TextAction({
 			accessibilityRole="button"
 			style={({ pressed }) => [styles.textAction, pressed && styles.pressedRow]}
 		>
-			<AppText style={styles.textActionLabel}>{label}</AppText>
+			<AppText
+				style={[
+					styles.textActionLabel,
+					destructive && { color: colors.danger },
+				]}
+			>
+				{label}
+			</AppText>
 		</Pressable>
 	);
 }
@@ -425,35 +411,16 @@ const createStyles = (colors: Tokens) =>
 			gap: spacing.sm,
 		},
 		rowLabel: { flex: 1, minWidth: 0 },
-		inlineControls: {
-			flexDirection: "row",
-			alignItems: "center",
-			gap: spacing.sm,
-			flexShrink: 0,
-		},
-		numberInput: {
-			width: 82,
+		inlineLabel: { fontWeight: "400" },
+		inlineInput: {
+			flex: 1,
 			minHeight: metrics.hitTarget,
-			borderRadius: radius.md,
-			borderCurve: "continuous",
-			backgroundColor: colors.surface2,
-			paddingHorizontal: spacing.sm,
 			color: colors.text,
-			fontSize: 15,
+			fontSize: 17,
 			fontVariant: ["tabular-nums"],
 			textAlign: "right",
 		},
-		suffix: { minWidth: 30 },
-		actionRow: {
-			minHeight: metrics.rowMinHeight,
-			paddingHorizontal: spacing.md,
-			flexDirection: "row",
-			alignItems: "center",
-			gap: spacing.sm,
-		},
 		pressedRow: { backgroundColor: colors.surface2 },
-		addGlyph: { color: colors.accent, fontSize: 20, fontWeight: "700" },
-		actionLabel: { flex: 1, color: colors.accent, fontWeight: "700" },
 		textAction: {
 			minHeight: metrics.hitTarget,
 			paddingHorizontal: spacing.md,
