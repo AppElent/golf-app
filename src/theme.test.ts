@@ -121,12 +121,12 @@ describe.each(Object.entries(THEMES))("%s theme", (_name, theme) => {
 	});
 
 	// Translucent tints and the text on them: the course editor's "No map"
-	// chip (flag-ink on flag/10) and ConfirmPanel's title (ink on flag/5).
-	// ConfirmPanel's moss description misses 4.5:1 over the light canvas;
-	// APP-686 fixes it and adds it here.
+	// chip (flag-ink on flag/10) and ConfirmPanel's title and description
+	// (ink and moss on flag/5).
 	const TINTS = [
 		["flag-ink", "flag", 0.1],
 		["ink", "flag", 0.05],
+		["moss", "flag", 0.05],
 	] as const;
 	for (const [text, tint, alpha] of TINTS) {
 		for (const ground of ["canvas", "surface"]) {

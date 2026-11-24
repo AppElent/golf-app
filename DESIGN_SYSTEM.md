@@ -98,8 +98,9 @@ Designers and coding agents start from it; product decisions below still bind th
   (APP-235, APP-502).
   `src/theme.test.ts` checks every text token against every ground in both
   themes, and the text on the two translucent tints in use: `flag-ink` on
-  `flag/10` (the course editor's "No map" chip) and `ink` on `flag/5`
-  (`ConfirmPanel`'s title). The round-era `live/10` and `pine-ink/10` tints
+  `flag/10` (the course editor's "No map" chip) and `ink` and `moss` on
+  `flag/5` (`ConfirmPanel`'s title and description). The round-era `live/10`
+  and `pine-ink/10` tints
   and the `sand` and `water` tokens went with the web round screens
   (APP-598). Field placeholders are `stone`. Clerk's sign-in card takes
   the same tokens in dark mode through `appearance` variables
@@ -148,6 +149,7 @@ contrast fixes only: field placeholders and the "Connecting…" note
 | Web: field placeholder (ink at 50% → `stone`) on `field` (APP-191) | light / dark | **3.09** / n/a | 4.62 / 4.89 |
 | Web: dark control edge (`control-line`: fields, buttons, toggles) on `field` / `surface` / `canvas` (3:1) (APP-191) | dark | **1.53** (`card-line`) | 3.25 / 3.73 / 4.19 |
 | Web: light control edge (`control-line`: fields, buttons, toggles) on `field` / `surface` / `canvas` (3:1) (APP-276) | light | **1.12** (`card-line`) | 3.21 / 3.50 / 3.21 |
+| Web: `moss` on `flag/5` over `canvas` / `surface` (`ConfirmPanel` description; light `#5e6e64` → `#5a6a60`, `moss` on `canvas` 4.70 → 4.99) (APP-686) | light / dark | **4.39** / 4.77 (dark: 7.57 / 6.72) | 4.66 / 5.06 (dark: 7.57 / 6.72) |
 | Phone: `onAccent` on `accentFill` (primary button, selected segment) | light | **3.39** | 5.85 |
 | Phone: `onAccent` on `accentPressed` | light | **3.39** | 8.25 |
 | Phone: `accent` on `bg` | light | 4.82 | 5.29 |
