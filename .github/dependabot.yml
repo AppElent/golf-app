@@ -62,6 +62,9 @@ updates:
         update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
       - dependency-name: "@sentry/react-native"
         update-types: ["version-update:semver-major", "version-update:semver-minor", "version-update:semver-patch"]
+      # Any @clerk/expo bump moves the native fingerprint (not OTA-safe); bump with the next native build.
+      - dependency-name: "@clerk/expo"
+        update-types: ["version-update:semver-minor", "version-update:semver-patch"]
 
   - package-ecosystem: github-actions
     directories: ["/", "/.github/actions/setup"]
