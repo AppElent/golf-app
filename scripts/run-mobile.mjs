@@ -6,7 +6,7 @@
 //   node scripts/run-mobile.mjs up [--lang en|nl] [--clear] [--env KEY=VALUE]
 //   node scripts/run-mobile.mjs signin [--email E --password P]
 //   node scripts/run-mobile.mjs ad <agent-device args>
-//   node scripts/run-mobile.mjs ss [file] | reload | logs [n] | backend | udid | state | down
+//   node scripts/run-mobile.mjs ss [file] | reload | logs [n] | backend | udid | state | release | down
 //
 // Config: `runMobile` in apps/mobile/package.json, for example
 //   "runMobile": { "bundleId": "com.appelent.foundry.dev", "port": 8090 }
@@ -39,6 +39,36 @@ export const SIGN_IN_LABELS = ["Sign in", "Inloggen"];
  */
 export function signInSelector(labels = SIGN_IN_LABELS) {
 	return ['id="sign-in-submit"', ...labels.map((label) => `label=${JSON.stringify(label)}`)].join(" || ");
+}
+
+/**
+ * testIDs of a dev-only "sign in as the test user" shortcut. Gather shows it on
+ * its welcome screen (`welcome-dev-sign-in`) instead of pre-filling the form.
+ */
+export const DEV_SIGN_IN_IDS = ["dev-sign-in", "welcome-dev-sign-in"];
+
+/** An agent-device selector for the dev sign-in shortcut, whichever testID the app uses. */
+export function devSignInSelector(ids = DEV_SIGN_IN_IDS) {
+	return ids.map((id) => `id=${JSON.stringify(id)}`).join(" || ");
+}
+
+/**
+ * Who holds the simulator, from an agent-device `DEVICE_IN_USE` error, or null
+ * for any other output. `own`: a session of the daemon run-mobile talks to
+ * (close it and retry). `foreign`: another workspace's daemon holds the
+ * host-global claim, for example T3's device command; `stale` when its owner
+ * is gone and agent-device's recovery command releases the claim.
+ */
+export function deviceInUse(out) {
+	if (!/DEVICE_IN_USE|already in use by|is owned by session/.test(out)) return null;
+	const foreign = /owned by session "([^"]+)" in workspace "([^"]+)"/.exec(out);
+	if (foreign) {
+		const recovery = /agent-device device (?:release|status) [^\n"]*/.exec(out)?.[0].trim() ?? "";
+		const stale = /^agent-device device release\b.*--stale\b/.test(recovery);
+		return { kind: "foreign", session: foreign[1], workspace: foreign[2], recovery, stale };
+	}
+	const own = /already in use by (?:workspace )?session "([^"]+)"/.exec(out) ?? /close --session ([^ .,"]+)/.exec(out);
+	return own ? { kind: "own", session: own[1] } : { kind: "unknown" };
 }
 
 /** Stable 8-character id for a checkout path. */
@@ -164,6 +194,43 @@ function ad(ctx, args, { quiet = false } = {}) {
 		.join("\n");
 	if (!quiet && out.trim()) process.stdout.write(out.endsWith("\n") ? out : `${out}\n`);
 	return { ok: r.ok, out };
+}
+
+/**
+ * Open (or reattach) run-mobile's agent-device session on the app. A session of
+ * our own daemon that still holds the simulator is closed and the open retried;
+ * a stale claim from another workspace is released with agent-device's own
+ * recovery command. A live owner elsewhere (for example T3's device command) is
+ * left alone: the error names it so it can be closed there.
+ */
+function openSession(ctx, udid) {
+	const open = () => ad(ctx, ["open", ctx.bundleId, "--platform", "ios", "--udid", udid], { quiet: true });
+	for (let attempt = 0; attempt < 3; attempt++) {
+		const r = open();
+		if (r.ok) {
+			rmSync(join(ctx.state, "released"), { force: true });
+			return;
+		}
+		const held = deviceInUse(r.out);
+		if (held?.kind === "own") {
+			log(`simulator held by stale session '${held.session}'; closing it`);
+			ad(ctx, ["close", "--session", held.session], { quiet: true });
+		} else if (held?.kind === "foreign" && held.stale) {
+			log(`simulator claimed by gone session '${held.session}' (${held.workspace}); releasing it`);
+			ad(ctx, held.recovery.replace(/^agent-device /, "").split(/\s+/), { quiet: true });
+		} else if (held?.kind === "foreign") {
+			die(
+				`simulator is driven by session '${held.session}' in ${held.workspace} (another tool, for example T3's device command). ` +
+					`Close it there, then rerun. ${held.recovery ? `Inspect with: npx ${AGENT_DEVICE.at(-1)} ${held.recovery.replace(/^agent-device /, "")}` : ""}`.trim(),
+			);
+		} else die(`agent-device open failed: ${r.out.trim()}`);
+	}
+	die("agent-device open still fails after releasing the simulator");
+}
+
+/** After `release`, the next command that drives the app reattaches first. */
+function ensureSession(ctx) {
+	if (existsSync(join(ctx.state, "released"))) openSession(ctx, requireUdid(ctx));
 }
 
 function findDevClient(ctx) {
@@ -426,15 +493,7 @@ async function cmdUp(ctx, args) {
 	const url = `${ctx.bundleId}://expo-development-client/?url=${encodeURIComponent(`http://127.0.0.1:${ctx.port}`)}&disableOnboarding=1&disableFab=1&disableAutoLaunch=1`;
 	simctl("openurl", udid, url);
 	ad(ctx, ["alert", "accept", "5000", "--platform", "ios", "--udid", udid], { quiet: true });
-	let open = ad(ctx, ["open", ctx.bundleId, "--platform", "ios", "--udid", udid], { quiet: true });
-	if (!open.ok) {
-		const owner = /close --session ([^ .,"]+)/.exec(open.out)?.[1];
-		if (!owner) die(`agent-device open failed: ${open.out.trim()}`);
-		log(`simulator held by stale session '${owner}'; closing it`);
-		ad(ctx, ["close", "--session", owner], { quiet: true });
-		open = ad(ctx, ["open", ctx.bundleId, "--platform", "ios", "--udid", udid], { quiet: true });
-		if (!open.ok) die("agent-device open failed after closing the stale session");
-	}
+	openSession(ctx, udid);
 	log("waiting for the iOS bundle (max 180s)");
 	let ok = false;
 	for (let i = 0; i < 90; i++) {
@@ -461,19 +520,40 @@ function cmdSignin(ctx, args) {
 		else die(`signin: unknown option ${args[i]}`);
 	}
 	if (Boolean(email) !== Boolean(password)) die("signin: --email and --password go together");
+	ensureSession(ctx);
 	const submit = signInSelector();
-	if (!ad(ctx, ["wait", submit, "20000"], { quiet: true }).ok) die("sign-in screen not visible (already signed in?)");
-	if (email) {
-		const ref = (kind) => new RegExp(`\\[${kind}\\][^\\n]*?(@e\\d+)|(@e\\d+)[^\\n]*\\[${kind}\\]`).exec(ad(ctx, ["snapshot", "-i"], { quiet: true }).out);
-		const field = ref("text-field");
-		if (!field || !ad(ctx, ["fill", field[1] ?? field[2], email], { quiet: true }).ok) die("could not fill email");
-		const secure = ref("securetextfield");
-		if (!secure || !ad(ctx, ["fill", secure[1] ?? secure[2], password], { quiet: true }).ok) die("could not fill password");
-		if (!ad(ctx, ["snapshot", "-i"], { quiet: true }).out.includes(`"${email}"`)) die(`email field does not show ${email}; not signing in`);
+	const shortcut = devSignInSelector();
+	if (!ad(ctx, ["wait", `${shortcut} || ${submit}`, "20000"], { quiet: true }).ok) die("sign-in screen not visible (already signed in?)");
+	const hasField = () => /\[text-field\]/.test(ad(ctx, ["snapshot", "-i"], { quiet: true }).out);
+	if (!email && ad(ctx, ["is", "visible", shortcut], { quiet: true }).ok) {
+		// Gather: the welcome screen's dev shortcut signs the test user in; its form is not pre-filled.
+		ad(ctx, ["press", shortcut], { quiet: true });
+	} else {
+		if (!hasField()) {
+			// A welcome screen's "Sign in" opens the form; then wait for the form's own submit button.
+			ad(ctx, ["press", submit], { quiet: true });
+			if (!ad(ctx, ["wait", 'id="sign-in-submit"', "20000"], { quiet: true }).ok || !hasField()) die("sign-in form did not open");
+			if (!email) die("the sign-in form is not pre-filled and the app shows no dev sign-in shortcut; pass --email and --password");
+		}
+		if (email) {
+			const ref = (kind) => new RegExp(`\\[${kind}\\][^\\n]*?(@e\\d+)|(@e\\d+)[^\\n]*\\[${kind}\\]`).exec(ad(ctx, ["snapshot", "-i"], { quiet: true }).out);
+			const field = ref("text-field");
+			if (!field || !ad(ctx, ["fill", field[1] ?? field[2], email], { quiet: true }).ok) die("could not fill email");
+			const secure = ref("securetextfield");
+			if (!secure || !ad(ctx, ["fill", secure[1] ?? secure[2], password], { quiet: true }).ok) die("could not fill password");
+			if (!ad(ctx, ["snapshot", "-i"], { quiet: true }).out.includes(`"${email}"`)) die(`email field does not show ${email}; not signing in`);
+		}
+		ad(ctx, ["press", submit], { quiet: true });
 	}
-	ad(ctx, ["press", submit], { quiet: true });
 	if (!ad(ctx, ["wait", "role=tab-bar", "30000"], { quiet: true }).ok) die("tab bar not visible after sign-in");
 	log("signed in");
+}
+
+/** Hand the simulator to another tool (for example T3's device command); the next `ad` or `signin` reattaches. */
+function cmdRelease(ctx) {
+	ad(ctx, ["close"], { quiet: true });
+	writeFileSync(join(ctx.state, "released"), "");
+	log("released the agent-device session; the simulator, app and Metro keep running");
 }
 
 function cmdDown(ctx) {
@@ -502,6 +582,7 @@ function cmdDown(ctx) {
 		if (!r.ok) log(`sim release failed: ${r.out.trim()}`);
 		else log(`released simulator ${u}`);
 		rmSync(join(ctx.state, "lang"), { force: true });
+		rmSync(join(ctx.state, "released"), { force: true });
 	}
 	rmSync(ctx.portFile, { force: true });
 	log("down");
@@ -516,6 +597,7 @@ async function main(argv) {
 		case "signin":
 			return cmdSignin(ctx, args);
 		case "ad":
+			ensureSession(ctx);
 			process.exitCode = ad(ctx, args).ok ? 0 : 1;
 			return;
 		case "ss": {
@@ -545,10 +627,12 @@ async function main(argv) {
 		case "state":
 			console.log(ctx.state);
 			return;
+		case "release":
+			return cmdRelease(ctx);
 		case "down":
 			return cmdDown(ctx);
 		default:
-			console.log("commands: up [--lang en|nl] [--clear] [--env KEY=VALUE] | signin [--email E --password P] | ad <args> | ss [file] | reload | logs [n] | backend | udid | state | down");
+			console.log("commands: up [--lang en|nl] [--clear] [--env KEY=VALUE] | signin [--email E --password P] | ad <args> | ss [file] | reload | logs [n] | backend | udid | state | release | down");
 			process.exitCode = 2;
 	}
 }
