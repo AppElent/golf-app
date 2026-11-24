@@ -44,8 +44,6 @@
 	--color-moss: #5e6e64;
 	/* stone: labels, hints, inactive tabs; 4.5:1 on the canvas, cards and bar */
 	--color-stone: #636e66;
-	/* on-stone: text on a stone fill (the double-bogey mark) */
-	--color-on-stone: #ffffff;
 	/* type: body text in Hanken Grotesk, titles and numbers in Space Grotesk;
 	   both come from the font import above */
 	--font-sans: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
@@ -118,7 +116,6 @@
 		--color-ink: #f1f5f0;
 		--color-moss: #9aaa9f;
 		--color-stone: #919789;
-		--color-on-stone: #08130d;
 		--color-live-ink: #7fe0a6;
 		--color-flag-ink: #ffa48a;
 	}

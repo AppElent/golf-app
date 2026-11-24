@@ -120,12 +120,6 @@ describe.each(Object.entries(THEMES))("%s theme", (_name, theme) => {
 		).toBeGreaterThanOrEqual(4.5);
 	});
 
-	it("on-stone text on a stone fill reaches 4.5:1", () => {
-		expect(
-			ratio(color(theme, "on-stone"), color(theme, "stone")),
-		).toBeGreaterThanOrEqual(4.5);
-	});
-
 	// Translucent tints and the text on them: the course editor's "No map"
 	// chip (flag-ink on flag/10) and ConfirmPanel's title (ink on flag/5).
 	// ConfirmPanel's moss description misses 4.5:1 over the light canvas;
