@@ -178,6 +178,8 @@ export const profileEn = {
 	locationLockedDenied:
 		"Allow location access 'Always' for Fairway in Settings to use this.",
 	privacy: "Privacy policy",
+	opensInBrowser: "Opens in the browser",
+	browserFailed: "This page could not be opened. Try again in a moment.",
 	report: "Report a problem",
 	reportUnavailable:
 		"Problem reports aren't available in this build yet. Please tell us at the club or by email.",
@@ -244,6 +246,8 @@ export const profileNl: typeof profileEn = {
 	locationLockedDenied:
 		"Sta locatietoegang 'Altijd' toe voor Fairway in Instellingen om dit te gebruiken.",
 	privacy: "Privacybeleid",
+	opensInBrowser: "Opent in de browser",
+	browserFailed: "Deze pagina kon niet worden geopend. Probeer het zo opnieuw.",
 	report: "Probleem melden",
 	reportUnavailable:
 		"Problemen melden kan nog niet in deze versie. Laat het ons weten via de club of per e-mail.",

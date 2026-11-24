@@ -29,6 +29,7 @@ import {
 import {
 	accessibilityAddTraits,
 	accessibilityElement,
+	accessibilityHint as accessibilityHintModifier,
 	accessibilityLabel,
 	contentShape,
 	font,
@@ -108,6 +109,7 @@ export function InsetRow({
 	trailing,
 	chevron = false,
 	external = false,
+	accessibilityHint,
 	destructive = false,
 	onPress,
 	actions,
@@ -116,6 +118,9 @@ export function InsetRow({
 	const { width } = useWindowDimensions();
 	const spoken = rowSpokenLabel({ title, secondary });
 	const swipe = swipeActions(actions ?? []);
+	const hint = accessibilityHint
+		? [accessibilityHintModifier(accessibilityHint)]
+		: [];
 
 	const row = (
 		<HStack
@@ -124,7 +129,7 @@ export function InsetRow({
 				contentShape(shapes.rectangle()),
 				listRowBackground(tokens.surface),
 				...(trailing ? [] : [accessibilityElement("ignore")]),
-				...(trailing ? [] : [accessibilityLabel(spoken)]),
+				...(trailing ? [] : [accessibilityLabel(spoken), ...hint]),
 				...(onPress && !trailing
 					? [onTapGesture(onPress), accessibilityAddTraits(["isButton"])]
 					: []),
@@ -148,6 +153,7 @@ export function InsetRow({
 								contentShape(shapes.rectangle()),
 								accessibilityElement("ignore"),
 								accessibilityLabel(spoken),
+								...hint,
 								...(onPress
 									? [
 											onTapGesture(onPress),

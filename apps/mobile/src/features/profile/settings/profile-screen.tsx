@@ -5,7 +5,6 @@ import * as Application from "expo-application";
 import Constants from "expo-constants";
 import { useRouter } from "expo-router";
 import * as Updates from "expo-updates";
-import { openBrowserAsync } from "expo-web-browser";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Switch, View } from "react-native";
 import { api } from "../../../convex/api";
@@ -35,6 +34,7 @@ import {
 } from "../../location/background/background-location-preference";
 import { displayName } from "../account/account-model";
 import { AccountPortalRow } from "../account/account-portal-row";
+import { openInBrowser } from "../open-in-browser";
 import { useUnits } from "../use-units";
 import { shareDataExport } from "./data-export";
 
@@ -250,8 +250,12 @@ export function ProfileScreen() {
 					leading={{ symbol: "hand.raised" }}
 					title={t.profile.privacy}
 					external
+					accessibilityHint={t.profile.opensInBrowser}
 					onPress={() => {
-						openBrowserAsync(PRIVACY_POLICY_URL).catch(() => {});
+						void openInBrowser(PRIVACY_POLICY_URL, {
+							title: t.profile.privacy,
+							message: t.profile.browserFailed,
+						});
 					}}
 				/>
 				<InsetRow

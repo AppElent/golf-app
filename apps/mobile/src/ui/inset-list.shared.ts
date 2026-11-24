@@ -45,6 +45,11 @@ export interface InsetRowProps {
 	 * up-forward arrow in place of the chevron.
 	 */
 	external?: boolean;
+	/**
+	 * What a press does when the title alone does not say, such as leaving the
+	 * app for the browser. Spoken after the label.
+	 */
+	accessibilityHint?: string;
 	/** Red title for a destructive row such as "Sign out". */
 	destructive?: boolean;
 	onPress?: () => void;
