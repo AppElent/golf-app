@@ -145,7 +145,7 @@ async function defaultPrepareEnvironment(request) {
         io: { writeOut: () => undefined, writeErr: () => undefined },
     });
 }
-async function defaultApplyBackendEnvironment(request) {
+export async function defaultApplyBackendEnvironment(request) {
     await mkdir(request.isolationRoot, { recursive: true });
     await writeFile(join(request.isolationRoot, "package.json"), `${JSON.stringify({ private: true, dependencies: { convex: "*" } })}\n`, { encoding: "utf8", mode: 0o600 });
     const manifest = await loadEnvironmentManifest(request.root, request.manifestPath);
@@ -170,7 +170,9 @@ async function defaultApplyBackendEnvironment(request) {
         const result = await request.runCommand({
             tool: "convex",
             args: spec.args,
-            cwd: request.isolationRoot,
+            // A local deployment is registered for the project directory, so the
+            // CLI only finds it from the checkout; a cloud one runs isolated.
+            cwd: request.local ? request.root : request.isolationRoot,
             packageRoot: request.root,
             input: spec.input,
             removeEnv: [
@@ -297,7 +299,10 @@ export async function prepareWorkspace(options) {
         }
         const operations = [];
         if (ledger.status === "failed") {
-            const changed = await generatedFileDrift(options.root, ledger.generatedFiles, false);
+            // Starting a local `convex dev` after a failure rewrites the selected
+            // URL (next free port), which is not a hand edit. A cloud workspace's
+            // selectors name its isolated deployment, so any change there stays drift.
+            const changed = await generatedFileDrift(options.root, ledger.generatedFiles, policy.backend.mode === "local");
             if (changed.length > 0)
                 return {
                     command: "prepare",
@@ -329,6 +334,19 @@ export async function prepareWorkspace(options) {
                             "Move the change into the canonical source, or run clean (it keeps the edited file), then prepare again",
                     })),
                 };
+        }
+        // An accepted selector rewrite moves the backend URL, so client outputs
+        // written from the old URL must be written again on this resume.
+        if (ledger.status === "failed" || deferred) {
+            let rewritten = false;
+            for (const file of ledger.generatedFiles) {
+                const text = await readProjectText(options.root, file.path);
+                if (text && digestText(text) !== file.digest)
+                    rewritten = true;
+            }
+            const outputs = ledger.steps.find((item) => item.id === "client-outputs");
+            if (rewritten && outputs?.status === "complete")
+                outputs.status = "pending";
         }
         ledger.status = "preparing";
         ledger.updatedAt = now().toISOString();
@@ -543,6 +561,7 @@ export async function prepareWorkspace(options) {
                     manifestPath: manifest.envManifest,
                     reference: backendReference,
                     isolationRoot: join(stateRoot, "runtime", identity.id, "env"),
+                    local: policy.backend.mode === "local",
                     runCommand: run,
                 });
                 if (result.exitCode !== 0) {

@@ -16,6 +16,11 @@ export const DEPLOYMENT_ENV_NAMES = new Set([
     "CONVEX_SITE_URL",
     "NEXT_PUBLIC_CONVEX_URL",
     "EXPO_PUBLIC_CONVEX_URL",
+    // `convex dev` also writes the framework-prefixed site URL (for a local
+    // backend the port after the API port); it follows the selected deployment.
+    "VITE_CONVEX_SITE_URL",
+    "NEXT_PUBLIC_CONVEX_SITE_URL",
+    "EXPO_PUBLIC_CONVEX_SITE_URL",
 ]);
 export const PROVIDER_ENV_REMOVALS = [...DEPLOYMENT_ENV_NAMES];
 /**
@@ -141,6 +146,21 @@ export async function prepareBackend(request) {
                 });
             }
             catch (error) {
+                // A quota refusal happens before anything is created, so the intent
+                // recorded above owns nothing. Mark it absent, so clean and gc can
+                // finish instead of waiting days for an expiry that never comes.
+                if (/quota/iu.test(error.message))
+                    await request.checkpoint({
+                        kind: "convex-deployment",
+                        id: reference,
+                        owned: true,
+                        status: "absent",
+                        cleanup: policy.backend.mode === "cloud" ? "expiry" : "release",
+                        metadata: {
+                            mode: policy.backend.mode,
+                            expiration: policy.backend.expiration,
+                        },
+                    });
                 throw new Error(quotaHint(error.message));
             }
             created = true;
