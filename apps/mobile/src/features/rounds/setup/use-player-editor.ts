@@ -26,7 +26,7 @@ export interface PlayerEdit {
  */
 export const PlayerEditorContext = createContext<{
 	edit: PlayerEdit | null;
-	setEdit: (edit: PlayerEdit) => void;
+	setEdit: (edit: PlayerEdit | null) => void;
 }>({ edit: null, setEdit: () => {} });
 
 export function usePlayerEditor() {

@@ -8,7 +8,7 @@ import { detectLoops, selectLoops } from "@fairway/core/loops";
 import type { RoundFormat } from "@fairway/core/round";
 import { useMutation } from "convex/react";
 import { Stack, useRouter } from "expo-router";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
 	ScrollView,
 	type ScrollViewInstance,
@@ -127,6 +127,8 @@ function RoundSetupForm({
 	const [guests, setGuests] = useState<GuestDraft[]>([]);
 	const submit = useSubmit();
 	const { setEdit } = usePlayerEditor();
+	// A later visit to the sheet must not edit players of a closed setup.
+	useEffect(() => () => setEdit(null), [setEdit]);
 	const teeScroll = useRef<ScrollViewInstance>(null);
 	const teeScrolled = useRef(false);
 
@@ -247,7 +249,7 @@ function RoundSetupForm({
 			footer: playerFooter,
 			onSave: (draft) => setOwnerIndex(draft.index),
 		});
-		router.push("/setup-player");
+		router.navigate("/setup-player");
 	}
 
 	function removeGuest(key: number) {
@@ -266,7 +268,7 @@ function RoundSetupForm({
 				),
 			onRemove: () => removeGuest(guest.key),
 		});
-		router.push("/setup-player");
+		router.navigate("/setup-player");
 	}
 
 	function addGuest() {
@@ -278,7 +280,7 @@ function RoundSetupForm({
 			onSave: (draft) =>
 				setGuests((prev) => [...prev, { key: Date.now(), ...draft }]),
 		});
-		router.push("/setup-player");
+		router.navigate("/setup-player");
 	}
 
 	// `pending` stays true after a successful start, so the round this screen
