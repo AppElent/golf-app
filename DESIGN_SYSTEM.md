@@ -89,7 +89,7 @@ Designers and coding agents start from it; product decisions below still bind th
   (cards, unselected controls), `field` (inputs), `bar` (tab bar),
   `card-line`, `control-line` (the edge of a field, button or toggle; use
   `CONTROL` or `FIELD` from `src/components/classes.ts`), `ink`, `moss`, `stone`,
-  `on-stone`, `live-ink`, `flag-ink`,
+  `live-ink`, `flag-ink`,
   `pine-ink` (pine text, icons and rings, mint in dark) and `pine-fill` (a pine
   button under cream text, lifted in dark so it stands off the canvas). Never
   `bg-cream`, `bg-white/N` or `text-pine` in the column. The brand fills
