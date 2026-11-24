@@ -21,6 +21,15 @@ const settle = () =>
 		jest.advanceTimersByTime(DISMISS_SETTLE_MS);
 	});
 
+// The first render of React Native's Modal loads and transforms its native
+// modules, which took 4-7 s on a cold CI cache and ran the Modal test past
+// Jest's 5 s timeout. Render one here, outside any test, so each test times
+// only its own work.
+beforeAll(async () => {
+	const view = await render(<Modal visible={false} />);
+	await view.unmount();
+}, 30_000);
+
 beforeEach(() => {
 	jest.useFakeTimers();
 	resetShakeToReportForTests();

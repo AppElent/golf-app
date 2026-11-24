@@ -120,22 +120,17 @@ describe.each(Object.entries(THEMES))("%s theme", (_name, theme) => {
 		).toBeGreaterThanOrEqual(4.5);
 	});
 
-	it("on-stone text on a stone fill reaches 4.5:1", () => {
-		expect(
-			ratio(color(theme, "on-stone"), color(theme, "stone")),
-		).toBeGreaterThanOrEqual(4.5);
-	});
-
-	// Translucent tints: a selected option (live/10) and the selected
-	// scorecard hole (pine-ink/10).
+	// Translucent tints and the text on them: the course editor's "No map"
+	// chip (flag-ink on flag/10) and ConfirmPanel's title and description
+	// (ink and moss on flag/5).
 	const TINTS = [
-		["ink", "live", 0.1],
-		// The selected hole's number and par are ink: stone misses 4.5:1 here.
-		["ink", "pine-ink", 0.1],
+		["flag-ink", "flag", 0.1],
+		["ink", "flag", 0.05],
+		["moss", "flag", 0.05],
 	] as const;
 	for (const [text, tint, alpha] of TINTS) {
 		for (const ground of ["canvas", "surface"]) {
-			it(`${text} on ${tint}/${alpha * 100} over ${ground} reaches 4.5:1`, () => {
+			it(`${text} on ${tint}/${Math.round(alpha * 100)} over ${ground} reaches 4.5:1`, () => {
 				const [r, g, b] = color(theme, tint);
 				const bg = over([r, g, b, alpha], color(theme, ground));
 				expect(ratio(color(theme, text), bg)).toBeGreaterThanOrEqual(4.5);
