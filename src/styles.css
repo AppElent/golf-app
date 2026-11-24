@@ -36,7 +36,8 @@
 	/* accents & ink */
 	/* flag: the CTA fill under white text */
 	--color-flag: #c93f1d;
-	/* flag-ink: orange-red text (errors, offline) on cream or a flag tint */
+	/* flag-ink: orange-red text (errors, offline) on the canvas, a card, or
+	   the flag/10 tint of the course editor's "No map" chip */
 	--color-flag-ink: #a73619;
 	/* ink, moss, stone, live-ink and flag-ink are themed */
 	--color-ink: #16241c;
@@ -45,8 +46,6 @@
 	--color-stone: #636e66;
 	/* on-stone: text on a stone fill (the double-bogey mark) */
 	--color-on-stone: #ffffff;
-	--color-sand: #eadfb8;
-	--color-water: #8fbfd0;
 	/* type: body text in Hanken Grotesk, titles and numbers in Space Grotesk;
 	   both come from the font import above */
 	--font-sans: "Hanken Grotesk", ui-sans-serif, system-ui, sans-serif;
