@@ -192,12 +192,22 @@ function findDevClient(ctx) {
 	return matching[0] ?? "";
 }
 
-function metroCwd(port) {
-	const pid = run("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-t"]).stdout.split("\n")[0].trim();
-	if (!pid) return "";
-	const line = run("lsof", ["-a", "-p", pid, "-d", "cwd", "-Fn"]).stdout.split("\n").find((l) => l.startsWith("n"));
-	// A listener whose folder lsof cannot read still holds the port.
-	return line ? line.slice(1) : "?";
+/** Every process listening on the port, with its folder (`?` when lsof cannot read it) and process group. */
+function listenersOn(port) {
+	const pids = run("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-t"]).stdout.split("\n").map((s) => s.trim());
+	return [...new Set(pids.filter(Boolean))].map((pid) => {
+		const line = run("lsof", ["-a", "-p", pid, "-d", "cwd", "-Fn"]).stdout.split("\n").find((l) => l.startsWith("n"));
+		return { pid, pgid: run("ps", ["-o", "pgid=", "-p", pid]).stdout.trim(), cwd: line ? line.slice(1) : "?" };
+	});
+}
+
+/** Pids of the Metro an earlier `up` of this checkout started: its process group (metro.pid) and listener. */
+function ownMetroPids(state) {
+	return ["metro.pid", "metro.listener"]
+		.map((name) => join(state, name))
+		.filter((path) => existsSync(path))
+		.map((path) => readFileSync(path, "utf8").trim())
+		.filter(Boolean);
 }
 
 /** True when nothing holds the port: lsof misses some listeners, so try to bind it as Metro would. */
@@ -222,30 +232,67 @@ export async function isMetro(port, { timeoutMs = 3000 } = {}) {
 const isFree = async (port) => (await bindable(port, "127.0.0.1")) && (await bindable(port));
 
 /**
- * "ours" (this checkout's Metro), "free", or "taken" (another checkout's Metro or any other process, also one
- * this checkout started that does not answer as Metro).
+ * What holds a port:
+ * - "ours": this checkout's Metro; every listener runs from `mobile` in one process group and answers as Metro.
+ * - "free": nothing listens and the port can be bound.
+ * - "own-slow": the Metro an earlier `up` started (a listener's pid or group is in `ownPids`) still does not
+ *   answer after `waitMs`. Never start a second Metro beside it (APP-743).
+ * - "own-other": only this checkout's processes listen, but they are not its Metro (a web server, say).
+ * - "taken": another checkout's Metro or any other process, also one whose folder lsof cannot read.
+ * Every listener counts, so separate IPv4 and IPv6 listeners cannot hide each other (APP-744).
  */
-export async function portStatus(mobile, port, { cwdOf = metroCwd, answersAsMetro = isMetro, free = isFree } = {}) {
-	const cwd = cwdOf(port);
-	if (cwd) return cwd === mobile && (await answersAsMetro(port)) ? "ours" : "taken";
-	return (await free(port)) ? "free" : "taken";
+export async function portStatus(
+	mobile,
+	port,
+	{ listenersOf = listenersOn, answersAsMetro = isMetro, free = isFree, ownPids = [], waitMs = 30000, pause = sleep, onWait = () => {} } = {},
+) {
+	const listeners = listenersOf(port);
+	if (listeners.length === 0) return (await free(port)) ? "free" : "taken";
+	if (listeners.some((l) => l.cwd !== mobile)) return "taken";
+	if (new Set(listeners.map((l) => l.pgid || l.pid)).size > 1) return "own-other";
+	if (await answersAsMetro(port)) return "ours";
+	if (!listeners.some((l) => ownPids.includes(l.pid) || (l.pgid && ownPids.includes(l.pgid)))) return "own-other";
+	onWait(port);
+	const deadline = Date.now() + waitMs;
+	while (Date.now() < deadline) {
+		await pause(1000);
+		if (await answersAsMetro(port, { timeoutMs: 5000 })) return "ours";
+	}
+	return "own-slow";
+}
+
+/** Why `up` cannot use a port, for its messages. */
+export function heldBy(status, port) {
+	if (status === "own-other") return `port ${port} is held by a process from this checkout's apps/mobile that is not its Metro`;
+	if (status === "own-slow") return `this checkout's Metro on :${port} does not answer; wait and rerun up, or run down, then up`;
+	return `port ${port} is in use by another process`;
 }
 
 /**
  * The port `up` uses. A pinned port is never moved. Otherwise `saved` (an earlier `up`'s port) when this
  * checkout's Metro still runs there, else the first port from `start` (up to +range) that is ours or free.
- * Returns { port, status } or { error }.
+ * A slow own Metro is an error, never a reason to move on. Returns { port, status, held? } (held: why `start`
+ * was skipped) or { error }.
  */
 export async function pickPort(start, statusOf, { pinned = false, saved = 0, range = 20 } = {}) {
+	const usable = (status) => status === "ours" || status === "free";
 	if (pinned) {
 		const status = await statusOf(start);
-		if (status === "taken") return { error: `port ${start} is in use by another process; unset RUN_MOBILE_PORT or pick another` };
+		if (status === "own-slow") return { error: heldBy(status, start) };
+		if (!usable(status)) return { error: `${heldBy(status, start)}; unset RUN_MOBILE_PORT or pick another` };
 		return { port: start, status };
 	}
-	if (saved && saved !== start && (await statusOf(saved)) === "ours") return { port: saved, status: "ours" };
+	if (saved && saved !== start) {
+		const status = await statusOf(saved);
+		if (status === "ours") return { port: saved, status };
+		if (status === "own-slow") return { error: heldBy(status, saved) };
+	}
+	let held;
 	for (let port = start; port <= start + range; port++) {
 		const status = await statusOf(port);
-		if (status !== "taken") return { port, status };
+		if (status === "own-slow") return { error: heldBy(status, port) };
+		if (usable(status)) return held ? { port, status, held } : { port, status };
+		held ??= status;
 	}
 	return { error: `ports ${start}-${start + range} are all in use; set RUN_MOBILE_PORT` };
 }
@@ -253,9 +300,11 @@ export async function pickPort(start, statusOf, { pinned = false, saved = 0, ran
 async function ensureMetro(ctx, { clear, env }) {
 	// The port an earlier `up` saved may have been taken since (APP-550): check it, never trust it.
 	const start = ctx.pinned ? ctx.port : ctx.basePort;
-	const picked = await pickPort(start, (p) => portStatus(ctx.mobile, p), { pinned: ctx.pinned, saved: ctx.port });
+	const ownPids = ownMetroPids(ctx.state);
+	const onWait = (p) => log(`this checkout's Metro on :${p} is slow to answer; waiting up to 30s`);
+	const picked = await pickPort(start, (p) => portStatus(ctx.mobile, p, { ownPids, onWait }), { pinned: ctx.pinned, saved: ctx.port });
 	if (picked.error) die(picked.error);
-	if (picked.status === "free" && picked.port !== start) log(`port ${start} is in use; using ${picked.port}`);
+	if (picked.held) log(`${heldBy(picked.held, start)}; using ${picked.port}`);
 	ctx.port = picked.port;
 	writeFileSync(ctx.portFile, String(ctx.port));
 	if (picked.status === "ours") {

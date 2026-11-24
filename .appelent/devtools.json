@@ -3,8 +3,8 @@
   "repository": "AppElent/developer-home",
   "scope": "project",
   "ref": "main",
-  "commit": "78f05ab8ca5ea7ac3924fb9a4e78dcd5c834f356",
-  "manifestHash": "efcc592a7a28306d89db0db11f7c28b5749bf7cc9b0abac0fdde478b9d28a553",
+  "commit": "47ae6c7409b1b9c6edc97a64f3184a897c512b4e",
+  "manifestHash": "c96e03e3485f5412e3ed5d319b64ba93be1e5d1dce18710fcd7c36c012dfdf1e",
   "files": {
     "docs/adr/.template.md": {
       "sha256": "f28b286102fb1a00512455a06896e5da3c47d67a14b0ee6c08fa84258af24adf",
@@ -504,11 +504,11 @@
       "sha256": "3676673615c25e7ceb75fa7534b68dcdbe99856c715fb79a11c4bafab99e4ea6"
     },
     "docs/standards/mobile-run.md": {
-      "sha256": "317a32265009731b1e4390645714ab711e596f037e86a3ba2aabb475efd2e0da",
-      "version": "2.3.0"
+      "sha256": "10e9b4622d23325b556d4749ac671cb2e296f446fe29455a887d8ba802354c6a",
+      "version": "2.3.1"
     },
     "scripts/run-mobile.mjs": {
-      "sha256": "9f1b08fa907d58458b32ef56fb5557ccbbb11be0defad33d74d37928ff7870d3"
+      "sha256": "9a632121da3e408650609382332d1bf1d42c023213f2b2fe3ce7b9f5ae1764f5"
     },
     "docs/standards/app-links.md": {
       "sha256": "6e1d3681c54cb36bd244adb1a180cc1b05e8305f395949a3a958fe04b878ccd3",
