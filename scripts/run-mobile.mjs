@@ -209,11 +209,26 @@ function bindable(port, host) {
 	});
 }
 
-/** "ours" (this checkout's Metro), "free", or "taken" (another checkout's Metro or any other process). */
-async function portStatus(ctx, port) {
-	const cwd = metroCwd(port);
-	if (cwd) return cwd === ctx.mobile ? "ours" : "taken";
-	return (await bindable(port, "127.0.0.1")) && (await bindable(port)) ? "free" : "taken";
+/** True when the listener on the port answers as a running Metro within the timeout. */
+export async function isMetro(port, { timeoutMs = 3000 } = {}) {
+	try {
+		const r = await fetch(`http://127.0.0.1:${port}/status`, { signal: AbortSignal.timeout(timeoutMs) });
+		return r.ok && (await r.text()).trim() === "packager-status:running";
+	} catch {
+		return false;
+	}
+}
+
+const isFree = async (port) => (await bindable(port, "127.0.0.1")) && (await bindable(port));
+
+/**
+ * "ours" (this checkout's Metro), "free", or "taken" (another checkout's Metro or any other process, also one
+ * this checkout started that does not answer as Metro).
+ */
+export async function portStatus(mobile, port, { cwdOf = metroCwd, answersAsMetro = isMetro, free = isFree } = {}) {
+	const cwd = cwdOf(port);
+	if (cwd) return cwd === mobile && (await answersAsMetro(port)) ? "ours" : "taken";
+	return (await free(port)) ? "free" : "taken";
 }
 
 /**
@@ -238,7 +253,7 @@ export async function pickPort(start, statusOf, { pinned = false, saved = 0, ran
 async function ensureMetro(ctx, { clear, env }) {
 	// The port an earlier `up` saved may have been taken since (APP-550): check it, never trust it.
 	const start = ctx.pinned ? ctx.port : ctx.basePort;
-	const picked = await pickPort(start, (p) => portStatus(ctx, p), { pinned: ctx.pinned, saved: ctx.port });
+	const picked = await pickPort(start, (p) => portStatus(ctx.mobile, p), { pinned: ctx.pinned, saved: ctx.port });
 	if (picked.error) die(picked.error);
 	if (picked.status === "free" && picked.port !== start) log(`port ${start} is in use; using ${picked.port}`);
 	ctx.port = picked.port;
@@ -255,14 +270,11 @@ async function ensureMetro(ctx, { clear, env }) {
 	child.unref();
 	writeFileSync(join(ctx.state, "metro.pid"), String(child.pid));
 	for (let i = 0; i < 90; i++) {
-		try {
-			const r = await fetch(`http://127.0.0.1:${ctx.port}/status`);
-			if ((await r.text()).includes("running")) {
-				const listener = run("lsof", ["-nP", `-iTCP:${ctx.port}`, "-sTCP:LISTEN", "-t"]).stdout.split("\n")[0].trim();
-				writeFileSync(join(ctx.state, "metro.listener"), listener);
-				return;
-			}
-		} catch {}
+		if (await isMetro(ctx.port)) {
+			const listener = run("lsof", ["-nP", `-iTCP:${ctx.port}`, "-sTCP:LISTEN", "-t"]).stdout.split("\n")[0].trim();
+			writeFileSync(join(ctx.state, "metro.listener"), listener);
+			return;
+		}
 		await sleep(1000);
 	}
 	die(`Metro did not come up; see ${join(ctx.state, "metro.log")}`);

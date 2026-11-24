@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when creating, preparing, or cleaning a worktree and its backend resources.
-version: 3.5.0
+version: 3.5.1
 applies_to: [all]
 ---
 
@@ -42,7 +42,7 @@ every app and editor, and cleans up what it created.
   applies its Convex values, writes client URLs, seeds, and records it for cleanup.
   Each cloud worktree costs one deployment of the team quota, so before creating one,
   `prepare` first reconciles this repository's workspaces whose checkout is gone.
-  When creation is refused for quota, nothing was created, so the ledger records the
+  When creation is refused for quota (`DeploymentQuotaReached`), nothing was created, so the ledger records the
   deployment as absent and `clean` finishes at once instead of waiting for an expiry.
 - Cleanup removes only what the ledger owns: scoped credentials, unchanged generated
   files, and the cloud deployments it created. `clean` and `gc --apply` delete an
