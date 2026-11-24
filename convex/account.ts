@@ -105,7 +105,7 @@ export async function exportStep(
 ): Promise<ExportPage> {
 	const table = step?.table ?? OWNED_TABLES[0];
 	const at = OWNED_TABLES.indexOf(table as TableNames);
-	if (at === -1) throw new Error("Unknown export table.");
+	if (at === -1) throw new ConvexError({ code: "unknownExportTable" });
 	const owned = USER_DATA[OWNED_TABLES[at]] as Owned<TableNames>;
 	const page = await loose(ctx, OWNED_TABLES[at])
 		.withIndex(owned.index, (q) => q.eq(owned.field, userId))

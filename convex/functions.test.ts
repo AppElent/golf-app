@@ -972,11 +972,15 @@ describe("data export", () => {
 
 	it("refuses a table it does not export", async () => {
 		const { alice } = await setup();
-		await expect(
-			alice.query(api.account.exportPage, {
+		const refused = await alice
+			.query(api.account.exportPage, {
 				step: { table: "holes", cursor: null },
-			}),
-		).rejects.toThrow("Unknown export table.");
+			})
+			.catch((e: unknown) => e);
+		expect(refused).toBeInstanceOf(ConvexError);
+		expect((refused as ConvexError<{ code: string }>).data.code).toBe(
+			"unknownExportTable",
+		);
 	});
 });
 
