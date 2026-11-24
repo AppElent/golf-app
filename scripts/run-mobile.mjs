@@ -18,6 +18,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, openSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { createServer } from "node:net";
 import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -133,11 +134,11 @@ function context() {
 	const id = checkoutId(mobile);
 	const state = process.env.RUN_MOBILE_STATE || join(tmpdir(), `run-mobile-${id}`);
 	mkdirSync(state, { recursive: true });
-	// `up` moves to a free port when another checkout's Metro holds the app's port; later commands reuse it.
+	// `up` moves to the next free port when another process holds the app's port; later commands reuse it.
 	const portFile = join(state, "port");
 	const saved = existsSync(portFile) ? Number(readFileSync(portFile, "utf8")) : 0;
 	const port = Number(process.env.RUN_MOBILE_PORT || saved || config.port);
-	return { repo, mobile, id, port, portFile, state, bundleId: config.bundleId, pinned: Boolean(process.env.RUN_MOBILE_PORT) };
+	return { repo, mobile, id, port, basePort: config.port, portFile, state, bundleId: config.bundleId, pinned: Boolean(process.env.RUN_MOBILE_PORT) };
 }
 
 function devices() {
@@ -195,27 +196,54 @@ function metroCwd(port) {
 	const pid = run("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-t"]).stdout.split("\n")[0].trim();
 	if (!pid) return "";
 	const line = run("lsof", ["-a", "-p", pid, "-d", "cwd", "-Fn"]).stdout.split("\n").find((l) => l.startsWith("n"));
-	return line ? line.slice(1) : "";
+	// A listener whose folder lsof cannot read still holds the port.
+	return line ? line.slice(1) : "?";
+}
+
+/** True when nothing holds the port: lsof misses some listeners, so try to bind it as Metro would. */
+function bindable(port, host) {
+	return new Promise((done) => {
+		const server = createServer();
+		server.once("error", () => done(false));
+		server.listen({ port, host, exclusive: true }, () => server.close(() => done(true)));
+	});
+}
+
+/** "ours" (this checkout's Metro), "free", or "taken" (another checkout's Metro or any other process). */
+async function portStatus(ctx, port) {
+	const cwd = metroCwd(port);
+	if (cwd) return cwd === ctx.mobile ? "ours" : "taken";
+	return (await bindable(port, "127.0.0.1")) && (await bindable(port)) ? "free" : "taken";
+}
+
+/**
+ * The port `up` uses. A pinned port is never moved. Otherwise `saved` (an earlier `up`'s port) when this
+ * checkout's Metro still runs there, else the first port from `start` (up to +range) that is ours or free.
+ * Returns { port, status } or { error }.
+ */
+export async function pickPort(start, statusOf, { pinned = false, saved = 0, range = 20 } = {}) {
+	if (pinned) {
+		const status = await statusOf(start);
+		if (status === "taken") return { error: `port ${start} is in use by another process; unset RUN_MOBILE_PORT or pick another` };
+		return { port: start, status };
+	}
+	if (saved && saved !== start && (await statusOf(saved)) === "ours") return { port: saved, status: "ours" };
+	for (let port = start; port <= start + range; port++) {
+		const status = await statusOf(port);
+		if (status !== "taken") return { port, status };
+	}
+	return { error: `ports ${start}-${start + range} are all in use; set RUN_MOBILE_PORT` };
 }
 
 async function ensureMetro(ctx, { clear, env }) {
-	let cwd = metroCwd(ctx.port);
-	if (cwd && cwd !== ctx.mobile && !ctx.pinned) {
-		const taken = ctx.port;
-		for (let p = taken + 1; p <= taken + 20; p++) {
-			const owner = metroCwd(p);
-			if (!owner || owner === ctx.mobile) {
-				ctx.port = p;
-				cwd = owner;
-				break;
-			}
-		}
-		if (ctx.port === taken) die(`ports ${taken}-${taken + 20} are all Metro for other checkouts; set RUN_MOBILE_PORT`);
-		log(`port ${taken} is Metro for another checkout; using ${ctx.port}`);
-	}
+	// The port an earlier `up` saved may have been taken since (APP-550): check it, never trust it.
+	const start = ctx.pinned ? ctx.port : ctx.basePort;
+	const picked = await pickPort(start, (p) => portStatus(ctx, p), { pinned: ctx.pinned, saved: ctx.port });
+	if (picked.error) die(picked.error);
+	if (picked.status === "free" && picked.port !== start) log(`port ${start} is in use; using ${picked.port}`);
+	ctx.port = picked.port;
 	writeFileSync(ctx.portFile, String(ctx.port));
-	if (cwd) {
-		if (cwd !== ctx.mobile) die(`port ${ctx.port} is Metro for ${cwd}, not this checkout; unset RUN_MOBILE_PORT or pick another`);
+	if (picked.status === "ours") {
 		if (clear || Object.keys(env).length) die("Metro is already running; run down, then up with these flags");
 		log(`reusing Metro on :${ctx.port}`);
 		return;

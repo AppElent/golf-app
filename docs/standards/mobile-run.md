@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read before running, driving, or screenshotting an app's mobile build on an iOS simulator.
-version: 2.1.0
+version: 2.2.0
 applies_to: [mobile]
 ---
 
@@ -18,7 +18,7 @@ Every app runs its Expo dev client on a simulator the same way: `node scripts/ru
   "runMobile": { "bundleId": "com.appelent.foundry.dev", "port": 8090 }
   ```
 
-  `bundleId` is the development variant. Each app has its own base port: Foundry 8090, Fairway 8091, Gather 8092, Arcade Club 8093. When another checkout's Metro holds it, `up` moves to the next free port (up to +20) and later commands reuse it; `RUN_MOBILE_PORT` pins a port.
+  `bundleId` is the development variant. Each app has its own base port: Foundry 8090, Fairway 8091, Gather 8092, Arcade Club 8093. When another checkout's Metro or any other process holds it, `up` moves to the next free port (up to +20) and later commands reuse it. Each `up` checks the saved port again, so a port another checkout took mid-session is skipped; `RUN_MOBILE_PORT` pins a port and fails if it is taken.
 - **Devices come from `sim`.** `up` claims the simulator with `~/.agents/bin/sim claim ios run-<checkout>` (today named `agent-<checkout folder>-run-<checkout id>`; `up` logs the name), and `down` returns it with `sim release`. Run `down` before the thread ends, also after a failed `up` (it says when a simulator stays claimed). Never create a simulator by hand. Every boot follows [Simulator hygiene](#simulator-hygiene).
 - **Bash only.** Drive the app with `run-mobile.mjs ad …` (agent-device), `maestro --device "$(node scripts/run-mobile.mjs udid)"`, or `xcrun simctl` with that UDID. Never use the Claude desktop app's iOS Simulator tool or computer use on Simulator: the desktop app asks Eric to approve every new device ([agent permissions](agent-permissions.md#driving-simulators-unattended)).
 - **Backend check.** `up` stops when the bundle Metro serves inlines a different `EXPO_PUBLIC_CONVEX_URL` than `apps/mobile/.env.local` (and `.env`). Make no writes until `backend` passes. The check prints only Convex origins: bundles inline the test user's password, so never grep or print a bundle.

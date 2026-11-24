@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when adding or changing an app's account portal contract (`convex/accountPortal.ts`), or building the portal that calls it.
-version: 1.0.0
+version: 1.1.0
 applies_to: [backend, web]
 ---
 
@@ -17,7 +17,7 @@ Every app exposes the same four functions in `convex/accountPortal.ts`, so the c
 - A caller who never used the app gets `null` from `summary` and an empty export, never an error, and no user row is created by any portal call.
 - `summary` (query) returns `null` or `{ contract: 1, lastActiveAt, counts }`:
   - `lastActiveAt`: epoch ms of the caller's latest write, or `null` when the app does not track it.
-  - `counts`: `{ key, count, more }[]`, one per kind of data the person owns, in display order. `key` is a stable camelCase name (`recipes`, `sets`); the portal owns the labels per app and locale. Each count reads at most 1,000 rows (`take(1001)`); `more: true` means "1,000 or more". Apps with a stored counter return the exact number and `more: false`.
+  - `counts`: `{ key, count, more }[]`, one per kind of data the person owns, in display order. `key` is a stable camelCase name (`recipes`, `sets`); the portal owns the labels per app and locale. Each count reads at most 1,000 rows (`take(1001)`); `more: true` means "at least this many": the count hit the 1,000 cap, or the app stopped counting early to stay inside Convex read limits, so `count` can be under 1,000, even 0. The portal shows a floor ("120+") and an uncounted 0 as "not counted". Apps with a stored counter return the exact number and `more: false`.
 - `deletionBlocker` (query) returns `null` or `{ code, params }`, a stable code from the app's error catalog (an active session, data others depend on). The portal shows it and offers no delete while it is set.
 - `exportPage` (query) takes `{ cursor: string | null }` and returns `{ contract: 1, app, tables, next }`. `tables` is `Record<string, unknown[]>` for this page only; `next` is an opaque string or `null` when done. The cursor encodes the app's own step (table, group, page cursor) as JSON; the portal never parses it. Pages stay within one query's read limits; the content rules are those of the app's in-app export.
 - `deleteAppData` (mutation) takes `{ expectedSubject }` and returns `{ done }`. It deletes one bounded batch of this app's data for the caller and keeps the Clerk user; the portal repeats it until `done`. It refuses while `deletionBlocker` is set and when the subject differs. Deleting the whole AppElent account (all apps, then the Clerk user) is the portal's job, in that order.

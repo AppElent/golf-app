@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when enabling or changing Dependabot, or reviewing automated dependency PRs.
-version: 2.2.0
+version: 2.2.1
 applies_to: [web, mobile, backend]
 ---
 
@@ -47,9 +47,9 @@ Dependabot delivers security fixes and routine bumps as small, reviewable PRs; a
    ```bash
    existing=$(gh label list --limit 500 --json name --jq '.[].name')
    create() { grep -qx "$1" <<<"$existing" || gh label create "$1" --color "$2" --description "$3"; }
-   create blast-radius:low 0e8a16 "UI, copy, tests, single-module refactors, docs"
-   create blast-radius:med fbca04 "Data model with migration, new dependencies, CI/workflows, shared behaviour"
-   create blast-radius:high b60205 "Auth, payments, production config, secrets, data deletion, permissions"
+   create blast-radius:low 0e8a16 "Copy, styling, small fixes, tests, docs. Green CI and self-check"
+   create blast-radius:med fbca04 "Features, UI flows, shared behaviour, new dependencies. One code review"
+   create blast-radius:high b60205 "Schema, migrations, deletes, auth, payments, secrets, CI/deploy, major upgrades. Eric merges"
    ```
 
 4. Note the Dependabot setup in the project's dependency-upgrade runbook.

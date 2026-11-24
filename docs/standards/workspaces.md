@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when creating, preparing, or cleaning a worktree and its backend resources.
-version: 3.4.0
+version: 3.5.0
 applies_to: [all]
 ---
 
@@ -30,7 +30,9 @@ every app and editor, and cleans up what it created.
   same options to apply the backend values (only that step runs). That rerun first
   checks the generated files and stops with `workspace.resume.drift` on a hand edit
   instead of adopting it (changed deployment selectors alone are accepted, since
-  `convex dev` may rewrite the URL). When routing values
+  `convex dev` may rewrite the URL). Resuming a failed prepare accepts the same
+  selector rewrite, so starting `convex dev` after a failure does not strand the
+  ledger. When routing values
   into a running backend fails, the error names the port and the process that holds it.
   `clean` and `gc --apply` only release a local deployment's ledger entry; the shared
   deployment and other worktrees' backends stay.
@@ -40,6 +42,8 @@ every app and editor, and cleans up what it created.
   applies its Convex values, writes client URLs, seeds, and records it for cleanup.
   Each cloud worktree costs one deployment of the team quota, so before creating one,
   `prepare` first reconciles this repository's workspaces whose checkout is gone.
+  When creation is refused for quota, nothing was created, so the ledger records the
+  deployment as absent and `clean` finishes at once instead of waiting for an expiry.
 - Cleanup removes only what the ledger owns: scoped credentials, unchanged generated
   files, and the cloud deployments it created. `clean` and `gc --apply` delete an
   owned deployment through the Convex Management API with the signed-in CLI's token,
