@@ -3,8 +3,8 @@
   "repository": "AppElent/developer-home",
   "scope": "project",
   "ref": "main",
-  "commit": "local",
-  "manifestHash": "7b0cf9761c928c2454367758fe9848cfe25a93f627d631cd1dbaf4d697459293",
+  "commit": "78f05ab8ca5ea7ac3924fb9a4e78dcd5c834f356",
+  "manifestHash": "efcc592a7a28306d89db0db11f7c28b5749bf7cc9b0abac0fdde478b9d28a553",
   "files": {
     "docs/adr/.template.md": {
       "sha256": "f28b286102fb1a00512455a06896e5da3c47d67a14b0ee6c08fa84258af24adf",
@@ -135,7 +135,7 @@
       "sha256": "2b5fc7ca3a68216d3c63124808e073c093899f5020312349ee9be43246a75b35"
     },
     "docs/standards/baseline.md": {
-      "sha256": "ec7f02aa38c80e93139f2a6157ba6b3a613f5c3a50a656e515759f45f496a2b4",
+      "sha256": "1d7939d2ccd2107624d08a597d699f6967ac2f4a3fa7d9544604f1f578c29d9b",
       "version": "2.4.1"
     },
     "docs/standards/baseline/toolkit.md": {
@@ -335,7 +335,7 @@
       "sha256": "6336676db6dcd2e4801992cc1b878ffafa65719314a27861247a6c8f73fd0c04"
     },
     "scripts/check-project.mjs": {
-      "sha256": "bdef437ccb5f208566ed0498304a393079d08068e299c45840bb8cfea64bf425"
+      "sha256": "ee4c68f15c2c5bba74c0e3d643d57ae13e4bf623841bd398950e6cd0c6b34dcb"
     },
     "scripts/env.mjs": {
       "sha256": "9347b3602296c5d9d31b7fab503e2ef696886f2f3de4c9899d44b459e8add087"

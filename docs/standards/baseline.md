@@ -70,7 +70,7 @@ Run from the repository root.
 ## Verify
 
 - `node scripts/sync-devtools.mjs --check` passes.
-- `node scripts/check-project.mjs` passes with no warnings. It reads package, CI, Wrangler, and routing metadata only: no app code, dotenv values, or provider calls. Besides routing files, it warns on `*`, empty, and dist-tag ranges (a `*` peer dependency is fine), npm aliases, `@typescript/native`, a `typescript` range off the 6.0 line, a CI workflow without a block-style `check` job or whose `check` job sets `name:` or a `strategy`, Wrangler environments other than `dev`, `staging`, and `pr`, and a `wrangler.toml`. Once it is clean, CI's `check` job runs `node scripts/check-project.mjs --strict`, which fails on warnings, so new drift blocks the pull request.
+- `node scripts/check-project.mjs` passes with no warnings. It reads package, CI, Wrangler, and routing metadata only: no app code, dotenv values, or provider calls. Besides routing files, it warns on `*`, empty, and dist-tag ranges (a `*` peer dependency is fine), npm aliases (except `react-native` aliased to a pinned `react-native-tvos` version, for an Apple TV app), `@typescript/native`, a `typescript` range off the 6.0 line, a CI workflow without a block-style `check` job or whose `check` job sets `name:` or a `strategy`, Wrangler environments other than `dev`, `staging`, and `pr`, and a `wrangler.toml`. Once it is clean, CI's `check` job runs `node scripts/check-project.mjs --strict`, which fails on warnings, so new drift blocks the pull request.
 - Install, check, typecheck, test, and build pass for every target.
 
 ## Migration
