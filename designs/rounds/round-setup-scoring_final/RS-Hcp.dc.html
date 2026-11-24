@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Handicaptabel</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#e4e7e1;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif}
+.th-light{--bg:#f3f4ef;--surface:#ffffff;--surface2:#e7ebe3;--accent:#1a7348;--accentFill:#1a7348;--onAccent:#ffffff;--accentDim:rgba(26,115,72,.10);--accentInk:#1c6b45;--text:#16241c;--muted:#506157;--faint:#606b57;--sep:rgba(60,62,50,.12);--borderStrong:rgba(26,32,21,.25);--danger:#b42332;--scrim:rgba(10,20,14,.38)}
+.th-dark{--bg:#08130d;--surface:#11201a;--surface2:#1a2c23;--accent:#3fbf7a;--accentFill:#3fbf7a;--onAccent:#06110b;--accentDim:rgba(63,191,122,.14);--accentInk:#7fe0a6;--text:#f1f5f0;--muted:#9aaa9f;--faint:#919789;--sep:rgba(255,255,255,.14);--borderStrong:rgba(255,255,255,.22);--danger:#ff6b6b;--scrim:rgba(0,0,0,.55)}
+.board{display:flex;gap:48px;padding:32px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px}
+.cap{font-size:14px;font-weight:600;color:#36423b;max-width:390px}
+.phone{width:390px;height:844px;border-radius:48px;overflow:hidden;position:relative;background:var(--bg);color:var(--text);border:1px solid rgba(0,0,0,.18)}
+.scr{position:absolute;left:0;right:0;top:0;bottom:0;padding:58px 16px 120px;display:flex;flex-direction:column;gap:18px;overflow:hidden}
+.nav{display:flex;align-items:center;justify-content:space-between;min-height:44px}
+.navbtn{border:0;background:var(--surface);color:var(--accent);font:600 16px/1 inherit;min-height:40px;padding:0 14px;border-radius:999px}
+.navt{font-size:17px;font-weight:600}
+.hdr{font-size:13px;color:var(--muted);padding:0 4px 8px;font-weight:600}
+.foot{font-size:13px;color:var(--muted);padding:8px 4px 0;line-height:1.35}
+.cta{position:absolute;left:16px;right:16px;bottom:34px;min-height:52px;border-radius:999px;border:0;background:var(--accentFill);color:var(--onAccent);font:700 17px/1 inherit}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tiles3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tile{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;min-height:58px;padding:8px 12px;border-radius:14px;border:1.5px solid var(--borderStrong);background:var(--surface);color:var(--text);font:600 16px/1.2 inherit;text-align:left;box-sizing:border-box}
+.tile small{font-size:12px;font-weight:500;color:var(--muted)}
+.tile.on{background:var(--accentFill);border-color:var(--accentFill);color:var(--onAccent)}
+.tile.on small{color:var(--onAccent)}
+.tile.off{border-style:dashed;color:var(--muted);background:transparent}
+.chips{display:flex;gap:8px;overflow:hidden}
+.chip{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:999px;border:1.5px solid var(--borderStrong);background:var(--surface);color:var(--text);font:600 15px/1 inherit;white-space:nowrap}
+.chip small{font-weight:500;font-size:13px;color:var(--muted)}
+.chip.on{background:var(--accentFill);border-color:var(--accentFill);color:var(--onAccent)}
+.chip.on small{color:var(--onAccent)}
+.tdot{width:14px;height:14px;border-radius:7px;border:1.5px solid var(--borderStrong);flex:none}
+.list{background:var(--surface);border-radius:14px;overflow:hidden}
+.pr{display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 16px;border-top:1px solid var(--sep);font-size:17px;color:var(--text);background:none;border-left:0;border-right:0;border-bottom:0;width:100%;text-align:left;box-sizing:border-box;font-family:inherit}
+.pr:first-child{border-top:0}
+.av{width:34px;height:34px;border-radius:17px;background:var(--accentDim);color:var(--accentInk);font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;flex:none}
+.pn{flex:1;display:flex;flex-direction:column;gap:2px}
+.pn small{font-size:13px;color:var(--muted)}
+.pv{font-variant-numeric:tabular-nums;font-size:15px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.add{color:var(--accent);font-weight:600}
+.seg{display:flex;align-items:center;gap:10px;min-height:50px;padding:0 10px 0 16px;font-size:17px}
+.segc{margin-left:auto;display:flex;background:var(--surface2);border-radius:9px;padding:2px}
+.segc span{padding:7px 14px;font-size:13px;font-weight:600;border-radius:7px}
+.segc .on{background:var(--accentFill);color:var(--onAccent)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-radius:22px 22px 0 0;display:flex;flex-direction:column}
+.grab{width:36px;height:5px;border-radius:3px;background:var(--borderStrong);margin:8px auto 0}
+.sh-h{display:flex;align-items:center;min-height:52px;padding:0 8px}
+.sh-a{min-width:84px;min-height:44px;border:0;background:none;font:500 17px/1 inherit;color:var(--muted);text-align:left;padding:0 8px}
+.sh-s{color:var(--accent);font-weight:700;text-align:right}
+.sh-t{flex:1;text-align:center;font-size:17px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:1px}
+.sh-t small{font-size:12px;font-weight:500;color:var(--muted)}
+.body{padding:4px 16px 16px;display:flex;flex-direction:column;gap:10px}
+.scrim{position:absolute;left:0;right:0;top:0;bottom:0;background:var(--scrim)}
+.stand{background:var(--accentDim);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:2px}
+.stand b{font-size:16px}
+.stand span{font-size:13px;color:var(--muted)}
+.tag{display:inline-flex;align-items:center;font-size:12px;font-weight:700;color:var(--accentInk);background:var(--accentDim);border-radius:999px;padding:2px 8px}
+.ghost{position:absolute;left:0;right:0;top:0;height:200px;padding:58px 20px 0;color:var(--muted);font-size:15px}
+</style>
+</helmet>
+<div class="board">
+<sc-for list="{{themes}}" as="th" hint-placeholder-count="2">
+<div class="col">
+<div class="cap">{{th.label}}</div>
+<div class="phone {{th.cls}}">
+<div class="ghost">{{th.behind}}</div>
+<div class="scrim"></div>
+<div class="sheet" style="top:54px">
+<div class="grab"></div>
+<div class="sh-h"><span style="width:84px"></span><span class="sh-t">Slagen per hole<small>Tee Geel · 18 holes</small></span><button class="sh-a sh-s" type="button">Klaar</button></div>
+<div class="body" style="gap:8px">
+<table style="width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums;background:var(--surface);border-radius:14px;overflow:hidden">
+<thead><tr style="color:var(--muted);font-size:12px;text-align:center"><th scope="col" style="padding:8px 4px;text-align:left;padding-left:12px;font-weight:600">Hole</th><th scope="col" style="font-weight:600">Par</th><th scope="col" style="font-weight:600">HCP</th><sc-for list="{{players}}" as="p" hint-placeholder-count="3"><th scope="col" style="font-weight:600">{{p.name}}<br><span style="font-weight:500">{{p.ph}}</span></th></sc-for></tr></thead>
+<tbody>
+<sc-for list="{{th.rows}}" as="r" hint-placeholder-count="18">
+<tr style="text-align:center;border-top:1px solid var(--sep);{{r.style}}"><th scope="row" style="text-align:left;padding:4px 4px 4px 12px;font-weight:600;height:24px">{{r.hole}}</th><td>{{r.par}}</td><td style="color:var(--muted)">{{r.si}}</td><sc-for list="{{r.dots}}" as="d" hint-placeholder-count="3"><td aria-label="{{d.label}}" style="color:var(--accent);font-size:11px;letter-spacing:1px">{{d.v}}</td></sc-for></tr>
+</sc-for>
+</tbody>
+</table>
+<div class="foot" style="padding-top:2px">● = één slag extra op die hole. Stableford en netto scores rekenen hiermee.</div>
+</div>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 892, "height": 940}}'>
+class Component extends DCLogic {
+renderVals() {
+return {"players": [{"name": "Eric", "ph": "14"}, {"name": "Piet", "ph": "19"}, {"name": "Jan", "ph": "26"}], "themes": [{"label": "Handicaptabel — licht · vanuit setup (Slagen per hole ›)", "cls": "th-light", "behind": "Ronde instellen", "rows": [{"hole": "1", "par": "4", "si": "7", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●●", "label": "Jan: 2 slagen"}], "style": ""}, {"hole": "2", "par": "3", "si": "15", "dots": [{"v": "", "label": "Eric: 0 slagen"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●", "label": "Jan: 1 slag"}], "style": ""}, {"hole": "3", "par": "5", "si": "3", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●●", "label": "Jan: 2 slagen"}], "style": ""}, {"hole": "4", "par": "4", "si": "11", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●", "label": "Jan: 1 slag"}], "style": ""}, {"hole": "5", "par": "4", "si": "1", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●●", "label": "Piet: 2 slagen"}, {"v": "●●", "label": "Jan: 2 slagen"}], "style": ""}, {"hole": "6", "par": "3", "si": "17", "dots": [{"v": "", "label": "Eric: 0 slagen"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●", "label": "Jan: 1 slag"}], "style": ""}, {"hole": "7", "par": "4", "si": "5", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●●", "label": "Jan: 2 slagen"}], "style": ""}, {"hole": "8", "par": "5", "si": "13", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●", "label": "Jan: 1 slag"}], "style": ""}, {"hole": "9", "par": "4", "si": "9", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●", "label": "Jan: 1 slag"}], "style": ""}, {"hole": "10", "par": "4", "si": "8", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●●", "label": "Jan: 2 slagen"}], "style": ""}, {"hole": "11", "par": "3", "si": "16", "dots": [{"v": "", "label": "Eric: 0 slagen"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●", "label": "Jan: 1 slag"}], "style": ""}, {"hole": "12", "par": "4", "si": "2", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●●", "label": "Jan: 2 slagen"}], "style": ""}, {"hole": "13", "par": "5", "si": "12", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●", "label": "Jan: 1 slag"}], "style": ""}, {"hole": "14", "par": "4", "si": "4", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●●", "label": "Jan: 2 slagen"}], "style": ""}, {"hole": "15", "par": "3", "si": "18", "dots": [{"v": "", "label": "Eric: 0 slagen"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●", "label": "Jan: 1 slag"}], "style": ""}, {"hole": "16", "par": "4", "si": "6", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●●", "label": "Jan: 2 slagen"}], "style": ""}, {"hole": "17", "par": "4", "si": "14", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●", "label": "Jan: 1 slag"}], "style": ""}, {"hole": "18", "par": "5", "si": "10", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●", "label": "Jan: 1 slag"}], "style": ""}]}, {"label": "Handicaptabel — donker · in de ronde, huidige hole gemarkeerd (vanuit scorekaart of Play-menu)", "cls": "th-dark", "behind": "Hole 7", "rows": [{"hole": "1", "par": "4", "si": "7", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●●", "label": "Jan: 2 slagen"}], "style": ""}, {"hole": "2", "par": "3", "si": "15", "dots": [{"v": "", "label": "Eric: 0 slagen"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●", "label": "Jan: 1 slag"}], "style": ""}, {"hole": "3", "par": "5", "si": "3", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●●", "label": "Jan: 2 slagen"}], "style": ""}, {"hole": "4", "par": "4", "si": "11", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●", "label": "Jan: 1 slag"}], "style": ""}, {"hole": "5", "par": "4", "si": "1", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●●", "label": "Piet: 2 slagen"}, {"v": "●●", "label": "Jan: 2 slagen"}], "style": ""}, {"hole": "6", "par": "3", "si": "17", "dots": [{"v": "", "label": "Eric: 0 slagen"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●", "label": "Jan: 1 slag"}], "style": ""}, {"hole": "7", "par": "4", "si": "5", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●●", "label": "Jan: 2 slagen"}], "style": "background:var(--accentDim);font-weight:700"}, {"hole": "8", "par": "5", "si": "13", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●", "label": "Jan: 1 slag"}], "style": ""}, {"hole": "9", "par": "4", "si": "9", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●", "label": "Jan: 1 slag"}], "style": ""}, {"hole": "10", "par": "4", "si": "8", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●●", "label": "Jan: 2 slagen"}], "style": ""}, {"hole": "11", "par": "3", "si": "16", "dots": [{"v": "", "label": "Eric: 0 slagen"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●", "label": "Jan: 1 slag"}], "style": ""}, {"hole": "12", "par": "4", "si": "2", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●●", "label": "Jan: 2 slagen"}], "style": ""}, {"hole": "13", "par": "5", "si": "12", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●", "label": "Jan: 1 slag"}], "style": ""}, {"hole": "14", "par": "4", "si": "4", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●●", "label": "Jan: 2 slagen"}], "style": ""}, {"hole": "15", "par": "3", "si": "18", "dots": [{"v": "", "label": "Eric: 0 slagen"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●", "label": "Jan: 1 slag"}], "style": ""}, {"hole": "16", "par": "4", "si": "6", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●●", "label": "Jan: 2 slagen"}], "style": ""}, {"hole": "17", "par": "4", "si": "14", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●", "label": "Jan: 1 slag"}], "style": ""}, {"hole": "18", "par": "5", "si": "10", "dots": [{"v": "●", "label": "Eric: 1 slag"}, {"v": "●", "label": "Piet: 1 slag"}, {"v": "●", "label": "Jan: 1 slag"}], "style": ""}]}]};
+}
+}
+</script>
+</body>
+</html>

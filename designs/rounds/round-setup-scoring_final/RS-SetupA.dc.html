@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Ronde instellen A: tegels</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#e4e7e1;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif}
+.th-light{--bg:#f3f4ef;--surface:#ffffff;--surface2:#e7ebe3;--accent:#1a7348;--accentFill:#1a7348;--onAccent:#ffffff;--accentDim:rgba(26,115,72,.10);--accentInk:#1c6b45;--text:#16241c;--muted:#506157;--faint:#606b57;--sep:rgba(60,62,50,.12);--borderStrong:rgba(26,32,21,.25);--danger:#b42332;--scrim:rgba(10,20,14,.38)}
+.th-dark{--bg:#08130d;--surface:#11201a;--surface2:#1a2c23;--accent:#3fbf7a;--accentFill:#3fbf7a;--onAccent:#06110b;--accentDim:rgba(63,191,122,.14);--accentInk:#7fe0a6;--text:#f1f5f0;--muted:#9aaa9f;--faint:#919789;--sep:rgba(255,255,255,.14);--borderStrong:rgba(255,255,255,.22);--danger:#ff6b6b;--scrim:rgba(0,0,0,.55)}
+.board{display:flex;gap:48px;padding:32px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px}
+.cap{font-size:14px;font-weight:600;color:#36423b;max-width:390px}
+.phone{width:390px;height:844px;border-radius:48px;overflow:hidden;position:relative;background:var(--bg);color:var(--text);border:1px solid rgba(0,0,0,.18)}
+.scr{position:absolute;left:0;right:0;top:0;bottom:0;padding:58px 16px 120px;display:flex;flex-direction:column;gap:18px;overflow:hidden}
+.nav{display:flex;align-items:center;justify-content:space-between;min-height:44px}
+.navbtn{border:0;background:var(--surface);color:var(--accent);font:600 16px/1 inherit;min-height:40px;padding:0 14px;border-radius:999px}
+.navt{font-size:17px;font-weight:600}
+.hdr{font-size:13px;color:var(--muted);padding:0 4px 8px;font-weight:600}
+.foot{font-size:13px;color:var(--muted);padding:8px 4px 0;line-height:1.35}
+.cta{position:absolute;left:16px;right:16px;bottom:34px;min-height:52px;border-radius:999px;border:0;background:var(--accentFill);color:var(--onAccent);font:700 17px/1 inherit}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tiles3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tile{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;min-height:58px;padding:8px 12px;border-radius:14px;border:1.5px solid var(--borderStrong);background:var(--surface);color:var(--text);font:600 16px/1.2 inherit;text-align:left;box-sizing:border-box}
+.tile small{font-size:12px;font-weight:500;color:var(--muted)}
+.tile.on{background:var(--accentFill);border-color:var(--accentFill);color:var(--onAccent)}
+.tile.on small{color:var(--onAccent)}
+.tile.off{border-style:dashed;color:var(--muted);background:transparent}
+.chips{display:flex;gap:8px;overflow:hidden}
+.chip{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:999px;border:1.5px solid var(--borderStrong);background:var(--surface);color:var(--text);font:600 15px/1 inherit;white-space:nowrap}
+.chip small{font-weight:500;font-size:13px;color:var(--muted)}
+.chip.on{background:var(--accentFill);border-color:var(--accentFill);color:var(--onAccent)}
+.chip.on small{color:var(--onAccent)}
+.tdot{width:14px;height:14px;border-radius:7px;border:1.5px solid var(--borderStrong);flex:none}
+.list{background:var(--surface);border-radius:14px;overflow:hidden}
+.pr{display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 16px;border-top:1px solid var(--sep);font-size:17px;color:var(--text);background:none;border-left:0;border-right:0;border-bottom:0;width:100%;text-align:left;box-sizing:border-box;font-family:inherit}
+.pr:first-child{border-top:0}
+.av{width:34px;height:34px;border-radius:17px;background:var(--accentDim);color:var(--accentInk);font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;flex:none}
+.pn{flex:1;display:flex;flex-direction:column;gap:2px}
+.pn small{font-size:13px;color:var(--muted)}
+.pv{font-variant-numeric:tabular-nums;font-size:15px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.add{color:var(--accent);font-weight:600}
+.seg{display:flex;align-items:center;gap:10px;min-height:50px;padding:0 10px 0 16px;font-size:17px}
+.segc{margin-left:auto;display:flex;background:var(--surface2);border-radius:9px;padding:2px}
+.segc span{padding:7px 14px;font-size:13px;font-weight:600;border-radius:7px}
+.segc .on{background:var(--accentFill);color:var(--onAccent)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-radius:22px 22px 0 0;display:flex;flex-direction:column}
+.grab{width:36px;height:5px;border-radius:3px;background:var(--borderStrong);margin:8px auto 0}
+.sh-h{display:flex;align-items:center;min-height:52px;padding:0 8px}
+.sh-a{min-width:84px;min-height:44px;border:0;background:none;font:500 17px/1 inherit;color:var(--muted);text-align:left;padding:0 8px}
+.sh-s{color:var(--accent);font-weight:700;text-align:right}
+.sh-t{flex:1;text-align:center;font-size:17px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:1px}
+.sh-t small{font-size:12px;font-weight:500;color:var(--muted)}
+.body{padding:4px 16px 16px;display:flex;flex-direction:column;gap:10px}
+.scrim{position:absolute;left:0;right:0;top:0;bottom:0;background:var(--scrim)}
+.stand{background:var(--accentDim);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:2px}
+.stand b{font-size:16px}
+.stand span{font-size:13px;color:var(--muted)}
+.tag{display:inline-flex;align-items:center;font-size:12px;font-weight:700;color:var(--accentInk);background:var(--accentDim);border-radius:999px;padding:2px 8px}
+.ghost{position:absolute;left:0;right:0;top:0;height:200px;padding:58px 20px 0;color:var(--muted);font-size:15px}
+</style>
+</helmet>
+<div class="board">
+<sc-for list="{{themes}}" as="th" hint-placeholder-count="2">
+<div class="col">
+<div class="cap">{{th.label}}</div>
+<div class="phone {{th.cls}}">
+<div class="scr">
+<div class="nav"><button class="navbtn" type="button">Annuleren</button><span class="navt">Golfclub De Pan</span><span style="width:96px"></span></div>
+<div>
+<div class="hdr">Holes</div>
+<div class="tiles" role="group" aria-label="Holes">
+<sc-for list="{{th.loops}}" as="l" hint-placeholder-count="2"><button type="button" class="tile {{l.cls}}" aria-pressed="{{l.on}}">{{l.name}}<small>{{l.sub}}</small></button></sc-for>
+</div>
+<div class="foot">{{th.holesFoot}}</div>
+</div>
+<div>
+<div class="hdr">Tee</div>
+<div class="chips" role="radiogroup" aria-label="Tee">
+<sc-for list="{{tees}}" as="t" hint-placeholder-count="3"><button type="button" role="radio" aria-checked="{{t.on}}" class="chip {{t.cls}}"><span class="tdot" style="background:{{t.color}}"></span>{{t.name}}<small>{{t.len}}</small></button></sc-for>
+</div>
+</div>
+<div>
+<div class="hdr">Spelvorm</div>
+<div class="tiles" role="radiogroup" aria-label="Spelvorm">
+<sc-for list="{{th.formats}}" as="f" hint-placeholder-count="6"><button type="button" role="radio" aria-checked="{{f.on}}" class="tile {{f.cls}}">{{f.name}}<small>{{f.sub}}</small></button></sc-for>
+</div>
+<div class="foot">{{th.formatFoot}}</div>
+</div>
+<div>
+<div class="hdr">Spelers</div>
+<div class="list">
+<sc-for list="{{th.players}}" as="p" hint-placeholder-count="2"><button type="button" class="pr"><span class="av">{{p.ini}}</span><span class="pn">{{p.name}}<small>{{p.sub}}</small></span><span class="pv">{{p.ph}}<svg width="8" height="13" viewBox="0 0 8 13" aria-hidden="true"><path d="M1.5 1.5 6.5 6.5l-5 5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"></path></svg></span></button></sc-for>
+</div>
+</div>
+</div>
+<button class="cta" type="button">Afslaan</button>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 892, "height": 940}}'>
+class Component extends DCLogic {
+renderVals() {
+return {"tees": [{"name": "Wit", "len": "6.012 m", "color": "#ffffff", "cls": "", "on": "false"}, {"name": "Geel", "len": "5.720 m", "color": "#f2c230", "cls": "on", "on": "true"}, {"name": "Blauw", "len": "5.310 m", "color": "#2f6fd6", "cls": "", "on": "false"}, {"name": "Rood", "len": "4.980 m", "color": "#d23b3b", "cls": "", "on": "false"}], "themes": [{"label": "A · Tegels — licht · 2 spelers, Stableford", "cls": "th-light", "loops": [{"name": "Holes 1–9", "sub": "Par 36", "cls": "on", "on": "true"}, {"name": "Holes 10–18", "sub": "Par 36", "cls": "on", "on": "true"}], "holesFoot": "18 holes · par 72. Tik nog eens op een lus om hem twee keer te spelen.", "formats": [{"name": "Stableford", "sub": "Punten per hole", "cls": "on", "on": "true"}, {"name": "Strokeplay", "sub": "Totaal slagen", "cls": "", "on": "false"}, {"name": "Matchplay", "sub": "2 spelers", "cls": "", "on": "false"}, {"name": "Skins", "sub": "2–4 spelers", "cls": "", "on": "false"}, {"name": "Zessen", "sub": "Precies 3 spelers", "cls": "off", "on": "false"}, {"name": "Texas Scramble", "sub": "Teams · 2–4 spelers", "cls": "", "on": "false"}], "formatFoot": "Zessen: kies precies 3 spelers.", "players": [{"ini": "E", "name": "Eric", "sub": "Jij · HCP 12,4", "ph": "speelt 14"}, {"ini": "P", "name": "Piet", "sub": "HCP 17,1", "ph": "speelt 19"}]}, {"label": "A · Tegels — donker · 3 spelers, Zessen", "cls": "th-dark", "loops": [{"name": "Holes 1–9", "sub": "Par 36", "cls": "", "on": "false"}, {"name": "Holes 10–18", "sub": "Par 36 · ×2", "cls": "on", "on": "true"}], "holesFoot": "Holes 10–18 twee keer · par 72.", "formats": [{"name": "Stableford", "sub": "Punten per hole", "cls": "", "on": "false"}, {"name": "Strokeplay", "sub": "Totaal slagen", "cls": "", "on": "false"}, {"name": "Matchplay", "sub": "2 spelers", "cls": "off", "on": "false"}, {"name": "Skins", "sub": "2–4 spelers", "cls": "", "on": "false"}, {"name": "Zessen", "sub": "Precies 3 spelers", "cls": "on", "on": "true"}, {"name": "Texas Scramble", "sub": "Teams · 2–4 spelers", "cls": "", "on": "false"}], "formatFoot": "Matchplay: alleen met precies 2 spelers. Je hebt er nu 3.", "players": [{"ini": "E", "name": "Eric", "sub": "Jij · HCP 12,4", "ph": "speelt 14"}, {"ini": "P", "name": "Piet", "sub": "HCP 17,1", "ph": "speelt 19"}, {"ini": "J", "name": "Jan", "sub": "HCP 24,0", "ph": "speelt 26"}]}]};
+}
+}
+</script>
+</body>
+</html>
