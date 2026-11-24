@@ -97,6 +97,7 @@ function ScoreSheet({
 						const update = draftUpdate(draft, {
 							par: hole.par,
 							owner: playerIndex === OWNER_INDEX,
+							stored: scoreAt(scores, holeIndex, playerIndex) !== undefined,
 						});
 						return update ? [{ playerIndex, ...update }] : [];
 					}),
@@ -171,8 +172,7 @@ function ScoreSheet({
 				nativeSheet={ios}
 				header={
 					ios ? undefined : (
-						// The sheet opens at a partial detent, so a footer button would
-						// sit below the fold.
+						// Save stays in view: the sheet can scroll past a footer button.
 						<ScoreSheetHeader
 							title={title}
 							subtitle={subtitle}

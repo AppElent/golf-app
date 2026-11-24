@@ -67,12 +67,16 @@ export function isOtherResult(draft: ScoreDraft, par: number): boolean {
 	);
 }
 
-/** Step another player's score from ⋯: the first step leaves the buttons. */
+/**
+ * Step another player's score from ⋯: the first step leaves the buttons, or
+ * brings back the score a picked-up player had.
+ */
 export function stepOther(
-	strokes: number | null,
+	{ strokes, nr }: Pick<ScoreDraft, "strokes" | "nr">,
 	par: number,
 	by: 1 | -1,
 ): number {
+	if (nr && strokes !== null) return strokes;
 	const from = strokes ?? (by > 0 ? par + 2 : par - 1);
 	return Math.max(1, from + by);
 }
@@ -100,16 +104,17 @@ export function pickTeeShot(
 }
 
 /**
- * The fields a draft saves; null when there is nothing to save yet. GIR is
+ * The fields a draft saves; null when there is nothing to save. A player who
+ * is already stored always saves, so undoing a pick-up is not lost. GIR is
  * derived once putts are known and cleared on a picked-up hole. Without putts
  * it is left out, which keeps what an older build stored by hand.
  */
 export function draftUpdate(
 	draft: ScoreDraft,
-	{ par, owner }: { par: number; owner: boolean },
+	{ par, owner, stored }: { par: number; owner: boolean; stored: boolean },
 ): ScoreUpdate | null {
 	const { strokes, nr, ...stats } = draft;
-	if (strokes === null && !nr) return null;
+	if (strokes === null && !nr && !stored) return null;
 	const result = { ...(strokes === null ? {} : { strokes }), nr };
 	if (!owner) return result;
 	const gir = derivedGir(par, draft);

@@ -147,7 +147,8 @@ export function StatsScreen() {
 							? undefined
 							: fmt(t.stats.fairwayMisses, {
 									left: pct(stats.firMissLeftPct),
-									right: pct(1 - stats.firMissLeftPct),
+									// From the rounded left side, so the two add up to 100%.
+									right: pct(1 - Math.round(stats.firMissLeftPct * 100) / 100),
 								})
 					}
 					value={pct(stats.firPct)}

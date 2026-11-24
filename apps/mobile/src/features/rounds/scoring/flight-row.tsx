@@ -167,10 +167,10 @@ export function FlightRow({
 							glyph="−"
 							size={BUTTON}
 							background={colors.surface2}
-							disabled={draft.strokes === 1}
+							disabled={!draft.nr && draft.strokes === 1}
 							onPress={() =>
 								set({
-									strokes: stepOther(draft.strokes, par, -1),
+									strokes: stepOther(draft, par, -1),
 									nr: false,
 								})
 							}
@@ -191,7 +191,7 @@ export function FlightRow({
 							size={BUTTON}
 							background={colors.surface2}
 							onPress={() =>
-								set({ strokes: stepOther(draft.strokes, par, 1), nr: false })
+								set({ strokes: stepOther(draft, par, 1), nr: false })
 							}
 						/>
 					</View>

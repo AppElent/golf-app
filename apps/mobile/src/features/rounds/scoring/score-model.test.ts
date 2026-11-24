@@ -24,8 +24,8 @@ const draft = (over: Partial<ScoreDraft> = {}): ScoreDraft => ({
 	...over,
 });
 
-const owner = (par = 4) => ({ par, owner: true });
-const guest = { par: 4, owner: false };
+const owner = (par = 4) => ({ par, owner: true, stored: false });
+const guest = { par: 4, owner: false, stored: false };
 
 describe("initialDrafts", () => {
 	it("starts the owner at par and the others without a score", () => {
@@ -70,10 +70,16 @@ describe("one-tap scores", () => {
 	});
 
 	it("steps from the buttons' edges when there is no score", () => {
-		expect(stepOther(null, 4, 1)).toBe(7);
-		expect(stepOther(null, 4, -1)).toBe(2);
-		expect(stepOther(8, 4, 1)).toBe(9);
-		expect(stepOther(1, 4, -1)).toBe(1);
+		expect(stepOther(draft({ strokes: null }), 4, 1)).toBe(7);
+		expect(stepOther(draft({ strokes: null }), 4, -1)).toBe(2);
+		expect(stepOther(draft({ strokes: 8 }), 4, 1)).toBe(9);
+		expect(stepOther(draft({ strokes: 1 }), 4, -1)).toBe(1);
+	});
+
+	it("brings back a picked-up player's score before stepping it", () => {
+		expect(stepOther(draft({ strokes: 8, nr: true }), 4, 1)).toBe(8);
+		expect(stepOther(draft({ strokes: 8, nr: true }), 4, -1)).toBe(8);
+		expect(stepOther(draft({ strokes: null, nr: true }), 4, 1)).toBe(7);
 	});
 });
 
@@ -143,6 +149,18 @@ describe("draftUpdate", () => {
 		expect(draftUpdate(draft({ strokes: null, nr: true }), guest)).toEqual({
 			nr: true,
 		});
+	});
+
+	it("undoes a stored pick-up that has no strokes", () => {
+		const [stored] = initialDrafts(
+			[{ holeIndex: 0, playerIndex: 1, nr: true }],
+			0,
+			2,
+			4,
+		).slice(1);
+		expect(
+			draftUpdate({ ...stored, nr: false }, { ...guest, stored: true }),
+		).toEqual({ nr: false });
 	});
 });
 
