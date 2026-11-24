@@ -34,8 +34,15 @@ export async function stageProviderDirectory(path, { reset = true } = {}) {
     await mkdir(path, { recursive: true });
     await writeFile(join(path, "package.json"), `${JSON.stringify({ private: true, dependencies: { convex: "*" } })}\n`, { encoding: "utf8", mode: 0o600 });
 }
+/**
+ * The error code Convex returns when a team is out of deployments, as the CLI
+ * prints it: "... 400 Bad Request: DeploymentQuotaReached: Your team's
+ * deployment quota of 40 has been reached. ...". Other errors can mention a
+ * quota after something was created, so match the code and nothing looser.
+ */
+const isQuotaRefusal = (message) => /\bDeploymentQuotaReached\b/u.test(message);
 function quotaHint(message) {
-    return /quota/iu.test(message)
+    return isQuotaRefusal(message)
         ? `${message}. Reclaim deployments of removed worktrees with \`node scripts/workspace.mjs gc --apply\`, or prepare this worktree with \`--backend none\``
         : message;
 }
@@ -149,7 +156,7 @@ export async function prepareBackend(request) {
                 // A quota refusal happens before anything is created, so the intent
                 // recorded above owns nothing. Mark it absent, so clean and gc can
                 // finish instead of waiting days for an expiry that never comes.
-                if (/quota/iu.test(error.message))
+                if (isQuotaRefusal(error.message))
                     await request.checkpoint({
                         kind: "convex-deployment",
                         id: reference,
