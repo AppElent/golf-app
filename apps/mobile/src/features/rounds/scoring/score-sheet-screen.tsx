@@ -1,5 +1,10 @@
 import { formatDistance, holeLabel } from "@fairway/core/format";
-import { OWNER_INDEX, playedHoles, scoreAt } from "@fairway/core/round";
+import {
+	hasResult,
+	OWNER_INDEX,
+	playedHoles,
+	scoreAt,
+} from "@fairway/core/round";
 import { useMutation } from "convex/react";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
@@ -97,7 +102,7 @@ function ScoreSheet({
 	// "Next hole" only on the first entry of your own score for the hole being
 	// played; a correction (also after browsing back with the chevrons) stays
 	// put. Guests scored first don't count, like the next-tee offer.
-	const firstEntry = !scoreAt(scores, holeIndex, OWNER_INDEX);
+	const firstEntry = !hasResult(scoreAt(scores, holeIndex, OWNER_INDEX));
 	const entersOwn =
 		drafts[OWNER_INDEX].nr || drafts[OWNER_INDEX].strokes !== null;
 	const advances =

@@ -75,13 +75,7 @@ export function ScorecardScreen() {
 	const { sides, received, ...text } = game(round, holes, scores);
 	const rows = cardRows(holes, scores, received);
 	const standing = text.cardStanding();
-	const tiles = rows.map(
-		(row, side) =>
-			text.comparedTotal(side) ?? {
-				strokes: row.scored > 0 ? String(row.total) : "–",
-				toPar: row.toPar,
-			},
-	);
+	const tiles = rows.map((row, side) => text.comparedTotal(side) ?? row);
 	const totals = text.totals();
 	const pending = finish.pending || submit.pending;
 	const error = finish.error ?? submit.error;
@@ -130,7 +124,7 @@ export function ScorecardScreen() {
 								{side.name}
 							</AppText>
 							<AppText variant="title" style={styles.totalNumber}>
-								{tiles[p].strokes}
+								{tiles[p].scored > 0 ? tiles[p].total : "–"}
 							</AppText>
 							<AppText variant="footnote">
 								{[

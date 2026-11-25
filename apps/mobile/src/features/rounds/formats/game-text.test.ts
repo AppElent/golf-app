@@ -366,9 +366,9 @@ describe("APP-894", () => {
 		expect(text.share(["15", "9"])?.sub).toContain(
 			"Team 1 8 · Team 2 9 · after 2 holes",
 		);
-		expect([0, 1].map((side) => text.comparedTotal(side)?.strokes)).toEqual([
-			"8",
-			"9",
+		expect([0, 1].map((side) => text.comparedTotal(side))).toMatchObject([
+			{ total: 8, toPar: "E" },
+			{ total: 9, toPar: "+1" },
 		]);
 	});
 });

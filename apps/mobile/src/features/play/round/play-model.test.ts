@@ -184,6 +184,12 @@ describe("nextTeeAction", () => {
 		).toBe("score");
 	});
 
+	it("still asks for a score that was cleared", () => {
+		expect(
+			nextTeeAction([{ holeIndex: 1, playerIndex: 0, nr: false }], 1),
+		).toBe("score");
+	});
+
 	it("moves on once the owner scored the hole, picked up included", () => {
 		expect(
 			nextTeeAction([{ holeIndex: 1, playerIndex: 0, strokes: 4 }], 1),

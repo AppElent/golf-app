@@ -70,6 +70,13 @@ export function scoreAt<S extends Pick<HoleScore, "holeIndex" | "playerIndex">>(
 	);
 }
 
+/** Strokes or a pick-up; a row whose strokes were cleared holds neither. */
+export function hasResult(
+	score: Pick<HoleScore, "strokes" | "nr"> | undefined,
+): boolean {
+	return score?.nr === true || score?.strokes !== undefined;
+}
+
 /** The strokes a result counts for: null when unplayed or picked up. */
 export function countedStrokes(
 	score: Pick<HoleScore, "strokes" | "nr"> | undefined,
@@ -140,7 +147,8 @@ export const cardOrder = (holeCount: number): number[] =>
  * The hole indexes in the order played. A round that began further on (a
  * shotgun start on hole 10) wraps around: its first entered hole is the start,
  * once the last hole was entered before any hole in front of that start. Any
- * other order is a hole entered late and stays in card order.
+ * other order stays in card order. Only entry times are known, so hole 1
+ * entered after the last hole reads as a start on hole 2.
  */
 export function playingOrder(
 	holeCount: number,
@@ -151,9 +159,7 @@ export function playingOrder(
 	const enteredAt = order.map((holeIndex) =>
 		Math.min(
 			...scores
-				.filter(
-					(s) => s.holeIndex === holeIndex && (s.nr || s.strokes !== undefined),
-				)
+				.filter((s) => s.holeIndex === holeIndex && hasResult(s))
 				.map((s) => s._creationTime ?? Number.MAX_VALUE),
 		),
 	);

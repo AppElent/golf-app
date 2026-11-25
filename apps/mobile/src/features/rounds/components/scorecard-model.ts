@@ -1,4 +1,9 @@
-import { countedStrokes, type HoleScore, scoreAt } from "@fairway/core/round";
+import {
+	countedStrokes,
+	type HoleScore,
+	hasResult,
+	scoreAt,
+} from "@fairway/core/round";
 import {
 	formatVsPar,
 	nineTotals,
@@ -35,9 +40,6 @@ export interface CardPlayerRow {
 	scored: number;
 }
 
-const hasResult = ({ strokes, nr }: HoleScore): boolean =>
-	nr === true || strokes !== undefined;
-
 export function cardRows(
 	holes: readonly CardHole[],
 	scores: readonly HoleScore[],
@@ -55,7 +57,7 @@ export function cardRows(
 				strokes,
 				mark: scoreMark(hole.par, strokes),
 				nr: s?.nr ?? false,
-				missing: played.has(holeIndex) && !(s && hasResult(s)),
+				missing: played.has(holeIndex) && !hasResult(s),
 			};
 		});
 		const strokes = cells.map((c) => c.strokes);

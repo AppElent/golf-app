@@ -92,9 +92,10 @@ export function RoundDetailScreen() {
 			? [t.scorecard.out, t.scorecard.in]
 			: [t.scorecard.total];
 
+	const compared = text.comparedTotal(OWNER_INDEX);
 	const tiles = roundTiles({
-		owner,
-		recap,
+		owner: { ...owner, ...compared },
+		recap: recap.net !== null && compared ? compared : recap,
 		extra: ownerRoundStats(holes, scores),
 		format: round.format,
 		holeCount: round.holeRefs.length,

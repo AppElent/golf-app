@@ -741,14 +741,23 @@ export function gameText(round: GameRound, { t, locale, vsPar }: GameCopy) {
 	 * A team's total over the holes the winner is decided on, when two scramble
 	 * teams are compared; otherwise null and the card's own total counts.
 	 */
-	function comparedTotal(
-		side: number,
-	): { strokes: string; toPar: string | null } | null {
+	function comparedTotal(side: number): {
+		scored: number;
+		total: number;
+		toPar: string | null;
+		net: number | null;
+		netToPar: number | null;
+	} | null {
 		if (standing?.kind !== "scramble" || standing.teams.length < 2) return null;
 		const team = standing.teams[side];
-		return team.scored > 0
-			? { strokes: String(team.strokes), toPar: vsPar(team.vsPar) }
-			: { strokes: "–", toPar: null };
+		const any = team.scored > 0;
+		return {
+			scored: team.scored,
+			total: team.strokes,
+			toPar: any ? vsPar(team.vsPar) : null,
+			net: any ? team.net : null,
+			netToPar: any ? team.netVsPar : null,
+		};
 	}
 
 	/** The share card's headline and the line under it. */
@@ -772,8 +781,10 @@ export function gameText(round: GameRound, { t, locale, vsPar }: GameCopy) {
 				});
 			}
 		}
-		const totalOf = (side: number) =>
-			comparedTotal(side)?.strokes ?? totalsText[side] ?? "–";
+		const totalOf = (side: number) => {
+			const compared = comparedTotal(side);
+			return compared ? compared.total || "–" : (totalsText[side] ?? "–");
+		};
 		return {
 			title,
 			sub: join(
