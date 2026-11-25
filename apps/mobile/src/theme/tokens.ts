@@ -38,6 +38,9 @@ export const darkColors = {
 	scrim: "rgba(0, 0, 0, 0.6)",
 	/** Eagle chart fill: a mark, so at least 3:1 against bg, surface and surface2. */
 	eagle: "#ff9f0a",
+	/** The bunker toggle when on, and its text; the same in both schemes. */
+	sand: "#c9a35a",
+	onSand: "#1d1608",
 } as const;
 
 /** The light scheme. Same keys, so a screen never branches. */
@@ -67,6 +70,8 @@ export const lightColors: Tokens = {
 	onDanger: "#ffffff",
 	scrim: "rgba(0, 0, 0, 0.4)",
 	eagle: "#c07000",
+	sand: "#c9a35a",
+	onSand: "#1d1608",
 };
 
 /** On-course overlay palette: drawn over satellite imagery, so every value
@@ -160,9 +165,13 @@ export const metrics = {
  * than a page. Colours are not part of a style: they come from `useTokens()`.
  */
 export const type = {
+	/** The one number of the score sheet. */
+	hero: { fontSize: 72, fontWeight: "800", letterSpacing: -2 },
 	quantity: { fontSize: 52, fontWeight: "600", letterSpacing: -1.5 },
 	display: { fontSize: 32, fontWeight: "800" },
 	title: { fontSize: 24, fontWeight: "800" },
+	/** A compact header title over a meta line. */
+	titleSm: { fontSize: 22, fontWeight: "800", letterSpacing: -0.3 },
 	heading: { fontSize: 18, fontWeight: "700" },
 	body: { fontSize: 15, fontWeight: "500" },
 	label: { fontSize: 13, fontWeight: "600" },

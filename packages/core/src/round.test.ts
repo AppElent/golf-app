@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
 	countedStrokes,
+	derivedGir,
+	type HoleScore,
 	ownerRoundStats,
 	playedHoles,
 	playerStrokes,
@@ -35,6 +37,33 @@ describe("playedHoles", () => {
 				{ holeIndex: 3, playerIndex: 0, putts: 2 },
 			]),
 		).toEqual([0, 2]);
+	});
+});
+
+describe("derivedGir", () => {
+	it.each([
+		// par, strokes, putts, gir
+		[3, 3, 2, true],
+		[3, 4, 2, false],
+		[3, 2, 1, true],
+		[4, 4, 2, true],
+		[4, 5, 3, true],
+		[4, 5, 2, false],
+		[5, 5, 2, true],
+		[5, 6, 2, false],
+		[5, 4, 1, true],
+		// Holed from off the green.
+		[4, 2, 0, true],
+		[4, 3, 0, false],
+	])("par %i, %i strokes, %i putts: %s", (par, strokes, putts, gir) => {
+		expect(derivedGir(par, { strokes, putts, nr: false })).toBe(gir);
+	});
+
+	it("is unknown when picked up, without putts, or with only putts", () => {
+		expect(derivedGir(4, { strokes: 4, putts: 2, nr: true })).toBeNull();
+		expect(derivedGir(4, { strokes: 4, putts: null, nr: false })).toBeNull();
+		expect(derivedGir(4, { strokes: null, putts: 2, nr: false })).toBeNull();
+		expect(derivedGir(4, { strokes: 2, putts: 2, nr: false })).toBeNull();
 	});
 });
 
@@ -75,8 +104,37 @@ describe("ownerRoundStats", () => {
 			holesWithPutts: 2,
 			firMade: 1,
 			firEligible: 1,
+			firMissLeft: 0,
+			firMissRight: 0,
 			girMade: 1,
 			girHoles: 2,
+		});
+	});
+
+	it("counts missed fairways by side, where the side is known", () => {
+		const miss = (holeIndex: number, over: Partial<HoleScore>): HoleScore => ({
+			holeIndex,
+			playerIndex: 0,
+			strokes: 4,
+			...over,
+		});
+		const stats = ownerRoundStats(
+			[{ par: 4 }, { par: 4 }, { par: 5 }, { par: 4 }, { par: 3 }],
+			[
+				miss(0, { fir: false, firMiss: "left" }),
+				miss(1, { fir: false, firMiss: "right" }),
+				miss(2, { fir: false, firMiss: "right" }),
+				// Older score: missed, side unknown.
+				miss(3, { fir: false }),
+				// No fairway on a par 3.
+				miss(4, { fir: false, firMiss: "left" }),
+			],
+		);
+		expect(stats).toMatchObject({
+			firMade: 0,
+			firEligible: 4,
+			firMissLeft: 1,
+			firMissRight: 2,
 		});
 	});
 
