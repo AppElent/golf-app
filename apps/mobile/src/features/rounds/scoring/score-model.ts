@@ -1,6 +1,7 @@
 import {
 	derivedGir,
 	type HoleScore,
+	hasResult,
 	type MissSide,
 	OWNER_INDEX,
 	type ScoreUpdate,
@@ -165,14 +166,21 @@ export function sheetDrafts(
 
 /**
  * What the sheet saves. A side it didn't change is left out, so what another
- * device stored meanwhile stays, and so is one without a score yet.
+ * device stored meanwhile stays, and so is one without a score yet. The owner's
+ * starting par counts as entered until the hole has a result.
  */
 export function sheetUpdates(
+	live: readonly ScoreDraft[],
 	edits: SheetEdits,
 	scores: readonly HoleScore[],
 	{ holeIndex, par, teams }: { holeIndex: number; par: number; teams: boolean },
 ): ({ playerIndex: number } & ScoreUpdate)[] {
-	return Object.entries(edits).flatMap(([side, draft]) => {
+	const startsAtPar =
+		!teams && !hasResult(scoreAt(scores, holeIndex, OWNER_INDEX));
+	const entered = startsAtPar
+		? { [OWNER_INDEX]: live[OWNER_INDEX], ...edits }
+		: edits;
+	return Object.entries(entered).flatMap(([side, draft]) => {
 		const playerIndex = Number(side);
 		const update = draftUpdate(draft, {
 			par,
