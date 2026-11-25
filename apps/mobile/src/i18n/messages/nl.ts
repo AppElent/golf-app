@@ -5,7 +5,7 @@ import type { Messages } from "./en";
 import { feedbackNl } from "./feedback";
 import { clubsNl, profileNl, roundsNl, statsNl } from "./history";
 import { playNl } from "./play";
-import { scorecardNl, scoreNl } from "./score";
+import { handicapTableNl, scorecardNl, scoreNl } from "./score";
 import { coursesNl, homeNl, setupNl, simulatorNl, suggestNl } from "./start";
 
 export const nl = {
@@ -24,6 +24,7 @@ export const nl = {
 	play: playNl,
 	score: scoreNl,
 	scorecard: scorecardNl,
+	handicapTable: handicapTableNl,
 	rounds: roundsNl,
 	stats: statsNl,
 	profile: profileNl,

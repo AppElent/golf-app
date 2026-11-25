@@ -66,6 +66,7 @@ appId: com.appelent.fairway.dev
     timeout: 8000
 - takeScreenshot: 02-play
 
+- tapOn: ${L_ROUND_MENU}
 - tapOn: ${L_SCORECARD}
 - extendedWaitUntil:
     visible: ${L_DONE}

@@ -30,6 +30,8 @@ import {
 	accessibilityAddTraits,
 	accessibilityElement,
 	accessibilityLabel,
+	background,
+	clipShape,
 	contentShape,
 	font,
 	foregroundStyle,
@@ -53,6 +55,8 @@ import { metrics, useAppearance, useTokens } from "../theme";
 import {
 	type InsetListProps,
 	type InsetRowProps,
+	ROW_AVATAR,
+	type RowLeading,
 	rowSpokenLabel,
 	swipeActions,
 } from "./inset-list.shared";
@@ -100,6 +104,44 @@ export function InsetList({ header, footer, children }: InsetListProps) {
 	);
 }
 
+function Leading({ leading }: { leading: RowLeading }) {
+	const tokens = useTokens();
+	if (!("initial" in leading) && !leading.circle) {
+		return (
+			<Image
+				systemName={leading.symbol}
+				size={20}
+				color={tokens.accentInk}
+				modifiers={[frame({ width: 28 })]}
+			/>
+		);
+	}
+	const circle = [
+		frame({ width: ROW_AVATAR, height: ROW_AVATAR }),
+		background(tokens.accentDim),
+		clipShape("circle"),
+	];
+	return "initial" in leading ? (
+		<Text
+			modifiers={[
+				// Fixed, like the circle it sits in.
+				font({ size: 14, weight: "bold" }),
+				foregroundStyle(tokens.accentInk),
+				...circle,
+			]}
+		>
+			{leading.initial}
+		</Text>
+	) : (
+		<Image
+			systemName={leading.symbol}
+			size={15}
+			color={tokens.accentInk}
+			modifiers={[font({ weight: "semibold" }), ...circle]}
+		/>
+	);
+}
+
 export function InsetRow({
 	leading,
 	title,
@@ -108,13 +150,14 @@ export function InsetRow({
 	trailing,
 	chevron = false,
 	external = false,
+	accent = false,
 	destructive = false,
 	onPress,
 	actions,
 }: InsetRowProps) {
 	const tokens = useTokens();
 	const { width } = useWindowDimensions();
-	const spoken = rowSpokenLabel({ title, secondary });
+	const spoken = rowSpokenLabel({ title, secondary, value });
 	const swipe = swipeActions(actions ?? []);
 
 	const row = (
@@ -130,14 +173,7 @@ export function InsetRow({
 					: []),
 			]}
 		>
-			{leading ? (
-				<Image
-					systemName={leading.symbol}
-					size={20}
-					color={tokens.accentInk}
-					modifiers={[frame({ width: 28 })]}
-				/>
-			) : null}
+			{leading ? <Leading leading={leading} /> : null}
 			<VStack
 				alignment="leading"
 				spacing={1}
@@ -161,7 +197,13 @@ export function InsetRow({
 				<Text
 					modifiers={[
 						font({ textStyle: "body", weight: "semibold" }),
-						foregroundStyle(destructive ? tokens.danger : tokens.text),
+						foregroundStyle(
+							destructive
+								? tokens.danger
+								: accent
+									? tokens.accent
+									: tokens.text,
+						),
 						lineLimit(2),
 					]}
 				>
