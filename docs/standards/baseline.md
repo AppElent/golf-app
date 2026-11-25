@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when setting up or changing repository, package-manager, formatter, type, test, or CI configuration, or when installing or updating the toolkit.
-version: 2.4.1
+version: 2.5.0
 applies_to: [all]
 ---
 
@@ -70,10 +70,12 @@ Run from the repository root.
 ## Verify
 
 - `node scripts/sync-devtools.mjs --check` passes.
-- `node scripts/check-project.mjs` passes with no warnings. It reads package, CI, Wrangler, and routing metadata only: no app code, dotenv values, or provider calls. Besides routing files, it warns on `*`, empty, and dist-tag ranges (a `*` peer dependency is fine), npm aliases (except `react-native` aliased to a pinned `react-native-tvos` version, for an Apple TV app), `@typescript/native`, a `typescript` range off the 6.0 line, a CI workflow without a block-style `check` job or whose `check` job sets `name:` or a `strategy`, Wrangler environments other than `dev`, `staging`, and `pr`, and a `wrangler.toml`. Once it is clean, CI's `check` job runs `node scripts/check-project.mjs --strict`, which fails on warnings, so new drift blocks the pull request.
+- `node scripts/check-project.mjs` passes with no warnings. It reads package, CI, Wrangler, and routing metadata only: no app code, dotenv values, or provider calls. Besides routing files, it warns on `*`, empty, and dist-tag ranges (a `*` peer dependency is fine), npm aliases (except `react-native` aliased to one exact `react-native-tvos` version such as `npm:react-native-tvos@0.88.1-0`, for an Apple TV app; `^`, `~`, and dist-tags warn), `@typescript/native`, a `typescript` range off the 6.0 line, a CI workflow without a block-style `check` job or whose `check` job sets `name:` or a `strategy`, Wrangler environments other than `dev`, `staging`, and `pr`, and a `wrangler.toml`. Once it is clean, CI's `check` job runs `node scripts/check-project.mjs --strict`, which fails on warnings, so new drift blocks the pull request.
 - Install, check, typecheck, test, and build pass for every target.
 
 ## Migration
+
+From 2.4: if an Apple TV app aliases `react-native` with a `^` or `~` range, name the exact `react-native-tvos` version instead.
 
 From 2.3: add a root `verify` script that chains check, typecheck, and tests for every target, then replace the separate check, typecheck, and test steps in CI with `pnpm verify`. Keep `env:check`, `check-project.mjs --strict`, and build as their own steps.
 

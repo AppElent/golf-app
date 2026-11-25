@@ -18,16 +18,22 @@
       "Pushing feature branches and opening, updating or commenting on pull requests in any AppElent repository is routine work, also from a session that started in ~/Developer, in a sibling repository or in a worktree under ~/Developer/.worktrees.",
       "Creating and removing git worktrees under ~/Developer/.worktrees, and deleting local branches whose pull request is merged, is expected cleanup.",
       "Development and preview releases are routine: eas build with a development or preview profile, eas update to a preview or pull request channel, Convex dev and anonymous local deployments (convex dev), and wrangler deploys to a non-production environment (dev or pr).",
-      "Pushing Convex functions to golf-app's dev deployment with `convex dev --once` and no deploy key (`CONVEX_DEPLOY_KEY` unset, `CONVEX_DEPLOYMENT` set only to that project's `dev:\u2026` value) is expected. Production Convex, `--prod`, a `prod:` deployment and deploy keys stay denied.",
+      "Pushing Convex functions to golf-app's dev deployment with `convex dev --once` and no deploy key (`CONVEX_DEPLOY_KEY` unset, `CONVEX_DEPLOYMENT` set only to that project's `dev:…` value) is expected. Production Convex, `--prod`, a `prod:` deployment and deploy keys stay denied.",
       "Creating and updating Linear issues and comments in workspace appelent, and updating Sentry issues, is routine tracking work.",
       "Tapping, typing, deleting data or deleting the account inside a development build (bundle ids ending in .dev or .preview) on a local simulator or emulator, against a dev or anonymous local backend, is expected testing.",
-      "Creating, booting, shutting down, erasing and deleting simulators named agent-* with xcrun simctl or ~/.agents/bin/sim is expected cleanup."
+      "Creating, booting, shutting down, erasing and deleting simulators named agent-* with xcrun simctl or ~/.agents/bin/sim is expected cleanup.",
+      "After Eric's go in the thread for that build, running exactly `pnpm builds build <app> <profile> ios` or `pnpm builds build <app> <profile> ios --submit` in ~/Developer/developer-home, with no other arguments (optionally under `caffeinate -i`), is expected (Eric, 25 Nov 2026, APP-865): <app> is workouts, golf-app, gather or games and <profile> is production, preview or preview-internal. It builds on this Mac with secrets the app's env script loads from Infisical without printing them, and --submit uploads to TestFlight. Any other flag (--from, --allow-convex-drift, or eas arguments after --) is not covered. Releasing in App Store Connect or sending for App Review stays with Eric."
     ],
     "hard_deny": [
       "$defaults",
       "Production deploys: never run convex deploy or any Convex command against production (--prod, a prod: deploy key), wrangler deploy without a non-production environment, wrangler versions deploy, rollback or secret commands on production, or package scripts that deploy or ship to production (deploy, deploy:prod*, ship:production, mobile:update:production). Production ships only through a merge to main and its GitHub Actions workflow.",
-      "Store submissions and production mobile releases: never run eas submit, --auto-submit, eas build with the production profile or without --profile, or eas update to the production channel. Production OTA runs only through the daily gated GitHub job, and store builds and submissions are Eric's to start.",
+      "Store submissions and production mobile releases: never run eas submit, --auto-submit, eas build with the production profile or without --profile, or eas update to the production channel, and never release a build in App Store Connect or Google Play Console or send it to App Review. Production OTA runs only through the daily gated GitHub job. The one exception is exactly `pnpm builds build <app> <profile> ios [--submit]` with no other arguments, after Eric's go for that build (see allow); `--from`, `--allow-convex-drift` and eas arguments after `--` are not covered.",
       "Reading secrets: never read, print, copy or upload the contents of the sensitive data locations, and never print secret values from Infisical. Reading env.manifest.ts for variable names, and the repo env scripts that write values without printing them, are fine."
+    ]
+  },
+  "retired": {
+    "hard_deny": [
+      "Store submissions and production mobile releases: never run eas submit, --auto-submit, eas build with the production profile or without --profile, or eas update to the production channel. Production OTA runs only through the daily gated GitHub job, and store builds and submissions are Eric's to start."
     ]
   }
 }

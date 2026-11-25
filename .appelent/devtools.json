@@ -3,8 +3,8 @@
   "repository": "AppElent/developer-home",
   "scope": "project",
   "ref": "main",
-  "commit": "34ec7d4cfe1da6aadce20b56e3ffb9b04f434beb",
-  "manifestHash": "7308c1fd69845e8eaf518bf78392aadda17a3ee1ef8044f44d00f8e1d83a81e3",
+  "commit": "ecc5143c6cfb76fa4c19c2b2505f39a3f7db6866",
+  "manifestHash": "81c4c250ffd04ab8ddbfa2e6b477a9c4ad45829c1e9bffa0f31db9d584c9e598",
   "files": {
     "docs/adr/.template.md": {
       "sha256": "f28b286102fb1a00512455a06896e5da3c47d67a14b0ee6c08fa84258af24adf",
@@ -135,8 +135,8 @@
       "sha256": "2b5fc7ca3a68216d3c63124808e073c093899f5020312349ee9be43246a75b35"
     },
     "docs/standards/baseline.md": {
-      "sha256": "1d7939d2ccd2107624d08a597d699f6967ac2f4a3fa7d9544604f1f578c29d9b",
-      "version": "2.4.1"
+      "sha256": "9f45824084295c937623452272b3ffae83fc0e113ee325b0cf4ca0a41afbd309",
+      "version": "2.5.0"
     },
     "docs/standards/baseline/toolkit.md": {
       "sha256": "6ae4d778fa3086cf0c3537f50c60f3ec9c303e364f273b3789feac988c5cee91",
@@ -289,8 +289,8 @@
       "version": "2.0.1"
     },
     "docs/standards/verification.md": {
-      "sha256": "946d42b745bc8620b31bc11f9d98106617da7f90c9631bc917452dd624936a10",
-      "version": "2.3.0"
+      "sha256": "89d59cd2154d83ef1e1b954c1fe09062078527e0806cb071304533b5eb856035",
+      "version": "2.5.0"
     },
     "docs/standards/web-baseline.md": {
       "sha256": "562aa3396a09dd73f5a69f870d6dda8da3a24d189120609e0cc01ddaf6892b74",
@@ -319,8 +319,8 @@
       "version": "1.2.1"
     },
     "docs/standards/workspaces.md": {
-      "sha256": "2ec2199e3e645bd67e127d1d147fe769a524195529129df2138d1b3a9082c93e",
-      "version": "3.5.1"
+      "sha256": "4cac14de7104f2856b89c59d99b39662282ea201396f0533305d55c33e10ac73",
+      "version": "3.6.0"
     },
     "docs/standards/workspaces/examples/appelent.json": {
       "sha256": "59a478066a2c9e011cae362d6d917c177eb046912813c3c5e2b471e1a558cb1e"
@@ -335,7 +335,7 @@
       "sha256": "6336676db6dcd2e4801992cc1b878ffafa65719314a27861247a6c8f73fd0c04"
     },
     "scripts/check-project.mjs": {
-      "sha256": "ee4c68f15c2c5bba74c0e3d643d57ae13e4bf623841bd398950e6cd0c6b34dcb"
+      "sha256": "e57829b5f02c113695079f96e9b3e0634dbd961b867e6e8a9fcb4a7f0a4b5330"
     },
     "scripts/env.mjs": {
       "sha256": "9347b3602296c5d9d31b7fab503e2ef696886f2f3de4c9899d44b459e8add087"
@@ -457,8 +457,8 @@
       "sha256": "d8ba1a0d7020fa611de1c417a8ad6103a1217f26fdf93836af0812f8f50ce414"
     },
     "docs/standards/mobile-distribution.md": {
-      "sha256": "dcd7acf19e1d3edcacfb85dd47b31e5fb3727fdeed2620106b0fa5efa0f4e924",
-      "version": "2.5.0"
+      "sha256": "be80aaba34d2f57e31f58c3d41f61a573c91fd063c74ced324327c80272aec2b",
+      "version": "2.8.0"
     },
     "docs/standards/repo-layout.md": {
       "sha256": "558571b4e54468c304e6fb4b3b3c4dde2e38efe20e02ccfbeb01aea62d74967f",
@@ -494,8 +494,8 @@
       "version": "1.2.0"
     },
     "docs/standards/agent-permissions.md": {
-      "sha256": "120cd5144b5a071d22ce7f22de0426c6ee671fd24dc804815dbd425efb2f9f0d",
-      "version": "1.6.0"
+      "sha256": "5886e4cb85b95917282fbe908f53ca4fa0d9dd4be937e0784bb67132b7eee55f",
+      "version": "1.7.0"
     },
     "docs/standards/agent-permissions/irreversible-guard.mjs": {
       "sha256": "0ad8cc83504ec4bf6dc8c6a9582ee367c200bd0e76cc20bc27c10503f7dcfbb7"
@@ -527,7 +527,7 @@
       "sha256": "ccfe22a2fd9099d3da69862f07e44eceef628b5ed33bce2fdc98464db54683c4"
     },
     "docs/standards/verification/stop-checks.mjs": {
-      "sha256": "001615091f699c2a631be23f7f5693f3ea199638a3dc59eed850aa6f47e90f18"
+      "sha256": "4da8d029b2243b5cf00746945682a75cf35a4e0ce3e7d496b69f9097f993ea94"
     },
     "scripts/lib/project/stop-checks.mjs": {
       "sha256": "074e0b5360bba27954dacf760ed5008649415a1fc53573ca1bb1e1f22293d221"
@@ -537,7 +537,7 @@
       "version": "1.1.0"
     },
     "docs/standards/agent-permissions/auto-mode.json": {
-      "sha256": "8cf7ac527886719d925f69ced8b9c54da073a3657b338bac05d6217e208feda7"
+      "sha256": "a416f5a51c27c8858d2c8356c059b571a55a1c9724ac2a282a458f68dc323716"
     },
     "docs/standards/dependency-updates/templates/dependabot-blast-radius.yml": {
       "sha256": "26ba338fbd512bf303bcfb7fc6b2b5894e72fe47f006ebd6ed70eaa3d7c7b511"
