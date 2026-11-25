@@ -36,7 +36,6 @@ export const formatOptions = v.object({
 export const roundTeam = v.object({ playerIndexes: v.array(v.number()) });
 
 const unclearableScoreFields = {
-	strokes: v.optional(v.number()),
 	penalties: v.optional(v.number()),
 	nr: v.optional(v.boolean()),
 };
@@ -46,6 +45,7 @@ const missSide = v.union(v.literal("left"), v.literal("right"));
 /** One player's stored result on one hole. */
 export const holeScoreFields = {
 	...unclearableScoreFields,
+	strokes: v.optional(v.number()),
 	putts: v.optional(v.number()),
 	fir: v.optional(v.boolean()),
 	firMiss: v.optional(missSide),
@@ -56,6 +56,7 @@ export const holeScoreFields = {
 /** A write to one result: omitted fields keep their value, `null` clears. */
 export const scoreUpdateFields = {
 	...unclearableScoreFields,
+	strokes: v.optional(v.union(v.number(), v.null())),
 	putts: v.optional(v.union(v.number(), v.null())),
 	fir: v.optional(v.union(v.boolean(), v.null())),
 	firMiss: v.optional(v.union(missSide, v.null())),

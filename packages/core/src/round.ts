@@ -50,7 +50,7 @@ export interface HoleScore {
 
 /** A write to one result: omitted fields keep their value, `null` clears. */
 export interface ScoreUpdate {
-	strokes?: number;
+	strokes?: number | null;
 	putts?: number | null;
 	fir?: boolean | null;
 	firMiss?: MissSide | null;
@@ -127,6 +127,41 @@ export function playedHoles(
 	return Array.from({ length: holeCount }, (_, i) => i).filter((i) =>
 		done.has(i),
 	);
+}
+
+/** A stored result knows when it was first entered; a correction keeps that. */
+export type RecordedScore = HoleScore & { _creationTime?: number };
+
+/** The hole indexes in card order. */
+export const cardOrder = (holeCount: number): number[] =>
+	Array.from({ length: holeCount }, (_, i) => i);
+
+/**
+ * The hole indexes in the order played. A round that began further on (a
+ * shotgun start on hole 10) wraps around: its first entered hole is the start,
+ * once the last hole was entered before any hole in front of that start. Any
+ * other order is a hole entered late and stays in card order.
+ */
+export function playingOrder(
+	holeCount: number,
+	scores: ReadonlyArray<RecordedScore>,
+): number[] {
+	const order = cardOrder(holeCount);
+	// A result being entered now has no time yet: the latest.
+	const enteredAt = order.map((holeIndex) =>
+		Math.min(
+			...scores
+				.filter(
+					(s) => s.holeIndex === holeIndex && (s.nr || s.strokes !== undefined),
+				)
+				.map((s) => s._creationTime ?? Number.MAX_VALUE),
+		),
+	);
+	const start = enteredAt.indexOf(Math.min(...enteredAt));
+	const wraps =
+		start > 0 &&
+		enteredAt.slice(0, start).every((time) => time > enteredAt[holeCount - 1]);
+	return wraps ? [...order.slice(start), ...order.slice(0, start)] : order;
 }
 
 /** Fairway hit only means something off a par-4 or par-5 tee. */

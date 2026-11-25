@@ -1,4 +1,4 @@
-import { type HoleScore, holeNets, netRank } from "./round";
+import { cardOrder, type HoleScore, holeNets, netRank } from "./round";
 
 export interface SkinsHole {
 	/** Player who won alone, `null` when tied (or everyone picked up). */
@@ -24,21 +24,23 @@ export interface SkinsStanding {
 }
 
 /**
- * Skins over the holes every player has a result on, in hole order. A skin goes
- * to the only lowest net; a tied skin carries to the next hole, or is gone.
+ * Skins over the holes every player has a result on, in playing order. A skin
+ * goes to the only lowest net; a tied skin carries to the next hole, or is gone.
  */
 export function skinsStanding(
 	holeCount: number,
 	scores: ReadonlyArray<HoleScore>,
 	received: ReadonlyArray<ReadonlyArray<number>>,
 	carryOver: boolean,
+	order: readonly number[] = cardOrder(holeCount),
 ): SkinsStanding {
 	const won = received.map(() => 0);
 	let carriedFrom: number[] = [];
 	let played = 0;
-	const holes = Array.from({ length: holeCount }, (_, holeIndex) => {
+	const holes = new Array<SkinsHole | null>(holeCount).fill(null);
+	for (const holeIndex of order) {
 		const nets = holeNets(scores, holeIndex, received);
-		if (!nets) return null;
+		if (!nets) continue;
 		played++;
 		const value = 1 + carriedFrom.length;
 		const best = Math.min(...nets.map(netRank));
@@ -49,11 +51,12 @@ export function skinsStanding(
 		if (tied.length === 1) {
 			won[tied[0]] += value;
 			carriedFrom = [];
-			return { winner: tied[0], value, nets, tied: [] };
+			holes[holeIndex] = { winner: tied[0], value, nets, tied: [] };
+			continue;
 		}
 		if (carryOver) carriedFrom = [...carriedFrom, holeIndex];
-		return { winner: null, value, nets, tied };
-	});
+		holes[holeIndex] = { winner: null, value, nets, tied };
+	}
 	return {
 		holes,
 		won,
@@ -71,12 +74,15 @@ export function skinValue(
 	scores: ReadonlyArray<HoleScore>,
 	received: ReadonlyArray<ReadonlyArray<number>>,
 	carryOver: boolean,
+	order: readonly number[] = cardOrder(holeCount),
 ): { value: number; carriedFrom: number[] } {
+	const before = new Set(order.slice(0, order.indexOf(holeIndex)));
 	const { carriedFrom } = skinsStanding(
 		holeCount,
-		scores.filter((s) => s.holeIndex < holeIndex),
+		scores.filter((s) => before.has(s.holeIndex)),
 		received,
 		carryOver,
+		order,
 	);
 	return { value: 1 + carriedFrom.length, carriedFrom };
 }

@@ -6,8 +6,9 @@
 import { type MatchStanding, matchStanding } from "./match-play";
 import {
 	type FormatOptions,
-	type HoleScore,
 	OWNER_INDEX,
+	playingOrder,
+	type RecordedScore,
 	type RoundFormat,
 	type RoundTeam,
 } from "./round";
@@ -120,7 +121,7 @@ export function sideStrokes(
 
 export interface ScoredFormatRound extends FormatRound {
 	holes: ReadonlyArray<{ par: number; strokeIndex: number }>;
-	scores: ReadonlyArray<HoleScore>;
+	scores: ReadonlyArray<RecordedScore>;
 }
 
 export type FormatStanding =
@@ -135,13 +136,17 @@ export type FormatStanding =
  */
 export function formatStanding(
 	round: ScoredFormatRound,
+	order: readonly number[] = playingOrder(round.holes.length, round.scores),
 ): FormatStanding | null {
 	const { format, holes, scores } = round;
 	if (!formatFits(format, round.players.length)) return null;
 	const received = sideStrokes(round, holes);
 	switch (format) {
 		case "match":
-			return { kind: format, ...matchStanding(holes.length, scores, received) };
+			return {
+				kind: format,
+				...matchStanding(holes.length, scores, received, order),
+			};
 		case "skins":
 			return {
 				kind: format,
@@ -150,6 +155,7 @@ export function formatStanding(
 					scores,
 					received,
 					carriesOver(round.formatOptions),
+					order,
 				),
 			};
 		case "sixes":

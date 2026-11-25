@@ -20,6 +20,8 @@ interface CardCell {
 	strokes: number | null;
 	mark: ScoreMark | null;
 	nr: boolean;
+	/** No result on a hole another side does have one on. */
+	missing: boolean;
 }
 
 export interface CardPlayerRow {
@@ -33,12 +35,18 @@ export interface CardPlayerRow {
 	scored: number;
 }
 
+const hasResult = ({ strokes, nr }: HoleScore): boolean =>
+	nr === true || strokes !== undefined;
+
 export function cardRows(
 	holes: readonly CardHole[],
 	scores: readonly HoleScore[],
 	/** Handicap strokes per side and hole. */
 	received: readonly (readonly number[])[],
 ): CardPlayerRow[] {
+	const played = new Set(
+		scores.filter(hasResult).map(({ holeIndex }) => holeIndex),
+	);
 	return received.map((sideReceived, playerIndex) => {
 		const cells = holes.map((hole, holeIndex): CardCell => {
 			const s = scoreAt(scores, holeIndex, playerIndex);
@@ -47,6 +55,7 @@ export function cardRows(
 				strokes,
 				mark: scoreMark(hole.par, strokes),
 				nr: s?.nr ?? false,
+				missing: played.has(holeIndex) && !(s && hasResult(s)),
 			};
 		});
 		const strokes = cells.map((c) => c.strokes);

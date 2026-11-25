@@ -70,6 +70,7 @@ export const scorecardEn = {
 	abandonMessage: "The round and all its scores are deleted.",
 	abandonError: "Could not abandon the round. Check your connection.",
 	editHole: "Edit hole {n}",
+	missing: "{name}: no score",
 };
 
 export const handicapTableEn = {
@@ -157,6 +158,7 @@ export const scorecardNl: typeof scorecardEn = {
 	abandonMessage: "De ronde en alle scores worden verwijderd.",
 	abandonError: "Ronde stoppen mislukt. Controleer je verbinding.",
 	editHole: "Hole {n} bewerken",
+	missing: "{name}: geen score",
 };
 
 export const handicapTableNl: typeof handicapTableEn = {

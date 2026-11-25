@@ -51,6 +51,21 @@ export function ScorecardGrid({
 			: undefined;
 	};
 
+	const cellText = ({
+		nr,
+		missing,
+		strokes,
+	}: CardPlayerRow["cells"][number]) =>
+		nr ? "–" : missing ? "?" : (strokes?.toString() ?? "");
+	// Also on a read-only card: "?" alone says little.
+	const cellLabel = (row: CardPlayerRow, p: number, i: number) =>
+		row.cells[i].missing
+			? [
+					editLabel(i) ?? fmt(t.score.title, { n: label(i) }),
+					fmt(t.scorecard.missing, { name: players[p]?.name ?? "" }),
+				].join(", ")
+			: editLabel(i);
+
 	return (
 		<View style={styles.blocks}>
 			{ranges.map(({ from, to }, nine) => {
@@ -120,18 +135,15 @@ export function ScorecardGrid({
 											key={i}
 											disabled={!onHolePress}
 											onPress={() => onHolePress?.(i)}
-											accessibilityLabel={editLabel(i)}
+											accessibilityLabel={cellLabel(row, p, i)}
 											accessibilityHint={strokesHint(p, i)}
 											style={styles.cell}
 										>
 											<StrokeDots count={received?.[p]?.[i] ?? 0} />
 											<Marked
 												mark={row.cells[i].mark}
-												text={
-													row.cells[i].nr
-														? "–"
-														: (row.cells[i].strokes?.toString() ?? "")
-												}
+												text={cellText(row.cells[i])}
+												missing={row.cells[i].missing}
 											/>
 										</Pressable>
 									))}
@@ -224,7 +236,15 @@ const CHIP_STYLES = {
 	plain: "chipPlain",
 } as const;
 
-function Marked({ mark, text }: { mark: ScoreMark | null; text: string }) {
+function Marked({
+	mark,
+	text,
+	missing,
+}: {
+	mark: ScoreMark | null;
+	text: string;
+	missing: boolean;
+}) {
 	const styles = useThemedStyles(createStyles);
 	const shape =
 		mark === "birdie"
@@ -242,6 +262,7 @@ function Marked({ mark, text }: { mark: ScoreMark | null; text: string }) {
 				style={[
 					styles.num,
 					(mark === "birdie" || mark === "eagle") && styles.under,
+					missing && styles.missing,
 				]}
 			>
 				{text}
@@ -322,6 +343,7 @@ const createStyles = (colors: Tokens) =>
 		headText: { color: colors.text, fontWeight: "700" },
 		num: { fontVariant: ["tabular-nums"], textAlign: "center" },
 		sum: { fontWeight: "800" },
+		missing: { color: colors.danger, fontWeight: "700" },
 		under: { color: course.birdie, fontWeight: "700" },
 		mark: {
 			width: 26,

@@ -1,4 +1,4 @@
-import { type HoleScore, holeNets, netRank } from "./round";
+import { cardOrder, type HoleScore, holeNets, netRank } from "./round";
 
 export interface MatchHole {
 	/** Player who won the hole, `null` when halved. */
@@ -34,20 +34,22 @@ export interface MatchStanding {
 }
 
 /**
- * A match over the holes both players have a result on, in hole order. Holes
- * played out after the match is decided keep no influence on it.
+ * A match over the holes both players have a result on, in playing order.
+ * Holes played out after the match is decided keep no influence on it.
  */
 export function matchStanding(
 	holeCount: number,
 	scores: ReadonlyArray<HoleScore>,
 	received: ReadonlyArray<ReadonlyArray<number>>,
+	order: readonly number[] = cardOrder(holeCount),
 ): MatchStanding {
 	let lead = 0;
 	let played = 0;
 	let result: MatchResult | null = null;
-	const holes = Array.from({ length: holeCount }, (_, holeIndex) => {
+	const holes = new Array<MatchHole | null>(holeCount).fill(null);
+	for (const holeIndex of order) {
 		const nets = holeNets(scores, holeIndex, received);
-		if (!nets) return null;
+		if (!nets) continue;
 		const [a, b] = nets.map(netRank);
 		const winner = a === b ? null : a < b ? (0 as const) : (1 as const);
 		if (!result) {
@@ -63,8 +65,8 @@ export function matchStanding(
 				};
 			}
 		}
-		return { winner, nets, lead };
-	});
+		holes[holeIndex] = { winner, nets, lead };
+	}
 	const toPlay = result ? 0 : holeCount - played;
 	const up = Math.abs(lead);
 	return {

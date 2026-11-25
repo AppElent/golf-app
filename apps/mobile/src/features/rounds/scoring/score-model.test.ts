@@ -1,14 +1,18 @@
 import { scoreEn } from "../../../i18n/messages/score";
 import {
 	draftUpdate,
+	fewerPutts,
 	flightDetail,
 	flightQuickStrokes,
 	initialDrafts,
 	isOtherResult,
 	ownerQuickStrokes,
+	pickStrokes,
 	pickTeeShot,
 	resultBadge,
 	type ScoreDraft,
+	sheetDrafts,
+	sheetUpdates,
 	stepOther,
 	teeShotOf,
 } from "./score-model";
@@ -24,8 +28,8 @@ const draft = (over: Partial<ScoreDraft> = {}): ScoreDraft => ({
 	...over,
 });
 
-const owner = (par = 4) => ({ par, owner: true, stored: false });
-const guest = { par: 4, owner: false, stored: false };
+const owner = (par = 4) => ({ par, owner: true, stored: undefined });
+const guest = { par: 4, owner: false, stored: undefined };
 
 describe("initialDrafts", () => {
 	it("starts the owner at par and the others without a score", () => {
@@ -163,8 +167,107 @@ describe("draftUpdate", () => {
 			4,
 		).slice(1);
 		expect(
-			draftUpdate({ ...stored, nr: false }, { ...guest, stored: true }),
+			draftUpdate(
+				{ ...stored, nr: false },
+				{ ...guest, stored: { holeIndex: 0, playerIndex: 1, nr: true } },
+			),
 		).toEqual({ nr: false });
+	});
+});
+
+describe("tapping a score off (APP-894)", () => {
+	it("clears a guest's selected score, and picks any other", () => {
+		expect(pickStrokes(draft({ strokes: 5 }), 5)).toEqual({
+			strokes: null,
+			nr: false,
+		});
+		expect(pickStrokes(draft({ strokes: 5 }), 4)).toEqual({
+			strokes: 4,
+			nr: false,
+		});
+		// A picked-up player's old score is not the selected one.
+		expect(pickStrokes(draft({ strokes: 5, nr: true }), 5)).toEqual({
+			strokes: 5,
+			nr: false,
+		});
+	});
+
+	it("clears the stored score on save, and stores nothing before one", () => {
+		const off = draft({ strokes: null });
+		expect(
+			draftUpdate(off, {
+				...guest,
+				stored: { holeIndex: 0, playerIndex: 1, strokes: 5 },
+			}),
+		).toEqual({ strokes: null, nr: false });
+		expect(draftUpdate(off, guest)).toBeNull();
+	});
+
+	it("takes putts back to empty below zero", () => {
+		expect([2, 1, 0].map(fewerPutts)).toEqual([1, 0, null]);
+		expect(
+			draftUpdate(draft(), {
+				...owner(),
+				stored: {
+					holeIndex: 0,
+					playerIndex: 0,
+					strokes: 4,
+					putts: 2,
+					gir: true,
+				},
+			}),
+		).toMatchObject({ putts: null, gir: null });
+	});
+});
+
+describe("a hand-set GIR without putts (APP-894)", () => {
+	const stored = { holeIndex: 0, playerIndex: 0, strokes: 4, gir: true };
+
+	it("goes with a stroke correction", () => {
+		expect(
+			draftUpdate(draft({ strokes: 6 }), { ...owner(), stored }),
+		).toMatchObject({ strokes: 6, gir: null });
+		expect(
+			draftUpdate(draft({ strokes: 6, putts: 2 }), { ...owner(), stored }),
+		).toMatchObject({ gir: false });
+	});
+
+	it("stays when the strokes do", () => {
+		expect(draftUpdate(draft(), { ...owner(), stored })).not.toHaveProperty(
+			"gir",
+		);
+	});
+});
+
+describe("another device scoring while the sheet is open (APP-894)", () => {
+	const opened = [
+		{ holeIndex: 0, playerIndex: 0, strokes: 4 },
+		{ holeIndex: 0, playerIndex: 1, strokes: 5 },
+		{ holeIndex: 0, playerIndex: 2, strokes: 5 },
+	];
+	const now = [opened[0], { ...opened[1], nr: true }, opened[2]];
+	const sheet = { holeIndex: 0, par: 4, teams: false };
+	const own = initialDrafts(opened, 0, 3, 4)[0];
+
+	it("leaves a guest picked up there alone, and shows it", () => {
+		const edits = { 0: own };
+		expect(sheetUpdates(edits, now, sheet).map((u) => u.playerIndex)).toEqual([
+			0,
+		]);
+		expect(sheetDrafts(initialDrafts(now, 0, 3, 4), edits)[1].nr).toBe(true);
+	});
+
+	it("saves the guests changed here", () => {
+		const edits = { 0: own, 2: draft({ strokes: 6 }) };
+		expect(sheetUpdates(edits, now, sheet).slice(1)).toEqual([
+			{ playerIndex: 2, strokes: 6, nr: false },
+		]);
+	});
+
+	it("gives a scramble's teams no owner stats", () => {
+		expect(sheetUpdates({ 0: draft() }, [], { ...sheet, teams: true })).toEqual(
+			[{ playerIndex: 0, strokes: 4, nr: false }],
+		);
 	});
 });
 

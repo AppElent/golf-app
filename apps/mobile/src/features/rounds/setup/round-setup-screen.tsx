@@ -321,6 +321,8 @@ function RoundSetupForm({
 					courseId,
 					teeId: tee._id,
 					holeRefs,
+					format,
+					...gameArgs(format, players.length, options),
 					players: players.map((p) => ({
 						name: p.name,
 						playingHandicap: playingHandicapPreview(

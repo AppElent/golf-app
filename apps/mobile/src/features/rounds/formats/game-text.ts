@@ -4,7 +4,14 @@
  * the scores, so a correction changes it everywhere.
  */
 import { holeLabel } from "@fairway/core/format";
-import { type HoleScore, holeNets, netRank } from "@fairway/core/round";
+import {
+	holeNets,
+	netRank,
+	playedHoles,
+	playingOrder,
+	type RecordedScore,
+	scoreAt,
+} from "@fairway/core/round";
 import {
 	carriesOver,
 	type FormatStanding,
@@ -78,7 +85,7 @@ type Of<K extends FormatStanding["kind"]> = Extract<
 
 /** A round's scores sit under sides: the players, or a scramble's teams. */
 export function gameSides(
-	round: GameRound,
+	round: Pick<GameRound, "format" | "teams" | "players">,
 	copy: Messages["formats"],
 ): { name: string; members: string | null }[] {
 	if (round.format !== "scramble" || !round.teams) {
@@ -112,16 +119,25 @@ export function formatName(
 
 /** The scores with one hole replaced, as the sheet's entry would save it. */
 export function withHole(
-	scores: readonly HoleScore[],
+	scores: readonly RecordedScore[],
 	holeIndex: number,
 	entries: readonly { strokes: number | null; nr: boolean }[],
-): HoleScore[] {
+): RecordedScore[] {
 	return [
 		...scores.filter((s) => s.holeIndex !== holeIndex),
 		...entries.flatMap(({ strokes, nr }, playerIndex) =>
 			strokes === null && !nr
 				? []
-				: [{ holeIndex, playerIndex, strokes: strokes ?? undefined, nr }],
+				: [
+						{
+							holeIndex,
+							playerIndex,
+							strokes: strokes ?? undefined,
+							nr,
+							_creationTime: scoreAt(scores, holeIndex, playerIndex)
+								?._creationTime,
+						},
+					],
 		),
 	];
 }
@@ -134,7 +150,10 @@ export function gameText(round: GameRound, { t, locale, vsPar }: GameCopy) {
 	const received = sideStrokes(round, holes);
 	const sides = gameSides(round, copy);
 	const names = sides.map((side) => side.name);
-	const standing = formatStanding(round);
+	const order = playingOrder(holes.length, scores);
+	const standing = formatStanding(round, order);
+	const playedAfter = (i: number, other: number) =>
+		order.indexOf(i) > order.indexOf(other);
 
 	const hole = (i: number) => holeLabel(holes[i].ref);
 	const count = (n: number, forms: { one: string; other: string }) =>
@@ -204,6 +223,15 @@ export function gameText(round: GameRound, { t, locale, vsPar }: GameCopy) {
 					}`,
 			)
 			.join(SEPARATOR);
+	// Two teams are compared, and totalled, over the holes both entered: says
+	// over how many, once one of them entered a hole the other did not.
+	const overHoles = ({ teams, played }: Of<"scramble">) => {
+		const entered = Math.max(
+			...teams.map((_, i) => playedHoles(holes.length, scores, i).length),
+		);
+		const text = entered > played ? afterHoles(played) : null;
+		return text && text.charAt(0).toLowerCase() + text.slice(1);
+	};
 	const holesWon = ({ teams }: Of<"scramble">) =>
 		teams.length > 1 && teams.some((team) => team.holesWon > 0)
 			? fmt(copy.holesWon, { list: teams.map((x) => x.holesWon).join("–") })
@@ -290,6 +318,7 @@ export function gameText(round: GameRound, { t, locale, vsPar }: GameCopy) {
 			scores,
 			received,
 			carriesOver(round.formatOptions),
+			order,
 		);
 
 	/** Below the entry, once every side has a score on the hole. */
@@ -299,10 +328,13 @@ export function gameText(round: GameRound, { t, locale, vsPar }: GameCopy) {
 			case "match": {
 				const result = standing.holes[holeIndex];
 				if (!result) return null;
-				const before = formatStanding({
-					...round,
-					scores: scores.filter((s) => s.holeIndex !== holeIndex),
-				}) as Of<"match">;
+				const before = formatStanding(
+					{
+						...round,
+						scores: scores.filter((s) => s.holeIndex !== holeIndex),
+					},
+					order,
+				) as Of<"match">;
 				const won =
 					result.winner === null
 						? copy.holeHalved
@@ -336,7 +368,7 @@ export function gameText(round: GameRound, { t, locale, vsPar }: GameCopy) {
 						sub: capital(`${score(result.nets[result.winner])}.`),
 					};
 				}
-				const next = holeIndex + 1;
+				const next = order[order.indexOf(holeIndex) + 1];
 				return {
 					title:
 						result.tied.length === 0
@@ -347,7 +379,7 @@ export function gameText(round: GameRound, { t, locale, vsPar }: GameCopy) {
 								}),
 					sub: !carriesOver(round.formatOptions)
 						? copy.skinGone
-						: next < holes.length
+						: next !== undefined
 							? `${copy.skinCarries} ${fmt(copy.nextWorth, { n: hole(next), value: result.value + 1 })}`
 							: copy.skinStays,
 				};
@@ -465,7 +497,7 @@ export function gameText(round: GameRound, { t, locale, vsPar }: GameCopy) {
 			case "scramble":
 				return {
 					title: teamTotals(standing),
-					sub: join(scoring, holesWon(standing)),
+					sub: join(scoring, overHoles(standing), holesWon(standing)),
 				};
 		}
 	}
@@ -502,7 +534,7 @@ export function gameText(round: GameRound, { t, locale, vsPar }: GameCopy) {
 							// Holes after the match is decided are only played out.
 							if (
 								!result ||
-								(standing.result && i > standing.result.holeIndex)
+								(standing.result && playedAfter(i, standing.result.holeIndex))
 							) {
 								return null;
 							}
@@ -625,8 +657,8 @@ export function gameText(round: GameRound, { t, locale, vsPar }: GameCopy) {
 			case "match": {
 				const { result: outcome } = standing;
 				const rest = outcome
-					? standing.holes.flatMap((x, i) =>
-							x && i > outcome.holeIndex ? [i] : [],
+					? order.filter(
+							(i) => standing.holes[i] && playedAfter(i, outcome.holeIndex),
 						)
 					: [];
 				return {
@@ -696,12 +728,27 @@ export function gameText(round: GameRound, { t, locale, vsPar }: GameCopy) {
 								: fmt(copy.winsTeam, { name: names[winner] }),
 					sub: join(
 						single || winner === null ? scoring : teamTotals(standing),
+						overHoles(standing),
 						holesWon(standing),
 					),
 					list: null,
 				};
 			}
 		}
+	}
+
+	/**
+	 * A team's total over the holes the winner is decided on, when two scramble
+	 * teams are compared; otherwise null and the card's own total counts.
+	 */
+	function comparedTotal(
+		side: number,
+	): { strokes: string; toPar: string | null } | null {
+		if (standing?.kind !== "scramble" || standing.teams.length < 2) return null;
+		const team = standing.teams[side];
+		return team.scored > 0
+			? { strokes: String(team.strokes), toPar: vsPar(team.vsPar) }
+			: { strokes: "–", toPar: null };
 	}
 
 	/** The share card's headline and the line under it. */
@@ -725,11 +772,14 @@ export function gameText(round: GameRound, { t, locale, vsPar }: GameCopy) {
 				});
 			}
 		}
+		const totalOf = (side: number) =>
+			comparedTotal(side)?.strokes ?? totalsText[side] ?? "–";
 		return {
 			title,
 			sub: join(
 				formatName(round, t),
-				...names.map((name, i) => `${name} ${totalsText[i] ?? "–"}`),
+				...names.map((name, i) => `${name} ${totalOf(i)}`),
+				standing.kind === "scramble" ? overHoles(standing) : null,
 			),
 		};
 	}
@@ -746,6 +796,7 @@ export function gameText(round: GameRound, { t, locale, vsPar }: GameCopy) {
 		cardRows,
 		totals,
 		result,
+		comparedTotal,
 		share,
 	};
 }
