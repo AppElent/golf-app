@@ -5,7 +5,7 @@
 // - No changes against the default branch, or the same changes that passed
 //   last time: exit 0 at once.
 // - Otherwise: Biome on the changed files, `typecheck` of each changed
-//   workspace package, then Vitest/Jest related tests. A failure exits 2 with a
+//   workspace package and of the packages that depend on it, then Vitest/Jest related tests. A failure exits 2 with a
 //   short reason on stderr, which sends Claude back to fix it.
 // - The run has a time budget, and a session is blocked at most a few times in
 //   a row. Past either limit the session may stop, and the hook reports the
@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url';
 
 export const DEFAULT_BUDGET_MS = 180_000;
 export const DEFAULT_MAX_BLOCKS = 3;
+export const MAC_TEST_WORKERS = 4;
 const OUTPUT_LINES = 40;
 const LARGE_FILE = 1024 * 1024;
 const SERIES_MS = 15 * 60_000;
@@ -87,15 +88,41 @@ function packageOf(root, file) {
   return root;
 }
 
+// Adds to `dirs` every workspace package that depends on one of them, directly
+// or through another package: a package's own tsconfig can accept code that a
+// dependent's rejects (Convex has a lower `lib`).
+function addDependents(root, dirs, read) {
+  const listed = git(root, ['ls-files', '-co', '--exclude-standard', '-z', '--', 'package.json', '**/package.json']) ?? '';
+  const workspaces = listed.split('\0').filter(Boolean).map(file => {
+    const pkg = read(join(root, file)) ?? {};
+    return { dir: dirname(join(root, file)), deps: { ...pkg.peerDependencies, ...pkg.devDependencies, ...pkg.dependencies } };
+  });
+  // A Set also visits the entries added while it is being walked.
+  for (const dir of dirs) {
+    const name = read(join(dir, 'package.json'))?.name;
+    if (!name) continue;
+    for (const workspace of workspaces) {
+      if (workspace.deps[name]?.startsWith('workspace:')) dirs.add(workspace.dir);
+    }
+  }
+  return dirs;
+}
+
 function testRunner(script) {
   if (/\bvitest\b/.test(script ?? '')) return 'vitest';
   if (/\bjest\b/.test(script ?? '')) return 'jest';
   return null;
 }
 
+// Several agents test at the same time on one Mac; uncapped runs exhaust its
+// memory (APP-852). Vitest and Jest take the same flag.
+function workerArgs({ env, platform }) {
+  return platform === 'darwin' && !env.CI ? [`--maxWorkers=${MAC_TEST_WORKERS}`] : [];
+}
+
 // Turns changed files into the checks to run, in order: lint, types, tests.
-// `read(path)` returns parsed JSON or null; it is injectable for tests.
-export function planChecks(root, files, read = readJson) {
+// `read(path)` returns parsed JSON or null; it and `host` are injectable for tests.
+export function planChecks(root, files, read = readJson, host = process) {
   const checks = [];
   if (!files.length) return checks;
   if (existsSync(join(root, 'biome.json')) || existsSync(join(root, 'biome.jsonc'))) {
@@ -117,18 +144,20 @@ export function planChecks(root, files, read = readJson) {
   }
   const rootPkg = read(join(root, 'package.json')) ?? {};
   const rootTypecheck = rootPkg.scripts?.typecheck ?? '';
-  const ordered = [...packages.keys()].sort((a, b) => (a === root ? -1 : b === root ? 1 : a.localeCompare(b)));
+  const typed = addDependents(root, new Set(packages.keys()), read);
+  const ordered = [...typed].sort((a, b) => (a === root ? -1 : b === root ? 1 : a.localeCompare(b)));
   for (const dir of ordered) {
     const pkg = read(join(dir, 'package.json')) ?? {};
     if (!pkg.scripts?.typecheck) continue;
     // A root typecheck that already filters to this package covers it.
-    if (dir !== root && pkg.name && packages.has(root) && rootTypecheck.includes(pkg.name)) continue;
+    if (dir !== root && pkg.name && typed.has(root) && rootTypecheck.includes(pkg.name)) continue;
     const label = relative(root, dir) || '.';
     checks.push({ name: `types (${label})`, cwd: dir, command: 'pnpm', args: ['run', 'typecheck'] });
   }
   if (!code.length) return checks;
   // Root Vitest follows imports across the workspace, so it gets every changed
   // code file; a package's own runner gets that package's files.
+  const workers = workerArgs(host);
   const testDirs = new Set([root, ...[...packages.keys()].filter(dir => packages.get(dir).length)]);
   for (const dir of [...testDirs].sort((a, b) => (a === root ? -1 : b === root ? 1 : a.localeCompare(b)))) {
     const pkg = read(join(dir, 'package.json')) ?? {};
@@ -137,8 +166,8 @@ export function planChecks(root, files, read = readJson) {
     if (!runner || !targets.length) continue;
     const label = relative(root, dir) || '.';
     checks.push(runner === 'vitest'
-      ? { name: `tests (${label})`, cwd: dir, command: 'pnpm', args: ['exec', 'vitest', 'related', '--run', '--passWithNoTests', ...targets] }
-      : { name: `tests (${label})`, cwd: dir, command: 'pnpm', args: ['exec', 'jest', '--findRelatedTests', '--passWithNoTests', ...targets] });
+      ? { name: `tests (${label})`, cwd: dir, command: 'pnpm', args: ['exec', 'vitest', 'related', '--run', '--passWithNoTests', ...workers, ...targets] }
+      : { name: `tests (${label})`, cwd: dir, command: 'pnpm', args: ['exec', 'jest', '--findRelatedTests', '--passWithNoTests', ...workers, ...targets] });
   }
   return checks;
 }

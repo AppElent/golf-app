@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read before reporting any change as complete or accepted.
-version: 2.3.0
+version: 2.5.0
 applies_to: [all]
 ---
 
@@ -25,7 +25,7 @@ Completion claims rest on the target's checks and observed runtime evidence, wit
 A Claude Code session in an app cannot end while lint, types or related tests fail on its changes. The Stop hook [`stop-checks.mjs`](verification/stop-checks.mjs) runs each time the agent tries to finish:
 
 - It looks at the files changed since the branch left the default branch (committed, uncommitted and untracked). With no changes, or the same changes that passed before, it exits 0 at once. Untracked files count, so keep tool output (`.wrangler`, `.expo`, `dist`) in `.gitignore`.
-- Otherwise it runs, in order: `biome check` on the changed files, `pnpm run typecheck` in each changed workspace package (skipping a package the root `typecheck` already filters to), then `vitest related` and `jest --findRelatedTests` for the changed code. A full check takes about 20 to 30 seconds; a repeat of a passed state takes under a second.
+- Otherwise it runs, in order: `biome check` on the changed files, `pnpm run typecheck` in each changed workspace package and in every workspace package that depends on it through a `workspace:` dependency (skipping a package the root `typecheck` already filters to), then `vitest related` and `jest --findRelatedTests` for the changed code (at most 4 test workers on a Mac outside CI). A full check takes about 20 to 30 seconds, longer for a change in a shared package; a repeat of a passed state takes under a second.
 - A failing check exits 2 with the failing check, its command, and the last lines of its output. Claude Code shows that to the agent, which must fix the cause and try again. It may not weaken or skip a check to get past the hook.
 - Limits: the run has a 180-second budget (`APPELENT_STOP_CHECKS_BUDGET_MS`). After 3 blocked attempts in a row (`APPELENT_STOP_CHECKS_MAX_BLOCKS`) the session may end, and the hook tells the user that the checks still fail. A timeout, a check that cannot start, or missing `node_modules` never blocks: the hook lets the session end with a note to run `pnpm verify`. A new user message starts a new count.
 - The hook is a fast first gate, not a replacement for `pnpm verify` and CI, which still run the full suite before a PR is reported done.
