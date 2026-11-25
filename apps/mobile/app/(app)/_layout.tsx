@@ -21,6 +21,7 @@ import {
 import { OfflineBanner } from "../../src/convex/offline-banner";
 import { AppQueryCacheProvider } from "../../src/convex/query-cache";
 import { KeepOfflineRound } from "../../src/features/play/offline/keep-offline-round";
+import { PlayerEditorProvider } from "../../src/features/rounds/setup/player-editor-provider";
 import { SimulationModeProvider } from "../../src/features/simulation/mode/simulation-mode-provider";
 import {
 	isPresentedRoute,
@@ -65,57 +66,68 @@ export default function AppLayout() {
 						fallback={<View style={{ flex: 1, backgroundColor: colors.bg }} />}
 					>
 						<SimulationModeProvider>
-							<View style={{ flex: 1, backgroundColor: colors.bg }}>
-								<OfflineBanner />
-								<Stack
-									layout={({ state, descriptors, children }) => (
-										<ShakeToReportGate
-											blocked={state.routes.some((route) =>
-												isPresentedRoute(
-													descriptors[route.key]?.options.presentation,
-												),
-											)}
-										>
-											{children}
-										</ShakeToReportGate>
-									)}
-									screenOptions={screenOptions}
-								>
-									<Stack.Screen
-										name="(tabs)"
-										options={{ headerShown: false }}
-									/>
-									<Stack.Screen
-										name="play"
-										options={{
-											headerShown: false,
-											presentation: "fullScreenModal",
-											gestureEnabled: false,
-										}}
-									/>
-									<Stack.Screen
-										name="score"
-										options={{
-											// iOS titles the sheet natively (see score-sheet-screen).
-											headerShown: Platform.OS === "ios",
-											presentation: "formSheet",
-											sheetAllowedDetents: [0.62, 1],
-											sheetGrabberVisible: true,
-											sheetCornerRadius: 28,
-										}}
-									/>
-									<Stack.Screen
-										name="scorecard"
-										options={{ presentation: "modal" }}
-									/>
-									<Stack.Screen
-										name="suggest/[courseId]"
-										options={{ presentation: "modal" }}
-									/>
-								</Stack>
-								<ResumePlayAfterOffline />
-								<KeepOfflineRound />
-							</View>
+							<PlayerEditorProvider>
+								<View style={{ flex: 1, backgroundColor: colors.bg }}>
+									<OfflineBanner />
+									<Stack
+										layout={({ state, descriptors, children }) => (
+											<ShakeToReportGate
+												blocked={state.routes.some((route) =>
+													isPresentedRoute(
+														descriptors[route.key]?.options.presentation,
+													),
+												)}
+											>
+												{children}
+											</ShakeToReportGate>
+										)}
+										screenOptions={screenOptions}
+									>
+										<Stack.Screen
+											name="(tabs)"
+											options={{ headerShown: false }}
+										/>
+										<Stack.Screen
+											name="play"
+											options={{
+												headerShown: false,
+												presentation: "fullScreenModal",
+												gestureEnabled: false,
+											}}
+										/>
+										<Stack.Screen
+											name="score"
+											options={{
+												// iOS titles the sheet natively (see score-sheet-screen).
+												headerShown: Platform.OS === "ios",
+												presentation: "formSheet",
+												sheetAllowedDetents: [0.62, 1],
+												sheetGrabberVisible: true,
+												sheetCornerRadius: 28,
+											}}
+										/>
+										<Stack.Screen
+											name="setup-player"
+											options={{
+												presentation: "formSheet",
+												sheetAllowedDetents: [0.62, 1],
+												sheetGrabberVisible: true,
+												sheetCornerRadius: 28,
+											}}
+										/>
+										<Stack.Screen
+											name="scorecard"
+											options={{ presentation: "modal" }}
+										/>
+										<Stack.Screen
+											name="suggest/[courseId]"
+											options={{ presentation: "modal" }}
+										/>
+									</Stack>
+									<ResumePlayAfterOffline />
+									<KeepOfflineRound />
+								</View>
+							</PlayerEditorProvider>
 						</SimulationModeProvider>
 					</AppQueryCacheProvider>
 				</ConvexSessionGate>

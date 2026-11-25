@@ -1,5 +1,5 @@
 import { useUser } from "@clerk/expo";
-import { formatDistance } from "@fairway/core/format";
+import { distanceValue } from "@fairway/core/format";
 import {
 	parseHandicapIndex,
 	playingHandicapPreview,
@@ -8,25 +8,23 @@ import { detectLoops, selectLoops } from "@fairway/core/loops";
 import type { RoundFormat } from "@fairway/core/round";
 import { useMutation } from "convex/react";
 import { Stack, useRouter } from "expo-router";
-import { useMemo, useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { useEffect, useMemo, useRef, useState } from "react";
+import {
+	ScrollView,
+	type ScrollViewInstance,
+	StyleSheet,
+	View,
+} from "react-native";
 import { api, type Id } from "../../../convex/api";
 import { useLiveQuery, useQuery } from "../../../convex/query-cache";
 import { useSubmit } from "../../../convex/use-submit";
 import { haptics } from "../../../feedback/haptics";
 import { fmt, useI18n } from "../../../i18n";
-import { spacing, useTokens } from "../../../theme";
+import { metrics, spacing, useTokens } from "../../../theme";
+import { ChoiceChip, ChoiceGrid, ChoiceTile } from "../../../ui/choice-tile";
 import { EmptyState } from "../../../ui/empty-state";
-import {
-	AddRow,
-	FormChoiceRow,
-	FormScreen,
-	FormSection,
-	FormSegmentedRow,
-	FormTextField,
-	InlineNumberFieldRow,
-	TextAction,
-} from "../../../ui/form";
+import { FormScreen, FormSection, TextAction } from "../../../ui/form";
+import { InsetList, InsetRow } from "../../../ui/inset-list";
 import { SkeletonList } from "../../../ui/skeleton";
 import { AppText } from "../../../ui/text";
 import type { CourseDetail } from "../../courses/course-detail";
@@ -35,15 +33,19 @@ import { useSimulationMode } from "../../simulation/mode/use-simulation-mode";
 import { RoundInProgress } from "../components/round-in-progress";
 import {
 	defaultTeeId,
+	doubledLoop,
+	FORMAT_TILES,
+	MAX_PLAYERS,
+	playerInitial,
+	playingHandicapText,
 	teeLengthMeters,
 	toggleLoopPick,
-	visibleTees,
 } from "./round-setup-model";
+import { SetupSection } from "./setup-section";
+import { type PlayerDraft, usePlayerEditor } from "./use-player-editor";
 
-interface GuestDraft {
+interface GuestDraft extends PlayerDraft {
 	key: number;
-	name: string;
-	index: string;
 }
 
 export function RoundSetupScreen({
@@ -115,20 +117,23 @@ function RoundSetupForm({
 	const { setSimulating } = useSimulationMode();
 
 	const loops = useMemo(() => detectLoops(detail.holes), [detail]);
-	const [picks, setPicks] = useState<number[]>([]);
+	const [picks, setPicks] = useState<number[]>(() =>
+		loops.map((_, i) => i).slice(0, 2),
+	);
 	const [teeId, setTeeId] = useState<Id<"tees"> | null>(null);
-	const [teesExpanded, setTeesExpanded] = useState(false);
 	const units = useUnits();
 	const [format, setFormat] = useState<RoundFormat>("stableford");
 	const [ownerIndex, setOwnerIndex] = useState<string | null>(null);
 	const [guests, setGuests] = useState<GuestDraft[]>([]);
 	const submit = useSubmit();
+	const { setEdit } = usePlayerEditor();
+	// A later visit to the sheet must not edit players of a closed setup.
+	useEffect(() => () => setEdit(null), [setEdit]);
+	const teeScroll = useRef<ScrollViewInstance>(null);
+	const teeScrolled = useRef(false);
 
 	// Seeded during render, so the form never paints unseeded; the query results
 	// can still fill in later, and an edit is never overwritten.
-	if (loops.length > 0 && picks.length === 0) {
-		setPicks(loops.length >= 2 ? [0, 1] : [0]);
-	}
 	if (teeId === null && detail.tees[0]) {
 		setTeeId(defaultTeeId(detail.tees, lastTeeId));
 	}
@@ -154,13 +159,8 @@ function RoundSetupForm({
 			index: g.index,
 		})),
 	];
-	const invalidIndex = players.some((p) => !parseHandicapIndex(p.index).valid);
 	const canStart =
-		!!tee &&
-		holeRefs.length > 0 &&
-		incomplete.length === 0 &&
-		!invalidIndex &&
-		!submit.pending;
+		!!tee && holeRefs.length > 0 && incomplete.length === 0 && !submit.pending;
 
 	async function onStart() {
 		if (!tee) return;
@@ -190,22 +190,98 @@ function RoundSetupForm({
 		);
 	}
 
-	const teeRows = visibleTees(detail.tees, teeId, teesExpanded);
-	const teeSecondary = (x: CourseDetail["tees"][number]) => {
-		const rating = fmt(t.setup.teeDetail, {
-			cr: numbers.decimal(x.courseRating),
-			slope: x.slopeRating,
-		});
+	const teeLength = (x: CourseDetail["tees"][number]) => {
 		const length = teeLengthMeters(x, detail.holes, holeRefs);
 		return length === null
-			? rating
-			: `${formatDistance(length, units)} · ${rating}`;
+			? undefined
+			: `${numbers.whole(Number(distanceValue(length, units)))} ${units}`;
+	};
+	const teeSpoken = (x: CourseDetail["tees"][number]) =>
+		[
+			x.name,
+			teeLength(x),
+			fmt(t.setup.teeDetail, {
+				cr: numbers.decimal(x.courseRating),
+				slope: x.slopeRating,
+			}),
+		]
+			.filter(Boolean)
+			.join(", ");
+
+	const loopName = (i: number) =>
+		fmt(t.setup.loop, { label: loops[i]?.label ?? "" });
+	const doubled = doubledLoop(picks);
+	const holesFooter =
+		incomplete.length > 0
+			? fmt(t.setup.incomplete, { holes: incomplete.join(", ") })
+			: holeRefs.length === 0
+				? t.setup.holesHint
+				: doubled !== null
+					? `${fmt(t.setup.loopTwice, { loop: loopName(doubled), par })}.`
+					: `${fmt(t.setup.holeCount, { count: holeRefs.length, par })}. ${t.setup.holesAgain}`;
+
+	const plays = (index: string) => {
+		const value = playingHandicapPreview(index, tee, par, holeRefs.length);
+		return value === undefined ? undefined : playingHandicapText(value);
+	};
+	const playerDetail = (index: string) => {
+		const { value } = parseHandicapIndex(index);
+		return value === null
+			? t.setup.noIndex
+			: fmt(t.setup.index, { index: numbers.handicap(value) });
+	};
+	const playerValue = (index: string) => {
+		const value = plays(index);
+		return value === undefined ? undefined : fmt(t.setup.plays, { value });
+	};
+	const playerFooter = (index: string) => {
+		const value = plays(index);
+		return value === undefined || !tee
+			? t.setup.playerBlank
+			: `${fmt(t.setup.playerPlays, { value, tee: tee.name })} ${t.setup.playerBlank}`;
 	};
 
-	const phLabel = (raw: string) => {
-		const ph = playingHandicapPreview(raw, tee, par, holeRefs.length);
-		return ph === undefined ? "" : fmt(t.setup.playingHandicap, { value: ph });
-	};
+	function editOwner() {
+		setEdit({
+			initial: { name: ownerName, index: ownerIndex ?? "" },
+			nameLocked: true,
+			namePlaceholder: ownerName,
+			footer: playerFooter,
+			onSave: (draft) => setOwnerIndex(draft.index),
+		});
+		router.navigate("/setup-player");
+	}
+
+	function removeGuest(key: number) {
+		setGuests((prev) => prev.filter((g) => g.key !== key));
+	}
+
+	function editGuest(guest: GuestDraft, n: number) {
+		setEdit({
+			initial: { name: guest.name, index: guest.index },
+			nameLocked: false,
+			namePlaceholder: fmt(t.setup.guest, { n }),
+			footer: playerFooter,
+			onSave: (draft) =>
+				setGuests((prev) =>
+					prev.map((g) => (g.key === guest.key ? { ...g, ...draft } : g)),
+				),
+			onRemove: () => removeGuest(guest.key),
+		});
+		router.navigate("/setup-player");
+	}
+
+	function addGuest() {
+		setEdit({
+			initial: { name: "", index: "" },
+			nameLocked: false,
+			namePlaceholder: fmt(t.setup.guest, { n: guests.length + 1 }),
+			footer: playerFooter,
+			onSave: (draft) =>
+				setGuests((prev) => [...prev, { key: Date.now(), ...draft }]),
+		});
+		router.navigate("/setup-player");
+	}
 
 	// `pending` stays true after a successful start, so the round this screen
 	// just started never shows up here as the blocking one.
@@ -235,169 +311,167 @@ function RoundSetupForm({
 				</AppText>
 			) : null}
 
-			<FormSection
-				title={t.setup.holes}
-				footer={
-					incomplete.length > 0
-						? fmt(t.setup.incomplete, { holes: incomplete.join(", ") })
-						: holeRefs.length > 0
-							? `${label} · ${fmt(t.setup.holeCount, { count: holeRefs.length, par })}`
-							: t.setup.holesHint
-				}
-			>
-				{loops.map((loop, i) => {
-					const count = picks.filter((p) => p === i).length;
-					return (
-						<FormChoiceRow
-							key={loop.label}
-							label={count === 2 ? `${loop.label}  ×2` : loop.label}
-							secondary={fmt(t.setup.holeCount, {
-								count: loop.refs.length,
-								par: selectLoops(detail.holes, loops, [i]).par,
-							})}
-							selected={count > 0}
-							onPress={() => {
-								haptics.selectionChanged();
-								setPicks((prev) => toggleLoopPick(prev, i));
-							}}
-						/>
-					);
-				})}
-			</FormSection>
+			<SetupSection title={t.setup.holes} footer={holesFooter}>
+				<ChoiceGrid label={t.setup.holes}>
+					{loops.map((loop, i) => {
+						const count = picks.filter((p) => p === i).length;
+						return (
+							<ChoiceTile
+								key={loop.label}
+								label={loopName(i)}
+								detail={fmt(
+									count === 2 ? t.setup.loopParTwice : t.setup.loopPar,
+									{ par: selectLoops(detail.holes, loops, [i]).par },
+								)}
+								selected={count > 0}
+								onPress={() => {
+									haptics.selectionChanged();
+									setPicks((prev) => toggleLoopPick(prev, i));
+								}}
+							/>
+						);
+					})}
+				</ChoiceGrid>
+			</SetupSection>
 
-			<FormSection title={t.setup.tee}>
+			<SetupSection title={t.setup.tee}>
 				{detail.tees.length === 0 ? (
-					<AppText variant="footnote" style={styles.inset}>
-						{t.setup.noTees}
-					</AppText>
+					<AppText variant="footnote">{t.setup.noTees}</AppText>
 				) : (
-					teeRows.rows.map((x) => (
-						<FormChoiceRow
-							key={x._id}
-							role="radio"
-							label={x.name}
-							leading={
-								x.color ? (
-									<View
-										style={[
-											styles.teeDot,
-											{
-												backgroundColor: x.color,
-												borderColor: colors.borderStrong,
-											},
-										]}
-									/>
-								) : undefined
-							}
-							secondary={teeSecondary(x)}
-							selected={x._id === teeId}
-							onPress={() => {
-								haptics.selectionChanged();
-								setTeeId(x._id);
-								// A long list folds back once a tee is chosen.
-								setTeesExpanded(false);
-							}}
-						/>
-					))
-				)}
-				{teeRows.folded ? (
-					<TextAction
-						label={fmt(t.setup.allTees, { count: detail.tees.length })}
-						onPress={() => setTeesExpanded(true)}
-					/>
-				) : null}
-			</FormSection>
-
-			<FormSection title={t.setup.format}>
-				<FormSegmentedRow
-					options={[
-						{ value: "stableford", label: t.setup.stableford },
-						{ value: "stroke", label: t.setup.stroke },
-					]}
-					value={format}
-					onChange={setFormat}
-				/>
-			</FormSection>
-
-			<FormSection title={t.setup.players}>
-				<InlineNumberFieldRow
-					label={ownerName}
-					suffix={phLabel(ownerIndex ?? "")}
-					value={ownerIndex ?? ""}
-					onChangeText={setOwnerIndex}
-					placeholder={t.setup.handicapIndex}
-					keyboardType="numbers-and-punctuation"
-					accessibilityLabel={`${ownerName}, ${t.setup.handicapIndex}`}
-				/>
-				{guests.map((g, i) => {
-					const name = fmt(t.setup.guest, { n: i + 1 });
-					return (
-						<View key={g.key} style={styles.guest}>
-							<View style={styles.guestFields}>
-								<FormTextField
-									label={t.setup.guestName}
-									appearance="plain"
-									placeholder={name}
-									value={g.name}
-									onChangeText={(text) =>
-										setGuests((prev) =>
-											prev.map((x) =>
-												x.key === g.key ? { ...x, name: text } : x,
-											),
-										)
+					<ScrollView
+						ref={teeScroll}
+						horizontal
+						showsHorizontalScrollIndicator={false}
+						accessibilityRole="radiogroup"
+						accessibilityLabel={t.setup.tee}
+						// Full bleed, so a chip cut off at the edge says there are more.
+						style={styles.teeRow}
+						contentContainerStyle={styles.teeRowContent}
+					>
+						{detail.tees.map((x) => (
+							<View
+								key={x._id}
+								onLayout={({ nativeEvent }) => {
+									// The last played tee may start beyond the edge.
+									if (x._id !== teeId || teeScrolled.current) return;
+									teeScrolled.current = true;
+									const { x: left } = nativeEvent.layout;
+									teeScroll.current?.scrollTo({
+										x: left - metrics.screenGutter,
+										animated: false,
+									});
+								}}
+							>
+								<ChoiceChip
+									label={x.name}
+									detail={teeLength(x)}
+									accessibilityLabel={teeSpoken(x)}
+									leading={
+										x.color ? (
+											<View
+												style={[
+													styles.teeDot,
+													{
+														backgroundColor: x.color,
+														borderColor: colors.borderStrong,
+													},
+												]}
+											/>
+										) : undefined
 									}
-								/>
-								<InlineNumberFieldRow
-									label={t.setup.handicapIndex}
-									suffix={phLabel(g.index)}
-									value={g.index}
-									keyboardType="numbers-and-punctuation"
-									onChangeText={(text) =>
-										setGuests((prev) =>
-											prev.map((x) =>
-												x.key === g.key ? { ...x, index: text } : x,
-											),
-										)
-									}
+									selected={x._id === teeId}
+									onPress={() => {
+										haptics.selectionChanged();
+										setTeeId(x._id);
+									}}
 								/>
 							</View>
-							<Pressable
-								accessibilityRole="button"
-								accessibilityLabel={fmt(t.setup.removeGuest, {
-									name: g.name || name,
-								})}
-								hitSlop={spacing.sm}
-								onPress={() =>
-									setGuests((prev) => prev.filter((x) => x.key !== g.key))
-								}
-								style={styles.remove}
-							>
-								<AppText variant="heading" style={{ color: colors.danger }}>
-									−
-								</AppText>
-							</Pressable>
-						</View>
-					);
-				})}
-				{guests.length < 3 ? (
-					<AddRow
-						label={t.setup.addGuest}
-						onPress={() =>
-							setGuests((prev) => [
-								...prev,
-								{ key: Date.now(), name: "", index: "" },
-							])
-						}
-					/>
-				) : null}
-			</FormSection>
+						))}
+					</ScrollView>
+				)}
+			</SetupSection>
 
-			{invalidIndex || submit.error ? (
+			<SetupSection title={t.setup.format}>
+				<ChoiceGrid label={t.setup.format}>
+					{FORMAT_TILES.map((value) => (
+						<ChoiceTile
+							key={value}
+							label={t.setup.formats[value].title}
+							detail={t.setup.formats[value].detail}
+							selected={value === format}
+							onPress={() => {
+								haptics.selectionChanged();
+								setFormat(value);
+							}}
+						/>
+					))}
+				</ChoiceGrid>
+			</SetupSection>
+
+			<SetupSection
+				title={t.setup.players}
+				footer={
+					tee && holeRefs.length > 0
+						? fmt(t.setup.playingFrom, {
+								tee: tee.name,
+								count: holeRefs.length,
+							})
+						: undefined
+				}
+			>
+				<InsetList>
+					<InsetRow
+						leading={{ initial: playerInitial(ownerName) }}
+						title={ownerName}
+						secondary={fmt(t.setup.ownerDetail, {
+							detail: playerDetail(ownerIndex ?? ""),
+						})}
+						value={playerValue(ownerIndex ?? "")}
+						chevron
+						onPress={editOwner}
+					/>
+					{guests.map((guest, i) => {
+						const name = players[i + 1].name;
+						return (
+							<InsetRow
+								key={guest.key}
+								leading={{ initial: playerInitial(name) }}
+								title={name}
+								secondary={playerDetail(guest.index)}
+								value={playerValue(guest.index)}
+								chevron
+								onPress={() => editGuest(guest, i + 1)}
+								actions={[
+									{
+										key: "remove",
+										label: t.common.delete,
+										systemImage: "trash",
+										destructive: true,
+										onPress: () => removeGuest(guest.key),
+									},
+								]}
+							/>
+						);
+					})}
+					{players.length < MAX_PLAYERS ? (
+						<InsetRow
+							leading={{ symbol: "plus", circle: true }}
+							title={t.setup.addGuest}
+							accent
+							onPress={addGuest}
+						/>
+					) : null}
+				</InsetList>
+			</SetupSection>
+
+			{submit.error ? (
 				<AppText
+					selectable
 					variant="footnote"
-					style={[styles.inset, { color: colors.danger }]}
+					accessibilityRole="alert"
+					style={{ color: colors.danger }}
 				>
-					{invalidIndex ? t.profile.handicapInvalid : submit.error}
+					{submit.error}
 				</AppText>
 			) : null}
 
@@ -422,7 +496,9 @@ const styles = StyleSheet.create({
 		borderRadius: 7,
 		borderWidth: StyleSheet.hairlineWidth * 2,
 	},
-	guest: { flexDirection: "row", alignItems: "center" },
-	guestFields: { flex: 1 },
-	remove: { paddingHorizontal: spacing.md },
+	teeRow: { marginHorizontal: -metrics.screenGutter, flexGrow: 0 },
+	teeRowContent: {
+		gap: spacing.sm,
+		paddingHorizontal: metrics.screenGutter,
+	},
 });
