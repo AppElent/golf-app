@@ -10,7 +10,7 @@ import { feedbackEn } from "./feedback";
 import { formatsEn } from "./formats";
 import { clubsEn, profileEn, roundsEn, statsEn } from "./history";
 import { playEn } from "./play";
-import { scorecardEn, scoreEn } from "./score";
+import { handicapTableEn, scorecardEn, scoreEn } from "./score";
 import { coursesEn, homeEn, setupEn, simulatorEn, suggestEn } from "./start";
 
 export const en = {
@@ -30,6 +30,7 @@ export const en = {
 	score: scoreEn,
 	scorecard: scorecardEn,
 	formats: formatsEn,
+	handicapTable: handicapTableEn,
 	rounds: roundsEn,
 	stats: statsEn,
 	profile: profileEn,

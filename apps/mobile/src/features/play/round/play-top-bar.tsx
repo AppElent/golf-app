@@ -7,6 +7,7 @@ import { AppText } from "../../../ui/text";
 import { HudButton } from "../hud/hud-button";
 import { HudGlass } from "../hud/hud-glass";
 import { hudLayout } from "../hud/hud-layout";
+import { HudMenuButton } from "../hud/hud-menu-button";
 import { hudStyles } from "../hud/hud-styles";
 
 export function PlayTopBar({
@@ -78,10 +79,27 @@ export function PlayTopBar({
 				</Pressable>
 			</HudGlass>
 			{offline ? null : (
-				<HudButton
+				<HudMenuButton
 					symbol={{ ios: "list.number", android: "format_list_numbered" }}
-					label={t.play.scorecard}
-					onPress={() => router.push("/scorecard")}
+					label={t.play.roundMenu}
+					actions={[
+						{
+							id: "scorecard",
+							title: t.play.scorecard,
+							image: "list.number",
+							onPress: () => router.push("/scorecard"),
+						},
+						{
+							id: "handicap-table",
+							title: t.handicapTable.title,
+							image: "circle.grid.2x2",
+							onPress: () =>
+								router.push({
+									pathname: "/handicap-table",
+									params: { hole: String(holeIndex) },
+								}),
+						},
+					]}
 				/>
 			)}
 		</View>

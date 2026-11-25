@@ -14,6 +14,7 @@
 		"./format": "./src/format.ts",
 		"./geo": "./src/geo.ts",
 		"./handicap": "./src/handicap.ts",
+		"./handicap-table": "./src/handicap-table.ts",
 		"./hole-advance": "./src/hole-advance.ts",
 		"./hole-projection": "./src/hole-projection.ts",
 		"./hole-view": "./src/hole-view.ts",

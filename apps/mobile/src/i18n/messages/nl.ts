@@ -6,7 +6,7 @@ import { feedbackNl } from "./feedback";
 import { formatsNl } from "./formats";
 import { clubsNl, profileNl, roundsNl, statsNl } from "./history";
 import { playNl } from "./play";
-import { scorecardNl, scoreNl } from "./score";
+import { handicapTableNl, scorecardNl, scoreNl } from "./score";
 import { coursesNl, homeNl, setupNl, simulatorNl, suggestNl } from "./start";
 
 export const nl = {
@@ -26,6 +26,7 @@ export const nl = {
 	score: scoreNl,
 	scorecard: scorecardNl,
 	formats: formatsNl,
+	handicapTable: handicapTableNl,
 	rounds: roundsNl,
 	stats: statsNl,
 	profile: profileNl,

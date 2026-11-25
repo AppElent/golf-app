@@ -32,6 +32,7 @@ import type { CourseDetail } from "../../courses/course-detail";
 import { useUnits } from "../../profile/use-units";
 import { useSimulationMode } from "../../simulation/mode/use-simulation-mode";
 import { RoundInProgress } from "../components/round-in-progress";
+import { setupParam } from "../handicap-table/handicap-table-params";
 import { FormatOptions, gameArgs, useFormatOptions } from "./format-options";
 import {
 	defaultTeeId,
@@ -311,6 +312,29 @@ function RoundSetupForm({
 		router.navigate("/setup-player");
 	}
 
+	function openHandicapTable() {
+		if (!tee) return;
+		router.push({
+			pathname: "/handicap-table",
+			params: {
+				setup: setupParam({
+					courseId,
+					teeId: tee._id,
+					holeRefs,
+					players: players.map((p) => ({
+						name: p.name,
+						playingHandicap: playingHandicapPreview(
+							p.index,
+							tee,
+							par,
+							holeRefs.length,
+						),
+					})),
+				}),
+			},
+		});
+	}
+
 	// `pending` stays true after a successful start, so the round this screen
 	// just started never shows up here as the blocking one.
 	if (active && !submit.pending) {
@@ -462,6 +486,10 @@ function RoundSetupForm({
 							})
 						: undefined
 				}
+				footerLink={{
+					label: t.handicapTable.title,
+					onPress: openHandicapTable,
+				}}
 			>
 				<InsetList>
 					<InsetRow

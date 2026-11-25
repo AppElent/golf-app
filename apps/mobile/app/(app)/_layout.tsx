@@ -121,6 +121,20 @@ export default function AppLayout() {
 											options={{ presentation: "modal" }}
 										/>
 										<Stack.Screen
+											name="handicap-table"
+											options={
+												// Android draws no header in a form sheet.
+												Platform.OS === "ios"
+													? {
+															presentation: "formSheet",
+															sheetAllowedDetents: [1],
+															sheetGrabberVisible: true,
+															sheetCornerRadius: 28,
+														}
+													: { presentation: "modal" }
+											}
+										/>
+										<Stack.Screen
 											name="suggest/[courseId]"
 											options={{ presentation: "modal" }}
 										/>
