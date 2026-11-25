@@ -86,7 +86,7 @@ function ScoreSheet({
 	const preview = game(round, holes, entered);
 	const finish = useFinishRound();
 	const submit = useSubmit();
-	// Saved, but finishing failed: let the player try again.
+	// Saved, but finishing failed: Save only closes the sheet then.
 	const saving = submit.pending && !finish.error;
 	const isLast = holeIndex === holes.length - 1;
 	// "Next hole" only on the first entry of your own score for the hole being
@@ -131,8 +131,10 @@ function ScoreSheet({
 
 	// One mutation for every player and the move to the next hole: one round
 	// trip, and the round never advances without its scores.
-	const onSave = () =>
-		submit.run(
+	const onSave = async () => {
+		if (empty) return;
+		if (finish.error) return router.back();
+		await submit.run(
 			() =>
 				saveHole({
 					roundId: round._id,
@@ -165,6 +167,7 @@ function ScoreSheet({
 				},
 			},
 		);
+	};
 
 	const title = fmt(t.score.title, { n: holeLabel(hole.ref) });
 	const subtitle = [
