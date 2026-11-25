@@ -16,6 +16,7 @@ import {
 	scoreAt,
 } from "@fairway/core/round";
 import {
+	comparedScores,
 	countsForPlayer,
 	formatFits,
 	hasFormatOptions,
@@ -570,7 +571,10 @@ export const history = query({
 					format: round.format,
 					holeCount: round.holeRefs.length,
 					differential: round.scoreDifferential ?? null,
-					owner: ownerRoundStats(holesOfRound(round, holes), scores),
+					owner: ownerRoundStats(
+						holesOfRound(round, holes),
+						comparedScores(round, scores),
+					),
 				};
 			}),
 		);

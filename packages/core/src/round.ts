@@ -147,8 +147,8 @@ export const cardOrder = (holeCount: number): number[] =>
  * The hole indexes in the order played. A round that began further on (a
  * shotgun start on hole 10) wraps around: its first entered hole is the start,
  * once the last hole was entered before any hole in front of that start. Any
- * other order stays in card order. Only entry times are known, so hole 1
- * entered after the last hole reads as a start on hole 2.
+ * other order stays in card order, as does a start on hole 2: entry times can't
+ * tell it from a hole 1 that was forgotten and entered last.
  */
 export function playingOrder(
 	holeCount: number,
@@ -165,7 +165,7 @@ export function playingOrder(
 	);
 	const start = enteredAt.indexOf(Math.min(...enteredAt));
 	const wraps =
-		start > 0 &&
+		start > 1 &&
 		enteredAt.slice(0, start).every((time) => time > enteredAt[holeCount - 1]);
 	return wraps ? [...order.slice(start), ...order.slice(0, start)] : order;
 }

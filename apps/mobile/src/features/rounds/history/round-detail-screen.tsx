@@ -117,8 +117,10 @@ export function RoundDetailScreen() {
 	const share = text.share(
 		rows.map((row) => (row.scored > 0 ? String(row.total) : "–")),
 	);
+	// Out + In is the whole card, not the holes two scramble teams compare.
+	const wholeCard = !compared || compared.scored === owner.scored;
 	const ninesText =
-		recap.nines.length > 1
+		recap.nines.length > 1 && wholeCard
 			? recap.nines.map((n, i) => `${nineLabels[i]} ${n.strokes}`).join(" · ")
 			: null;
 

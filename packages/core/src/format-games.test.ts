@@ -366,6 +366,9 @@ describe("a round started on hole 10 (APP-894)", () => {
 		expect(
 			playingOrder(18, entered([0, 1, 3, 4, ...card18.slice(5), 2], even)),
 		).toEqual(card18);
+		expect(playingOrder(18, entered([...card18.slice(1), 0], even))).toEqual(
+			card18,
+		);
 	});
 
 	it("decides a match on the hole it was decided on", () => {

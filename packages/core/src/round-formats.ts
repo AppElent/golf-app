@@ -6,11 +6,14 @@
 import { type MatchStanding, matchStanding } from "./match-play";
 import {
 	type FormatOptions,
+	type HoleScore,
+	hasResult,
 	OWNER_INDEX,
 	playingOrder,
 	type RecordedScore,
 	type RoundFormat,
 	type RoundTeam,
+	scoreAt,
 } from "./round";
 import { strokesPerHole } from "./scoring";
 import {
@@ -90,6 +93,23 @@ export function sideCount(round: FormatRound): number {
 	return round.format === "scramble"
 		? (round.teams?.length ?? 1)
 		: round.players.length;
+}
+
+/**
+ * The scores a round's total counts: between two scramble teams only those on
+ * holes every team has a result on, like the winner.
+ */
+export function comparedScores<S extends HoleScore>(
+	round: FormatRound,
+	scores: readonly S[],
+): readonly S[] {
+	const sides = sideCount(round);
+	if (round.format !== "scramble" || sides < 2) return scores;
+	return scores.filter(({ holeIndex }) =>
+		Array.from({ length: sides }, (_, side) =>
+			hasResult(scoreAt(scores, holeIndex, side)),
+		).every(Boolean),
+	);
 }
 
 /**

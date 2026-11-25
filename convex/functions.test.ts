@@ -332,9 +332,11 @@ describe("rounds", () => {
 			await expect(save(0, 0, 1, 2)).rejects.toThrow(
 				"playerIndex out of range",
 			);
-			for (let holeIndex = 0; holeIndex < 9; holeIndex++) {
+			for (let holeIndex = 0; holeIndex < 8; holeIndex++) {
 				await save(holeIndex, 0, 1);
 			}
+			// The other team never enters the last hole: it doesn't count.
+			await save(8, 0);
 			await alice.mutation(api.shots.mark, {
 				roundId,
 				holeIndex: 0,
@@ -355,6 +357,7 @@ describe("rounds", () => {
 			});
 			expect(all.map((r) => r._id)).toEqual([roundId, own]);
 			expect(all[0]).toMatchObject({ format: "scramble", differential: null });
+			expect(all[0].owner.strokes).toBe(32);
 			const detail = await alice.query(api.rounds.detail, { roundId });
 			expect(detail?.round.scoreDifferential).toBeNull();
 		});
