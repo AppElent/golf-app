@@ -1,7 +1,7 @@
 import { holeLabel } from "@fairway/core/format";
 import { nineRanges, type ScoreMark } from "@fairway/core/scoring";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { fmt, useI18n } from "../../../i18n";
+import { fmt, plural, useI18n } from "../../../i18n";
 import {
 	course,
 	radius,
@@ -34,13 +34,22 @@ export function ScorecardGrid({
 	currentHole?: number;
 	onHolePress?: (holeIndex: number) => void;
 }) {
-	const { t } = useI18n();
+	const { t, locale } = useI18n();
 	const styles = useThemedStyles(createStyles);
 	const ranges = nineRanges(holes.length);
 	const label = (i: number) => holeLabel(holes[i].ref);
 	// A read-only card (a finished round) has nothing to edit.
 	const editLabel = (i: number) =>
 		onHolePress ? fmt(t.scorecard.editHole, { n: label(i) }) : undefined;
+
+	const strokesHint = (p: number, i: number) => {
+		const count = received?.[p]?.[i] ?? 0;
+		return count > 0
+			? fmt(plural(locale, count, t.formats.getsStroke), {
+					name: players[p]?.name ?? "",
+				})
+			: undefined;
+	};
 
 	return (
 		<View style={styles.blocks}>
@@ -112,6 +121,7 @@ export function ScorecardGrid({
 											disabled={!onHolePress}
 											onPress={() => onHolePress?.(i)}
 											accessibilityLabel={editLabel(i)}
+											accessibilityHint={strokesHint(p, i)}
 											style={styles.cell}
 										>
 											<StrokeDots count={received?.[p]?.[i] ?? 0} />
@@ -132,8 +142,9 @@ export function ScorecardGrid({
 									</View>
 								</View>
 							))}
-							{gameRows.map(({ label: name, cells }) => (
-								<View key={name} style={[styles.row, styles.gameRow]}>
+							{gameRows.map(({ label: name, cells }, g) => (
+								// biome-ignore lint/suspicious/noArrayIndexKey: one row per side, fixed order
+								<View key={g} style={[styles.row, styles.gameRow]}>
 									<NameCell text={name} />
 									{indices.map((i) => (
 										<View key={i} style={styles.cell}>

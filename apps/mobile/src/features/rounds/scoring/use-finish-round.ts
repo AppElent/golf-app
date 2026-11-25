@@ -23,9 +23,17 @@ export function useFinishRound() {
 		{ round, holes }: Pick<ActiveRound, "round" | "holes">,
 		scores: readonly HoleScore[],
 	): Promise<boolean> {
-		const missing = holes.length - playedHoles(holes.length, scores).length;
-		const roundId = round._id;
 		const team = round.format === "scramble";
+		// Your own holes; in a scramble, those of the team furthest behind.
+		const sides = team ? (round.teams?.length ?? 1) : 1;
+		const missing = Math.max(
+			...Array.from(
+				{ length: sides },
+				(_, side) =>
+					holes.length - playedHoles(holes.length, scores, side).length,
+			),
+		);
+		const roundId = round._id;
 		const ok = await confirm({
 			title: t.scorecard.finishTitle,
 			message: round.simulated

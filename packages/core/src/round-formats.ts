@@ -34,7 +34,11 @@ export const FORMAT_PLAYERS: Record<
 };
 
 export function formatFits(format: RoundFormat, playerCount: number): boolean {
-	const { min, max } = FORMAT_PLAYERS[format];
+	// A newer app can store a format this build doesn't know.
+	const range: { min: number; max?: number } | undefined =
+		FORMAT_PLAYERS[format];
+	if (!range) return false;
+	const { min, max } = range;
 	return playerCount >= min && (max === undefined || playerCount <= max);
 }
 

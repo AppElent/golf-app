@@ -43,6 +43,8 @@ export interface TeamTotal {
 	/** Holes with strokes; a picked-up hole has none. */
 	scored: number;
 	holesWon: number;
+	/** Holes picked up: its total is not a full card. */
+	pickedUp: number;
 }
 
 export interface ScrambleStanding {
@@ -50,6 +52,8 @@ export interface ScrambleStanding {
 	/** Holes every team has a result on. */
 	played: number;
 	toPlay: number;
+	/** Lower net over those holes; `null` when that can't be told. */
+	winner: 0 | 1 | "tied" | null;
 }
 
 /** Team totals; with two teams also the holes each won on net. */
@@ -60,10 +64,15 @@ export function scrambleStanding(
 ): ScrambleStanding {
 	const holesWon = received.map(() => 0);
 	let played = 0;
+	const compared = received.map(() => ({ net: 0, pickedUp: 0 }));
 	holes.forEach((_, holeIndex) => {
 		const nets = holeNets(scores, holeIndex, received);
 		if (!nets) return;
 		played++;
+		nets.forEach((net, i) => {
+			if (net === null) compared[i].pickedUp++;
+			else compared[i].net += net;
+		});
 		if (nets.length < 2) return;
 		const best = Math.min(...nets.map(netRank));
 		const winners = nets.flatMap((net, i) => (net === best ? [i] : []));
@@ -84,7 +93,27 @@ export function scrambleStanding(
 			netVsPar: toPar - given,
 			scored: strokes.filter((s) => s !== null).length,
 			holesWon: holesWon[team],
+			pickedUp: compared[team].pickedUp,
 		};
 	});
-	return { teams, played, toPlay: holes.length - played };
+	return {
+		teams,
+		played,
+		toPlay: holes.length - played,
+		winner: winnerOf(compared),
+	};
+}
+
+/** A team that picked up has no total, so it can't win on strokes. */
+function winnerOf(
+	teams: ReadonlyArray<{ net: number; pickedUp: number }>,
+): ScrambleStanding["winner"] {
+	if (teams.length < 2) return null;
+	const [a, b] = teams;
+	if (a.pickedUp > 0 || b.pickedUp > 0) {
+		if (a.pickedUp > 0 && b.pickedUp > 0) return null;
+		return a.pickedUp > 0 ? 1 : 0;
+	}
+	if (a.net === b.net) return "tied";
+	return a.net < b.net ? 0 : 1;
 }

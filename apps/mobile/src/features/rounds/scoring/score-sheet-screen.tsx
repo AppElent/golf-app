@@ -1,5 +1,5 @@
 import { formatDistance, holeLabel } from "@fairway/core/format";
-import { OWNER_INDEX, scoreAt } from "@fairway/core/round";
+import { OWNER_INDEX, playedHoles, scoreAt } from "@fairway/core/round";
 import { useMutation } from "convex/react";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
@@ -86,7 +86,8 @@ function ScoreSheet({
 	const preview = game(round, holes, entered);
 	const finish = useFinishRound();
 	const submit = useSubmit();
-	const saving = submit.pending;
+	// Saved, but finishing failed: let the player try again.
+	const saving = submit.pending && !finish.error;
 	const isLast = holeIndex === holes.length - 1;
 	// "Next hole" only on the first entry of your own score for the hole being
 	// played; a correction (also after browsing back with the chevrons) stays
@@ -96,6 +97,16 @@ function ScoreSheet({
 		drafts[OWNER_INDEX].nr || drafts[OWNER_INDEX].strokes !== null;
 	const advances =
 		!isLast && firstEntry && entersOwn && holeIndex === round.currentHoleIndex;
+
+	// A scramble sheet opens empty; there is nothing to save yet.
+	const empty =
+		teams &&
+		drafts.every(
+			(draft, side) =>
+				!draft.nr &&
+				draft.strokes === null &&
+				!scoreAt(scores, holeIndex, side),
+		);
 
 	const update = (playerIndex: number, patch: ScoreDraftPatch) =>
 		setDrafts((all) =>
@@ -142,9 +153,10 @@ function ScoreSheet({
 				onSuccess: () => {
 					haptics.saveConfirmed();
 					const decided = newlyDecided(saved.standing, preview.standing);
+					const left = holes.length - playedHoles(holes.length, entered).length;
 					const standing = preview.cardStanding();
-					if (decided && standing) {
-						askToPlayOut(standing.title, decided.left);
+					if (decided && standing && left > 0) {
+						askToPlayOut(standing.title, left);
 					} else if (isLast && firstEntry) {
 						router.replace("/scorecard");
 					} else {
@@ -204,7 +216,7 @@ function ScoreSheet({
 					<Stack.Toolbar placement="right">
 						<Stack.Toolbar.Button
 							onPress={() => void onSave()}
-							disabled={saving}
+							disabled={saving || empty}
 							variant="prominent"
 						>
 							{saveLabel}

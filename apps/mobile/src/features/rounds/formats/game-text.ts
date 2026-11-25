@@ -98,7 +98,8 @@ export function formatName(
 	round: Pick<GameRound, "format" | "formatOptions">,
 	t: Pick<Messages, "formats" | "setup">,
 ): string {
-	const format = t.setup.formats[round.format].title;
+	// A newer app can store a format this build doesn't know.
+	const format = t.setup.formats[round.format]?.title ?? "";
 	return hasFormatOptions(round.format)
 		? fmt(t.formats.withScoring, {
 				format,
@@ -197,7 +198,10 @@ export function gameText(round: GameRound, { t, locale, vsPar }: GameCopy) {
 	const teamTotals = ({ teams }: Of<"scramble">) =>
 		teams
 			.map(
-				(team, i) => `${names[i]} ${vsPar(net ? team.netVsPar : team.vsPar)}`,
+				(team, i) =>
+					`${names[i]} ${vsPar(net ? team.netVsPar : team.vsPar)}${
+						team.pickedUp > 0 && teams.length > 1 ? ` ${copy.pickedUp}` : ""
+					}`,
 			)
 			.join(SEPARATOR);
 	const holesWon = ({ teams }: Of<"scramble">) =>
@@ -537,9 +541,15 @@ export function gameText(round: GameRound, { t, locale, vsPar }: GameCopy) {
 						}),
 					},
 				];
-			case "sixes":
+			case "sixes": {
+				const initials = names.map(playerInitial);
 				return names.map((name, side) => ({
-					label: fmt(copy.rowPoints, { initial: playerInitial(name) }),
+					label: fmt(copy.rowPoints, {
+						initial:
+							initials.filter((x) => x === initials[side]).length > 1
+								? `${initials[side]}${side + 1}`
+								: initials[side],
+					}),
 					cells: standing.holes.map((result, i) =>
 						result
 							? plain(
@@ -550,6 +560,7 @@ export function gameText(round: GameRound, { t, locale, vsPar }: GameCopy) {
 							: null,
 					),
 				}));
+			}
 			case "scramble":
 				if (names.length < 2) return [];
 				return [
@@ -673,17 +684,18 @@ export function gameText(round: GameRound, { t, locale, vsPar }: GameCopy) {
 				};
 			}
 			case "scramble": {
-				const [a, b] = standing.teams.map((x) => (net ? x.netVsPar : x.vsPar));
+				const { winner } = standing;
+				const single = standing.teams.length < 2;
 				return {
 					kicker,
 					title:
-						b === undefined
+						winner === null
 							? teamTotals(standing)
-							: a === b
+							: winner === "tied"
 								? copy.tiedTeams
-								: fmt(copy.winsTeam, { name: names[a < b ? 0 : 1] }),
+								: fmt(copy.winsTeam, { name: names[winner] }),
 					sub: join(
-						b === undefined ? scoring : teamTotals(standing),
+						single || winner === null ? scoring : teamTotals(standing),
 						holesWon(standing),
 					),
 					list: null,

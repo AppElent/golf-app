@@ -114,12 +114,13 @@ export const netRank = (net: number | null): number => net ?? Infinity;
 export function playedHoles(
 	holeCount: number,
 	scores: ReadonlyArray<HoleScore>,
+	playerIndex = OWNER_INDEX,
 ): number[] {
 	const done = new Set(
 		scores
 			.filter(
 				(s) =>
-					s.playerIndex === OWNER_INDEX && (s.strokes !== undefined || s.nr),
+					s.playerIndex === playerIndex && (s.strokes !== undefined || s.nr),
 			)
 			.map((s) => s.holeIndex),
 	);

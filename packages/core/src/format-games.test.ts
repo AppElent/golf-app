@@ -278,6 +278,7 @@ describe("scrambleStanding", () => {
 				netVsPar: -2,
 				scored: 2,
 				holesWon: 0,
+				pickedUp: 1,
 			},
 		]);
 		expect(played).toBe(3);
@@ -295,4 +296,19 @@ describe("scrambleStanding", () => {
 		expect(teams.map((t) => t.holesWon)).toEqual([0, 2]);
 		expect(teams.map((t) => t.netVsPar)).toEqual([-1, 0]);
 	});
+
+	it.each([
+		["the lower net", [4, 4], [4, 5], 0],
+		["equal nets", [4, 5], [5, 4], "tied"],
+		["a team that picked up a hole", [5, 5], [5, "x"], 0],
+		["both teams picking up", ["x", 5], [5, "x"], null],
+		["a hole one team hasn't entered", [5, 5], [6, null], 0],
+	] as [string, Entry[], Entry[], unknown][])(
+		"names the winner with %s",
+		(_, a, b, winner) => {
+			expect(scrambleStanding(holes, card(a, b), none(2, 9)).winner).toBe(
+				winner,
+			);
+		},
+	);
 });
