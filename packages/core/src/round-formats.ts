@@ -7,9 +7,13 @@ import { type MatchStanding, matchStanding } from "./match-play";
 import {
 	type FormatOptions,
 	type HoleScore,
+	hasResult,
 	OWNER_INDEX,
+	playingOrder,
+	type RecordedScore,
 	type RoundFormat,
 	type RoundTeam,
+	scoreAt,
 } from "./round";
 import { strokesPerHole } from "./scoring";
 import {
@@ -92,6 +96,23 @@ export function sideCount(round: FormatRound): number {
 }
 
 /**
+ * The scores a round's total counts: between two scramble teams only those on
+ * holes every team has a result on, like the winner.
+ */
+export function comparedScores<S extends HoleScore>(
+	round: FormatRound,
+	scores: readonly S[],
+): readonly S[] {
+	const sides = sideCount(round);
+	if (round.format !== "scramble" || sides < 2) return scores;
+	return scores.filter(({ holeIndex }) =>
+		Array.from({ length: sides }, (_, side) =>
+			hasResult(scoreAt(scores, holeIndex, side)),
+		).every(Boolean),
+	);
+}
+
+/**
  * The handicap each side plays the format off. A player without one plays
  * gross. In a net match only the difference counts: the lower plays off 0.
  */
@@ -120,7 +141,7 @@ export function sideStrokes(
 
 export interface ScoredFormatRound extends FormatRound {
 	holes: ReadonlyArray<{ par: number; strokeIndex: number }>;
-	scores: ReadonlyArray<HoleScore>;
+	scores: ReadonlyArray<RecordedScore>;
 }
 
 export type FormatStanding =
@@ -135,13 +156,17 @@ export type FormatStanding =
  */
 export function formatStanding(
 	round: ScoredFormatRound,
+	order: readonly number[] = playingOrder(round.holes.length, round.scores),
 ): FormatStanding | null {
 	const { format, holes, scores } = round;
 	if (!formatFits(format, round.players.length)) return null;
 	const received = sideStrokes(round, holes);
 	switch (format) {
 		case "match":
-			return { kind: format, ...matchStanding(holes.length, scores, received) };
+			return {
+				kind: format,
+				...matchStanding(holes.length, scores, received, order),
+			};
 		case "skins":
 			return {
 				kind: format,
@@ -150,6 +175,7 @@ export function formatStanding(
 					scores,
 					received,
 					carriesOver(round.formatOptions),
+					order,
 				),
 			};
 		case "sixes":

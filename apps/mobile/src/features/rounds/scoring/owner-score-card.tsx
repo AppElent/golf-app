@@ -19,6 +19,7 @@ import { AppText } from "../../../ui/text";
 import { PlayerAvatar } from "./player-avatar";
 import { CIRCLE_FONT_SCALE, RoundButton } from "./round-button";
 import {
+	fewerPutts,
 	ownerQuickStrokes,
 	resultBadge,
 	type ScoreDraft,
@@ -178,6 +179,7 @@ export function OwnerScoreCard({
 					label={t.score.putts}
 					value={draft.putts}
 					startAt={2}
+					onDecrease={(putts) => onChange({ putts: fewerPutts(putts) })}
 					onChange={(putts) => onChange({ putts })}
 				/>
 				<View style={styles.tile}>
@@ -236,12 +238,15 @@ function CountTile({
 	label,
 	value,
 	startAt = 1,
+	onDecrease,
 	onChange,
 }: {
 	label: string;
 	/** null: not entered yet; the first + lands on `startAt`. */
 	value: number | null;
 	startAt?: number;
+	/** Takes over −, also below zero. */
+	onDecrease?: (value: number) => void;
 	onChange: (value: number) => void;
 }) {
 	const { t } = useI18n();
@@ -250,6 +255,11 @@ function CountTile({
 	const set = (next: number) => {
 		haptics.selectionChanged();
 		onChange(next);
+	};
+	const decrease = (from: number) => {
+		if (!onDecrease) return set(from - 1);
+		haptics.selectionChanged();
+		onDecrease(from);
 	};
 	return (
 		<View style={styles.tile}>
@@ -269,8 +279,8 @@ function CountTile({
 					glyph="−"
 					size={36}
 					background={colors.surface}
-					disabled={value === null || value === 0}
-					onPress={() => set((value ?? 0) - 1)}
+					disabled={value === null || (value === 0 && !onDecrease)}
+					onPress={() => value !== null && decrease(value)}
 				/>
 				<AppText
 					variant="title"

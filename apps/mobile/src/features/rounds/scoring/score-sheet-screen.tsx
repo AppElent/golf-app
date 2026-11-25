@@ -1,5 +1,10 @@
 import { formatDistance, holeLabel } from "@fairway/core/format";
-import { OWNER_INDEX, playedHoles, scoreAt } from "@fairway/core/round";
+import {
+	hasResult,
+	OWNER_INDEX,
+	playedHoles,
+	scoreAt,
+} from "@fairway/core/round";
 import { useMutation } from "convex/react";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
@@ -23,11 +28,12 @@ import { type ActiveRound, useActiveRound } from "../use-active-round";
 import { FlightRow } from "./flight-row";
 import { OwnerScoreCard } from "./owner-score-card";
 import {
-	draftUpdate,
 	flightDetail,
 	initialDrafts,
-	type ScoreDraft,
 	type ScoreDraftPatch,
+	type SheetEdits,
+	sheetDrafts,
+	sheetUpdates,
 } from "./score-model";
 import { HoleTitle, ScoreSheetHeader } from "./score-sheet-header";
 import { useFinishRound } from "./use-finish-round";
@@ -74,14 +80,18 @@ function ScoreSheet({
 	const saved = game(round, holes, scores);
 	// A scramble is scored per team: no owner card, stats or starting par.
 	const teams = round.format === "scramble";
-	const [drafts, setDrafts] = useState<ScoreDraft[]>(() =>
-		initialDrafts(
-			scores,
-			holeIndex,
-			saved.sides.length,
-			teams ? undefined : hole.par,
-		),
+	const live = initialDrafts(
+		scores,
+		holeIndex,
+		saved.sides.length,
+		teams ? undefined : hole.par,
 	);
+	// The owner's card is always saved; another side once it is changed here.
+	const [edits, setEdits] = useState<SheetEdits>(() => {
+		const own: SheetEdits = { [OWNER_INDEX]: live[OWNER_INDEX] };
+		return teams ? {} : own;
+	});
+	const drafts = sheetDrafts(live, edits);
 	const entered = withHole(scores, holeIndex, drafts);
 	const preview = game(round, holes, entered);
 	const finish = useFinishRound();
@@ -92,7 +102,7 @@ function ScoreSheet({
 	// "Next hole" only on the first entry of your own score for the hole being
 	// played; a correction (also after browsing back with the chevrons) stays
 	// put. Guests scored first don't count, like the next-tee offer.
-	const firstEntry = !scoreAt(scores, holeIndex, OWNER_INDEX);
+	const firstEntry = !hasResult(scoreAt(scores, holeIndex, OWNER_INDEX));
 	const entersOwn =
 		drafts[OWNER_INDEX].nr || drafts[OWNER_INDEX].strokes !== null;
 	const advances =
@@ -109,9 +119,10 @@ function ScoreSheet({
 		);
 
 	const update = (playerIndex: number, patch: ScoreDraftPatch) =>
-		setDrafts((all) =>
-			all.map((d, i) => (i === playerIndex ? { ...d, ...patch } : d)),
-		);
+		setEdits((all) => ({
+			...all,
+			[playerIndex]: { ...(all[playerIndex] ?? live[playerIndex]), ...patch },
+		}));
 
 	// Playing out a decided match is the players' choice.
 	const askToPlayOut = (winner: string, left: number) =>
@@ -139,14 +150,10 @@ function ScoreSheet({
 				saveHole({
 					roundId: round._id,
 					holeIndex,
-					// A player without a score yet is left out, not stored at par.
-					scores: drafts.flatMap((draft, playerIndex) => {
-						const update = draftUpdate(draft, {
-							par: hole.par,
-							owner: !teams && playerIndex === OWNER_INDEX,
-							stored: scoreAt(scores, holeIndex, playerIndex) !== undefined,
-						});
-						return update ? [{ playerIndex, ...update }] : [];
+					scores: sheetUpdates(edits, scores, {
+						holeIndex,
+						par: hole.par,
+						teams,
 					}),
 					...(advances ? { advanceTo: holeIndex + 1 } : {}),
 				}),

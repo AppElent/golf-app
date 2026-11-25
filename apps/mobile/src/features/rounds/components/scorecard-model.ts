@@ -1,4 +1,9 @@
-import { countedStrokes, type HoleScore, scoreAt } from "@fairway/core/round";
+import {
+	countedStrokes,
+	type HoleScore,
+	hasResult,
+	scoreAt,
+} from "@fairway/core/round";
 import {
 	formatVsPar,
 	nineTotals,
@@ -20,6 +25,8 @@ interface CardCell {
 	strokes: number | null;
 	mark: ScoreMark | null;
 	nr: boolean;
+	/** No result on a hole another side does have one on. */
+	missing: boolean;
 }
 
 export interface CardPlayerRow {
@@ -39,6 +46,9 @@ export function cardRows(
 	/** Handicap strokes per side and hole. */
 	received: readonly (readonly number[])[],
 ): CardPlayerRow[] {
+	const played = new Set(
+		scores.filter(hasResult).map(({ holeIndex }) => holeIndex),
+	);
 	return received.map((sideReceived, playerIndex) => {
 		const cells = holes.map((hole, holeIndex): CardCell => {
 			const s = scoreAt(scores, holeIndex, playerIndex);
@@ -47,6 +57,7 @@ export function cardRows(
 				strokes,
 				mark: scoreMark(hole.par, strokes),
 				nr: s?.nr ?? false,
+				missing: played.has(holeIndex) && !hasResult(s),
 			};
 		});
 		const strokes = cells.map((c) => c.strokes);

@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { matchStanding } from "./match-play";
-import type { HoleScore } from "./round";
+import { type HoleScore, playingOrder, type RecordedScore } from "./round";
+import { formatStanding } from "./round-formats";
 import { scrambleStanding, teamHandicap } from "./scramble";
 import { sixesPoints, sixesStanding } from "./sixes";
 import { skinsStanding, skinValue } from "./skins";
@@ -294,7 +295,20 @@ describe("scrambleStanding", () => {
 			],
 		);
 		expect(teams.map((t) => t.holesWon)).toEqual([0, 2]);
-		expect(teams.map((t) => t.netVsPar)).toEqual([-1, 0]);
+		expect(teams.map((t) => t.netVsPar)).toEqual([0, 0]);
+	});
+
+	it("totals two teams over the holes both entered, like the winner (APP-894)", () => {
+		// With its third hole, team 1 would show 13 against team 2's 9.
+		const { teams, winner, played, toPlay } = scrambleStanding(
+			holes,
+			card([4, 4, 5], [5, 4, null]),
+			none(2, 9),
+		);
+		expect(winner).toBe(0);
+		expect(teams.map((t) => t.strokes)).toEqual([8, 9]);
+		expect(teams.map((t) => t.vsPar)).toEqual([0, 1]);
+		expect([played, toPlay]).toEqual([2, 7]);
 	});
 
 	it.each([
@@ -311,4 +325,81 @@ describe("scrambleStanding", () => {
 			);
 		},
 	);
+});
+
+describe("a round started on hole 10 (APP-894)", () => {
+	/** Scores of two players, entered in this hole order. */
+	const entered = (
+		order: readonly number[],
+		strokes: (hole: number) => [number, number],
+	): RecordedScore[] =>
+		order.flatMap((holeIndex, i) =>
+			strokes(holeIndex).map((s, playerIndex) => ({
+				holeIndex,
+				playerIndex,
+				strokes: s,
+				_creationTime: 1000 + i * 10 + playerIndex,
+			})),
+		);
+	const card18 = Array.from({ length: 18 }, (_, i) => i);
+	const from10 = [...card18.slice(9), ...card18.slice(0, 9)];
+	const even = (): [number, number] => [4, 4];
+
+	it("plays in the order it was entered", () => {
+		expect(playingOrder(18, entered(from10, even))).toEqual(from10);
+		expect(playingOrder(18, entered(from10.slice(0, 11), even))).toEqual(
+			from10,
+		);
+		expect(playingOrder(18, entered(card18, even))).toEqual(card18);
+		expect(playingOrder(18, [])).toEqual(card18);
+	});
+
+	it("takes the hole being entered as the latest", () => {
+		const now = { holeIndex: 0, playerIndex: 0, strokes: 4 };
+		expect(
+			playingOrder(18, [...entered(from10.slice(0, 9), even), now]),
+		).toEqual(from10);
+	});
+
+	it("keeps card order for a hole entered late", () => {
+		expect(playingOrder(18, entered([1, 2, 0, 3, 4], even))).toEqual(card18);
+		expect(
+			playingOrder(18, entered([0, 1, 3, 4, ...card18.slice(5), 2], even)),
+		).toEqual(card18);
+		expect(playingOrder(18, entered([...card18.slice(1), 0], even))).toEqual(
+			card18,
+		);
+	});
+
+	it("decides a match on the hole it was decided on", () => {
+		// Player 0 wins every hole: 10&8 after ten holes, on hole 1.
+		const scores = entered(from10, () => [4, 5]);
+		const standing = formatStanding({
+			format: "match",
+			players: [{}, {}],
+			holes: card18.map((i) => ({ par: 4, strokeIndex: i + 1 })),
+			scores,
+		});
+		expect(standing).toMatchObject({
+			result: { winner: 0, up: 10, left: 8, holeIndex: 0 },
+		});
+	});
+
+	it("carries a skin to the hole played next", () => {
+		// Tied on 18, won on 1.
+		const strokes = (h: number): [number, number] =>
+			h === 17 ? [4, 4] : [3, 4];
+		const standing = skinsStanding(
+			18,
+			entered(from10, strokes),
+			none(2, 18),
+			true,
+			from10,
+		);
+		expect(standing.holes[0]).toMatchObject({ winner: 0, value: 2 });
+		expect(standing.carried).toBe(0);
+		expect(
+			skinValue(0, 18, entered(from10, strokes), none(2, 18), true, from10),
+		).toEqual({ value: 2, carriedFrom: [17] });
+	});
 });

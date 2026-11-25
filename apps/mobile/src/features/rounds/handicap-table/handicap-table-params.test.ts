@@ -5,8 +5,11 @@ import {
 } from "./handicap-table-params";
 
 const setup = {
-	courseId: "c1",
-	teeId: "t1",
+	courseId: "c1" as HandicapTableSetup["courseId"],
+	teeId: "t1" as HandicapTableSetup["teeId"],
+	format: "scramble",
+	formatOptions: { scoring: "net" },
+	teams: [{ playerIndexes: [0, 1] }],
 	holeRefs: ["1", "(2)"],
 	players: [{ name: "Eric", playingHandicap: -1 }, { name: "Piet & Jan" }],
 } as HandicapTableSetup;
@@ -31,6 +34,8 @@ describe("the setup parameter", () => {
 		"[]",
 		JSON.stringify({ ...setup, teeId: 1 }),
 		JSON.stringify({ ...setup, holeRefs: [1] }),
+		JSON.stringify({ ...setup, format: "nope" }),
+		JSON.stringify({ ...setup, teams: [null] }),
 		JSON.stringify({ ...setup, players: [null] }),
 		JSON.stringify({
 			...setup,

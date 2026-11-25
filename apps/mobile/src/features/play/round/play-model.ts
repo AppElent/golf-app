@@ -7,7 +7,12 @@ import {
 	type LatLng,
 } from "@fairway/core/geo";
 import type { HazardInPlay, HoleAnchors } from "@fairway/core/hole-view";
-import { type HoleScore, OWNER_INDEX, scoreAt } from "@fairway/core/round";
+import {
+	type HoleScore,
+	hasResult,
+	OWNER_INDEX,
+	scoreAt,
+} from "@fairway/core/round";
 import type { LiveHole } from "../../live/hole/live-hole";
 
 /**
@@ -147,5 +152,7 @@ export function nextTeeAction(
 	scores: readonly HoleScore[],
 	holeIndex: number,
 ): "score" | "advance" {
-	return scoreAt(scores, holeIndex, OWNER_INDEX) ? "advance" : "score";
+	return hasResult(scoreAt(scores, holeIndex, OWNER_INDEX))
+		? "advance"
+		: "score";
 }

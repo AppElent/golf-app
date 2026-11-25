@@ -16,6 +16,7 @@ import { CIRCLE_FONT_SCALE, RoundButton } from "./round-button";
 import {
 	flightQuickStrokes,
 	isOtherResult,
+	pickStrokes,
 	type ScoreDraft,
 	type ScoreDraftPatch,
 	stepOther,
@@ -109,7 +110,7 @@ export function FlightRow({
 							<Pressable
 								key={n}
 								onPress={() => {
-									set({ strokes: n, nr: false });
+									set(pickStrokes(draft, n));
 									setExpanded(false);
 								}}
 								accessibilityRole="radio"

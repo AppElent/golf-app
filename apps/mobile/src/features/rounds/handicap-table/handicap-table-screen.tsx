@@ -18,12 +18,13 @@ import { AppText } from "../../../ui/text";
 import { NoActiveRound } from "../components/no-active-round";
 import { useDisplayedActiveRound } from "../use-active-round";
 import { HandicapTableGrid } from "./handicap-table-grid";
+import { type TableRound, tablePlayers } from "./handicap-table-model";
 import type { HandicapTableSetup } from "./handicap-table-params";
 
 interface TableProps {
 	tee: { name: string; courseRating: number; slopeRating: number };
 	holes: readonly { ref: string; par?: number; strokeIndex?: number }[];
-	players: readonly { name: string; playingHandicap?: number }[];
+	round: TableRound;
 	currentHole?: number;
 }
 
@@ -59,7 +60,7 @@ function SetupTable({ setup }: { setup: HandicapTableSetup }) {
 				par: byRef.get(ref)?.par,
 				strokeIndex: byRef.get(ref)?.strokeIndex,
 			}))}
-			players={setup.players}
+			round={setup}
 		/>
 	);
 }
@@ -81,7 +82,7 @@ function RoundTable({ hole }: { hole?: string }) {
 		<Table
 			tee={tee}
 			holes={holes}
-			players={round.players}
+			round={round}
 			currentHole={
 				hole !== undefined && Number.isInteger(parsed) && parsed in holes
 					? parsed
@@ -91,8 +92,9 @@ function RoundTable({ hole }: { hole?: string }) {
 	);
 }
 
-function Table({ tee, holes, players, currentHole }: TableProps) {
+function Table({ tee, holes, round, currentHole }: TableProps) {
 	const { t, numbers } = useI18n();
+	const players = tablePlayers(round, t.formats);
 	const rows = handicapTable(holes, players);
 	return (
 		<TableFrame

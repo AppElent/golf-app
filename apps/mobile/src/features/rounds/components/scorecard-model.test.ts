@@ -30,8 +30,27 @@ describe("cardRows", () => {
 			[{ holeIndex: 0, playerIndex: 0, strokes: 9, nr: true }],
 			[holes.map(() => 0)],
 		);
-		expect(row.cells[0]).toEqual({ strokes: null, mark: null, nr: true });
+		expect(row.cells[0]).toMatchObject({ strokes: null, mark: null, nr: true });
 		expect(row.nines).toEqual([0]);
 		expect(row.toPar).toBeNull();
+	});
+
+	it("marks a player skipped on a played hole (APP-894)", () => {
+		const [own, guest] = cardRows(
+			holes,
+			[
+				{ holeIndex: 0, playerIndex: 0, strokes: 4 },
+				{ holeIndex: 1, playerIndex: 0, strokes: 4 },
+				{ holeIndex: 1, playerIndex: 1, nr: true },
+				// Undone pick-up: a row without a result.
+				{ holeIndex: 2, playerIndex: 0, strokes: 4 },
+				{ holeIndex: 2, playerIndex: 1, nr: false },
+			],
+			[holes.map(() => 0), holes.map(() => 0)],
+		);
+		const missing = (row: typeof own) =>
+			row.cells.flatMap((c, i) => (c.missing ? [i] : []));
+		expect(missing(guest)).toEqual([0, 2]);
+		expect(missing(own)).toEqual([]);
 	});
 });

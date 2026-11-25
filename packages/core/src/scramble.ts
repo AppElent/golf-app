@@ -1,11 +1,4 @@
-import {
-	type HoleScore,
-	holeNets,
-	netRank,
-	playerStrokes,
-	type RoundTeam,
-} from "./round";
-import { totalStrokes, vsPar } from "./scoring";
+import { type HoleScore, holeNets, netRank, type RoundTeam } from "./round";
 
 /** WHS scramble allowances in percent, lowest handicap first, by team size. */
 const ALLOWANCES: Record<number, readonly number[]> = {
@@ -35,14 +28,14 @@ export function teamHandicaps(
 }
 
 export interface TeamTotal {
-	/** Over the holes with strokes. */
+	/** Over the holes every team has a result on, like `winner`. */
 	strokes: number;
 	net: number;
 	vsPar: number;
 	netVsPar: number;
-	/** Holes with strokes; a picked-up hole has none. */
-	scored: number;
 	holesWon: number;
+	/** Of those, the holes with strokes; a picked-up hole has none. */
+	scored: number;
 	/** Holes picked up: its total is not a full card. */
 	pickedUp: number;
 }
@@ -64,43 +57,41 @@ export function scrambleStanding(
 ): ScrambleStanding {
 	const holesWon = received.map(() => 0);
 	let played = 0;
-	const compared = received.map(() => ({ net: 0, pickedUp: 0 }));
-	holes.forEach((_, holeIndex) => {
+	const teams = received.map(() => ({
+		strokes: 0,
+		net: 0,
+		vsPar: 0,
+		netVsPar: 0,
+		scored: 0,
+		pickedUp: 0,
+	}));
+	holes.forEach(({ par }, holeIndex) => {
 		const nets = holeNets(scores, holeIndex, received);
 		if (!nets) return;
 		played++;
 		nets.forEach((net, i) => {
-			if (net === null) compared[i].pickedUp++;
-			else compared[i].net += net;
+			const team = teams[i];
+			if (net === null) {
+				team.pickedUp++;
+				return;
+			}
+			const strokes = net + (received[i][holeIndex] ?? 0);
+			team.scored++;
+			team.strokes += strokes;
+			team.net += net;
+			team.vsPar += strokes - par;
+			team.netVsPar += net - par;
 		});
 		if (nets.length < 2) return;
 		const best = Math.min(...nets.map(netRank));
 		const winners = nets.flatMap((net, i) => (net === best ? [i] : []));
 		if (best !== Infinity && winners.length === 1) holesWon[winners[0]]++;
 	});
-	const teams = received.map((teamReceived, team) => {
-		const strokes = playerStrokes(holes.length, scores, team);
-		const given = strokes.reduce<number>(
-			(sum, s, i) => (s === null ? sum : sum + (teamReceived[i] ?? 0)),
-			0,
-		);
-		const total = totalStrokes(strokes);
-		const toPar = vsPar(holes, strokes);
-		return {
-			strokes: total,
-			net: total - given,
-			vsPar: toPar,
-			netVsPar: toPar - given,
-			scored: strokes.filter((s) => s !== null).length,
-			holesWon: holesWon[team],
-			pickedUp: compared[team].pickedUp,
-		};
-	});
 	return {
-		teams,
+		teams: teams.map((team, i) => ({ ...team, holesWon: holesWon[i] })),
 		played,
 		toPlay: holes.length - played,
-		winner: winnerOf(compared),
+		winner: winnerOf(teams),
 	};
 }
 

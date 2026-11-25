@@ -332,9 +332,11 @@ describe("rounds", () => {
 			await expect(save(0, 0, 1, 2)).rejects.toThrow(
 				"playerIndex out of range",
 			);
-			for (let holeIndex = 0; holeIndex < 9; holeIndex++) {
+			for (let holeIndex = 0; holeIndex < 8; holeIndex++) {
 				await save(holeIndex, 0, 1);
 			}
+			// The other team never enters the last hole: it doesn't count.
+			await save(8, 0);
 			await alice.mutation(api.shots.mark, {
 				roundId,
 				holeIndex: 0,
@@ -355,6 +357,7 @@ describe("rounds", () => {
 			});
 			expect(all.map((r) => r._id)).toEqual([roundId, own]);
 			expect(all[0]).toMatchObject({ format: "scramble", differential: null });
+			expect(all[0].owner.strokes).toBe(32);
 			const detail = await alice.query(api.rounds.detail, { roundId });
 			expect(detail?.round.scoreDifferential).toBeNull();
 		});
@@ -446,6 +449,32 @@ describe("rounds", () => {
 		expect(byPlayer(0)).toMatchObject({ strokes: 5, putts: 2 });
 		expect(byPlayer(0)?.gir).toBeUndefined();
 		expect(active?.scores).toHaveLength(2);
+	});
+
+	it("clears a guest's stored score with null (APP-894)", async () => {
+		const { alice, course } = await setup();
+		const roundId = await alice.mutation(api.rounds.start, {
+			courseId: course.course._id,
+			teeId: course.tees[0]._id,
+			holeRefs: course.holes.slice(0, 9).flatMap((h) => (h.ref ? [h.ref] : [])),
+			format: "stroke",
+			players: [{ name: "Alice" }, { name: "Carol" }],
+		});
+		const save = (strokes: number | null) =>
+			alice.mutation(api.rounds.saveHole, {
+				roundId,
+				holeIndex: 0,
+				scores: [{ playerIndex: 1, strokes, nr: false }],
+			});
+		await save(5);
+		await save(null);
+		const [score] = (await alice.query(api.rounds.active, {}))?.scores ?? [];
+		expect(score).toMatchObject({ playerIndex: 1, nr: false });
+		expect(score).not.toHaveProperty("strokes");
+		await save(6);
+		expect((await alice.query(api.rounds.active, {}))?.scores).toMatchObject([
+			{ strokes: 6 },
+		]);
 	});
 
 	it("stores the tee shot's miss side and the bunker, and clears them", async () => {

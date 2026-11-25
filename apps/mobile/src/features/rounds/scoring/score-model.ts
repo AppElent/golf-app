@@ -83,6 +83,18 @@ export function stepOther(
 	return Math.max(1, from + by);
 }
 
+/** Tap a score; tapping the selected one again clears it. */
+export function pickStrokes(
+	{ strokes, nr }: Pick<ScoreDraft, "strokes" | "nr">,
+	n: number,
+): Pick<ScoreDraft, "strokes" | "nr"> {
+	return { strokes: !nr && strokes === n ? null : n, nr: false };
+}
+
+/** One putt less; below zero is not entered. */
+export const fewerPutts = (putts: number): number | null =>
+	putts > 0 ? putts - 1 : null;
+
 export type TeeShot = MissSide | "fairway";
 
 /** null: not recorded, or an older score that missed without a side. */
@@ -107,24 +119,68 @@ export function pickTeeShot(
 
 /**
  * The fields a draft saves; null when there is nothing to save. A player who
- * is already stored always saves, so undoing a pick-up is not lost. GIR is
- * derived once putts are known and cleared on a picked-up hole. Without putts
- * it is left out, which keeps what an older build stored by hand.
+ * is already stored always saves, so undoing a pick-up is not lost, and null
+ * clears the score they had. GIR is derived again, or cleared, with every
+ * change of strokes or putts. A hole without putts that keeps its strokes also
+ * keeps what an older build stored by hand.
  */
 export function draftUpdate(
 	draft: ScoreDraft,
-	{ par, owner, stored }: { par: number; owner: boolean; stored: boolean },
+	{
+		par,
+		owner,
+		stored,
+	}: { par: number; owner: boolean; stored: HoleScore | undefined },
 ): ScoreUpdate | null {
 	const { strokes, nr, ...stats } = draft;
 	if (strokes === null && !nr && !stored) return null;
-	const result = { ...(strokes === null ? {} : { strokes }), nr };
+	const clears = strokes === null && stored?.strokes !== undefined;
+	const result = {
+		...(strokes === null && !clears ? {} : { strokes }),
+		nr,
+	};
 	if (!owner) return result;
 	const gir = derivedGir(par, draft);
+	const keepsGir =
+		!nr &&
+		stats.putts === null &&
+		(!stored || (stored.putts === undefined && stored.strokes === strokes));
 	return {
 		...result,
 		...stats,
-		...(nr || stats.putts !== null ? { gir } : {}),
+		...(keepsGir ? {} : { gir }),
 	};
+}
+
+/** The sides this sheet changed. */
+export type SheetEdits = Readonly<Record<number, ScoreDraft>>;
+
+/** Every side's draft: what this sheet changed, over the live scores. */
+export function sheetDrafts(
+	live: readonly ScoreDraft[],
+	edits: SheetEdits,
+): ScoreDraft[] {
+	return live.map((draft, side) => edits[side] ?? draft);
+}
+
+/**
+ * What the sheet saves. A side it didn't change is left out, so what another
+ * device stored meanwhile stays, and so is one without a score yet.
+ */
+export function sheetUpdates(
+	edits: SheetEdits,
+	scores: readonly HoleScore[],
+	{ holeIndex, par, teams }: { holeIndex: number; par: number; teams: boolean },
+): ({ playerIndex: number } & ScoreUpdate)[] {
+	return Object.entries(edits).flatMap(([side, draft]) => {
+		const playerIndex = Number(side);
+		const update = draftUpdate(draft, {
+			par,
+			owner: !teams && playerIndex === OWNER_INDEX,
+			stored: scoreAt(scores, holeIndex, playerIndex),
+		});
+		return update ? [{ playerIndex, ...update }] : [];
+	});
 }
 
 /**

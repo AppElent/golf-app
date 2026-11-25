@@ -307,3 +307,68 @@ it("replaces one hole's scores with what was entered", () => {
 		{ holeIndex: 0, playerIndex: 0, strokes: 3, nr: false },
 	]);
 });
+
+describe("APP-894", () => {
+	it("says on which hole a round started on hole 10 was decided", () => {
+		const order = [...Array(18).keys()].map((i) => (i + 9) % 18);
+		const r = round("match", [], {
+			holes: holes(18),
+			scores: order.flatMap((holeIndex, i) =>
+				[4, 5].map((strokes, playerIndex) => ({
+					holeIndex,
+					playerIndex,
+					strokes,
+					_creationTime: i * 10 + playerIndex,
+				})),
+			),
+		});
+		const text = english(r);
+		expect(text.result()?.title).toBe("Eric wins 10&8");
+		expect(text.result()?.sub).toBe(
+			"Decided on hole 1. Holes 2, 3, 4, 5, 6, 7, 8 and 9 were played out for the score.",
+		);
+		const cells = text.cardRows()[0].cells.map((c) => c?.text ?? null);
+		expect(cells[9]).toBe("E1");
+		expect(cells[0]).toBe("E10");
+		expect(cells[1]).toBeNull();
+	});
+
+	it("keeps when a hole was entered in the sheet's preview", () => {
+		const scores = [
+			{ holeIndex: 0, playerIndex: 0, strokes: 4, _creationTime: 7 },
+		];
+		const [own, guest] = withHole(scores, 0, [
+			{ strokes: 5, nr: false },
+			{ strokes: 4, nr: false },
+		]);
+		expect(own).toMatchObject({ strokes: 5, _creationTime: 7 });
+		expect(guest._creationTime).toBeUndefined();
+	});
+
+	it("shows scramble totals that match the winner", () => {
+		const r = round(
+			"scramble",
+			[
+				[4, 5],
+				[4, 4],
+			],
+			{
+				players: ["Eric", "Jan", "Piet", "Kees"].map((name) => ({ name })),
+				teams: [{ playerIndexes: [0, 1] }, { playerIndexes: [2, 3] }],
+			},
+		);
+		const scores = [...r.scores, { holeIndex: 2, playerIndex: 0, strokes: 7 }];
+		const text = english({ ...r, scores });
+		expect(text.result()).toMatchObject({
+			title: "Team 1 wins",
+			sub: "Team 1 E · Team 2 +1 · after 2 holes · holes won 1–0",
+		});
+		expect(text.share(["15", "9"])?.sub).toContain(
+			"Team 1 8 · Team 2 9 · after 2 holes",
+		);
+		expect([0, 1].map((side) => text.comparedTotal(side))).toMatchObject([
+			{ total: 8, toPar: "E" },
+			{ total: 9, toPar: "+1" },
+		]);
+	});
+});
