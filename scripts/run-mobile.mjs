@@ -6,7 +6,7 @@
 //   node scripts/run-mobile.mjs up [--lang en|nl] [--clear] [--env KEY=VALUE]
 //   node scripts/run-mobile.mjs signin [--email E --password P]
 //   node scripts/run-mobile.mjs ad <agent-device args>
-//   node scripts/run-mobile.mjs ss [file] | reload | logs [n] | backend | udid | state | down
+//   node scripts/run-mobile.mjs ss [file] | reload | logs [n] | backend | udid | state | release | down
 //
 // Config: `runMobile` in apps/mobile/package.json, for example
 //   "runMobile": { "bundleId": "com.appelent.foundry.dev", "port": 8090 }
@@ -18,6 +18,7 @@
 import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, mkdirSync, openSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { createServer } from "node:net";
 import { homedir, tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -38,6 +39,36 @@ export const SIGN_IN_LABELS = ["Sign in", "Inloggen"];
  */
 export function signInSelector(labels = SIGN_IN_LABELS) {
 	return ['id="sign-in-submit"', ...labels.map((label) => `label=${JSON.stringify(label)}`)].join(" || ");
+}
+
+/**
+ * testIDs of a dev-only "sign in as the test user" shortcut. Gather shows it on
+ * its welcome screen (`welcome-dev-sign-in`) instead of pre-filling the form.
+ */
+export const DEV_SIGN_IN_IDS = ["dev-sign-in", "welcome-dev-sign-in"];
+
+/** An agent-device selector for the dev sign-in shortcut, whichever testID the app uses. */
+export function devSignInSelector(ids = DEV_SIGN_IN_IDS) {
+	return ids.map((id) => `id=${JSON.stringify(id)}`).join(" || ");
+}
+
+/**
+ * Who holds the simulator, from an agent-device `DEVICE_IN_USE` error, or null
+ * for any other output. `own`: a session of the daemon run-mobile talks to
+ * (close it and retry). `foreign`: another workspace's daemon holds the
+ * host-global claim, for example T3's device command; `stale` when its owner
+ * is gone and agent-device's recovery command releases the claim.
+ */
+export function deviceInUse(out) {
+	if (!/DEVICE_IN_USE|already in use by|is owned by session/.test(out)) return null;
+	const foreign = /owned by session "([^"]+)" in workspace "([^"]+)"/.exec(out);
+	if (foreign) {
+		const recovery = /agent-device device (?:release|status) [^\n"]*/.exec(out)?.[0].trim() ?? "";
+		const stale = /^agent-device device release\b.*--stale\b/.test(recovery);
+		return { kind: "foreign", session: foreign[1], workspace: foreign[2], recovery, stale };
+	}
+	const own = /already in use by (?:workspace )?session "([^"]+)"/.exec(out) ?? /close --session ([^ .,"]+)/.exec(out);
+	return own ? { kind: "own", session: own[1] } : { kind: "unknown" };
 }
 
 /** Stable 8-character id for a checkout path. */
@@ -133,11 +164,11 @@ function context() {
 	const id = checkoutId(mobile);
 	const state = process.env.RUN_MOBILE_STATE || join(tmpdir(), `run-mobile-${id}`);
 	mkdirSync(state, { recursive: true });
-	// `up` moves to a free port when another checkout's Metro holds the app's port; later commands reuse it.
+	// `up` moves to the next free port when another process holds the app's port; later commands reuse it.
 	const portFile = join(state, "port");
 	const saved = existsSync(portFile) ? Number(readFileSync(portFile, "utf8")) : 0;
 	const port = Number(process.env.RUN_MOBILE_PORT || saved || config.port);
-	return { repo, mobile, id, port, portFile, state, bundleId: config.bundleId, pinned: Boolean(process.env.RUN_MOBILE_PORT) };
+	return { repo, mobile, id, port, basePort: config.port, portFile, state, bundleId: config.bundleId, pinned: Boolean(process.env.RUN_MOBILE_PORT) };
 }
 
 function devices() {
@@ -163,6 +194,43 @@ function ad(ctx, args, { quiet = false } = {}) {
 		.join("\n");
 	if (!quiet && out.trim()) process.stdout.write(out.endsWith("\n") ? out : `${out}\n`);
 	return { ok: r.ok, out };
+}
+
+/**
+ * Open (or reattach) run-mobile's agent-device session on the app. A session of
+ * our own daemon that still holds the simulator is closed and the open retried;
+ * a stale claim from another workspace is released with agent-device's own
+ * recovery command. A live owner elsewhere (for example T3's device command) is
+ * left alone: the error names it so it can be closed there.
+ */
+function openSession(ctx, udid) {
+	const open = () => ad(ctx, ["open", ctx.bundleId, "--platform", "ios", "--udid", udid], { quiet: true });
+	for (let attempt = 0; attempt < 3; attempt++) {
+		const r = open();
+		if (r.ok) {
+			rmSync(join(ctx.state, "released"), { force: true });
+			return;
+		}
+		const held = deviceInUse(r.out);
+		if (held?.kind === "own") {
+			log(`simulator held by stale session '${held.session}'; closing it`);
+			ad(ctx, ["close", "--session", held.session], { quiet: true });
+		} else if (held?.kind === "foreign" && held.stale) {
+			log(`simulator claimed by gone session '${held.session}' (${held.workspace}); releasing it`);
+			ad(ctx, held.recovery.replace(/^agent-device /, "").split(/\s+/), { quiet: true });
+		} else if (held?.kind === "foreign") {
+			die(
+				`simulator is driven by session '${held.session}' in ${held.workspace} (another tool, for example T3's device command). ` +
+					`Close it there, then rerun. ${held.recovery ? `Inspect with: npx ${AGENT_DEVICE.at(-1)} ${held.recovery.replace(/^agent-device /, "")}` : ""}`.trim(),
+			);
+		} else die(`agent-device open failed: ${r.out.trim()}`);
+	}
+	die("agent-device open still fails after releasing the simulator");
+}
+
+/** After `release`, the next command that drives the app reattaches first. */
+function ensureSession(ctx) {
+	if (existsSync(join(ctx.state, "released"))) openSession(ctx, requireUdid(ctx));
 }
 
 function findDevClient(ctx) {
@@ -191,31 +259,122 @@ function findDevClient(ctx) {
 	return matching[0] ?? "";
 }
 
-function metroCwd(port) {
-	const pid = run("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-t"]).stdout.split("\n")[0].trim();
-	if (!pid) return "";
-	const line = run("lsof", ["-a", "-p", pid, "-d", "cwd", "-Fn"]).stdout.split("\n").find((l) => l.startsWith("n"));
-	return line ? line.slice(1) : "";
+/** Every process listening on the port, with its folder (`?` when lsof cannot read it) and process group. */
+function listenersOn(port) {
+	const pids = run("lsof", ["-nP", `-iTCP:${port}`, "-sTCP:LISTEN", "-t"]).stdout.split("\n").map((s) => s.trim());
+	return [...new Set(pids.filter(Boolean))].map((pid) => {
+		const line = run("lsof", ["-a", "-p", pid, "-d", "cwd", "-Fn"]).stdout.split("\n").find((l) => l.startsWith("n"));
+		return { pid, pgid: run("ps", ["-o", "pgid=", "-p", pid]).stdout.trim(), cwd: line ? line.slice(1) : "?" };
+	});
+}
+
+/** Pids of the Metro an earlier `up` of this checkout started: its process group (metro.pid) and listener. */
+function ownMetroPids(state) {
+	return ["metro.pid", "metro.listener"]
+		.map((name) => join(state, name))
+		.filter((path) => existsSync(path))
+		.map((path) => readFileSync(path, "utf8").trim())
+		.filter(Boolean);
+}
+
+/** True when nothing holds the port: lsof misses some listeners, so try to bind it as Metro would. */
+function bindable(port, host) {
+	return new Promise((done) => {
+		const server = createServer();
+		server.once("error", () => done(false));
+		server.listen({ port, host, exclusive: true }, () => server.close(() => done(true)));
+	});
+}
+
+/** True when the listener on the port answers as a running Metro within the timeout. */
+export async function isMetro(port, { timeoutMs = 3000 } = {}) {
+	try {
+		const r = await fetch(`http://127.0.0.1:${port}/status`, { signal: AbortSignal.timeout(timeoutMs) });
+		return r.ok && (await r.text()).trim() === "packager-status:running";
+	} catch {
+		return false;
+	}
+}
+
+const isFree = async (port) => (await bindable(port, "127.0.0.1")) && (await bindable(port));
+
+/**
+ * What holds a port:
+ * - "ours": this checkout's Metro; every listener runs from `mobile` in one process group and answers as Metro.
+ * - "free": nothing listens and the port can be bound.
+ * - "own-slow": the Metro an earlier `up` started (a listener's pid or group is in `ownPids`) still does not
+ *   answer after `waitMs`. Never start a second Metro beside it (APP-743).
+ * - "own-other": only this checkout's processes listen, but they are not its Metro (a web server, say).
+ * - "taken": another checkout's Metro or any other process, also one whose folder lsof cannot read.
+ * Every listener counts, so separate IPv4 and IPv6 listeners cannot hide each other (APP-744).
+ */
+export async function portStatus(
+	mobile,
+	port,
+	{ listenersOf = listenersOn, answersAsMetro = isMetro, free = isFree, ownPids = [], waitMs = 30000, pause = sleep, onWait = () => {} } = {},
+) {
+	const listeners = listenersOf(port);
+	if (listeners.length === 0) return (await free(port)) ? "free" : "taken";
+	if (listeners.some((l) => l.cwd !== mobile)) return "taken";
+	if (new Set(listeners.map((l) => l.pgid || l.pid)).size > 1) return "own-other";
+	if (await answersAsMetro(port)) return "ours";
+	if (!listeners.some((l) => ownPids.includes(l.pid) || (l.pgid && ownPids.includes(l.pgid)))) return "own-other";
+	onWait(port);
+	const deadline = Date.now() + waitMs;
+	while (Date.now() < deadline) {
+		await pause(1000);
+		if (await answersAsMetro(port, { timeoutMs: 5000 })) return "ours";
+	}
+	return "own-slow";
+}
+
+/** Why `up` cannot use a port, for its messages. */
+export function heldBy(status, port) {
+	if (status === "own-other") return `port ${port} is held by a process from this checkout's apps/mobile that is not its Metro`;
+	if (status === "own-slow") return `this checkout's Metro on :${port} does not answer; wait and rerun up, or run down, then up`;
+	return `port ${port} is in use by another process`;
+}
+
+/**
+ * The port `up` uses. A pinned port is never moved. Otherwise `saved` (an earlier `up`'s port) when this
+ * checkout's Metro still runs there, else the first port from `start` (up to +range) that is ours or free.
+ * A slow own Metro is an error, never a reason to move on. Returns { port, status, held? } (held: why `start`
+ * was skipped) or { error }.
+ */
+export async function pickPort(start, statusOf, { pinned = false, saved = 0, range = 20 } = {}) {
+	const usable = (status) => status === "ours" || status === "free";
+	if (pinned) {
+		const status = await statusOf(start);
+		if (status === "own-slow") return { error: heldBy(status, start) };
+		if (!usable(status)) return { error: `${heldBy(status, start)}; unset RUN_MOBILE_PORT or pick another` };
+		return { port: start, status };
+	}
+	if (saved && saved !== start) {
+		const status = await statusOf(saved);
+		if (status === "ours") return { port: saved, status };
+		if (status === "own-slow") return { error: heldBy(status, saved) };
+	}
+	let held;
+	for (let port = start; port <= start + range; port++) {
+		const status = await statusOf(port);
+		if (status === "own-slow") return { error: heldBy(status, port) };
+		if (usable(status)) return held ? { port, status, held } : { port, status };
+		held ??= status;
+	}
+	return { error: `ports ${start}-${start + range} are all in use; set RUN_MOBILE_PORT` };
 }
 
 async function ensureMetro(ctx, { clear, env }) {
-	let cwd = metroCwd(ctx.port);
-	if (cwd && cwd !== ctx.mobile && !ctx.pinned) {
-		const taken = ctx.port;
-		for (let p = taken + 1; p <= taken + 20; p++) {
-			const owner = metroCwd(p);
-			if (!owner || owner === ctx.mobile) {
-				ctx.port = p;
-				cwd = owner;
-				break;
-			}
-		}
-		if (ctx.port === taken) die(`ports ${taken}-${taken + 20} are all Metro for other checkouts; set RUN_MOBILE_PORT`);
-		log(`port ${taken} is Metro for another checkout; using ${ctx.port}`);
-	}
+	// The port an earlier `up` saved may have been taken since (APP-550): check it, never trust it.
+	const start = ctx.pinned ? ctx.port : ctx.basePort;
+	const ownPids = ownMetroPids(ctx.state);
+	const onWait = (p) => log(`this checkout's Metro on :${p} is slow to answer; waiting up to 30s`);
+	const picked = await pickPort(start, (p) => portStatus(ctx.mobile, p, { ownPids, onWait }), { pinned: ctx.pinned, saved: ctx.port });
+	if (picked.error) die(picked.error);
+	if (picked.held) log(`${heldBy(picked.held, start)}; using ${picked.port}`);
+	ctx.port = picked.port;
 	writeFileSync(ctx.portFile, String(ctx.port));
-	if (cwd) {
-		if (cwd !== ctx.mobile) die(`port ${ctx.port} is Metro for ${cwd}, not this checkout; unset RUN_MOBILE_PORT or pick another`);
+	if (picked.status === "ours") {
 		if (clear || Object.keys(env).length) die("Metro is already running; run down, then up with these flags");
 		log(`reusing Metro on :${ctx.port}`);
 		return;
@@ -227,14 +386,11 @@ async function ensureMetro(ctx, { clear, env }) {
 	child.unref();
 	writeFileSync(join(ctx.state, "metro.pid"), String(child.pid));
 	for (let i = 0; i < 90; i++) {
-		try {
-			const r = await fetch(`http://127.0.0.1:${ctx.port}/status`);
-			if ((await r.text()).includes("running")) {
-				const listener = run("lsof", ["-nP", `-iTCP:${ctx.port}`, "-sTCP:LISTEN", "-t"]).stdout.split("\n")[0].trim();
-				writeFileSync(join(ctx.state, "metro.listener"), listener);
-				return;
-			}
-		} catch {}
+		if (await isMetro(ctx.port)) {
+			const listener = run("lsof", ["-nP", `-iTCP:${ctx.port}`, "-sTCP:LISTEN", "-t"]).stdout.split("\n")[0].trim();
+			writeFileSync(join(ctx.state, "metro.listener"), listener);
+			return;
+		}
 		await sleep(1000);
 	}
 	die(`Metro did not come up; see ${join(ctx.state, "metro.log")}`);
@@ -337,15 +493,7 @@ async function cmdUp(ctx, args) {
 	const url = `${ctx.bundleId}://expo-development-client/?url=${encodeURIComponent(`http://127.0.0.1:${ctx.port}`)}&disableOnboarding=1&disableFab=1&disableAutoLaunch=1`;
 	simctl("openurl", udid, url);
 	ad(ctx, ["alert", "accept", "5000", "--platform", "ios", "--udid", udid], { quiet: true });
-	let open = ad(ctx, ["open", ctx.bundleId, "--platform", "ios", "--udid", udid], { quiet: true });
-	if (!open.ok) {
-		const owner = /close --session ([^ .,"]+)/.exec(open.out)?.[1];
-		if (!owner) die(`agent-device open failed: ${open.out.trim()}`);
-		log(`simulator held by stale session '${owner}'; closing it`);
-		ad(ctx, ["close", "--session", owner], { quiet: true });
-		open = ad(ctx, ["open", ctx.bundleId, "--platform", "ios", "--udid", udid], { quiet: true });
-		if (!open.ok) die("agent-device open failed after closing the stale session");
-	}
+	openSession(ctx, udid);
 	log("waiting for the iOS bundle (max 180s)");
 	let ok = false;
 	for (let i = 0; i < 90; i++) {
@@ -372,19 +520,40 @@ function cmdSignin(ctx, args) {
 		else die(`signin: unknown option ${args[i]}`);
 	}
 	if (Boolean(email) !== Boolean(password)) die("signin: --email and --password go together");
+	ensureSession(ctx);
 	const submit = signInSelector();
-	if (!ad(ctx, ["wait", submit, "20000"], { quiet: true }).ok) die("sign-in screen not visible (already signed in?)");
-	if (email) {
-		const ref = (kind) => new RegExp(`\\[${kind}\\][^\\n]*?(@e\\d+)|(@e\\d+)[^\\n]*\\[${kind}\\]`).exec(ad(ctx, ["snapshot", "-i"], { quiet: true }).out);
-		const field = ref("text-field");
-		if (!field || !ad(ctx, ["fill", field[1] ?? field[2], email], { quiet: true }).ok) die("could not fill email");
-		const secure = ref("securetextfield");
-		if (!secure || !ad(ctx, ["fill", secure[1] ?? secure[2], password], { quiet: true }).ok) die("could not fill password");
-		if (!ad(ctx, ["snapshot", "-i"], { quiet: true }).out.includes(`"${email}"`)) die(`email field does not show ${email}; not signing in`);
+	const shortcut = devSignInSelector();
+	if (!ad(ctx, ["wait", `${shortcut} || ${submit}`, "20000"], { quiet: true }).ok) die("sign-in screen not visible (already signed in?)");
+	const hasField = () => /\[text-field\]/.test(ad(ctx, ["snapshot", "-i"], { quiet: true }).out);
+	if (!email && ad(ctx, ["is", "visible", shortcut], { quiet: true }).ok) {
+		// Gather: the welcome screen's dev shortcut signs the test user in; its form is not pre-filled.
+		ad(ctx, ["press", shortcut], { quiet: true });
+	} else {
+		if (!hasField()) {
+			// A welcome screen's "Sign in" opens the form; then wait for the form's own submit button.
+			ad(ctx, ["press", submit], { quiet: true });
+			if (!ad(ctx, ["wait", 'id="sign-in-submit"', "20000"], { quiet: true }).ok || !hasField()) die("sign-in form did not open");
+			if (!email) die("the sign-in form is not pre-filled and the app shows no dev sign-in shortcut; pass --email and --password");
+		}
+		if (email) {
+			const ref = (kind) => new RegExp(`\\[${kind}\\][^\\n]*?(@e\\d+)|(@e\\d+)[^\\n]*\\[${kind}\\]`).exec(ad(ctx, ["snapshot", "-i"], { quiet: true }).out);
+			const field = ref("text-field");
+			if (!field || !ad(ctx, ["fill", field[1] ?? field[2], email], { quiet: true }).ok) die("could not fill email");
+			const secure = ref("securetextfield");
+			if (!secure || !ad(ctx, ["fill", secure[1] ?? secure[2], password], { quiet: true }).ok) die("could not fill password");
+			if (!ad(ctx, ["snapshot", "-i"], { quiet: true }).out.includes(`"${email}"`)) die(`email field does not show ${email}; not signing in`);
+		}
+		ad(ctx, ["press", submit], { quiet: true });
 	}
-	ad(ctx, ["press", submit], { quiet: true });
 	if (!ad(ctx, ["wait", "role=tab-bar", "30000"], { quiet: true }).ok) die("tab bar not visible after sign-in");
 	log("signed in");
+}
+
+/** Hand the simulator to another tool (for example T3's device command); the next `ad` or `signin` reattaches. */
+function cmdRelease(ctx) {
+	ad(ctx, ["close"], { quiet: true });
+	writeFileSync(join(ctx.state, "released"), "");
+	log("released the agent-device session; the simulator, app and Metro keep running");
 }
 
 function cmdDown(ctx) {
@@ -413,6 +582,7 @@ function cmdDown(ctx) {
 		if (!r.ok) log(`sim release failed: ${r.out.trim()}`);
 		else log(`released simulator ${u}`);
 		rmSync(join(ctx.state, "lang"), { force: true });
+		rmSync(join(ctx.state, "released"), { force: true });
 	}
 	rmSync(ctx.portFile, { force: true });
 	log("down");
@@ -427,6 +597,7 @@ async function main(argv) {
 		case "signin":
 			return cmdSignin(ctx, args);
 		case "ad":
+			ensureSession(ctx);
 			process.exitCode = ad(ctx, args).ok ? 0 : 1;
 			return;
 		case "ss": {
@@ -456,10 +627,12 @@ async function main(argv) {
 		case "state":
 			console.log(ctx.state);
 			return;
+		case "release":
+			return cmdRelease(ctx);
 		case "down":
 			return cmdDown(ctx);
 		default:
-			console.log("commands: up [--lang en|nl] [--clear] [--env KEY=VALUE] | signin [--email E --password P] | ad <args> | ss [file] | reload | logs [n] | backend | udid | state | down");
+			console.log("commands: up [--lang en|nl] [--clear] [--env KEY=VALUE] | signin [--email E --password P] | ad <args> | ss [file] | reload | logs [n] | backend | udid | state | release | down");
 			process.exitCode = 2;
 	}
 }

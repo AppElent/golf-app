@@ -2,7 +2,7 @@
 type: standard
 kind: pattern
 description: Read when choosing fullscreen, sheet, or keyboard-anchored editing, or handling drafts.
-version: 1.2.0
+version: 1.3.0
 applies_to: [web, mobile]
 ---
 
@@ -16,7 +16,7 @@ Choose the editing presentation by attention, space, and navigation needs, and n
 | --- | --- |
 | Sustained, multi-section work or navigation among related details | Pushed/fullscreen editor |
 | Focused self-contained edit with useful underlying context | Native bottom/form sheet |
-| Small contextual capture or adjustment | Keyboard-anchored popup/composer |
+| Small contextual capture or adjustment | Keyboard-anchored popup/composer; for creating items, the [keyboard composer](keyboard-composer.md) |
 
 - A popup augments the current task; expanding it to a fuller editor preserves the same draft. A small field count alone does not justify an overlay when validation or nested navigation needs more space. Web uses its corresponding accessible page/dialog/popover controls; platform styling is not part of the contract.
 - Saved data changes only on commit. Scope a draft to its account and item/context. A clean editor dismisses immediately; a dirty editor preserves its draft or asks before losing meaningful changes. Explicit Discard abandons it. Apply the same policy to close, Back, swipe dismissal, and presentation changes.

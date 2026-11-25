@@ -43,6 +43,14 @@ export function ScorecardScreen() {
 		<NavHeader
 			title={t.scorecard.title}
 			left={{ label: t.common.done, onPress: () => router.back() }}
+			right={
+				active
+					? {
+							label: t.handicapTable.title,
+							onPress: () => router.push("/handicap-table"),
+						}
+					: undefined
+			}
 		/>
 	);
 	if (active === undefined) {

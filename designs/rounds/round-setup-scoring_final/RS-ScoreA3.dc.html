@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<title>Score ronde 3</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0;background:#e4e7e1;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif}
+.th-light{--bg:#f3f4ef;--surface:#ffffff;--surface2:#e7ebe3;--accent:#1a7348;--accentFill:#1a7348;--onAccent:#ffffff;--accentDim:rgba(26,115,72,.10);--accentInk:#1c6b45;--text:#16241c;--muted:#506157;--faint:#606b57;--sep:rgba(60,62,50,.12);--borderStrong:rgba(26,32,21,.25);--danger:#b42332;--scrim:rgba(10,20,14,.38)}
+.th-dark{--bg:#08130d;--surface:#11201a;--surface2:#1a2c23;--accent:#3fbf7a;--accentFill:#3fbf7a;--onAccent:#06110b;--accentDim:rgba(63,191,122,.14);--accentInk:#7fe0a6;--text:#f1f5f0;--muted:#9aaa9f;--faint:#919789;--sep:rgba(255,255,255,.14);--borderStrong:rgba(255,255,255,.22);--danger:#ff6b6b;--scrim:rgba(0,0,0,.55)}
+.board{display:flex;gap:48px;padding:32px;align-items:flex-start}
+.col{display:flex;flex-direction:column;gap:12px}
+.cap{font-size:14px;font-weight:600;color:#36423b;max-width:390px}
+.phone{width:390px;height:844px;border-radius:48px;overflow:hidden;position:relative;background:var(--bg);color:var(--text);border:1px solid rgba(0,0,0,.18)}
+.scr{position:absolute;left:0;right:0;top:0;bottom:0;padding:58px 16px 120px;display:flex;flex-direction:column;gap:18px;overflow:hidden}
+.nav{display:flex;align-items:center;justify-content:space-between;min-height:44px}
+.navbtn{border:0;background:var(--surface);color:var(--accent);font:600 16px/1 inherit;min-height:40px;padding:0 14px;border-radius:999px}
+.navt{font-size:17px;font-weight:600}
+.hdr{font-size:13px;color:var(--muted);padding:0 4px 8px;font-weight:600}
+.foot{font-size:13px;color:var(--muted);padding:8px 4px 0;line-height:1.35}
+.cta{position:absolute;left:16px;right:16px;bottom:34px;min-height:52px;border-radius:999px;border:0;background:var(--accentFill);color:var(--onAccent);font:700 17px/1 inherit}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.tiles3{grid-template-columns:repeat(3,minmax(0,1fr))}
+.tile{display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:3px;min-height:58px;padding:8px 12px;border-radius:14px;border:1.5px solid var(--borderStrong);background:var(--surface);color:var(--text);font:600 16px/1.2 inherit;text-align:left;box-sizing:border-box}
+.tile small{font-size:12px;font-weight:500;color:var(--muted)}
+.tile.on{background:var(--accentFill);border-color:var(--accentFill);color:var(--onAccent)}
+.tile.on small{color:var(--onAccent)}
+.tile.off{border-style:dashed;color:var(--muted);background:transparent}
+.chips{display:flex;gap:8px;overflow:hidden}
+.chip{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:999px;border:1.5px solid var(--borderStrong);background:var(--surface);color:var(--text);font:600 15px/1 inherit;white-space:nowrap}
+.chip small{font-weight:500;font-size:13px;color:var(--muted)}
+.chip.on{background:var(--accentFill);border-color:var(--accentFill);color:var(--onAccent)}
+.chip.on small{color:var(--onAccent)}
+.tdot{width:14px;height:14px;border-radius:7px;border:1.5px solid var(--borderStrong);flex:none}
+.list{background:var(--surface);border-radius:14px;overflow:hidden}
+.pr{display:flex;align-items:center;gap:12px;min-height:56px;padding:6px 16px;border-top:1px solid var(--sep);font-size:17px;color:var(--text);background:none;border-left:0;border-right:0;border-bottom:0;width:100%;text-align:left;box-sizing:border-box;font-family:inherit}
+.pr:first-child{border-top:0}
+.av{width:34px;height:34px;border-radius:17px;background:var(--accentDim);color:var(--accentInk);font-weight:700;display:flex;align-items:center;justify-content:center;font-size:14px;flex:none}
+.pn{flex:1;display:flex;flex-direction:column;gap:2px}
+.pn small{font-size:13px;color:var(--muted)}
+.pv{font-variant-numeric:tabular-nums;font-size:15px;color:var(--muted);display:flex;align-items:center;gap:6px}
+.add{color:var(--accent);font-weight:600}
+.seg{display:flex;align-items:center;gap:10px;min-height:50px;padding:0 10px 0 16px;font-size:17px}
+.segc{margin-left:auto;display:flex;background:var(--surface2);border-radius:9px;padding:2px}
+.segc span{padding:7px 14px;font-size:13px;font-weight:600;border-radius:7px}
+.segc .on{background:var(--accentFill);color:var(--onAccent)}
+.sheet{position:absolute;left:0;right:0;bottom:0;background:var(--bg);border-radius:22px 22px 0 0;display:flex;flex-direction:column}
+.grab{width:36px;height:5px;border-radius:3px;background:var(--borderStrong);margin:8px auto 0}
+.sh-h{display:flex;align-items:center;min-height:52px;padding:0 8px}
+.sh-a{min-width:84px;min-height:44px;border:0;background:none;font:500 17px/1 inherit;color:var(--muted);text-align:left;padding:0 8px}
+.sh-s{color:var(--accent);font-weight:700;text-align:right}
+.sh-t{flex:1;text-align:center;font-size:17px;font-weight:700;display:flex;flex-direction:column;align-items:center;gap:1px}
+.sh-t small{font-size:12px;font-weight:500;color:var(--muted)}
+.body{padding:4px 16px 16px;display:flex;flex-direction:column;gap:10px}
+.scrim{position:absolute;left:0;right:0;top:0;bottom:0;background:var(--scrim)}
+.stand{background:var(--accentDim);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:2px}
+.stand b{font-size:16px}
+.stand span{font-size:13px;color:var(--muted)}
+.tag{display:inline-flex;align-items:center;font-size:12px;font-weight:700;color:var(--accentInk);background:var(--accentDim);border-radius:999px;padding:2px 8px}
+.ghost{position:absolute;left:0;right:0;top:0;height:200px;padding:58px 20px 0;color:var(--muted);font-size:15px}
+
+.hole{display:flex;align-items:center;min-height:64px;padding:0 8px}
+.ht{flex:1;text-align:center;display:flex;flex-direction:column;align-items:center}
+.ht b{font-size:22px;font-weight:800;letter-spacing:-.3px}
+.ht span{font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+.me{background:var(--surface);border-radius:24px;padding:14px 14px 16px;display:flex;flex-direction:column;gap:14px;box-shadow:0 1px 0 var(--sep)}
+.mehead{display:flex;align-items:center;gap:10px}
+.badge{margin-left:auto;font-size:13px;font-weight:700;color:var(--accentInk);background:var(--accentDim);border-radius:999px;padding:4px 10px}
+.hero{display:flex;align-items:center;justify-content:center;gap:28px}
+.rb{width:52px;height:52px;border-radius:26px;border:0;background:var(--surface2);color:var(--text);font:500 28px/1 inherit;display:flex;align-items:center;justify-content:center}
+.num{font-size:72px;font-weight:800;line-height:1;letter-spacing:-2px;font-variant-numeric:tabular-nums;min-width:64px;text-align:center}
+.qp{display:flex;justify-content:center;gap:8px}
+.qp button{width:52px;height:40px;border-radius:20px;border:0;background:var(--bg);color:var(--muted);font:700 16px inherit;font-variant-numeric:tabular-nums}
+.qp button.on{background:var(--accentFill);color:var(--onAccent)}
+.lab{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.2px}
+.fw{display:flex;gap:4px;height:58px}
+.fw button{border:0;font:600 14px inherit;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--text)}
+.fw .rl{flex:1;background:var(--surface2);border-radius:16px 6px 6px 16px}
+.fw .rr{flex:1;background:var(--surface2);border-radius:6px 16px 16px 6px}
+.fw .fm{flex:1.5;background:var(--accentDim);border-radius:6px}
+.fw button.on{background:var(--accentFill);color:var(--onAccent)}
+.fw button.miss.on{background:var(--text);color:var(--bg)}
+.tiles3b{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.st{background:var(--bg);border-radius:16px;padding:8px 6px;display:flex;flex-direction:column;align-items:center;gap:6px;min-height:84px;box-sizing:border-box}
+.st .ctl{display:flex;align-items:center;gap:6px}
+.st .ctl button{width:36px;height:36px;border-radius:18px;border:0;background:var(--surface);color:var(--text);font:600 18px inherit}
+.st .ctl b{font-size:22px;font-weight:800;min-width:16px;text-align:center;font-variant-numeric:tabular-nums}
+.tog{width:100%;flex:1;border:0;border-radius:12px;background:var(--surface);color:var(--text);font:600 14px inherit;display:flex;align-items:center;justify-content:center;gap:6px}
+.tog.on{background:#c9a35a;color:#1d1608}
+.flight{display:flex;flex-direction:column;background:var(--surface);border-radius:20px;overflow:hidden}
+.fr{display:flex;align-items:center;gap:10px;min-height:64px;padding:0 10px 0 12px;border-top:1px solid var(--sep)}
+.fr:first-child{border-top:0}
+.fn2{flex:1;min-width:0;display:flex;flex-direction:column;gap:1px;font-weight:600;font-size:16px}
+.fn2 small{font-size:12px;font-weight:500;color:var(--muted)}
+.fp{display:flex;gap:4px}
+.fp button{width:40px;height:40px;border-radius:20px;border:0;background:var(--bg);color:var(--muted);font:700 15px inherit;font-variant-numeric:tabular-nums}
+.fp button.on{background:var(--accentFill);color:var(--onAccent)}
+</style>
+</helmet>
+<div class="board">
+<sc-for list="{{themes}}" as="th" hint-placeholder-count="2">
+<div class="col">
+<div class="cap">{{th.label}}</div>
+<div class="phone {{th.cls}}" style="background:#2b3a31">
+<div class="sheet" style="top:54px">
+<div class="hole"><button class="sh-a" type="button">Annuleren</button><span class="ht"><b>Hole 7</b><span>Par 4 · HCP 3 · 352 m</span></span><button class="sh-a sh-s" type="button">Opslaan</button></div>
+<div class="body" style="gap:12px">
+<section class="me" aria-label="Jouw hole">
+<div class="mehead"><span class="av">E</span><span style="font-weight:700;font-size:17px">Eric</span><span class="badge">{{th.badge}}</span></div>
+<div class="hero"><button class="rb" type="button" aria-label="Eén slag minder">−</button><span class="num" aria-live="polite">{{th.score}}</span><button class="rb" type="button" aria-label="Eén slag meer">+</button></div>
+<div class="qp" role="radiogroup" aria-label="Snelkeuze slagen"><sc-for list="{{th.quick}}" as="q" hint-placeholder-count="5"><button type="button" role="radio" aria-checked="{{q.on}}" class="{{q.cls}}">{{q.n}}</button></sc-for></div>
+<div style="display:flex;flex-direction:column;gap:6px"><span class="lab">AFSLAG</span>
+<div class="fw" role="radiogroup" aria-label="Afslag">
+<button type="button" role="radio" aria-checked="{{th.tl}}" class="rl miss {{th.cl}}"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3 5 8l5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg> Links</button>
+<button type="button" role="radio" aria-checked="{{th.tf}}" class="fm {{th.cf}}"><svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M5 14V2l7 3-7 3" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"></path></svg> Fairway</button>
+<button type="button" role="radio" aria-checked="{{th.tr}}" class="rr miss {{th.cr}}">Rechts <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"></path></svg></button>
+</div></div>
+<div class="tiles3b">
+<div class="st"><span class="lab">PUTTS</span><div class="ctl"><button type="button" aria-label="Minder putts">−</button><b>{{th.putts}}</b><button type="button" aria-label="Meer putts">+</button></div></div>
+<div class="st"><span class="lab">BUNKER</span><button type="button" aria-pressed="{{th.bOn}}" class="tog {{th.bCls}}"><svg width="18" height="18" viewBox="0 0 18 18" aria-hidden="true"><path d="M2 13c2-4 5-6 7-6s5 2 7 6z" fill="currentColor" opacity=".85"></path><circle cx="12" cy="5" r="1.6" fill="currentColor"></circle></svg> {{th.bunker}}</button></div>
+<div class="st"><span class="lab">STRAF</span><div class="ctl"><button type="button" aria-label="Minder strafslagen">−</button><b>{{th.pen}}</b><button type="button" aria-label="Meer strafslagen">+</button></div></div>
+</div>
+</section>
+<span class="lab" style="padding:0 4px">FLIGHT</span>
+<div class="flight">
+<sc-for list="{{th.guests}}" as="g" hint-placeholder-count="3">
+<div class="fr"><span class="av">{{g.ini}}</span><span class="fn2">{{g.name}}<small>{{g.sub}}</small></span>
+<div class="fp" role="radiogroup" aria-label="Slagen {{g.name}}"><sc-for list="{{g.chips}}" as="c" hint-placeholder-count="5"><button type="button" role="radio" aria-checked="{{c.on}}" aria-label="{{c.aria}}" class="{{c.cls}}">{{c.n}}</button></sc-for></div></div>
+</sc-for>
+</div>
+</div>
+</div>
+</div>
+</div>
+</sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview": {"width": 892, "height": 940}}'>
+class Component extends DCLogic {
+renderVals() {
+return {"themes": [{"label": "Score ronde 3 — licht · groot getal, afslag als fairway, flight eronder", "cls": "th-light", "badge": "Bogey · +1", "score": "5", "quick": [{"n": "3", "cls": "", "on": "false"}, {"n": "4", "cls": "", "on": "false"}, {"n": "5", "cls": "on", "on": "true"}, {"n": "6", "cls": "", "on": "false"}, {"n": "7", "cls": "", "on": "false"}], "tl": "false", "tf": "true", "tr": "false", "cl": "", "cf": "on", "cr": "", "putts": "2", "bOn": "true", "bCls": "on", "bunker": "Ja", "pen": "0", "guests": [{"ini": "P", "name": "Piet", "sub": "+1 slag · netto 4", "chips": [{"n": "3", "cls": "", "on": "false", "aria": "3 slagen"}, {"n": "4", "cls": "", "on": "false", "aria": "4 slagen"}, {"n": "5", "cls": "on", "on": "true", "aria": "5 slagen"}, {"n": "6", "cls": "", "on": "false", "aria": "6 slagen"}, {"n": "⋯", "cls": "", "on": "false", "aria": "Andere score of opgeraapt"}]}, {"ini": "J", "name": "Jan", "sub": "+1 slag · netto 5", "chips": [{"n": "3", "cls": "", "on": "false", "aria": "3 slagen"}, {"n": "4", "cls": "", "on": "false", "aria": "4 slagen"}, {"n": "5", "cls": "", "on": "false", "aria": "5 slagen"}, {"n": "6", "cls": "on", "on": "true", "aria": "6 slagen"}, {"n": "⋯", "cls": "", "on": "false", "aria": "Andere score of opgeraapt"}]}, {"ini": "A", "name": "Anna", "sub": "+1 slag", "chips": [{"n": "3", "cls": "", "on": "false", "aria": "3 slagen"}, {"n": "4", "cls": "", "on": "false", "aria": "4 slagen"}, {"n": "5", "cls": "", "on": "false", "aria": "5 slagen"}, {"n": "6", "cls": "", "on": "false", "aria": "6 slagen"}, {"n": "⋯", "cls": "", "on": "false", "aria": "Andere score of opgeraapt"}]}]}, {"label": "Score ronde 3 — donker · Stableford, afslag rechts, 1 strafslag", "cls": "th-dark", "badge": "Dubbel bogey · 1 pt", "score": "6", "quick": [{"n": "3", "cls": "", "on": "false"}, {"n": "4", "cls": "", "on": "false"}, {"n": "5", "cls": "", "on": "false"}, {"n": "6", "cls": "on", "on": "true"}, {"n": "7", "cls": "", "on": "false"}], "tl": "false", "tf": "false", "tr": "true", "cl": "", "cf": "", "cr": "on", "putts": "2", "bOn": "false", "bCls": "", "bunker": "Nee", "pen": "1", "guests": [{"ini": "P", "name": "Piet", "sub": "+1 slag · 2 pt", "chips": [{"n": "3", "cls": "", "on": "false", "aria": "3 slagen"}, {"n": "4", "cls": "", "on": "false", "aria": "4 slagen"}, {"n": "5", "cls": "on", "on": "true", "aria": "5 slagen"}, {"n": "6", "cls": "", "on": "false", "aria": "6 slagen"}, {"n": "⋯", "cls": "", "on": "false", "aria": "Andere score of opgeraapt"}]}, {"ini": "J", "name": "Jan", "sub": "+1 slag · 0 pt", "chips": [{"n": "3", "cls": "", "on": "false", "aria": "3 slagen"}, {"n": "4", "cls": "", "on": "false", "aria": "4 slagen"}, {"n": "5", "cls": "", "on": "false", "aria": "5 slagen"}, {"n": "6", "cls": "", "on": "false", "aria": "6 slagen"}, {"n": "⋯", "cls": "", "on": "false", "aria": "Andere score of opgeraapt"}]}, {"ini": "A", "name": "Anna", "sub": "+1 slag · 2 pt", "chips": [{"n": "3", "cls": "", "on": "false", "aria": "3 slagen"}, {"n": "4", "cls": "", "on": "false", "aria": "4 slagen"}, {"n": "5", "cls": "on", "on": "true", "aria": "5 slagen"}, {"n": "6", "cls": "", "on": "false", "aria": "6 slagen"}, {"n": "⋯", "cls": "", "on": "false", "aria": "Andere score of opgeraapt"}]}]}]};
+}
+}
+</script>
+</body>
+</html>

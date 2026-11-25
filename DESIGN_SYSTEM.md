@@ -21,6 +21,7 @@ When the task matches a row, also read:
 | --- | --- |
 | Entering or adjusting a numeric value | [Number fields](docs/standards/number-fields.md) |
 | Fullscreen, sheet, or keyboard-anchored editing, or drafts | [Editors](docs/standards/editors.md) |
+| Quick creation in a composer pinned to the keyboard | [Keyboard composer](docs/standards/keyboard-composer.md) |
 | Row actions, selection, or section menus in a list | [Actionable lists](docs/standards/lists.md) |
 | Creating, reviewing, or building from a design study | [Design studies](docs/standards/design-studies.md) |
 

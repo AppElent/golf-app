@@ -1,10 +1,50 @@
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
 import { metrics, spacing, type Tokens, useThemedStyles } from "../../../theme";
 import { AppText } from "../../../ui/text";
+
+/** Between the native header buttons on an iPhone SE (375 pt wide). */
+const NARROW_WIDTH = 390;
+const NARROW_TITLE = 124;
+
+/** "Hole 7" over "Par 4 · SI 3 · 352 m", in either header. */
+export function HoleTitle({
+	title,
+	subtitle,
+}: {
+	title: string;
+	subtitle: string;
+}) {
+	const styles = useThemedStyles(createStyles);
+	const narrow = useWindowDimensions().width < NARROW_WIDTH;
+	return (
+		<View
+			accessible
+			accessibilityRole="header"
+			accessibilityLabel={`${title}, ${subtitle}`}
+			style={[styles.title, narrow && { maxWidth: NARROW_TITLE }]}
+		>
+			<AppText variant="titleSm" numberOfLines={1} maxFontSizeMultiplier={1.2}>
+				{title}
+			</AppText>
+			<AppText
+				variant="footnote"
+				numberOfLines={1}
+				// The buttons leave no room for a three-digit length: shrink, don't cut.
+				adjustsFontSizeToFit={narrow}
+				minimumFontScale={0.75}
+				maxFontSizeMultiplier={1.2}
+				style={styles.titleMeta}
+			>
+				{subtitle}
+			</AppText>
+		</View>
+	);
+}
 
 /** The sheet's in-content header where it has no native toolbar. */
 export function ScoreSheetHeader({
 	title,
+	subtitle,
 	cancelLabel,
 	onCancel,
 	saveLabel,
@@ -12,6 +52,7 @@ export function ScoreSheetHeader({
 	saving,
 }: {
 	title: string;
+	subtitle: string;
 	cancelLabel: string;
 	onCancel: () => void;
 	saveLabel: string;
@@ -28,9 +69,9 @@ export function ScoreSheetHeader({
 			>
 				<AppText style={styles.headerCancelText}>{cancelLabel}</AppText>
 			</Pressable>
-			<AppText variant="heading" numberOfLines={2} style={styles.modalTitle}>
-				{title}
-			</AppText>
+			<View style={styles.modalTitle}>
+				<HoleTitle title={title} subtitle={subtitle} />
+			</View>
 			<Pressable
 				onPress={onSave}
 				disabled={saving}
@@ -62,5 +103,7 @@ const createStyles = (colors: Tokens) =>
 		headerCancelText: { color: colors.textMuted, fontWeight: "500" },
 		headerActionText: { color: colors.accent, fontWeight: "700" },
 		headerActionTrailing: { alignItems: "flex-end" },
-		modalTitle: { flex: 1, textAlign: "center" },
+		modalTitle: { flex: 1 },
+		title: { alignItems: "center" },
+		titleMeta: { fontVariant: ["tabular-nums"] },
 	});

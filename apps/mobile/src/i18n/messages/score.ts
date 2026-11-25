@@ -1,15 +1,36 @@
-/** The score sheet and the scorecard. */
+/** The score sheet, the scorecard and the handicap table. */
 export const scoreEn = {
-	title: "Hole {n} · Par {par}",
+	title: "Hole {n}",
 	strokes: "Strokes",
 	putts: "Putts",
 	penalties: "Penalties",
-	fairway: "Fairway",
-	green: "Green in reg.",
-	hit: "Hit",
-	missed: "Missed",
+	bunker: "Bunker",
+	yes: "Yes",
+	no: "No",
+	teeShot: "Tee shot",
+	teeShots: { left: "Left", fairway: "Fairway", right: "Right" },
+	flight: "Flight",
+	results: {
+		albatross: "Albatross",
+		eagle: "Eagle",
+		birdie: "Birdie",
+		par: "Par",
+		bogey: "Bogey",
+		double: "Double bogey",
+		triple: "Triple bogey",
+	},
+	points: "{n} pt",
+	net: "net {n}",
+	/** Handicap strokes on this hole: "+1 stroke". */
+	strokesReceived: {
+		one: "{sign}{count} stroke",
+		other: "{sign}{count} strokes",
+	},
+	more: "More",
+	otherFor: "Other score or picked up for {name}",
 	pickedUp: "Picked up",
-	pickedUpHint: "No score on this hole",
+	undoPickedUp: "Not picked up",
+	pickedUpHint: "Long press: picked up, no score on this hole",
 	save: "Save",
 	saving: "Saving…",
 	saveError: "Score not saved. Check your connection and try again.",
@@ -45,17 +66,48 @@ export const scorecardEn = {
 	editHole: "Edit hole {n}",
 };
 
+export const handicapTableEn = {
+	title: "Strokes per hole",
+	subtitle: "Tee {tee} · {count} holes",
+	strokeIndex: "HCP",
+	strokes: { one: "{count} stroke", other: "{count} strokes" },
+	givesBack: {
+		one: "gives {count} stroke back",
+		other: "gives {count} strokes back",
+	},
+	footer:
+		"● = one extra stroke on that hole. Stableford and net scores use this.",
+	noStrokeIndexes: "This course has no stroke index per hole.",
+};
+
 export const scoreNl: typeof scoreEn = {
-	title: "Hole {n} · Par {par}",
+	title: "Hole {n}",
 	strokes: "Slagen",
 	putts: "Putts",
-	penalties: "Strafslagen",
-	fairway: "Fairway",
-	green: "Green in regulation",
-	hit: "Geraakt",
-	missed: "Gemist",
-	pickedUp: "Opgepakt",
-	pickedUpHint: "Geen score op deze hole",
+	penalties: "Straf",
+	bunker: "Bunker",
+	yes: "Ja",
+	no: "Nee",
+	teeShot: "Afslag",
+	teeShots: { left: "Links", fairway: "Fairway", right: "Rechts" },
+	flight: "Flight",
+	results: {
+		albatross: "Albatros",
+		eagle: "Eagle",
+		birdie: "Birdie",
+		par: "Par",
+		bogey: "Bogey",
+		double: "Dubbel bogey",
+		triple: "Tripel bogey",
+	},
+	points: "{n} pt",
+	net: "netto {n}",
+	strokesReceived: { one: "{sign}{count} slag", other: "{sign}{count} slagen" },
+	more: "Meer",
+	otherFor: "Andere score of opgeraapt voor {name}",
+	pickedUp: "Opgeraapt",
+	undoPickedUp: "Niet opgeraapt",
+	pickedUpHint: "Lang indrukken: opgeraapt, geen score op deze hole",
 	save: "Opslaan",
 	saving: "Opslaan…",
 	saveError:
@@ -92,4 +144,18 @@ export const scorecardNl: typeof scorecardEn = {
 	abandonMessage: "De ronde en alle scores worden verwijderd.",
 	abandonError: "Ronde stoppen mislukt. Controleer je verbinding.",
 	editHole: "Hole {n} bewerken",
+};
+
+export const handicapTableNl: typeof handicapTableEn = {
+	title: "Slagen per hole",
+	subtitle: "Tee {tee} · {count} holes",
+	strokeIndex: "HCP",
+	strokes: { one: "{count} slag", other: "{count} slagen" },
+	givesBack: {
+		one: "geeft {count} slag terug",
+		other: "geeft {count} slagen terug",
+	},
+	footer:
+		"● = één slag extra op die hole. Stableford en netto scores rekenen hiermee.",
+	noStrokeIndexes: "Deze baan heeft geen handicapvolgorde per hole.",
 };

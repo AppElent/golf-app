@@ -24,12 +24,16 @@ const unclearableScoreFields = {
 	nr: v.optional(v.boolean()),
 };
 
+const missSide = v.union(v.literal("left"), v.literal("right"));
+
 /** One player's stored result on one hole. */
 export const holeScoreFields = {
 	...unclearableScoreFields,
 	putts: v.optional(v.number()),
 	fir: v.optional(v.boolean()),
+	firMiss: v.optional(missSide),
 	gir: v.optional(v.boolean()),
+	bunker: v.optional(v.boolean()),
 };
 
 /** A write to one result: omitted fields keep their value, `null` clears. */
@@ -37,7 +41,9 @@ export const scoreUpdateFields = {
 	...unclearableScoreFields,
 	putts: v.optional(v.union(v.number(), v.null())),
 	fir: v.optional(v.union(v.boolean(), v.null())),
+	firMiss: v.optional(v.union(missSide, v.null())),
 	gir: v.optional(v.union(v.boolean(), v.null())),
+	bunker: v.optional(v.union(v.boolean(), v.null())),
 };
 
 type Mutual<A, B> = [A] extends [B] ? ([B] extends [A] ? true : false) : false;

@@ -343,6 +343,13 @@ async function writeScore(
 				.eq("playerIndex", playerIndex),
 		)
 		.first();
+	// A miss side belongs to a missed fairway only. An older app corrects `fir`
+	// without knowing `firMiss`, so it is dropped here rather than rejected.
+	const fir = fields.fir === undefined ? existing?.fir : fields.fir;
+	if (fir !== false) {
+		delete set.firMiss;
+		cleared.firMiss = undefined;
+	}
 	if (existing) {
 		await ctx.db.patch(existing._id, { ...set, ...cleared });
 	} else {
@@ -357,7 +364,7 @@ async function writeScore(
 
 /**
  * Upsert one player's result on one hole. Last write wins (single scorer).
- * Omitted fields keep their value; `null` clears putts / fairway / green.
+ * Omitted fields keep their value; `null` clears what can be unknown.
  */
 export const setScore = mutation({
 	args: {

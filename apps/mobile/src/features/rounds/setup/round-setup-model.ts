@@ -1,6 +1,38 @@
-/** Add a loop pick; at most two picks (18 holes), the same loop twice is fine. */
-export function toggleLoopPick(picks: readonly number[], index: number) {
+import type { RoundFormat } from "@fairway/core/round";
+
+/** A round has the owner and at most three guests. */
+export const MAX_PLAYERS = 4;
+
+/** The formats a round can start in, in the order their tiles are drawn. */
+export const FORMAT_TILES: readonly RoundFormat[] = ["stableford", "stroke"];
+
+/**
+ * A tap on a loop's tile. At most two picks (18 holes): a picked loop is played
+ * twice, then not at all; another loop joins a single pick, else starts over.
+ */
+export function toggleLoopPick(
+	picks: readonly number[],
+	index: number,
+): number[] {
+	const count = picks.filter((pick) => pick === index).length;
+	if (count === 2) return [];
+	if (count === 1) return [index, index];
 	return picks.length >= 2 ? [index] : [...picks, index];
+}
+
+/** The loop played twice, or null when every pick is a different loop. */
+export function doubledLoop(picks: readonly number[]): number | null {
+	return picks.length === 2 && picks[0] === picks[1] ? picks[0] : null;
+}
+
+/** The letter in a player's avatar. */
+export function playerInitial(name: string): string {
+	return (Array.from(name.trim())[0] ?? "").toUpperCase();
+}
+
+/** A playing handicap as it is read: 14, or "+2" for a plus player's -2. */
+export function playingHandicapText(value: number): string {
+	return value < 0 ? `+${-value}` : String(value);
 }
 
 /** The tee last played on this course, else the course's first tee. */
@@ -40,23 +72,4 @@ export function teeLengthMeters(
 		total += length;
 	}
 	return total;
-}
-
-/** Up to this many tees the list stays open; more fold to the chosen one. */
-export const OPEN_TEE_LIST_MAX = 3;
-
-/**
- * The tee rows to show. A long list folds to the chosen tee, so format and
- * players stay on screen; `expanded` shows them all.
- */
-export function visibleTees<T extends { _id: string }>(
-	tees: ReadonlyArray<T>,
-	selectedId: string | null,
-	expanded: boolean,
-): { rows: T[]; folded: boolean } {
-	if (expanded || tees.length <= OPEN_TEE_LIST_MAX) {
-		return { rows: [...tees], folded: false };
-	}
-	const selected = tees.find((t) => t._id === selectedId) ?? tees[0];
-	return { rows: selected ? [selected] : [], folded: true };
 }

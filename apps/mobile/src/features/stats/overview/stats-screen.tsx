@@ -140,7 +140,19 @@ export function StatsScreen() {
 						stats.puttsPer18 === null ? "—" : numbers.decimal(stats.puttsPer18)
 					}
 				/>
-				<InsetRow title={t.stats.fairways} value={pct(stats.firPct)} />
+				<InsetRow
+					title={t.stats.fairways}
+					secondary={
+						stats.firMissLeftPct === null
+							? undefined
+							: fmt(t.stats.fairwayMisses, {
+									left: pct(stats.firMissLeftPct),
+									// From the rounded left side, so the two add up to 100%.
+									right: pct(1 - Math.round(stats.firMissLeftPct * 100) / 100),
+								})
+					}
+					value={pct(stats.firPct)}
+				/>
 				<InsetRow title={t.stats.greens} value={pct(stats.girPct)} />
 			</InsetList>
 

@@ -71,6 +71,12 @@ function numberFormatters(locale: Locale) {
 	return {
 		decimal: (n: number, digits = 1) =>
 			localizeDecimal(n.toFixed(digits), locale),
+		/** A whole number with thousands groups: 5.720 (nl), 5,720 (en). */
+		whole: (n: number) =>
+			String(Math.round(n)).replace(
+				/\B(?=(\d{3})+$)/g,
+				DECIMAL_SEPARATOR[locale] === "," ? "." : ",",
+			),
 		handicap: (n: number) => localizeDecimal(formatHandicapIndex(n), locale),
 		vsPar: (n: number, digits?: number) =>
 			localizeDecimal(formatVsPar(n, digits), locale),

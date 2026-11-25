@@ -1,15 +1,61 @@
 import {
 	defaultTeeId,
+	doubledLoop,
+	playerInitial,
+	playingHandicapText,
 	teeLengthMeters,
 	toggleLoopPick,
-	visibleTees,
 } from "./round-setup-model";
 
 describe("toggleLoopPick", () => {
-	it("allows at most two picks and restarts on the third", () => {
+	it("plays a tapped loop once, then twice, then not at all", () => {
 		expect(toggleLoopPick([], 0)).toEqual([0]);
 		expect(toggleLoopPick([0], 0)).toEqual([0, 0]);
+		expect(toggleLoopPick([0, 0], 0)).toEqual([]);
+	});
+
+	it("joins a second loop and keeps the order of tapping", () => {
+		expect(toggleLoopPick([0], 1)).toEqual([0, 1]);
+		expect(toggleLoopPick([1], 0)).toEqual([1, 0]);
+	});
+
+	it("gives both slots to a picked loop that is tapped again", () => {
+		expect(toggleLoopPick([0, 1], 0)).toEqual([0, 0]);
+		expect(toggleLoopPick([0, 1], 1)).toEqual([1, 1]);
+	});
+
+	it("starts over when a new loop does not fit", () => {
 		expect(toggleLoopPick([0, 1], 2)).toEqual([2]);
+		expect(toggleLoopPick([0, 0], 1)).toEqual([1]);
+	});
+});
+
+describe("doubledLoop", () => {
+	it("names the loop played twice", () => {
+		expect(doubledLoop([1, 1])).toBe(1);
+	});
+
+	it("is null otherwise", () => {
+		expect(doubledLoop([])).toBeNull();
+		expect(doubledLoop([0])).toBeNull();
+		expect(doubledLoop([0, 1])).toBeNull();
+	});
+});
+
+describe("playerInitial", () => {
+	it("is the first letter in upper case", () => {
+		expect(playerInitial(" piet")).toBe("P");
+		expect(playerInitial("émile")).toBe("É");
+		expect(playerInitial("🏌 Jan")).toBe("🏌");
+		expect(playerInitial(" ")).toBe("");
+	});
+});
+
+describe("playingHandicapText", () => {
+	it("writes a plus handicap with a plus", () => {
+		expect(playingHandicapText(14)).toBe("14");
+		expect(playingHandicapText(0)).toBe("0");
+		expect(playingHandicapText(-2)).toBe("+2");
 	});
 });
 
@@ -52,26 +98,5 @@ describe("teeLengthMeters", () => {
 		expect(teeLengthMeters({ marker: "white" }, holes, ["1", "3"])).toBeNull();
 		expect(teeLengthMeters({ marker: "white" }, holes, ["9"])).toBeNull();
 		expect(teeLengthMeters({ marker: "white" }, holes, [])).toBeNull();
-	});
-});
-
-describe("visibleTees", () => {
-	const few = [{ _id: "a" }, { _id: "b" }, { _id: "c" }];
-	const many = [...few, { _id: "d" }, { _id: "e" }, { _id: "f" }, { _id: "g" }];
-
-	it("shows a short list in full", () => {
-		expect(visibleTees(few, "b", false)).toEqual({ rows: few, folded: false });
-	});
-
-	it("folds a long list to the chosen tee", () => {
-		expect(visibleTees(many, "e", false)).toEqual({
-			rows: [{ _id: "e" }],
-			folded: true,
-		});
-		expect(visibleTees(many, null, false).rows).toEqual([{ _id: "a" }]);
-	});
-
-	it("shows a long list in full once expanded", () => {
-		expect(visibleTees(many, "e", true)).toEqual({ rows: many, folded: false });
 	});
 });

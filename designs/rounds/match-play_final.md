@@ -5,6 +5,8 @@ Approved by Eric on a decision card, 17 Nov 2026 ("Goedkeuren, telefoon en web")
 - Canvas: [Fairway — Rounds & stats](https://claude.ai/artifact/Jgn4oew8xuPNXr9Sg869aj), page `APP-148 Match play & skins`.
 - Final artboard source: [`match-play_final/`](match-play_final/). Build from this file; the artboards are the visual reference.
 
+> Superseded in part (24 Nov 2026): the setup format picker is now the tile grid in [Round setup and score entry](round-setup-scoring_final.md) §1, and web setup no longer exists (APP-235). The rest of this study stands.
+
 ## Decisions
 
 1. Format is a choice list with four options: Stableford, Strokeplay, Matchplay (exactly 2 players), Skins (2–4 players). An option that doesn't fit the player count is disabled and says why.

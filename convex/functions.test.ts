@@ -279,6 +279,50 @@ describe("rounds", () => {
 		expect(active?.scores).toHaveLength(2);
 	});
 
+	it("stores the tee shot's miss side and the bunker, and clears them", async () => {
+		const { alice, course } = await setup();
+		const roundId = await startRound(alice, course);
+		const save = (score: {
+			fir?: boolean | null;
+			firMiss?: "left" | "right" | null;
+			bunker?: boolean | null;
+			strokes?: number;
+		}) =>
+			alice.mutation(api.rounds.saveHole, {
+				roundId,
+				holeIndex: 0,
+				scores: [{ playerIndex: 0, ...score }],
+			});
+		const row = async () =>
+			(await alice.query(api.rounds.active, {}))?.scores[0];
+
+		await save({ strokes: 5, fir: false, firMiss: "left", bunker: true });
+		expect(await row()).toMatchObject({
+			fir: false,
+			firMiss: "left",
+			bunker: true,
+		});
+		// Omitted fields keep their value, as from a build that predates them.
+		await save({ strokes: 6, fir: false });
+		expect(await row()).toMatchObject({ firMiss: "left", bunker: true });
+		await save({ strokes: 4 });
+		expect(await row()).toMatchObject({ firMiss: "left", bunker: true });
+		await save({ firMiss: null, bunker: null });
+		expect(await row()).not.toHaveProperty("firMiss");
+		expect(await row()).not.toHaveProperty("bunker");
+		// A side never outlives its missed fairway.
+		await save({ fir: false, firMiss: "right" });
+		await save({ fir: true });
+		expect(await row()).not.toHaveProperty("firMiss");
+		await save({ fir: false, firMiss: "right" });
+		await save({ fir: null });
+		expect(await row()).not.toHaveProperty("firMiss");
+		await save({ fir: true, firMiss: "left" });
+		expect(await row()).not.toHaveProperty("firMiss");
+		await save({ bunker: false });
+		expect(await row()).toMatchObject({ bunker: false });
+	});
+
 	it("rejects a bad saveHole without writing anything", async () => {
 		const { alice, course } = await setup();
 		const roundId = await startRound(alice, course);
@@ -819,6 +863,9 @@ async function fillEveryTable(who: Who, course: Course, name: string) {
 		playerIndex: 0,
 		strokes: 5,
 		putts: 2,
+		fir: false,
+		firMiss: "left",
+		bunker: true,
 	});
 	await who.mutation(api.shots.mark, {
 		roundId,
@@ -884,7 +931,14 @@ describe("data export", () => {
 			expect.objectContaining({ _id: roundId }),
 		]);
 		expect(data.tables.holeScores).toEqual([
-			expect.objectContaining({ roundId, strokes: 5, putts: 2 }),
+			expect.objectContaining({
+				roundId,
+				strokes: 5,
+				putts: 2,
+				fir: false,
+				firMiss: "left",
+				bunker: true,
+			}),
 		]);
 		const copyHoles = data.tables.holes as { courseId: string }[];
 		expect(copyHoles.length).toBe(course.holes.length * 2);
@@ -972,11 +1026,15 @@ describe("data export", () => {
 
 	it("refuses a table it does not export", async () => {
 		const { alice } = await setup();
-		await expect(
-			alice.query(api.account.exportPage, {
+		const refused = await alice
+			.query(api.account.exportPage, {
 				step: { table: "holes", cursor: null },
-			}),
-		).rejects.toThrow("Unknown export table.");
+			})
+			.catch((e: unknown) => e);
+		expect(refused).toBeInstanceOf(ConvexError);
+		expect((refused as ConvexError<{ code: string }>).data.code).toBe(
+			"unknownExportTable",
+		);
 	});
 });
 

@@ -6,6 +6,8 @@ import { metrics, radius, spacing, useTokens } from "../theme";
 import {
 	type InsetListProps,
 	type InsetRowProps,
+	ROW_AVATAR,
+	type RowLeading,
 	rowSpokenLabel,
 } from "./inset-list.shared";
 import { type RowAccessibilityProps, SwipeableRow } from "./swipeable-row";
@@ -54,6 +56,7 @@ export function InsetRow({
 	chevron = false,
 	external = false,
 	accessibilityHint,
+	accent = false,
 	destructive = false,
 	onPress,
 	actions,
@@ -66,7 +69,7 @@ export function InsetRow({
 				onPress={onPress}
 				disabled={!onPress && !accessibility}
 				accessibilityRole={onPress ? "button" : undefined}
-				accessibilityLabel={rowSpokenLabel({ title, secondary })}
+				accessibilityLabel={rowSpokenLabel({ title, secondary, value })}
 				accessibilityHint={accessibilityHint}
 				{...accessibility}
 				style={({ pressed }) => [
@@ -75,19 +78,18 @@ export function InsetRow({
 					pressed && onPress ? { backgroundColor: tokens.surface2 } : null,
 				]}
 			>
-				{leading ? (
-					<SymbolView
-						name={leading.symbol}
-						size={22}
-						tintColor={tokens.accentInk}
-						style={styles.symbol}
-					/>
-				) : null}
+				{leading ? <Leading leading={leading} /> : null}
 				<View style={styles.text}>
 					<AppText
 						variant="row"
 						numberOfLines={2}
-						style={destructive ? { color: tokens.danger } : null}
+						style={
+							destructive
+								? { color: tokens.danger }
+								: accent
+									? { color: tokens.accent }
+									: null
+						}
 					>
 						{title}
 					</AppText>
@@ -125,6 +127,30 @@ export function InsetRow({
 	);
 }
 
+function Leading({ leading }: { leading: RowLeading }) {
+	const tokens = useTokens();
+	const circle = "initial" in leading || leading.circle;
+	const mark =
+		"initial" in leading ? (
+			<AppText variant="label" style={{ color: tokens.accentInk }}>
+				{leading.initial}
+			</AppText>
+		) : (
+			<SymbolView
+				name={leading.symbol}
+				size={circle ? 16 : 22}
+				tintColor={tokens.accentInk}
+				style={circle ? undefined : styles.symbol}
+			/>
+		);
+	if (!circle) return mark;
+	return (
+		<View style={[styles.avatar, { backgroundColor: tokens.accentDim }]}>
+			{mark}
+		</View>
+	);
+}
+
 const styles = StyleSheet.create({
 	list: { gap: spacing.sm },
 	header: {
@@ -148,6 +174,13 @@ const styles = StyleSheet.create({
 	text: { flex: 1, minWidth: 0, gap: 1 },
 	value: { fontVariant: ["tabular-nums"] },
 	chevron: { fontWeight: "400" },
+	avatar: {
+		width: ROW_AVATAR,
+		height: ROW_AVATAR,
+		borderRadius: ROW_AVATAR / 2,
+		alignItems: "center",
+		justifyContent: "center",
+	},
 	symbol: { width: 28, height: 28 },
 	separator: {
 		height: StyleSheet.hairlineWidth,
