@@ -14,6 +14,8 @@ const round = ({
 		holesWithPutts: 18,
 		firMade: 8,
 		firEligible: 14,
+		firMissLeft: 0,
+		firMissRight: 0,
 		girMade: 6,
 		girHoles: 18,
 		...owner,
@@ -30,6 +32,7 @@ describe("aggregateStats", () => {
 			avgVsPar9: null,
 			puttsPer18: null,
 			firPct: null,
+			firMissLeftPct: null,
 			girPct: null,
 		});
 	});
@@ -69,6 +72,15 @@ describe("aggregateStats", () => {
 		expect(s.avgScore9).toBe(46); // 9-hole rounds average on their own
 		expect(s.avgVsPar9).toBe(10);
 		expect(s.firPct).toBeCloseTo((8 + 4) / (14 + 7), 4);
+	});
+
+	it("pools the sides of missed fairways", () => {
+		const s = aggregateStats([
+			round({ firMissLeft: 3, firMissRight: 1 }),
+			round({ firMissLeft: 0, firMissRight: 4 }),
+			round(),
+		]);
+		expect(s.firMissLeftPct).toBeCloseTo(3 / 8, 4);
 	});
 
 	it("ignores rounds with no putts recorded in the putts figure", () => {

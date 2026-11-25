@@ -13,6 +13,8 @@ export interface AggregateStats {
 	avgVsPar9: number | null;
 	puttsPer18: number | null; // pooled putts/hole × 18
 	firPct: number | null; // pooled fairways hit
+	/** Share of the missed fairways with a known side that went left; the rest went right. */
+	firMissLeftPct: number | null;
 	girPct: number | null; // pooled greens in regulation
 }
 
@@ -36,6 +38,9 @@ export function aggregateStats(
 	const puttsPer18 =
 		puttHoles > 0 ? round1((puttTotal / puttHoles) * 18) : null;
 
+	const missLeft = rounds.reduce((t, r) => t + r.owner.firMissLeft, 0);
+	const missRight = rounds.reduce((t, r) => t + r.owner.firMissRight, 0);
+
 	return {
 		rounds: rounds.length,
 		avgScore: mean(18, (r) => r.strokes),
@@ -47,6 +52,7 @@ export function aggregateStats(
 			rounds.reduce((t, r) => t + r.owner.firMade, 0),
 			rounds.reduce((t, r) => t + r.owner.firEligible, 0),
 		),
+		firMissLeftPct: ratio(missLeft, missLeft + missRight),
 		girPct: ratio(
 			rounds.reduce((t, r) => t + r.owner.girMade, 0),
 			rounds.reduce((t, r) => t + r.owner.girHoles, 0),
