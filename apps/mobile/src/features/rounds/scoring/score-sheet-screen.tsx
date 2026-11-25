@@ -86,11 +86,7 @@ function ScoreSheet({
 		saved.sides.length,
 		teams ? undefined : hole.par,
 	);
-	// The owner's card is always saved; another side once it is changed here.
-	const [edits, setEdits] = useState<SheetEdits>(() => {
-		const own: SheetEdits = { [OWNER_INDEX]: live[OWNER_INDEX] };
-		return teams ? {} : own;
-	});
+	const [edits, setEdits] = useState<SheetEdits>({});
 	const drafts = sheetDrafts(live, edits);
 	const entered = withHole(scores, holeIndex, drafts);
 	const preview = game(round, holes, entered);
@@ -150,7 +146,7 @@ function ScoreSheet({
 				saveHole({
 					roundId: round._id,
 					holeIndex,
-					scores: sheetUpdates(edits, scores, {
+					scores: sheetUpdates(live, edits, scores, {
 						holeIndex,
 						par: hole.par,
 						teams,

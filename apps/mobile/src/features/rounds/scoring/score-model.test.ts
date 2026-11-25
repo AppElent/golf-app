@@ -247,27 +247,27 @@ describe("another device scoring while the sheet is open (APP-894)", () => {
 	];
 	const now = [opened[0], { ...opened[1], nr: true }, opened[2]];
 	const sheet = { holeIndex: 0, par: 4, teams: false };
-	const own = initialDrafts(opened, 0, 3, 4)[0];
+	const live = initialDrafts(now, 0, 3, 4);
 
 	it("leaves a guest picked up there alone, and shows it", () => {
-		const edits = { 0: own };
-		expect(sheetUpdates(edits, now, sheet).map((u) => u.playerIndex)).toEqual([
-			0,
-		]);
-		expect(sheetDrafts(initialDrafts(now, 0, 3, 4), edits)[1].nr).toBe(true);
+		const edits = { 0: draft({ strokes: 5 }) };
+		expect(
+			sheetUpdates(live, edits, now, sheet).map((u) => u.playerIndex),
+		).toEqual([0]);
+		expect(sheetDrafts(live, edits)[1].nr).toBe(true);
 	});
 
 	it("saves the guests changed here", () => {
-		const edits = { 0: own, 2: draft({ strokes: 6 }) };
-		expect(sheetUpdates(edits, now, sheet).slice(1)).toEqual([
+		const edits = { 2: draft({ strokes: 6 }) };
+		expect(sheetUpdates(live, edits, now, sheet)).toEqual([
 			{ playerIndex: 2, strokes: 6, nr: false },
 		]);
 	});
 
 	it("gives a scramble's teams no owner stats", () => {
-		expect(sheetUpdates({ 0: draft() }, [], { ...sheet, teams: true })).toEqual(
-			[{ playerIndex: 0, strokes: 4, nr: false }],
-		);
+		expect(
+			sheetUpdates([], { 0: draft() }, [], { ...sheet, teams: true }),
+		).toEqual([{ playerIndex: 0, strokes: 4, nr: false }]);
 	});
 });
 
