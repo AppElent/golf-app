@@ -6,12 +6,22 @@ import {
 import { checkHoleRefs } from "@fairway/core/loops";
 import {
 	countedStrokes,
+	type FormatOptions,
 	OWNER_INDEX,
 	ownerRoundStats,
 	playerStrokes,
+	type RoundFormat,
+	type RoundTeam,
 	type ScoreUpdate,
 	scoreAt,
 } from "@fairway/core/round";
+import {
+	countsForPlayer,
+	formatFits,
+	hasFormatOptions,
+	sideCount,
+	validTeams,
+} from "@fairway/core/round-formats";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "./_generated/server";
@@ -19,7 +29,12 @@ import { mutation, query } from "./_generated/server";
 import { canSee } from "./courses";
 import { getOptionalUserId, getUserId } from "./lib";
 import { upsertSettings } from "./settings";
-import { roundFormat, scoreUpdateFields } from "./validators";
+import {
+	formatOptions,
+	roundFormat,
+	roundTeam,
+	scoreUpdateFields,
+} from "./validators";
 
 const playerInput = v.object({
 	name: v.string(),
@@ -48,11 +63,14 @@ function findSimulation(ctx: QueryCtx, userId: string) {
 		.first();
 }
 
-/** The user's finished rounds, newest first. */
+/**
+ * The user's latest `limit` finished rounds, newest first. `teamRounds` adds the
+ * scrambles among them, which never push out a round that counts.
+ */
 async function finishedRounds(
 	ctx: QueryCtx,
 	userId: string,
-	limit = WHS_WINDOW,
+	{ limit = WHS_WINDOW, teamRounds = false } = {},
 ) {
 	const rounds = await ctx.db
 		.query("rounds")
@@ -60,7 +78,13 @@ async function finishedRounds(
 		.filter((q) => q.eq(q.field("status"), "finished"))
 		.collect();
 	rounds.sort((a, b) => b.startedAt - a.startedAt);
-	return rounds.slice(0, limit);
+	let counted = 0;
+	return rounds.filter((round) => {
+		if (counted >= limit) return false;
+		if (!countsForPlayer(round.format)) return teamRounds;
+		counted++;
+		return true;
+	});
 }
 
 function courseHoles(ctx: QueryCtx, courseId: Id<"courses">) {
@@ -158,6 +182,30 @@ export function assertHoleOfRound(round: Doc<"rounds">, holeIndex: number) {
 	}
 }
 
+/** A format only starts with the players, options and teams it is played with. */
+function assertFormat(round: {
+	format: RoundFormat;
+	formatOptions?: FormatOptions;
+	teams?: RoundTeam[];
+	players: unknown[];
+}) {
+	const { format, formatOptions: options, teams, players } = round;
+	if (!formatFits(format, players.length)) {
+		throw new Error("This format does not fit the number of players.");
+	}
+	if (options && !hasFormatOptions(format)) {
+		throw new Error("This format has no options.");
+	}
+	if (options?.carryOver !== undefined && format !== "skins") {
+		throw new Error("Only skins carry over.");
+	}
+	if (format !== "scramble") {
+		if (teams) throw new Error("Only a scramble has teams.");
+	} else if (!teams || !validTeams(teams, players.length)) {
+		throw new Error("A scramble needs one or two complete teams.");
+	}
+}
+
 /**
  * Start a round. Validates every selected hole has par + stroke index
  * (scoring math needs them) and computes each player's playing handicap
@@ -172,6 +220,8 @@ export const start = mutation({
 		holeRefs: v.array(v.string()),
 		loopLabel: v.optional(v.string()),
 		format: roundFormat,
+		formatOptions: v.optional(formatOptions),
+		teams: v.optional(v.array(roundTeam)),
 		players: v.array(playerInput),
 		simulated: v.optional(v.boolean()),
 	},
@@ -187,6 +237,7 @@ export const start = mutation({
 		if (args.players.length === 0) {
 			throw new Error("A round needs at least one player.");
 		}
+		assertFormat(args);
 		if (args.holeRefs.length === 0) {
 			throw new Error("A round needs at least one hole.");
 		}
@@ -243,6 +294,8 @@ export const start = mutation({
 			loopLabel: args.loopLabel,
 			startedAt: Date.now(),
 			format: args.format,
+			formatOptions: args.formatOptions,
+			teams: args.teams,
 			status: "active",
 			players,
 			currentHoleIndex: 0,
@@ -313,7 +366,7 @@ export async function deleteRoundData(ctx: MutationCtx, roundId: Id<"rounds">) {
 	await ctx.db.delete(roundId);
 }
 
-/** Upsert one player's result on one active round's hole. */
+/** Upsert one player's (scramble: one team's) result on one active round's hole. */
 async function writeScore(
 	ctx: MutationCtx,
 	round: Doc<"rounds">,
@@ -322,7 +375,7 @@ async function writeScore(
 	fields: ScoreUpdate,
 ) {
 	assertHoleOfRound(round, holeIndex);
-	if (playerIndex < 0 || playerIndex >= round.players.length) {
+	if (playerIndex < 0 || playerIndex >= sideCount(round)) {
 		throw new Error("playerIndex out of range.");
 	}
 	// Values to store; a null clears the field (patch() drops undefined).
@@ -464,7 +517,7 @@ export const finish = mutation({
 		const holes = holesOfRound(round, allHoles);
 		const owner = round.players[OWNER_INDEX];
 		const differential =
-			owner.playingHandicap === undefined
+			owner.playingHandicap === undefined || !countsForPlayer(round.format)
 				? null
 				: roundDifferential({
 						holes,
@@ -483,14 +536,19 @@ export const finish = mutation({
 
 /**
  * Finished rounds, newest first, with the owner's summary, recomputed from
- * holeScores so rounds finished before a stat existed still have it.
+ * holeScores so rounds finished before a stat existed still have it. Scrambles
+ * only with `teamRounds`, and then `owner` is team 0: stats and the handicap
+ * leave them out, and so do older apps, which don't know the format.
  */
 export const history = query({
-	args: { limit: v.optional(v.number()) },
-	handler: async (ctx, { limit }) => {
+	args: {
+		limit: v.optional(v.number()),
+		teamRounds: v.optional(v.boolean()),
+	},
+	handler: async (ctx, args) => {
 		const userId = await getOptionalUserId(ctx);
 		if (!userId) return [];
-		const rounds = await finishedRounds(ctx, userId, limit);
+		const rounds = await finishedRounds(ctx, userId, args);
 		const holesOf = perCourse((courseId) => courseHoles(ctx, courseId));
 		const nameOf = perCourse(
 			async (courseId) =>
@@ -539,14 +597,15 @@ export const remove = mutation({
 
 /**
  * The owner's per-hole results (par + strokes, NR as null) over the latest
- * finished rounds — input for par-type averages and the scoring distribution.
+ * finished rounds played with their own ball — input for par-type averages and
+ * the scoring distribution.
  */
 export const holeResults = query({
 	args: { limit: v.optional(v.number()) },
 	handler: async (ctx, { limit }) => {
 		const userId = await getOptionalUserId(ctx);
 		if (!userId) return [];
-		const rounds = await finishedRounds(ctx, userId, limit);
+		const rounds = await finishedRounds(ctx, userId, { limit });
 		const holesOf = perCourse((courseId) => courseHoles(ctx, courseId));
 		const results: Array<{ par: number; strokes: number | null }> = [];
 		for (const round of rounds) {

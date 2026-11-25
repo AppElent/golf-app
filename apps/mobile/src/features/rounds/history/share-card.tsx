@@ -7,6 +7,8 @@ type ShareCardProps = {
 	course: string;
 	/** "Sunday 1 November · Yellow". */
 	detail: string;
+	/** How the game ended, above the owner's own score. */
+	game: { title: string; sub: string } | null;
 	score: string;
 	toPar: string;
 	/** Up to three headline numbers beside the score (net, points, putts…). */
@@ -35,6 +37,16 @@ export function ShareCard({ ref, ...props }: ShareCardProps) {
 					{props.detail}
 				</AppText>
 			</View>
+			{props.game ? (
+				<View style={styles.top}>
+					<AppText variant="heading" style={styles.text}>
+						{props.game.title}
+					</AppText>
+					<AppText variant="caption" style={styles.muted}>
+						{props.game.sub}
+					</AppText>
+				</View>
+			) : null}
 			<View style={styles.scoreRow}>
 				<AppText variant="quantity" style={styles.score}>
 					{props.score}

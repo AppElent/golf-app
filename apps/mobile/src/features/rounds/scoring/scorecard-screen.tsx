@@ -1,12 +1,9 @@
-import { playedHoles } from "@fairway/core/round";
 import { useMutation } from "convex/react";
 import { useRouter } from "expo-router";
-import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { api } from "../../../convex/api";
 import { useSubmit } from "../../../convex/use-submit";
-import { haptics } from "../../../feedback/haptics";
-import { fmt, plural, useI18n } from "../../../i18n";
+import { fmt, useI18n } from "../../../i18n";
 import {
 	radius,
 	spacing,
@@ -24,20 +21,24 @@ import { useEndSimulation } from "../../simulation/mode/use-end-simulation";
 import { NoActiveRound } from "../components/no-active-round";
 import { ScorecardGrid } from "../components/scorecard-grid";
 import { cardRows } from "../components/scorecard-model";
+import { StandingBox } from "../formats/game-boxes";
+import { GameTotals } from "../formats/game-totals";
+import { useGame } from "../formats/use-game";
 import { useActiveRound } from "../use-active-round";
+import { useFinishRound } from "./use-finish-round";
 
 export function ScorecardScreen() {
-	const { t, locale } = useI18n();
+	const { t } = useI18n();
 	const router = useRouter();
 	const colors = useTokens();
 	const styles = useThemedStyles(createStyles);
 	const confirm = useConfirm();
 	const active = useActiveRound();
 	const endSimulation = useEndSimulation();
-	const finish = useMutation(api.rounds.finish);
+	const finish = useFinishRound();
+	const game = useGame();
 	const abandon = useMutation(api.rounds.abandon);
 	const submit = useSubmit();
-	const [action, setAction] = useState<"finish" | "abandon">("finish");
 
 	const header = (
 		<NavHeader
@@ -63,46 +64,13 @@ export function ScorecardScreen() {
 	}
 
 	const { round, holes, scores, course } = active;
-	const rows = cardRows(holes, scores, round.players);
-	const missing = holes.length - playedHoles(holes.length, scores).length;
+	const { sides, received, ...text } = game(round, holes, scores);
+	const rows = cardRows(holes, scores, received);
+	const standing = text.cardStanding();
+	const totals = text.totals();
+	const pending = finish.pending || submit.pending;
+	const error = finish.error ?? submit.error;
 	const roundId = round._id;
-
-	async function onFinish() {
-		const ok = await confirm({
-			title: t.scorecard.finishTitle,
-			message: round.simulated
-				? [
-						missing > 0
-							? plural(locale, missing, t.scorecard.finishSimulationMissing)
-							: null,
-						t.scorecard.finishSimulationMessage,
-					]
-						.filter(Boolean)
-						.join(" ")
-				: missing > 0
-					? plural(locale, missing, t.scorecard.finishMissing)
-					: t.scorecard.finishMessage,
-			confirmLabel: t.scorecard.finish,
-		});
-		if (!ok) return;
-		setAction("finish");
-		await submit.run(() => finish({ roundId }), {
-			errorFallback: t.scorecard.finishError,
-			onSuccess: () => {
-				haptics.saveConfirmed();
-				if (round.simulated) {
-					endSimulation();
-					router.dismissAll();
-					return;
-				}
-				router.dismissAll();
-				router.push({
-					pathname: "/rounds/[roundId]",
-					params: { roundId },
-				});
-			},
-		});
-	}
 
 	async function onAbandon() {
 		const ok = await confirm({
@@ -112,7 +80,6 @@ export function ScorecardScreen() {
 			destructive: true,
 		});
 		if (!ok) return;
-		setAction("abandon");
 		await submit.run(() => abandon({ roundId }), {
 			errorFallback: t.scorecard.abandonError,
 			onSuccess: () => {
@@ -129,9 +96,9 @@ export function ScorecardScreen() {
 				avoidKeyboard={false}
 				primaryAction={{
 					label: t.scorecard.finish,
-					onPress: onFinish,
-					loading: submit.pending && action === "finish",
-					disabled: submit.pending,
+					onPress: () => void finish.finishRound(active, scores),
+					loading: finish.pending,
+					disabled: pending,
 				}}
 			>
 				<View style={styles.heading}>
@@ -141,11 +108,11 @@ export function ScorecardScreen() {
 					) : null}
 				</View>
 				<View style={styles.totals}>
-					{round.players.map((player, p) => (
-						// biome-ignore lint/suspicious/noArrayIndexKey: players are fixed at round start
+					{sides.map((side, p) => (
+						// biome-ignore lint/suspicious/noArrayIndexKey: sides are fixed at round start
 						<View key={p} style={styles.total}>
 							<AppText variant="label" numberOfLines={1}>
-								{player.name}
+								{side.name}
 							</AppText>
 							<AppText variant="title" style={styles.totalNumber}>
 								{rows[p].scored > 0 ? rows[p].total : "–"}
@@ -163,10 +130,13 @@ export function ScorecardScreen() {
 						</View>
 					))}
 				</View>
+				{standing ? <StandingBox {...standing} /> : null}
 				<ScorecardGrid
 					holes={holes}
-					players={round.players}
+					players={sides}
 					rows={rows}
+					received={standing ? received : undefined}
+					gameRows={text.cardRows()}
 					currentHole={round.currentHoleIndex}
 					onHolePress={(hole) =>
 						router.push({
@@ -175,20 +145,21 @@ export function ScorecardScreen() {
 						})
 					}
 				/>
-				{submit.error ? (
+				{totals ? <GameTotals {...totals} /> : null}
+				{error ? (
 					<AppText
 						selectable
 						accessibilityRole="alert"
 						style={{ color: colors.danger }}
 					>
-						{submit.error}
+						{error}
 					</AppText>
 				) : null}
 				<GhostButton
 					label={t.scorecard.abandon}
 					onPress={onAbandon}
-					loading={submit.pending && action === "abandon"}
-					disabled={submit.pending}
+					loading={submit.pending}
+					disabled={pending}
 					tone="danger"
 				/>
 			</FormScreen>

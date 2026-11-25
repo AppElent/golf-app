@@ -10,6 +10,7 @@ import {
 	useThemedStyles,
 } from "../../../theme";
 import { AppText } from "../../../ui/text";
+import type { GameCell, GameRow } from "../formats/game-text";
 import type { CardHole, CardPlayerRow } from "./scorecard-model";
 
 const CELL = 28;
@@ -18,12 +19,18 @@ export function ScorecardGrid({
 	holes,
 	players,
 	rows,
+	received,
+	gameRows = [],
 	currentHole,
 	onHolePress,
 }: {
 	holes: readonly CardHole[];
 	players: readonly { name: string }[];
 	rows: readonly CardPlayerRow[];
+	/** Strokes per side and hole, drawn as dots; left out when they don't matter. */
+	received?: readonly (readonly number[])[];
+	/** What the holes did in the game, under the players. */
+	gameRows?: readonly GameRow[];
 	currentHole?: number;
 	onHolePress?: (holeIndex: number) => void;
 }) {
@@ -107,6 +114,7 @@ export function ScorecardGrid({
 											accessibilityLabel={editLabel(i)}
 											style={styles.cell}
 										>
+											<StrokeDots count={received?.[p]?.[i] ?? 0} />
 											<Marked
 												mark={row.cells[i].mark}
 												text={
@@ -122,6 +130,17 @@ export function ScorecardGrid({
 											{row.nines[nine] || ""}
 										</AppText>
 									</View>
+								</View>
+							))}
+							{gameRows.map(({ label: name, cells }) => (
+								<View key={name} style={[styles.row, styles.gameRow]}>
+									<NameCell text={name} />
+									{indices.map((i) => (
+										<View key={i} style={styles.cell}>
+											<GameChip cell={cells[i]} />
+										</View>
+									))}
+									<View style={[styles.cell, styles.sumCell]} />
 								</View>
 							))}
 						</View>
@@ -146,6 +165,53 @@ function NameCell({ text, strong }: { text: string; strong?: boolean }) {
 		</View>
 	);
 }
+
+/** Handicap strokes on a hole: a dot each, in the cell's corner. */
+function StrokeDots({ count }: { count: number }) {
+	const styles = useThemedStyles(createStyles);
+	if (count <= 0) return null;
+	return (
+		<View style={styles.dots} pointerEvents="none">
+			{Array.from({ length: count }, (_, i) => (
+				// biome-ignore lint/suspicious/noArrayIndexKey: identical dots
+				<View key={i} style={styles.dot} />
+			))}
+		</View>
+	);
+}
+
+function GameChip({ cell }: { cell: GameCell | null }) {
+	const styles = useThemedStyles(createStyles);
+	if (!cell) return null;
+	return (
+		<View
+			accessible
+			accessibilityLabel={cell.spoken}
+			style={[styles.chip, styles[CHIP_STYLES[cell.tone]]]}
+		>
+			<AppText
+				variant="caption"
+				maxFontSizeMultiplier={1.1}
+				style={[
+					styles.chipText,
+					cell.tone === "accent" && styles.onAccent,
+					cell.tone === "ink" && styles.onInk,
+					cell.tone === "plain" && styles.plainText,
+				]}
+			>
+				{cell.text}
+			</AppText>
+		</View>
+	);
+}
+
+const CHIP_STYLES = {
+	accent: "chipAccent",
+	ink: "chipInk",
+	outline: "chipOutline",
+	dashed: "chipDashed",
+	plain: "chipPlain",
+} as const;
 
 function Marked({ mark, text }: { mark: ScoreMark | null; text: string }) {
 	const styles = useThemedStyles(createStyles);
@@ -191,6 +257,47 @@ const createStyles = (colors: Tokens) =>
 			borderBottomWidth: StyleSheet.hairlineWidth,
 			borderBottomColor: colors.separator,
 		},
+		gameRow: {
+			borderTopWidth: StyleSheet.hairlineWidth,
+			borderTopColor: colors.separator,
+		},
+		dots: {
+			position: "absolute",
+			top: 2,
+			right: 1,
+			flexDirection: "row",
+			gap: 1,
+		},
+		dot: {
+			width: 5,
+			height: 5,
+			borderRadius: 2.5,
+			backgroundColor: colors.accent,
+		},
+		chip: {
+			minWidth: CELL - 2,
+			minHeight: 22,
+			alignItems: "center",
+			justifyContent: "center",
+			borderRadius: radius.sm,
+			borderWidth: 1.5,
+		},
+		chipAccent: {
+			backgroundColor: colors.accentFill,
+			borderColor: colors.accentFill,
+		},
+		chipInk: { backgroundColor: colors.text, borderColor: colors.text },
+		chipOutline: { borderColor: colors.text },
+		chipDashed: { borderColor: colors.text, borderStyle: "dashed" },
+		chipPlain: { borderColor: "transparent" },
+		chipText: {
+			color: colors.text,
+			fontWeight: "700",
+			fontVariant: ["tabular-nums"],
+		},
+		onAccent: { color: colors.onAccent },
+		onInk: { color: colors.bg },
+		plainText: { color: colors.textMuted },
 		nameCell: { width: 52, paddingRight: spacing.xs },
 		cell: {
 			width: CELL,

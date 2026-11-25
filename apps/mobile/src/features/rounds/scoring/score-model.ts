@@ -31,12 +31,14 @@ export function initialDrafts(
 	scores: readonly HoleScore[],
 	holeIndex: number,
 	playerCount: number,
-	par: number,
+	/** The owner's score to start from; left out, they start empty too. */
+	par?: number,
 ): ScoreDraft[] {
 	return Array.from({ length: playerCount }, (_, playerIndex) => {
 		const s = scoreAt(scores, holeIndex, playerIndex);
 		return {
-			strokes: s?.strokes ?? (playerIndex === OWNER_INDEX ? par : null),
+			strokes:
+				s?.strokes ?? (playerIndex === OWNER_INDEX ? (par ?? null) : null),
 			putts: s?.putts ?? null,
 			fir: s?.fir ?? null,
 			firMiss: s?.firMiss ?? null,
@@ -125,30 +127,44 @@ export function draftUpdate(
 	};
 }
 
-/** "Bogey · +1"; Stableford adds points instead: "Double bogey · 1 pt". */
+/**
+ * "Bogey · +1"; Stableford adds points instead: "Double bogey · 1 pt", a game
+ * what counts in it: "Bogey · net 4 · 2 pt".
+ */
 export function resultBadge({
 	draft,
 	par,
 	received,
 	stableford,
+	game,
 	copy,
 }: {
 	draft: ScoreDraft;
 	par: number;
 	received: number;
 	stableford: boolean;
+	/** Set in a game, with the hole's points once it has any. */
+	game?: { points: number | null };
 	copy: ScoreCopy;
 }): string {
 	const strokes = draft.nr ? null : draft.strokes;
+	const pointsText = (n: number) => fmt(copy.points, { n });
+	const gamePoints =
+		game && game.points !== null ? pointsText(game.points) : null;
 	const points = stableford
-		? fmt(copy.points, { n: stablefordPoints({ par }, strokes, received) })
-		: null;
+		? pointsText(stablefordPoints({ par }, strokes, received))
+		: gamePoints;
 	if (strokes === null) {
 		return [copy.pickedUp, points].filter(Boolean).join(" · ");
 	}
 	const toPar = strokes - par;
 	const name = resultName(toPar, copy);
 	const diff = formatVsPar(toPar);
+	if (game) {
+		const net =
+			received === 0 ? null : fmt(copy.net, { n: strokes - received });
+		return [name ?? diff, net, points].filter(Boolean).join(" · ");
+	}
 	// "Par · E" says the same thing twice, and "+4" has no name.
 	return [name ?? diff, points ?? (name && toPar !== 0 ? diff : null)]
 		.filter(Boolean)
@@ -168,12 +184,13 @@ function resultName(toPar: number, copy: ScoreCopy): string | null {
 	return names[toPar] ?? null;
 }
 
-/** "+1 stroke · net 4"; Stableford "+1 stroke · 2 pt"; what is known so far. */
+/** "+1 stroke · net 4"; with points "+1 stroke · 2 pt"; what is known so far. */
 export function flightDetail({
 	draft,
 	par,
 	received,
 	stableford,
+	gamePoints = null,
 	copy,
 	strokesLabel,
 }: {
@@ -181,6 +198,8 @@ export function flightDetail({
 	par: number;
 	received: number;
 	stableford: boolean;
+	/** The hole's points in a game. */
+	gamePoints?: number | null;
 	copy: ScoreCopy;
 	/** "+1 stroke", in the locale's plural. */
 	strokesLabel: string;
@@ -197,7 +216,9 @@ export function flightDetail({
 	} else if (strokes !== null && received !== 0) {
 		result = fmt(copy.net, { n: strokes - received });
 	}
-	return [received === 0 ? null : strokesLabel, result]
+	const points =
+		gamePoints === null ? null : fmt(copy.points, { n: gamePoints });
+	return [received === 0 ? null : strokesLabel, result, points]
 		.filter(Boolean)
 		.join(" · ");
 }

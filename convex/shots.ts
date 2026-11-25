@@ -18,17 +18,29 @@ export const forRound = query({
 	},
 });
 
-/** Every real shot the user has marked (input for learned club distances). */
+/**
+ * Every real shot the user has marked (input for learned club distances). In a
+ * scramble the next mark can be a teammate's ball, so those say nothing.
+ */
 export const mine = query({
 	args: {},
 	handler: async (ctx) => {
 		const userId = await getOptionalUserId(ctx);
 		if (!userId) return [];
-		return await ctx.db
-			.query("shots")
-			.withIndex("by_user", (q) => q.eq("userId", userId))
-			.filter((q) => q.neq(q.field("simulated"), true))
-			.collect();
+		const [shots, scrambles] = await Promise.all([
+			ctx.db
+				.query("shots")
+				.withIndex("by_user", (q) => q.eq("userId", userId))
+				.filter((q) => q.neq(q.field("simulated"), true))
+				.collect(),
+			ctx.db
+				.query("rounds")
+				.withIndex("by_user", (q) => q.eq("userId", userId))
+				.filter((q) => q.eq(q.field("format"), "scramble"))
+				.collect(),
+		]);
+		const teamRounds = new Set(scrambles.map((round) => round._id));
+		return shots.filter((shot) => !teamRounds.has(shot.roundId));
 	},
 });
 

@@ -33,6 +33,7 @@ export function OwnerScoreCard({
 	draft,
 	received,
 	stableford,
+	game,
 	onChange,
 }: {
 	name: string;
@@ -41,6 +42,7 @@ export function OwnerScoreCard({
 	/** Handicap strokes on this hole. */
 	received: number;
 	stableford: boolean;
+	game?: { points: number | null };
 	onChange: (patch: ScoreDraftPatch) => void;
 }) {
 	const { t } = useI18n();
@@ -80,7 +82,14 @@ export function OwnerScoreCard({
 				</AppText>
 				<View style={styles.badge}>
 					<AppText variant="label" numberOfLines={1} style={styles.badgeText}>
-						{resultBadge({ draft, par, received, stableford, copy: t.score })}
+						{resultBadge({
+							draft,
+							par,
+							received,
+							stableford,
+							game,
+							copy: t.score,
+						})}
 					</AppText>
 				</View>
 				<RoundButton

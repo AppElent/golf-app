@@ -1,6 +1,12 @@
 import type { Units } from "@fairway/core/format";
 import type { LatLng } from "@fairway/core/geo";
-import type { HoleScore, RoundFormat, ScoreUpdate } from "@fairway/core/round";
+import type {
+	FormatOptions,
+	HoleScore,
+	RoundFormat,
+	RoundTeam,
+	ScoreUpdate,
+} from "@fairway/core/round";
 import { type Infer, v } from "convex/values";
 
 /**
@@ -16,7 +22,18 @@ export const unitPreference = v.union(v.literal("m"), v.literal("yd"));
 export const roundFormat = v.union(
 	v.literal("stroke"),
 	v.literal("stableford"),
+	v.literal("match"),
+	v.literal("skins"),
+	v.literal("sixes"),
+	v.literal("scramble"),
 );
+
+export const formatOptions = v.object({
+	scoring: v.union(v.literal("net"), v.literal("gross")),
+	carryOver: v.optional(v.boolean()),
+});
+
+export const roundTeam = v.object({ playerIndexes: v.array(v.number()) });
 
 const unclearableScoreFields = {
 	strokes: v.optional(v.number()),
@@ -55,6 +72,8 @@ export type ValidatorsMatchCore = [
 	Assert<Same<Infer<typeof latLng>, LatLng>>,
 	Assert<Same<Infer<typeof unitPreference>, Units>>,
 	Assert<Same<Infer<typeof roundFormat>, RoundFormat>>,
+	Assert<Same<Infer<typeof formatOptions>, FormatOptions>>,
+	Assert<Same<Infer<typeof roundTeam>, RoundTeam>>,
 	Assert<
 		Same<
 			Infer<ReturnType<typeof v.object<typeof holeScoreFields>>>,

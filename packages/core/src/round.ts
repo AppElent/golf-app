@@ -4,7 +4,25 @@
  */
 import { totalStrokes, vsPar } from "./scoring";
 
-export type RoundFormat = "stroke" | "stableford";
+export type RoundFormat =
+	| "stroke"
+	| "stableford"
+	| "match"
+	| "skins"
+	| "sixes"
+	| "scramble";
+
+/** How a match, skins, sixes or scramble round is scored. Absent = net, carry-over on. */
+export interface FormatOptions {
+	scoring: "net" | "gross";
+	/** Skins: a tied hole's skin goes to the next hole. */
+	carryOver?: boolean;
+}
+
+/** A scramble team; a scramble's scores are stored per team, not per player. */
+export interface RoundTeam {
+	playerIndexes: number[];
+}
 
 /** The account owner is always the first player of a round. */
 export const OWNER_INDEX = 0;
@@ -15,6 +33,7 @@ export type MissSide = "left" | "right";
 /** One player's stored result on one hole. */
 export interface HoleScore {
 	holeIndex: number;
+	/** The team index in a scramble round (team 0 holds the owner). */
 	playerIndex: number;
 	strokes?: number;
 	putts?: number;
@@ -67,6 +86,29 @@ export function playerStrokes(
 		countedStrokes(scoreAt(scores, holeIndex, playerIndex)),
 	);
 }
+
+/**
+ * Every side's net score on a hole, `null` for a pick-up. `null` as a whole
+ * until each side has a result: no format settles a half-entered hole.
+ */
+export function holeNets(
+	scores: ReadonlyArray<HoleScore>,
+	holeIndex: number,
+	received: ReadonlyArray<ReadonlyArray<number>>,
+): (number | null)[] | null {
+	const nets: (number | null)[] = [];
+	for (const [side, strokes] of received.entries()) {
+		const score = scoreAt(scores, holeIndex, side);
+		if (score?.nr) nets.push(null);
+		else if (score?.strokes !== undefined) {
+			nets.push(score.strokes - (strokes[holeIndex] ?? 0));
+		} else return null;
+	}
+	return nets;
+}
+
+/** Ordering value of a net score: a pick-up loses to every score. */
+export const netRank = (net: number | null): number => net ?? Infinity;
 
 /** The owner's holes with strokes or a pick-up, in order. */
 export function playedHoles(

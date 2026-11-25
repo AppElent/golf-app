@@ -1,9 +1,11 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 import {
+	formatOptions,
 	holeScoreFields,
 	latLng,
 	roundFormat,
+	roundTeam,
 	unitPreference,
 } from "./validators";
 
@@ -99,6 +101,10 @@ export default defineSchema({
 		holeRefs: v.array(v.string()),
 		startedAt: v.number(),
 		format: roundFormat,
+		// Match, skins, sixes, scramble. Absent = net, carry-over on.
+		formatOptions: v.optional(formatOptions),
+		// Scramble only: 1 or 2 teams; team 0 holds the owner.
+		teams: v.optional(v.array(roundTeam)),
 		status: v.union(v.literal("active"), v.literal("finished")),
 		players: v.array(
 			v.object({
@@ -129,6 +135,7 @@ export default defineSchema({
 		roundId: v.id("rounds"),
 		// 0-based position in the round's holeRefs.
 		holeIndex: v.number(),
+		// The team index in a scramble round.
 		playerIndex: v.number(),
 		...holeScoreFields,
 	})

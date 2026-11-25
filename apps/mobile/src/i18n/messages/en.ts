@@ -7,6 +7,7 @@ import { accountEn, authErrorsEn, resetPasswordEn } from "./account";
 import { signInEn, signUpEn, verifyEmailEn } from "./auth";
 import { commonEn, tabsEn } from "./common";
 import { feedbackEn } from "./feedback";
+import { formatsEn } from "./formats";
 import { clubsEn, profileEn, roundsEn, statsEn } from "./history";
 import { playEn } from "./play";
 import { scorecardEn, scoreEn } from "./score";
@@ -28,6 +29,7 @@ export const en = {
 	play: playEn,
 	score: scoreEn,
 	scorecard: scorecardEn,
+	formats: formatsEn,
 	rounds: roundsEn,
 	stats: statsEn,
 	profile: profileEn,

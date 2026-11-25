@@ -28,12 +28,17 @@ const BUTTON = 40;
 /** Another player's hole in one row: one tap for a score, ⋯ for the rest. */
 export function FlightRow({
 	name,
+	initial,
+	members,
 	par,
 	draft,
 	detail,
 	onChange,
 }: {
 	name: string;
+	initial?: string;
+	/** The players of a team. */
+	members?: string;
 	par: number;
 	draft: ScoreDraft;
 	/** "+1 stroke · net 4". */
@@ -64,7 +69,7 @@ export function FlightRow({
 	return (
 		<View>
 			<View style={[styles.row, narrow && styles.rowNarrow]}>
-				<PlayerAvatar name={name} size={narrow ? 28 : 34} />
+				<PlayerAvatar name={name} initial={initial} size={narrow ? 28 : 34} />
 				<View style={styles.text}>
 					<AppText
 						variant="control"
@@ -73,10 +78,20 @@ export function FlightRow({
 					>
 						{name}
 					</AppText>
-					{detail ? (
+					{members ? (
 						<AppText
 							variant="caption"
 							numberOfLines={2}
+							maxFontSizeMultiplier={CIRCLE_FONT_SCALE}
+						>
+							{members}
+						</AppText>
+					) : null}
+					{detail ? (
+						<AppText
+							variant="caption"
+							// "+2 strokes · net 3 · 4 pt" beside the buttons.
+							numberOfLines={3}
 							maxFontSizeMultiplier={CIRCLE_FONT_SCALE}
 						>
 							{detail}

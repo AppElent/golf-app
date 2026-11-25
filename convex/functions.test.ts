@@ -7,6 +7,7 @@
  */
 
 import { collectExport, type DataExport } from "@fairway/core/data-export";
+import type { FunctionArgs } from "convex/server";
 import { ConvexError } from "convex/values";
 import { convexTest } from "convex-test";
 import { Webhook } from "svix";
@@ -208,6 +209,174 @@ describe("rounds", () => {
 		// A retired tee falls back to the app's default.
 		await t.run((ctx) => ctx.db.patch(second.teeId, { retired: true }));
 		expect(await alice.query(api.rounds.lastTee, { courseId })).toBeNull();
+	});
+
+	describe("formats", () => {
+		const names = ["Alice", "Carol", "Dan", "Erin"];
+		type StartArgs = FunctionArgs<typeof api.rounds.start>;
+		const starter =
+			({ alice, course }: Awaited<ReturnType<typeof setup>>) =>
+			(
+				playerCount: number,
+				format: StartArgs["format"],
+				rest: Partial<StartArgs> = {},
+			) =>
+				alice.mutation(api.rounds.start, {
+					courseId: course.course._id,
+					teeId: course.tees[0]._id,
+					holeRefs: course.holes
+						.slice(0, 9)
+						.flatMap((h) => (h.ref ? [h.ref] : [])),
+					format,
+					players: names
+						.slice(0, playerCount)
+						.map((name) => ({ name, handicapIndex: 18 })),
+					...rest,
+				});
+		const team = (...playerIndexes: number[]) => ({ playerIndexes });
+
+		it("starts with the options and teams it is played with", async () => {
+			const context = await setup();
+			const start = starter(context);
+			const { alice } = context;
+			const roundId = await start(2, "match", {
+				formatOptions: { scoring: "gross" },
+			});
+			expect((await alice.query(api.rounds.active, {}))?.round).toMatchObject({
+				format: "match",
+				formatOptions: { scoring: "gross" },
+			});
+			await alice.mutation(api.rounds.abandon, { roundId });
+
+			const skins = await start(4, "skins", {
+				formatOptions: { scoring: "net", carryOver: false },
+			});
+			await alice.mutation(api.rounds.abandon, { roundId: skins });
+			const sixes = await start(3, "sixes");
+			await alice.mutation(api.rounds.abandon, { roundId: sixes });
+
+			await start(4, "scramble", { teams: [team(0, 3), team(1, 2)] });
+			expect((await alice.query(api.rounds.active, {}))?.round.teams).toEqual([
+				team(0, 3),
+				team(1, 2),
+			]);
+		});
+
+		it("refuses players, options and teams a format isn't played with", async () => {
+			const start = starter(await setup());
+			const misfit = "does not fit the number of players";
+			await expect(start(3, "match")).rejects.toThrow(misfit);
+			await expect(start(1, "skins")).rejects.toThrow(misfit);
+			await expect(start(2, "sixes")).rejects.toThrow(misfit);
+			await expect(start(1, "scramble", { teams: [team(0)] })).rejects.toThrow(
+				misfit,
+			);
+			await expect(
+				start(2, "stroke", { formatOptions: { scoring: "net" } }),
+			).rejects.toThrow("no options");
+			await expect(
+				start(2, "match", {
+					formatOptions: { scoring: "net", carryOver: true },
+				}),
+			).rejects.toThrow("Only skins carry over");
+			await expect(start(2, "skins", { teams: [team(0, 1)] })).rejects.toThrow(
+				"Only a scramble has teams",
+			);
+			const teams = "one or two complete teams";
+			await expect(start(2, "scramble")).rejects.toThrow(teams);
+			await expect(
+				start(4, "scramble", { teams: [team(1, 2), team(0, 3)] }),
+			).rejects.toThrow(teams);
+			await expect(
+				start(3, "scramble", { teams: [team(0, 1), team(2)] }),
+			).rejects.toThrow(teams);
+		});
+
+		it("keeps a match in the stats and the handicap", async () => {
+			const context = await setup();
+			const { alice } = context;
+			const roundId = await starter(context)(2, "match");
+			for (let holeIndex = 0; holeIndex < 9; holeIndex++) {
+				await alice.mutation(api.rounds.saveHole, {
+					roundId,
+					holeIndex,
+					scores: [
+						{ playerIndex: 0, strokes: 5 },
+						{ playerIndex: 1, strokes: 6 },
+					],
+				});
+			}
+			await alice.mutation(api.rounds.finish, { roundId });
+			const [row] = await alice.query(api.rounds.history, {});
+			expect(row.differential).toBeTypeOf("number");
+			expect(await alice.query(api.rounds.holeResults, {})).toHaveLength(9);
+		});
+
+		it("scores a scramble per team and keeps it out of personal numbers", async () => {
+			const context = await setup();
+			const { t, alice, course } = context;
+			const own = await startRound(alice, course);
+			await alice.mutation(api.rounds.finish, { roundId: own });
+			// Clearly older, not started in the same millisecond.
+			await t.run((ctx) => ctx.db.patch(own, { startedAt: 1 }));
+
+			const roundId = await starter(context)(4, "scramble", {
+				teams: [team(0, 1), team(2, 3)],
+			});
+			const save = (holeIndex: number, ...sides: number[]) =>
+				alice.mutation(api.rounds.saveHole, {
+					roundId,
+					holeIndex,
+					scores: sides.map((playerIndex) => ({ playerIndex, strokes: 4 })),
+				});
+			await expect(save(0, 0, 1, 2)).rejects.toThrow(
+				"playerIndex out of range",
+			);
+			for (let holeIndex = 0; holeIndex < 9; holeIndex++) {
+				await save(holeIndex, 0, 1);
+			}
+			await alice.mutation(api.shots.mark, {
+				roundId,
+				holeIndex: 0,
+				position: { lat: 51.6, lng: 4.87 },
+			});
+			await alice.mutation(api.rounds.finish, { roundId });
+
+			// An older app, the stats and the would-be index don't see it.
+			const plain = await alice.query(api.rounds.history, {});
+			expect(plain.map((r) => r._id)).toEqual([own]);
+			expect(await alice.query(api.rounds.holeResults, {})).toEqual([]);
+			expect(await alice.query(api.shots.mine, {})).toEqual([]);
+
+			// The history list does, without taking a counting round's place.
+			const all = await alice.query(api.rounds.history, {
+				limit: 1,
+				teamRounds: true,
+			});
+			expect(all.map((r) => r._id)).toEqual([roundId, own]);
+			expect(all[0]).toMatchObject({ format: "scramble", differential: null });
+			const detail = await alice.query(api.rounds.detail, { roundId });
+			expect(detail?.round.scoreDifferential).toBeNull();
+		});
+
+		it("exports the options and teams", async () => {
+			const context = await setup();
+			const roundId = await starter(context)(2, "scramble", {
+				formatOptions: { scoring: "gross" },
+				teams: [team(0, 1)],
+			});
+			const data = await collectExport((step) =>
+				context.alice.query(api.account.exportPage, { step }),
+			);
+			expect(data.tables.rounds).toEqual([
+				expect.objectContaining({
+					_id: roundId,
+					format: "scramble",
+					formatOptions: { scoring: "gross" },
+					teams: [team(0, 1)],
+				}),
+			]);
+		});
 	});
 
 	it("allows one active round at a time", async () => {

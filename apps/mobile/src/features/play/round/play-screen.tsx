@@ -24,6 +24,7 @@ import type { CourseDetail } from "../../courses/course-detail";
 import { useWatchPosition } from "../../location/position/use-watch-position";
 import { useUnits } from "../../profile/use-units";
 import { NoActiveRound } from "../../rounds/components/no-active-round";
+import { useGame } from "../../rounds/formats/use-game";
 import {
 	type ActiveRound,
 	useActiveRound,
@@ -34,6 +35,7 @@ import { hudLayout } from "../hud/hud-layout";
 import { PlayBottomBar } from "./play-bottom-bar";
 import { PlayClubTray } from "./play-club-tray";
 import { PlayDistances } from "./play-distances";
+import { PlayGameCapsule } from "./play-game-capsule";
 import { PlayGpsPill } from "./play-gps-pill";
 import { PlayHoleView } from "./play-hole-view";
 import { gpsNotice, nextTeeAction, playerPosition } from "./play-model";
@@ -148,6 +150,7 @@ export function PlayHole({
 	const insets = useSafeAreaInsets();
 	const router = useRouter();
 	const endSimulation = useEndSimulation();
+	const game = useGame();
 
 	const { round, holes } = active;
 	const simulated = round.simulated === true;
@@ -209,6 +212,9 @@ export function PlayHole({
 
 	const hudTop = insets.top + spacing.sm;
 	const hudBottom = insets.bottom + spacing.md;
+	// Off a game there is no capsule, and nothing moves.
+	const gameStanding = game(round, holes, active.scores).capsule(holeIndex);
+	const hudStack = hudTop + (gameStanding ? hudLayout.gameCapsule : 0);
 	const simulationHeight = simulated ? hudLayout.simulationPanel : 0;
 
 	/** Simulation mode: stand somewhere else and aim from there. */
@@ -243,7 +249,7 @@ export function PlayHole({
 				units={units}
 				// The simulation banner hangs below the top bar: frame the hole
 				// under it too, as the bottom does for the simulation panel.
-				hudTop={hudTop + (simulated ? hudLayout.gpsPillBelowBanner : 0)}
+				hudTop={hudStack + (simulated ? hudLayout.gpsPillBelowBanner : 0)}
 				hudBottom={hudBottom + simulationHeight}
 			/>
 			<PlayTopBar
@@ -256,9 +262,15 @@ export function PlayHole({
 				onGoTo={goTo}
 				offline={offline}
 			/>
+			{gameStanding ? (
+				<PlayGameCapsule
+					top={hudTop + hudLayout.gpsPillTop}
+					text={gameStanding}
+				/>
+			) : null}
 			{simulated ? (
 				<PlaySimulationBanner
-					top={hudTop + hudLayout.gpsPillTop}
+					top={hudStack + hudLayout.gpsPillTop}
 					onExit={() => {
 						endSimulation("paused");
 						router.back();
@@ -267,7 +279,7 @@ export function PlayHole({
 			) : null}
 			<PlayGpsPill
 				top={
-					hudTop +
+					hudStack +
 					hudLayout.gpsPillTop +
 					(simulated ? hudLayout.gpsPillBelowBanner : 0)
 				}
@@ -279,7 +291,7 @@ export function PlayHole({
 				})}
 			/>
 			<PlayDistances
-				top={hudTop + hudLayout.distancesTop}
+				top={hudStack + hudLayout.distancesTop}
 				anchors={anchors}
 				player={player}
 				geometry={greenView ? null : geometry}

@@ -14,7 +14,7 @@ describe("cardRows", () => {
 				{ holeIndex: 0, playerIndex: 0, strokes: 3 },
 				{ holeIndex: 9, playerIndex: 0, strokes: 6 },
 			],
-			[{ playingHandicap: 0 }],
+			[holes.map(() => 0)],
 		);
 		expect(row.nines).toEqual([3, 6]);
 		expect(row.total).toBe(9);
@@ -28,7 +28,7 @@ describe("cardRows", () => {
 		const [row] = cardRows(
 			holes.slice(0, 9),
 			[{ holeIndex: 0, playerIndex: 0, strokes: 9, nr: true }],
-			[{}],
+			[holes.map(() => 0)],
 		);
 		expect(row.cells[0]).toEqual({ strokes: null, mark: null, nr: true });
 		expect(row.nines).toEqual([0]);

@@ -3,6 +3,7 @@ import { signInNl, signUpNl, verifyEmailNl } from "./auth";
 import { commonNl, tabsNl } from "./common";
 import type { Messages } from "./en";
 import { feedbackNl } from "./feedback";
+import { formatsNl } from "./formats";
 import { clubsNl, profileNl, roundsNl, statsNl } from "./history";
 import { playNl } from "./play";
 import { scorecardNl, scoreNl } from "./score";
@@ -24,6 +25,7 @@ export const nl = {
 	play: playNl,
 	score: scoreNl,
 	scorecard: scorecardNl,
+	formats: formatsNl,
 	rounds: roundsNl,
 	stats: statsNl,
 	profile: profileNl,

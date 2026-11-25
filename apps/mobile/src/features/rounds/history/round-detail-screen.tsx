@@ -1,5 +1,6 @@
 import { roundRecap } from "@fairway/core/recap";
 import { OWNER_INDEX, ownerRoundStats } from "@fairway/core/round";
+import { isNet, sideHandicaps } from "@fairway/core/round-formats";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { type ComponentRef, useRef } from "react";
 import { ScrollView, StyleSheet, View } from "react-native";
@@ -20,6 +21,9 @@ import { SkeletonList } from "../../../ui/skeleton";
 import { AppText } from "../../../ui/text";
 import { ScorecardGrid } from "../components/scorecard-grid";
 import { cardRows } from "../components/scorecard-model";
+import { formatName } from "../formats/game-text";
+import { GameResultCard } from "../formats/game-totals";
+import { useGame } from "../formats/use-game";
 import {
 	markCounts,
 	roundTiles,
@@ -41,6 +45,7 @@ export function RoundDetailScreen() {
 		roundId: roundId as Id<"rounds">,
 	});
 	const remove = useDeleteRound({ onDeleted: () => router.back() });
+	const game = useGame();
 	const cardRef = useRef<ComponentRef<typeof View>>(null);
 	const header = <NavHeader title={t.rounds.detailTitle} />;
 
@@ -69,12 +74,18 @@ export function RoundDetailScreen() {
 	}
 
 	const { round, course, tee, holes, scores } = detail;
-	const rows = cardRows(holes, scores, round.players);
+	const text = game(round, holes, scores);
+	const rows = cardRows(holes, scores, text.received);
+	const teams = round.format === "scramble";
 	const owner = rows[OWNER_INDEX];
 	const recap = roundRecap(
 		holes,
 		owner.cells.map((c) => c.strokes),
-		round.players[OWNER_INDEX]?.playingHandicap,
+		teams
+			? isNet(round.formatOptions)
+				? sideHandicaps(round)[OWNER_INDEX]
+				: undefined
+			: round.players[OWNER_INDEX]?.playingHandicap,
 	);
 	const nineLabels =
 		recap.nines.length > 1
@@ -101,6 +112,10 @@ export function RoundDetailScreen() {
 		.filter(Boolean)
 		.join(" · ");
 
+	const result = text.result();
+	const share = text.share(
+		rows.map((row) => (row.scored > 0 ? String(row.total) : "–")),
+	);
 	const ninesText =
 		recap.nines.length > 1
 			? recap.nines.map((n, i) => `${nineLabels[i]} ${n.strokes}`).join(" · ")
@@ -112,6 +127,7 @@ export function RoundDetailScreen() {
 			shareMessage({
 				courseName: course.name,
 				detail: shareDetail,
+				game: share,
 				tiles,
 				ninesText,
 				marks: recap.marks,
@@ -140,15 +156,14 @@ export function RoundDetailScreen() {
 						dateText,
 						round.loopLabel,
 						tee.name,
-						round.format === "stableford"
-							? t.rounds.stableford
-							: t.rounds.strokePlay,
+						formatName(round, t),
 						round.status === "active" ? t.rounds.inProgress : null,
 					]
 						.filter(Boolean)
 						.join(" · ")}
 				</AppText>
 			</View>
+			{result ? <GameResultCard {...result} /> : null}
 			<View style={styles.tiles}>
 				{[tiles.score, tiles.toPar, ...tiles.stats].map((tile) => (
 					<View
@@ -177,13 +192,20 @@ export function RoundDetailScreen() {
 					vsPar={numbers.vsPar}
 				/>
 			) : null}
-			<ScorecardGrid holes={holes} players={round.players} rows={rows} />
+			<ScorecardGrid
+				holes={holes}
+				players={text.sides}
+				rows={rows}
+				received={text.standing ? text.received : undefined}
+				gameRows={text.cardRows()}
+			/>
 			{recap.scored > 0 ? (
 				<View style={styles.offscreen} pointerEvents="none">
 					<ShareCard
 						ref={cardRef}
 						course={course.name}
 						detail={shareDetail}
+						game={share}
 						score={tiles.score.value}
 						toPar={tiles.toPar.value}
 						stats={shareCardStats(tiles)}

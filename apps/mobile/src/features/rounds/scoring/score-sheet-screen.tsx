@@ -1,6 +1,5 @@
 import { formatDistance, holeLabel } from "@fairway/core/format";
 import { OWNER_INDEX, scoreAt } from "@fairway/core/round";
-import { strokesPerHole } from "@fairway/core/scoring";
 import { useMutation } from "convex/react";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
@@ -9,6 +8,7 @@ import { api } from "../../../convex/api";
 import { useSubmit } from "../../../convex/use-submit";
 import { haptics } from "../../../feedback/haptics";
 import { fmt, plural, useI18n } from "../../../i18n";
+import { showAlert } from "../../../monitoring/native-presentation";
 import { radius, spacing, type Tokens, useThemedStyles } from "../../../theme";
 import { FormScreen } from "../../../ui/form";
 import { NavHeader } from "../../../ui/nav-header";
@@ -16,6 +16,9 @@ import { SkeletonList } from "../../../ui/skeleton";
 import { AppText } from "../../../ui/text";
 import { useUnits } from "../../profile/use-units";
 import { NoActiveRound } from "../components/no-active-round";
+import { HoleResultBox, StandingBox } from "../formats/game-boxes";
+import { newlyDecided, withHole } from "../formats/game-text";
+import { useGame } from "../formats/use-game";
 import { type ActiveRound, useActiveRound } from "../use-active-round";
 import { FlightRow } from "./flight-row";
 import { OwnerScoreCard } from "./owner-score-card";
@@ -27,6 +30,7 @@ import {
 	type ScoreDraftPatch,
 } from "./score-model";
 import { HoleTitle, ScoreSheetHeader } from "./score-sheet-header";
+import { useFinishRound } from "./use-finish-round";
 
 export function ScoreSheetScreen() {
 	const { t } = useI18n();
@@ -66,9 +70,21 @@ function ScoreSheet({
 	const saveHole = useMutation(api.rounds.saveHole);
 	const { round, holes, scores } = active;
 	const hole = holes[holeIndex];
+	const game = useGame();
+	const saved = game(round, holes, scores);
+	// A scramble is scored per team: no owner card, stats or starting par.
+	const teams = round.format === "scramble";
 	const [drafts, setDrafts] = useState<ScoreDraft[]>(() =>
-		initialDrafts(scores, holeIndex, round.players.length, hole.par),
+		initialDrafts(
+			scores,
+			holeIndex,
+			saved.sides.length,
+			teams ? undefined : hole.par,
+		),
 	);
+	const entered = withHole(scores, holeIndex, drafts);
+	const preview = game(round, holes, entered);
+	const finish = useFinishRound();
 	const submit = useSubmit();
 	const saving = submit.pending;
 	const isLast = holeIndex === holes.length - 1;
@@ -76,13 +92,31 @@ function ScoreSheet({
 	// played; a correction (also after browsing back with the chevrons) stays
 	// put. Guests scored first don't count, like the next-tee offer.
 	const firstEntry = !scoreAt(scores, holeIndex, OWNER_INDEX);
+	const entersOwn =
+		drafts[OWNER_INDEX].nr || drafts[OWNER_INDEX].strokes !== null;
 	const advances =
-		!isLast && firstEntry && holeIndex === round.currentHoleIndex;
+		!isLast && firstEntry && entersOwn && holeIndex === round.currentHoleIndex;
 
 	const update = (playerIndex: number, patch: ScoreDraftPatch) =>
 		setDrafts((all) =>
 			all.map((d, i) => (i === playerIndex ? { ...d, ...patch } : d)),
 		);
+
+	// Playing out a decided match is the players' choice.
+	const askToPlayOut = (winner: string, left: number) =>
+		showAlert(winner, plural(locale, left, t.formats.decidedMessage), [
+			{
+				text: t.formats.finish,
+				onPress: async () => {
+					if (!(await finish.finishRound(active, entered))) router.back();
+				},
+			},
+			{
+				text: t.formats.keepPlaying,
+				isPreferred: true,
+				onPress: () => router.back(),
+			},
+		]);
 
 	// One mutation for every player and the move to the next hole: one round
 	// trip, and the round never advances without its scores.
@@ -96,7 +130,7 @@ function ScoreSheet({
 					scores: drafts.flatMap((draft, playerIndex) => {
 						const update = draftUpdate(draft, {
 							par: hole.par,
-							owner: playerIndex === OWNER_INDEX,
+							owner: !teams && playerIndex === OWNER_INDEX,
 							stored: scoreAt(scores, holeIndex, playerIndex) !== undefined,
 						});
 						return update ? [{ playerIndex, ...update }] : [];
@@ -107,7 +141,11 @@ function ScoreSheet({
 				errorFallback: t.score.saveError,
 				onSuccess: () => {
 					haptics.saveConfirmed();
-					if (isLast && firstEntry) {
+					const decided = newlyDecided(saved.standing, preview.standing);
+					const standing = preview.cardStanding();
+					if (decided && standing) {
+						askToPlayOut(standing.title, decided.left);
+					} else if (isLast && firstEntry) {
 						router.replace("/scorecard");
 					} else {
 						router.back();
@@ -132,13 +170,19 @@ function ScoreSheet({
 		[saving, title, subtitle],
 	);
 	const stableford = round.format === "stableford";
-	const received = useMemo(
-		() =>
-			round.players.map(
-				(p) => strokesPerHole(holes, p.playingHandicap ?? 0)[holeIndex],
-			),
-		[round.players, holes, holeIndex],
+	const received = saved.received.map((strokes) => strokes[holeIndex]);
+	const gamePoints = (side: number) => {
+		const { standing } = preview;
+		return standing?.kind === "sixes"
+			? (standing.holes[holeIndex]?.points[side] ?? null)
+			: null;
+	};
+	const rows = saved.sides.flatMap((side, index) =>
+		!teams && index === OWNER_INDEX ? [] : [{ side, index }],
 	);
+	const standing = saved.sheetStanding(holeIndex);
+	const result = preview.holeResult(holeIndex);
+	const error = submit.error ?? finish.error;
 	const strokesLabel = (n: number) =>
 		fmt(plural(locale, Math.abs(n), t.score.strokesReceived), {
 			sign: n < 0 ? "−" : "+",
@@ -185,53 +229,59 @@ function ScoreSheet({
 					)
 				}
 			>
-				{submit.error ? (
+				{error ? (
 					<AppText selectable accessibilityRole="alert" style={styles.error}>
-						{submit.error}
+						{error}
 					</AppText>
 				) : null}
 				<View style={styles.players}>
-					<OwnerScoreCard
-						name={round.players[OWNER_INDEX].name}
-						par={hole.par}
-						draft={drafts[OWNER_INDEX]}
-						received={received[OWNER_INDEX]}
-						stableford={stableford}
-						onChange={(patch) => update(OWNER_INDEX, patch)}
-					/>
-					{round.players.length > 1 ? (
+					{standing ? <StandingBox {...standing} /> : null}
+					{teams ? null : (
+						<OwnerScoreCard
+							name={round.players[OWNER_INDEX].name}
+							par={hole.par}
+							draft={drafts[OWNER_INDEX]}
+							received={received[OWNER_INDEX]}
+							stableford={stableford}
+							game={
+								saved.standing ? { points: gamePoints(OWNER_INDEX) } : undefined
+							}
+							onChange={(patch) => update(OWNER_INDEX, patch)}
+						/>
+					)}
+					{rows.length > 0 ? (
 						<>
 							<AppText variant="caption" style={styles.flightLabel}>
-								{t.score.flight.toUpperCase()}
+								{(teams ? t.setup.teams : t.score.flight).toUpperCase()}
 							</AppText>
 							<View style={styles.flight}>
-								{round.players.map((player, playerIndex) =>
-									playerIndex === OWNER_INDEX ? null : (
-										<View
-											// biome-ignore lint/suspicious/noArrayIndexKey: players are fixed at round start; the index is their identity
-											key={playerIndex}
-											style={playerIndex > 1 && styles.flightDivider}
-										>
-											<FlightRow
-												name={player.name}
-												par={hole.par}
-												draft={drafts[playerIndex]}
-												detail={flightDetail({
-													draft: drafts[playerIndex],
-													par: hole.par,
-													received: received[playerIndex],
-													stableford,
-													copy: t.score,
-													strokesLabel: strokesLabel(received[playerIndex]),
-												})}
-												onChange={(patch) => update(playerIndex, patch)}
-											/>
-										</View>
-									),
-								)}
+								{rows.map(({ side, index }, row) => (
+									<View key={index} style={row > 0 && styles.flightDivider}>
+										<FlightRow
+											name={side.name}
+											initial={
+												teams && rows.length > 1 ? String(index + 1) : undefined
+											}
+											par={hole.par}
+											draft={drafts[index]}
+											members={side.members ?? undefined}
+											detail={flightDetail({
+												draft: drafts[index],
+												par: hole.par,
+												received: received[index],
+												stableford,
+												gamePoints: gamePoints(index),
+												copy: t.score,
+												strokesLabel: strokesLabel(received[index]),
+											})}
+											onChange={(patch) => update(index, patch)}
+										/>
+									</View>
+								))}
 							</View>
 						</>
 					) : null}
+					{result ? <HoleResultBox {...result} /> : null}
 				</View>
 			</FormScreen>
 		</>

@@ -146,6 +146,7 @@ describe("shareMessage", () => {
 		detail: "Saturday · Yellow",
 		ninesText: "Out 45 · In 45",
 		marks: { eagle: 0, birdie: 1, par: 10, bogey: 5, double: 2 },
+		game: null,
 		copy,
 	};
 
@@ -161,6 +162,15 @@ describe("shareMessage", () => {
 			"",
 			"Shared from Fairway",
 		]);
+	});
+
+	it("puts how a game ended first", () => {
+		const game = { title: "Eric beats Jan 3&2", sub: "Match play net" };
+		expect(
+			shareMessage({ ...base, game, tiles: tiles() })
+				.split("\n")
+				.slice(1, 5),
+		).toEqual(["Saturday · Yellow", game.title, game.sub, ""]);
 	});
 
 	it("moves the next stats up when a round has no net or points", () => {

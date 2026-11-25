@@ -4,7 +4,7 @@ import {
 	nineTotals,
 	type ScoreMark,
 	scoreMark,
-	stablefordTotal,
+	stablefordPoints,
 	totalStrokes,
 	vsPar,
 } from "@fairway/core/scoring";
@@ -36,9 +36,10 @@ export interface CardPlayerRow {
 export function cardRows(
 	holes: readonly CardHole[],
 	scores: readonly HoleScore[],
-	players: readonly { playingHandicap?: number }[],
+	/** Handicap strokes per side and hole. */
+	received: readonly (readonly number[])[],
 ): CardPlayerRow[] {
-	return players.map((player, playerIndex) => {
+	return received.map((sideReceived, playerIndex) => {
 		const cells = holes.map((hole, holeIndex): CardCell => {
 			const s = scoreAt(scores, holeIndex, playerIndex);
 			const strokes = countedStrokes(s);
@@ -50,7 +51,11 @@ export function cardRows(
 		});
 		const strokes = cells.map((c) => c.strokes);
 		const scored = cells.filter((c) => c.strokes !== null).length;
-		const points = stablefordTotal(holes, strokes, player.playingHandicap ?? 0);
+		const points = holes.reduce(
+			(sum, hole, i) =>
+				sum + stablefordPoints(hole, strokes[i], sideReceived[i]),
+			0,
+		);
 		return {
 			cells,
 			nines: nineTotals(strokes),
