@@ -54,7 +54,7 @@ export function HandicapTableGrid({
 						accessibilityLabel={
 							player.playingHandicap === undefined
 								? player.name
-								: `${player.name}, ${fmt(t.setup.playingHandicap, {
+								: `${player.name}, ${fmt(t.setup.plays, {
 										value: handicapText(player.playingHandicap),
 									})}`
 						}
