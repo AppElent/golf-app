@@ -23,6 +23,8 @@ const mustTransform = [
 
 module.exports = {
 	preset: "jest-expo",
+	// Parallel agent runs share one Mac's memory; CI keeps Jest's default.
+	...(process.env.CI ? {} : { maxWorkers: "25%" }),
 	setupFiles: ["<rootDir>/jest.setup.ts"],
 	// Jest always loads `.mjs` as native ESM, which it runs only with a flag.
 	// `src/updates/ota-label.mjs` (developer-home's file, copied unchanged) is
