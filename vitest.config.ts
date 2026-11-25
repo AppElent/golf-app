@@ -5,6 +5,8 @@ export default defineConfig({
   plugins: [viteReact()],
   test: {
     environment: 'jsdom',
+    // Parallel agent runs share one Mac's memory; CI keeps the default.
+    maxWorkers: process.env.CI ? undefined : '25%',
     exclude: [
       ...configDefaults.exclude,
       '**/.claude/**',
