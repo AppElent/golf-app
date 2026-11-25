@@ -1,4 +1,4 @@
-/** The score sheet and the scorecard. */
+/** The score sheet, the scorecard and the handicap table. */
 export const scoreEn = {
 	title: "Hole {n} · Par {par}",
 	strokes: "Strokes",
@@ -43,6 +43,20 @@ export const scorecardEn = {
 	abandonMessage: "The round and all its scores are deleted.",
 	abandonError: "Could not abandon the round. Check your connection.",
 	editHole: "Edit hole {n}",
+};
+
+export const handicapTableEn = {
+	title: "Strokes per hole",
+	subtitle: "Tee {tee} · {count} holes",
+	strokeIndex: "HCP",
+	strokes: { one: "{count} stroke", other: "{count} strokes" },
+	givesBack: {
+		one: "gives {count} stroke back",
+		other: "gives {count} strokes back",
+	},
+	footer:
+		"● = one extra stroke on that hole. Stableford and net scores use this.",
+	noStrokeIndexes: "This course has no stroke index per hole.",
 };
 
 export const scoreNl: typeof scoreEn = {
@@ -92,4 +106,18 @@ export const scorecardNl: typeof scorecardEn = {
 	abandonMessage: "De ronde en alle scores worden verwijderd.",
 	abandonError: "Ronde stoppen mislukt. Controleer je verbinding.",
 	editHole: "Hole {n} bewerken",
+};
+
+export const handicapTableNl: typeof handicapTableEn = {
+	title: "Slagen per hole",
+	subtitle: "Tee {tee} · {count} holes",
+	strokeIndex: "HCP",
+	strokes: { one: "{count} slag", other: "{count} slagen" },
+	givesBack: {
+		one: "geeft {count} slag terug",
+		other: "geeft {count} slagen terug",
+	},
+	footer:
+		"● = één slag extra op die hole. Stableford en netto scores rekenen hiermee.",
+	noStrokeIndexes: "Deze baan heeft geen handicapvolgorde per hole.",
 };

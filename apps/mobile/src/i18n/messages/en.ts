@@ -9,7 +9,7 @@ import { commonEn, tabsEn } from "./common";
 import { feedbackEn } from "./feedback";
 import { clubsEn, profileEn, roundsEn, statsEn } from "./history";
 import { playEn } from "./play";
-import { scorecardEn, scoreEn } from "./score";
+import { handicapTableEn, scorecardEn, scoreEn } from "./score";
 import { coursesEn, homeEn, setupEn, simulatorEn, suggestEn } from "./start";
 
 export const en = {
@@ -28,6 +28,7 @@ export const en = {
 	play: playEn,
 	score: scoreEn,
 	scorecard: scorecardEn,
+	handicapTable: handicapTableEn,
 	rounds: roundsEn,
 	stats: statsEn,
 	profile: profileEn,

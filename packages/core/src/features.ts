@@ -189,7 +189,12 @@ export const FEATURES = defineFeatures([
 		platforms: ["mobile"],
 		reason: WEB_RETIRED,
 		routes: {
-			mobile: ["(app)/play", "(app)/score", "(app)/scorecard"],
+			mobile: [
+				"(app)/play",
+				"(app)/score",
+				"(app)/scorecard",
+				"(app)/handicap-table",
+			],
 		},
 	},
 	{
