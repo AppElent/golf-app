@@ -55,6 +55,7 @@ export function InsetRow({
 	trailing,
 	chevron = false,
 	external = false,
+	accessibilityHint,
 	accent = false,
 	destructive = false,
 	onPress,
@@ -69,6 +70,7 @@ export function InsetRow({
 				disabled={!onPress && !accessibility}
 				accessibilityRole={onPress ? "button" : undefined}
 				accessibilityLabel={rowSpokenLabel({ title, secondary, value })}
+				accessibilityHint={accessibilityHint}
 				{...accessibility}
 				style={({ pressed }) => [
 					styles.row,

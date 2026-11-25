@@ -1,7 +1,7 @@
 import { ACCOUNT_PORTAL_URL } from "@fairway/core/account-portal";
-import { openBrowserAsync } from "expo-web-browser";
 import { useI18n } from "../../../i18n";
 import { InsetRow } from "../../../ui/inset-list";
+import { openInBrowser } from "../open-in-browser";
 
 /**
  * "Manage your AppElent account": the full account (connected sign-ins,
@@ -15,8 +15,12 @@ export function AccountPortalRow() {
 			leading={{ symbol: "person.crop.circle.badge.checkmark" }}
 			title={t.account.managePortal}
 			external
+			accessibilityHint={t.profile.opensInBrowser}
 			onPress={() => {
-				openBrowserAsync(ACCOUNT_PORTAL_URL).catch(() => {});
+				void openInBrowser(ACCOUNT_PORTAL_URL, {
+					title: t.account.managePortal,
+					message: t.profile.browserFailed,
+				});
 			}}
 		/>
 	);
