@@ -132,7 +132,8 @@ export function FormSection({
 		<View style={styles.section}>
 			{title ? <AppText variant="label">{title}</AppText> : null}
 			<View style={styles.group}>
-				{Children.map(children, (row, index) => (
+				{/* `toArray` drops empty children, which get no separator either. */}
+				{Children.map(Children.toArray(children), (row, index) => (
 					<>
 						{index > 0 ? <View style={styles.separator} /> : null}
 						{row}

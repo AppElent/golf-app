@@ -54,6 +54,10 @@ describe("initialDrafts", () => {
 	});
 });
 
+it("starts every side empty without a par, as in a scramble", () => {
+	expect(initialDrafts([], 0, 2).map((d) => d.strokes)).toEqual([null, null]);
+});
+
 describe("one-tap scores", () => {
 	it("offers birdie to triple and birdie to double, never below one", () => {
 		expect(ownerQuickStrokes(4)).toEqual([3, 4, 5, 6, 7]);
@@ -173,6 +177,20 @@ describe("resultBadge", () => {
 			stableford,
 			copy: scoreEn,
 		});
+
+	it("shows what counts in a game: net and points", () => {
+		const badge = (strokes: number, received: number, points: number | null) =>
+			resultBadge({
+				draft: draft({ strokes }),
+				par: 4,
+				received,
+				stableford: false,
+				game: { points },
+				copy: scoreEn,
+			});
+		expect(badge(5, 1, 4)).toBe("Bogey · net 4 · 4 pt");
+		expect(badge(4, 0, null)).toBe("Par");
+	});
 
 	it("names the result with its difference", () => {
 		expect(badge({ strokes: 1 })).toBe("Albatross · −3");

@@ -7,6 +7,8 @@ export const hudLayout = {
 	barMinHeight: 52,
 	gpsPillTop: 64,
 	distancesTop: 104,
+	/** The game's standing takes the GPS pill's place; the rest moves down. */
+	gameCapsule: 40,
 	/** The club tray and next-tee offer, just above the bottom bar. */
 	trayBottom: 64,
 	/** Below the simulation banner, which takes the GPS pill's place. */

@@ -10,13 +10,17 @@ import { InsetList } from "../../../ui/inset-list";
 import { SkeletonList } from "../../../ui/skeleton";
 import { useToast } from "../../../ui/toast";
 import { RoundRow } from "../components/round-row";
+import { teamRoundName } from "../components/round-row-model";
 import { groupByMonth } from "./history-model";
 import { useConfirmDeleteRound } from "./use-delete-round";
 
 export function RoundsHistoryScreen() {
 	const { t, locale } = useI18n();
 	const toast = useToast();
-	const history = useQuery(api.rounds.history, { limit: 200 });
+	const history = useQuery(api.rounds.history, {
+		limit: 200,
+		teamRounds: true,
+	});
 	const confirmDelete = useConfirmDeleteRound();
 	const remove = useMutation(api.rounds.remove);
 
@@ -73,7 +77,10 @@ export function RoundsHistoryScreen() {
 									}),
 									round.loopLabel ??
 										fmt(t.rounds.holes, { n: round.holeCount }),
-								].join(" · ")}
+									teamRoundName(round, t),
+								]
+									.filter(Boolean)
+									.join(" · ")}
 								actions={[
 									{
 										key: "delete",

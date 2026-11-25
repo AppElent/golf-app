@@ -1,10 +1,13 @@
 import {
 	defaultTeeId,
 	doubledLoop,
+	nextPartner,
 	playerInitial,
 	playingHandicapText,
+	scrambleTeams,
 	teeLengthMeters,
 	toggleLoopPick,
+	unfitFormats,
 } from "./round-setup-model";
 
 describe("toggleLoopPick", () => {
@@ -98,5 +101,42 @@ describe("teeLengthMeters", () => {
 		expect(teeLengthMeters({ marker: "white" }, holes, ["1", "3"])).toBeNull();
 		expect(teeLengthMeters({ marker: "white" }, holes, ["9"])).toBeNull();
 		expect(teeLengthMeters({ marker: "white" }, holes, [])).toBeNull();
+	});
+});
+
+describe("unfitFormats", () => {
+	it("groups the formats a player count can't start by what they need", () => {
+		expect(unfitFormats(1)).toEqual([
+			{ formats: ["match"], min: 2, max: 2 },
+			{ formats: ["skins", "scramble"], min: 2, max: 4 },
+			{ formats: ["sixes"], min: 3, max: 3 },
+		]);
+		expect(unfitFormats(2).map((x) => x.formats)).toEqual([["sixes"]]);
+		expect(unfitFormats(3).map((x) => x.formats)).toEqual([["match"]]);
+		expect(unfitFormats(4).map((x) => x.formats)).toEqual([
+			["match"],
+			["sixes"],
+		]);
+	});
+});
+
+describe("scramble teams", () => {
+	const members = (teams: { playerIndexes: number[] }[]) =>
+		teams.map((x) => x.playerIndexes);
+
+	it("splits only four players, the owner in team one", () => {
+		expect(members(scrambleTeams(4, 2, 2))).toEqual([
+			[0, 2],
+			[1, 3],
+		]);
+		expect(members(scrambleTeams(3, 2, 1))).toEqual([[0, 1, 2]]);
+		expect(members(scrambleTeams(4, 1, 1))).toEqual([[0, 1, 2, 3]]);
+	});
+
+	it("keeps the teams at two whoever moves", () => {
+		const teams = scrambleTeams(4, 2, 1);
+		expect(nextPartner(teams, 1, 3)).toBe(3);
+		expect(nextPartner(teams, 1, 1)).toBe(2);
+		expect(nextPartner(teams, 1, 0)).toBe(1);
 	});
 });

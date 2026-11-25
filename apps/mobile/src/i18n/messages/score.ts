@@ -58,6 +58,12 @@ export const scorecardEn = {
 		one: "{count} hole has no score for you. It counts as not played.",
 		other: "{count} holes have no score for you. They count as not played.",
 	},
+	finishTeamMessage:
+		"Totals are stored. A scramble doesn't count toward your handicap or stats.",
+	finishTeamMissing: {
+		one: "{count} hole is missing a team score. It counts as not played.",
+		other: "{count} holes are missing a team score. They count as not played.",
+	},
 	finishError: "Could not finish the round. Check your connection.",
 	abandon: "Abandon round",
 	abandonTitle: "Abandon this round?",
@@ -137,6 +143,13 @@ export const scorecardNl: typeof scorecardEn = {
 		one: "{count} hole heeft geen score van jou. Die telt als niet gespeeld.",
 		other:
 			"{count} holes hebben geen score van jou. Die tellen als niet gespeeld.",
+	},
+	finishTeamMessage:
+		"De totalen worden opgeslagen. Een scramble telt niet mee voor je handicap en statistieken.",
+	finishTeamMissing: {
+		one: "Op {count} hole ontbreekt een teamscore. Die telt als niet gespeeld.",
+		other:
+			"Op {count} holes ontbreekt een teamscore. Die tellen als niet gespeeld.",
 	},
 	finishError: "Ronde afronden mislukt. Controleer je verbinding.",
 	abandon: "Ronde stoppen",

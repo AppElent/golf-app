@@ -2,6 +2,7 @@ import type { RoundRecap } from "@fairway/core/recap";
 import type { RoundFormat } from "@fairway/core/round";
 import { SCORE_MARKS } from "@fairway/core/scoring";
 import type { Messages } from "../../../i18n/messages/en";
+import type { GameBox } from "../formats/game-text";
 
 interface RoundTile {
 	label: string;
@@ -151,6 +152,7 @@ export function shareFileName(courseName: string, startedAt: Date): string {
 export function shareMessage({
 	courseName,
 	detail,
+	game,
 	tiles,
 	ninesText,
 	marks,
@@ -158,6 +160,8 @@ export function shareMessage({
 }: {
 	courseName: string;
 	detail: string;
+	/** The game's outcome, when the round was one. */
+	game: GameBox | null;
 	tiles: RoundTiles;
 	ninesText: string | null;
 	marks: RoundRecap["marks"];
@@ -166,6 +170,8 @@ export function shareMessage({
 	return [
 		`⛳ ${courseName}`,
 		detail,
+		game ? game.title : null,
+		game ? game.sub : null,
 		"",
 		[tiles.score, tiles.toPar, ...tiles.stats.slice(0, SHARE_HEADLINE_STATS)]
 			.map((tile) =>

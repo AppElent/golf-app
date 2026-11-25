@@ -4,7 +4,16 @@ import { AppText } from "../../../ui/text";
 import { CIRCLE_FONT_SCALE } from "./round-button";
 
 /** A player's initial in a circle; the name is always beside it. */
-export function PlayerAvatar({ name, size }: { name: string; size: number }) {
+export function PlayerAvatar({
+	name,
+	initial = ([...name.trim()][0] ?? "?").toUpperCase(),
+	size,
+}: {
+	name: string;
+	/** Shown instead of the first letter, for a team. */
+	initial?: string;
+	size: number;
+}) {
 	const styles = useThemedStyles(createStyles);
 	return (
 		<View
@@ -20,7 +29,7 @@ export function PlayerAvatar({ name, size }: { name: string; size: number }) {
 				maxFontSizeMultiplier={CIRCLE_FONT_SCALE}
 				style={styles.initial}
 			>
-				{([...name.trim()][0] ?? "?").toUpperCase()}
+				{initial}
 			</AppText>
 		</View>
 	);

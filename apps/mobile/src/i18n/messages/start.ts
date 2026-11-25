@@ -111,7 +111,41 @@ export const setupEn = {
 	formats: {
 		stableford: { title: "Stableford", detail: "Points per hole" },
 		stroke: { title: "Stroke play", detail: "Total strokes" },
+		match: { title: "Match play", detail: "2 players" },
+		skins: { title: "Skins", detail: "2–4 players" },
+		sixes: { title: "Sixes", detail: "Exactly 3 players" },
+		scramble: { title: "Texas Scramble", detail: "Teams · 2–4 players" },
 	},
+	needsExactly: "{formats}: only with exactly {n} players.",
+	needsRange: "{formats}: only with {min} to {max} players.",
+	playersNow: { one: "You have {count} now.", other: "You have {count} now." },
+	scoring: "Score",
+	teams: "Teams",
+	teamChoice: { one: "1 team", other: "{count} teams" },
+	matchStrokes: {
+		one: "{name} gets {count} stroke.",
+		other: "{name} gets {count} strokes.",
+	},
+	matchStrokesOn: {
+		one: "{name} gets 1 stroke: on the hole with HCP 1.",
+		other:
+			"{name} gets {count} strokes: one on every hole with HCP 1 to {count}.",
+	},
+	matchLevel: "Nobody gets strokes.",
+	matchCounts: "Strokes still count for your score and handicap.",
+	noStrokes: "Without handicap strokes.",
+	carryOver: "Carry over ties",
+	carryOverFooter: "A tied skin goes to the next hole. Off: nobody gets it.",
+	sixesFooter:
+		"Every hole shares 6 points: 4 · 2 · 0. Tied for best: 3 · 3 · 0. Tied for second: 4 · 1 · 1. All three tied: 2 · 2 · 2. Net counts everyone's own handicap strokes.",
+	teamTap: "Tap a player to move them to the other team.",
+	teamHandicap:
+		"Team handicap: {share} of the playing handicaps, lowest first.",
+	teamHandicapTwo:
+		"Team handicap: 35% of the lowest plus 15% of the highest playing handicap.",
+	twoTeamsNeed: "Two teams need four players.",
+	scrambleCounts: "A scramble doesn't count toward your handicap or stats.",
+	moveTo: "Moves to {team}",
 	players: "Players",
 	you: "You",
 	guest: "Guest {n}",
@@ -168,7 +202,46 @@ export const setupNl: typeof setupEn = {
 	formats: {
 		stableford: { title: "Stableford", detail: "Punten per hole" },
 		stroke: { title: "Strokeplay", detail: "Totaal slagen" },
+		match: { title: "Matchplay", detail: "2 spelers" },
+		skins: { title: "Skins", detail: "2–4 spelers" },
+		sixes: { title: "Zessen", detail: "Precies 3 spelers" },
+		scramble: { title: "Texas Scramble", detail: "Teams · 2–4 spelers" },
 	},
+	needsExactly: "{formats}: alleen met precies {n} spelers.",
+	needsRange: "{formats}: alleen met {min} tot {max} spelers.",
+	playersNow: {
+		one: "Je hebt er nu {count}.",
+		other: "Je hebt er nu {count}.",
+	},
+	scoring: "Score",
+	teams: "Teams",
+	teamChoice: { one: "1 team", other: "{count} teams" },
+	matchStrokes: {
+		one: "{name} krijgt {count} slag.",
+		other: "{name} krijgt {count} slagen.",
+	},
+	matchStrokesOn: {
+		one: "{name} krijgt 1 slag: op de hole met HCP 1.",
+		other:
+			"{name} krijgt {count} slagen: één op elke hole met HCP 1 t/m {count}.",
+	},
+	matchLevel: "Niemand krijgt slagen.",
+	matchCounts: "Slagen tellen ook gewoon mee voor je score en handicap.",
+	noStrokes: "Zonder handicapslagen.",
+	carryOver: "Doorschuiven bij gelijkspel",
+	carryOverFooter:
+		"Bij gelijkspel gaat de skin naar de volgende hole. Uit: niemand krijgt hem.",
+	sixesFooter:
+		"Elke hole verdeelt 6 punten: 4 · 2 · 0. Gelijk voor de beste: 3 · 3 · 0. Gelijk voor de tweede: 4 · 1 · 1. Alle drie gelijk: 2 · 2 · 2. Netto telt ieders eigen handicapslagen.",
+	teamTap: "Tik op een speler om hem naar het andere team te zetten.",
+	teamHandicap:
+		"Teamhandicap: {share} van de speelhandicaps, van laag naar hoog.",
+	teamHandicapTwo:
+		"Teamhandicap: 35% van de laagste plus 15% van de hoogste speelhandicap.",
+	twoTeamsNeed: "Twee teams kan met vier spelers.",
+	scrambleCounts:
+		"Een scramble telt niet mee voor je handicap en statistieken.",
+	moveTo: "Gaat naar {team}",
 	players: "Spelers",
 	you: "Jij",
 	guest: "Gast {n}",

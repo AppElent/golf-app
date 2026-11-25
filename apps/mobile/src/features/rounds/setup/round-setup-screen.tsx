@@ -6,6 +6,7 @@ import {
 } from "@fairway/core/handicap";
 import { detectLoops, selectLoops } from "@fairway/core/loops";
 import type { RoundFormat } from "@fairway/core/round";
+import { formatFits } from "@fairway/core/round-formats";
 import { useMutation } from "convex/react";
 import { Stack, useRouter } from "expo-router";
 import { useEffect, useMemo, useRef, useState } from "react";
@@ -19,7 +20,7 @@ import { api, type Id } from "../../../convex/api";
 import { useLiveQuery, useQuery } from "../../../convex/query-cache";
 import { useSubmit } from "../../../convex/use-submit";
 import { haptics } from "../../../feedback/haptics";
-import { fmt, useI18n } from "../../../i18n";
+import { fmt, plural, useI18n } from "../../../i18n";
 import { metrics, spacing, useTokens } from "../../../theme";
 import { ChoiceChip, ChoiceGrid, ChoiceTile } from "../../../ui/choice-tile";
 import { EmptyState } from "../../../ui/empty-state";
@@ -32,6 +33,7 @@ import { useUnits } from "../../profile/use-units";
 import { useSimulationMode } from "../../simulation/mode/use-simulation-mode";
 import { RoundInProgress } from "../components/round-in-progress";
 import { setupParam } from "../handicap-table/handicap-table-params";
+import { FormatOptions, gameArgs, useFormatOptions } from "./format-options";
 import {
 	defaultTeeId,
 	doubledLoop,
@@ -41,6 +43,7 @@ import {
 	playingHandicapText,
 	teeLengthMeters,
 	toggleLoopPick,
+	unfitFormats,
 } from "./round-setup-model";
 import { SetupSection } from "./setup-section";
 import { type PlayerDraft, usePlayerEditor } from "./use-player-editor";
@@ -111,7 +114,7 @@ function RoundSetupForm({
 	settings: ReturnType<typeof useQuery<typeof api.settings.get>>;
 }) {
 	const router = useRouter();
-	const { t, numbers } = useI18n();
+	const { t, locale, numbers } = useI18n();
 	const colors = useTokens();
 	const { user } = useUser();
 	const start = useMutation(api.rounds.start);
@@ -124,6 +127,7 @@ function RoundSetupForm({
 	const [teeId, setTeeId] = useState<Id<"tees"> | null>(null);
 	const units = useUnits();
 	const [format, setFormat] = useState<RoundFormat>("stableford");
+	const options = useFormatOptions();
 	const [ownerIndex, setOwnerIndex] = useState<string | null>(null);
 	const [guests, setGuests] = useState<GuestDraft[]>([]);
 	const submit = useSubmit();
@@ -160,6 +164,8 @@ function RoundSetupForm({
 			index: g.index,
 		})),
 	];
+	// A game that no longer fits the players falls back; the footer says why.
+	if (!formatFits(format, players.length)) setFormat("stableford");
 	const canStart =
 		!!tee && holeRefs.length > 0 && incomplete.length === 0 && !submit.pending;
 
@@ -173,6 +179,7 @@ function RoundSetupForm({
 					holeRefs,
 					loopLabel: label,
 					format,
+					...gameArgs(format, players.length, options),
 					players: players.map((p) => ({
 						name: p.name,
 						handicapIndex: parseHandicapIndex(p.index).value ?? undefined,
@@ -209,9 +216,30 @@ function RoundSetupForm({
 			.filter(Boolean)
 			.join(", ");
 
+	const unfit = unfitFormats(players.length);
+	const formatFooter =
+		unfit.length === 0
+			? undefined
+			: [
+					...unfit.map(({ formats, min, max }) =>
+						fmt(min === max ? t.setup.needsExactly : t.setup.needsRange, {
+							formats: formats
+								.map((x) => t.setup.formats[x].title)
+								.join(` ${t.formats.and} `),
+							n: min,
+							min,
+							max,
+						}),
+					),
+					plural(locale, players.length, t.setup.playersNow),
+				].join(" ");
+
 	const loopName = (i: number) =>
 		fmt(t.setup.loop, { label: loops[i]?.label ?? "" });
 	const doubled = doubledLoop(picks);
+	const strokeIndexes = holeRefs.map(
+		(ref) => detail.holes.find((h) => h.ref === ref)?.strokeIndex,
+	);
 	const holesFooter =
 		incomplete.length > 0
 			? fmt(t.setup.incomplete, { holes: incomplete.join(", ") })
@@ -415,7 +443,7 @@ function RoundSetupForm({
 				)}
 			</SetupSection>
 
-			<SetupSection title={t.setup.format}>
+			<SetupSection title={t.setup.format} footer={formatFooter}>
 				<ChoiceGrid label={t.setup.format}>
 					{FORMAT_TILES.map((value) => (
 						<ChoiceTile
@@ -423,6 +451,7 @@ function RoundSetupForm({
 							label={t.setup.formats[value].title}
 							detail={t.setup.formats[value].detail}
 							selected={value === format}
+							disabled={!formatFits(value, players.length)}
 							onPress={() => {
 								haptics.selectionChanged();
 								setFormat(value);
@@ -431,6 +460,21 @@ function RoundSetupForm({
 					))}
 				</ChoiceGrid>
 			</SetupSection>
+
+			<FormatOptions
+				format={format}
+				players={players.map((p) => ({
+					name: p.name,
+					playingHandicap: playingHandicapPreview(
+						p.index,
+						tee,
+						par,
+						holeRefs.length,
+					),
+				}))}
+				strokeIndexes={strokeIndexes}
+				options={options}
+			/>
 
 			<SetupSection
 				title={t.setup.players}

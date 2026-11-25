@@ -7,25 +7,29 @@ type ChoiceProps = {
 	label: string;
 	detail?: string;
 	selected: boolean;
+	/** Drawn dashed: it can't be chosen now; say why beside it. */
+	disabled?: boolean;
 	onPress: () => void;
 	/** Spoken instead of the label and detail. */
 	accessibilityLabel?: string;
 };
 
 /** Ground, edge and ink of a choice: filled when selected, outlined otherwise. */
-function useChoiceColors(selected: boolean) {
+function useChoiceColors({ selected, disabled = false }: ChoiceProps) {
 	const colors = useTokens();
 	return {
-		ink: selected ? colors.onAccent : colors.text,
+		ink: selected ? colors.onAccent : disabled ? colors.textMuted : colors.text,
 		detail: selected ? colors.onAccent : colors.textMuted,
 		ground: (pressed: boolean) => ({
 			backgroundColor: selected
 				? pressed
 					? colors.accentPressed
 					: colors.accentFill
-				: pressed
-					? colors.surface2
-					: colors.surface,
+				: disabled
+					? "transparent"
+					: pressed
+						? colors.surface2
+						: colors.surface,
 			borderColor: selected ? colors.accentFill : colors.borderStrong,
 		}),
 	};
@@ -35,11 +39,12 @@ function useChoiceAccessibility({
 	label,
 	detail,
 	selected,
+	disabled = false,
 	accessibilityLabel,
 }: ChoiceProps) {
 	return {
 		accessibilityRole: "radio" as const,
-		accessibilityState: { checked: selected },
+		accessibilityState: { checked: selected, disabled },
 		accessibilityLabel:
 			accessibilityLabel ?? (detail ? `${label}, ${detail}` : label),
 	};
@@ -75,12 +80,17 @@ export function ChoiceGrid({
 }
 
 export function ChoiceTile(props: ChoiceProps) {
-	const colors = useChoiceColors(props.selected);
+	const colors = useChoiceColors(props);
 	return (
 		<Pressable
 			onPress={props.onPress}
+			disabled={props.disabled}
 			{...useChoiceAccessibility(props)}
-			style={({ pressed }) => [styles.tile, colors.ground(pressed)]}
+			style={({ pressed }) => [
+				styles.tile,
+				colors.ground(pressed),
+				props.disabled && styles.dashed,
+			]}
 		>
 			<AppText variant="control" style={{ color: colors.ink }}>
 				{props.label}
@@ -99,7 +109,7 @@ export function ChoiceChip({
 	leading,
 	...props
 }: ChoiceProps & { leading?: ReactNode }) {
-	const colors = useChoiceColors(props.selected);
+	const colors = useChoiceColors(props);
 	return (
 		<Pressable
 			onPress={props.onPress}
@@ -134,6 +144,7 @@ const styles = StyleSheet.create({
 		borderCurve: "continuous",
 		borderWidth: 1.5,
 	},
+	dashed: { borderStyle: "dashed" },
 	chip: {
 		minHeight: metrics.hitTarget,
 		flexDirection: "row",

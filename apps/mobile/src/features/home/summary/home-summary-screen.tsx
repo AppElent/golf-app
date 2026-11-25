@@ -24,6 +24,7 @@ import { AppText } from "../../../ui/text";
 import { useToast } from "../../../ui/toast";
 import { useAppUpdate } from "../../../updates/use-app-update";
 import { RoundRow } from "../../rounds/components/round-row";
+import { teamRoundName } from "../../rounds/components/round-row-model";
 import { useActiveRound } from "../../rounds/use-active-round";
 import { useEndSimulation } from "../../simulation/mode/use-end-simulation";
 
@@ -36,7 +37,7 @@ export function HomeSummaryScreen() {
 	const { t, locale, numbers } = useI18n();
 	const active = useActiveRound();
 	const settings = useQuery(api.settings.get);
-	const history = useQuery(api.rounds.history, {});
+	const history = useQuery(api.rounds.history, { teamRounds: true });
 	const update = useAppUpdate();
 	const confirm = useConfirm();
 	const toast = useToast();
@@ -190,6 +191,7 @@ export function HomeSummaryScreen() {
 									{ day: "numeric", month: "long" },
 								),
 								round.holeCount === 9 ? t.home.nineHoles : null,
+								teamRoundName(round, t),
 							]
 								.filter(Boolean)
 								.join(" · ")}
