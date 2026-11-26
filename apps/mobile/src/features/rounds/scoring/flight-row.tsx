@@ -116,6 +116,8 @@ export function FlightRow({
 								accessibilityRole="radio"
 								accessibilityLabel={`${name}: ${n}`}
 								accessibilityState={{ checked: selected }}
+								// A second tap clears it (pickStrokes).
+								accessibilityHint={selected ? t.score.clearHint : undefined}
 								hitSlop={HIT_SLOP}
 								style={({ pressed }) => button(selected, pressed)}
 							>
