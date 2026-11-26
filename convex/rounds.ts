@@ -6,6 +6,7 @@ import {
 import { checkHoleRefs } from "@fairway/core/loops";
 import {
 	countedStrokes,
+	derivedGir,
 	type FormatOptions,
 	hasResult,
 	OWNER_INDEX,
@@ -401,12 +402,42 @@ async function writeScore(
 		)
 		.first();
 	// Another device can store the first result after this phone sent its
-	// starting par; par never replaces it, nor does the GIR derived from par
-	// (APP-925).
+	// starting par; par never replaces it (APP-925).
 	if (startingPar && hasResult(existing ?? undefined)) {
-		for (const key of ["strokes", "nr", "gir"] as const) {
+		for (const key of ["strokes", "nr"] as const) {
 			delete set[key];
 			delete cleared[key];
+		}
+	}
+	// The sheet derives GIR from its own copy of the strokes and putts, and
+	// sends only the ones changed here. Another device can store the other one
+	// meanwhile, so GIR is derived again from what will be stored (APP-934).
+	// A save with both derived its GIR from them (older builds may have set it
+	// by hand), so it keeps that GIR.
+	const sent = (key: keyof ScoreUpdate) => key in set || key in cleared;
+	if (fields.gir !== undefined && !(sent("strokes") && sent("putts"))) {
+		const value = <K extends "strokes" | "putts">(key: K) =>
+			key in cleared ? undefined : (set[key] ?? existing?.[key]);
+		const strokes = value("strokes") as number | undefined;
+		const putts = value("putts") as number | undefined;
+		const nr = (set.nr ?? existing?.nr ?? false) as boolean;
+		delete set.gir;
+		delete cleared.gir;
+		// Nothing GIR rests on changes: the stored GIR stays.
+		const changes =
+			!existing ||
+			strokes !== existing.strokes ||
+			putts !== existing.putts ||
+			nr !== (existing.nr ?? false);
+		if (changes) {
+			const holes = holesOfRound(round, await courseHoles(ctx, round.courseId));
+			const gir = derivedGir(holes[holeIndex].par, {
+				strokes: strokes ?? null,
+				putts: putts ?? null,
+				nr,
+			});
+			if (gir === null) cleared.gir = undefined;
+			else set.gir = gir;
 		}
 	}
 	// A miss side belongs to a missed fairway only. An older app corrects `fir`

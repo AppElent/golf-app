@@ -442,12 +442,12 @@ describe("rounds", () => {
 		await alice.mutation(api.rounds.saveHole, {
 			roundId,
 			holeIndex: 0,
-			scores: [{ playerIndex: 0, strokes: 5, gir: null }],
+			scores: [{ playerIndex: 0, strokes: 5, fir: null }],
 		});
 		active = await alice.query(api.rounds.active, {});
 		expect(active?.round.currentHoleIndex).toBe(1);
 		expect(byPlayer(0)).toMatchObject({ strokes: 5, putts: 2 });
-		expect(byPlayer(0)?.gir).toBeUndefined();
+		expect(byPlayer(0)?.fir).toBeUndefined();
 		expect(active?.scores).toHaveLength(2);
 	});
 
@@ -473,6 +473,76 @@ describe("rounds", () => {
 		await save({ putts: 2, gir: false });
 		const [score] = (await alice.query(api.rounds.active, {}))?.scores ?? [];
 		expect(score).toMatchObject({ strokes: 6, putts: 2, gir: false });
+	});
+
+	it("derives GIR from the stored strokes and putts two devices saved (APP-934)", async () => {
+		const { alice, course } = await setup();
+		const roundId = await startRound(alice, course);
+		const par = course.holes[0].par ?? 0;
+		const save = (score: {
+			strokes?: number;
+			putts?: number;
+			gir: boolean | null;
+		}) =>
+			alice.mutation(api.rounds.saveHole, {
+				roundId,
+				holeIndex: 0,
+				scores: [{ playerIndex: 0, ...score }],
+			});
+		const stored = async () =>
+			(await alice.query(api.rounds.active, {}))?.scores[0];
+		await save({ strokes: par, gir: null });
+
+		// One device saves two putts, its GIR worked out from the par it last
+		// heard; another device has just stored a bogey without seeing them.
+		await save({ strokes: par + 1, gir: null });
+		await save({ putts: 2, gir: true });
+		expect(await stored()).toMatchObject({
+			strokes: par + 1,
+			putts: 2,
+			gir: false,
+		});
+
+		// The other way round: strokes saved over putts this device never saw.
+		await save({ putts: 3, gir: false });
+		expect(await stored()).toMatchObject({
+			strokes: par + 1,
+			putts: 3,
+			gir: true,
+		});
+		await save({ strokes: par + 2, gir: null });
+		expect(await stored()).toMatchObject({
+			strokes: par + 2,
+			putts: 3,
+			gir: false,
+		});
+
+		// Clearing the putts leaves no GIR to derive.
+		await alice.mutation(api.rounds.saveHole, {
+			roundId,
+			holeIndex: 0,
+			scores: [{ playerIndex: 0, putts: null, gir: false }],
+		});
+		expect(await stored()).not.toHaveProperty("gir");
+
+		// An older build sends strokes and putts with a GIR set by hand: kept.
+		await save({ strokes: par + 2, putts: 2, gir: true });
+		expect(await stored()).toMatchObject({ gir: true });
+		// A save that changes nothing GIR rests on keeps the stored GIR too.
+		await alice.mutation(api.rounds.saveHole, {
+			roundId,
+			holeIndex: 0,
+			scores: [
+				{
+					playerIndex: 0,
+					startingPar: true,
+					strokes: par,
+					nr: false,
+					gir: null,
+				},
+			],
+		});
+		expect(await stored()).toMatchObject({ strokes: par + 2, gir: true });
 	});
 
 	it("keeps a first result another device stored over the starting par (APP-925)", async () => {
@@ -509,8 +579,8 @@ describe("rounds", () => {
 			scores: [startingPar],
 		});
 		const kept = await scoreOf(0);
-		expect(kept).toMatchObject({ strokes: 6, nr: false, putts: 2 });
-		expect(kept).not.toHaveProperty("gir");
+		// GIR follows the stored strokes, not the par it was sent with (APP-934).
+		expect(kept).toMatchObject({ strokes: 6, nr: false, putts: 2, gir: false });
 
 		// A pick-up stored first stays too.
 		await alice.mutation(api.rounds.saveHole, {
