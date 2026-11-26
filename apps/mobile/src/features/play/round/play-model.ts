@@ -11,11 +11,11 @@ import {
 	type HoleScore,
 	hasResult,
 	OWNER_INDEX,
-	playingOrder,
 	type RecordedScore,
 	scoreAt,
 } from "@fairway/core/round";
 import type { LiveHole } from "../../live/hole/live-hole";
+import { nextHole } from "../../rounds/scoring/score-model";
 
 /**
  * Golfshot's default: the green when it is in reach of your longest club,
@@ -170,6 +170,5 @@ export function nextTeeHole(
 	holeIndex: number,
 ): number | null {
 	const leaving = { holeIndex, playerIndex: OWNER_INDEX, nr: true };
-	const order = playingOrder(holeCount, [...scores, leaving]);
-	return order[order.indexOf(holeIndex) + 1] ?? null;
+	return nextHole(holeCount, [...scores, leaving], holeIndex);
 }
