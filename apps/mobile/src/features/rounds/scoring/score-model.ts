@@ -4,6 +4,8 @@ import {
 	hasResult,
 	type MissSide,
 	OWNER_INDEX,
+	playingOrder,
+	type RecordedScore,
 	type ScoreUpdate,
 	scoreAt,
 } from "@fairway/core/round";
@@ -285,4 +287,17 @@ export function flightDetail({
 	return [received === 0 ? null : strokesLabel, result, points]
 		.filter(Boolean)
 		.join(" · ");
+}
+
+/**
+ * The hole played after `holeIndex`, null when it is the last one. A round
+ * started on hole 10 plays hole 1 after 18 and ends on 9 (APP-914).
+ */
+export function nextHole(
+	holeCount: number,
+	scores: readonly RecordedScore[],
+	holeIndex: number,
+): number | null {
+	const order = playingOrder(holeCount, scores);
+	return order[order.indexOf(holeIndex) + 1] ?? null;
 }

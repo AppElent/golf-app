@@ -5,6 +5,8 @@ import { useActiveRound } from "../use-active-round";
 import { ScoreSheetScreen } from "./score-sheet-screen";
 
 const mockSaveHole = jest.fn((_args: unknown) => Promise.resolve());
+const mockRouter = { back: jest.fn(), replace: jest.fn() };
+let mockHole = "0";
 
 jest.mock("convex/react", () => ({ useMutation: () => mockSaveHole }));
 jest.mock("react-native-safe-area-context", () => ({
@@ -33,8 +35,8 @@ jest.mock("expo-router", () => {
 	);
 	return {
 		Stack: { Screen: () => null, Toolbar },
-		useLocalSearchParams: () => ({ hole: "0" }),
-		useRouter: () => ({ back: jest.fn(), replace: jest.fn() }),
+		useLocalSearchParams: () => ({ hole: mockHole }),
+		useRouter: () => mockRouter,
 	};
 });
 
@@ -81,7 +83,12 @@ async function savedScores() {
 	return mockSaveHole.mock.calls[0][0];
 }
 
-beforeEach(() => mockSaveHole.mockClear());
+beforeEach(() => {
+	mockSaveHole.mockClear();
+	mockRouter.back.mockClear();
+	mockRouter.replace.mockClear();
+	mockHole = "0";
+});
 
 describe("another device scoring the owner while the sheet is open (APP-916)", () => {
 	it.each([
@@ -118,5 +125,58 @@ it("saves the starting par over a row without a result", async () => {
 	await openWhile({ putts: 2, nr: false }, { putts: 2, nr: false });
 	expect(await savedScores()).toMatchObject({
 		scores: [{ playerIndex: 0, strokes: 4, putts: 2 }],
+	});
+});
+
+describe("a round started on hole 10 (APP-914)", () => {
+	const holes = Array.from({ length: 18 }, (_, i) => ({
+		ref: String(i + 1),
+		par: 4,
+		strokeIndex: i + 1,
+	}));
+	/** The owner's scores on these holes, entered in this order. */
+	function playing(order: readonly number[], holeIndex: number) {
+		mockHole = String(holeIndex);
+		jest.mocked(useActiveRound).mockReturnValue({
+			round: {
+				_id: "round",
+				format: "stroke",
+				currentHoleIndex: holeIndex,
+				players: [{ name: "Eric" }],
+			},
+			holes,
+			scores: order.map((hole, i) => ({
+				holeIndex: hole,
+				playerIndex: 0,
+				strokes: 4,
+				_creationTime: 1000 + i,
+			})),
+		} as unknown as ReturnType<typeof useActiveRound>);
+	}
+	const front9 = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+	const back9 = [9, 10, 11, 12, 13, 14, 15, 16, 17];
+
+	it("plays hole 1 after hole 18", async () => {
+		playing(back9.slice(0, -1), 17);
+		await render(sheet());
+		expect(await savedScores()).toMatchObject({ holeIndex: 17, advanceTo: 0 });
+		expect(mockRouter.replace).not.toHaveBeenCalled();
+		expect(mockRouter.back).toHaveBeenCalled();
+	});
+
+	it("ends the round after hole 9", async () => {
+		playing([...back9, ...front9.slice(0, -1)], 8);
+		await render(sheet());
+		const saved = await savedScores();
+		expect(saved).toMatchObject({ holeIndex: 8 });
+		expect(saved).not.toHaveProperty("advanceTo");
+		expect(mockRouter.replace).toHaveBeenCalledWith("/scorecard");
+	});
+
+	it("still ends a round started on hole 1 after hole 18", async () => {
+		playing([...front9, ...back9.slice(0, -1)], 17);
+		await render(sheet());
+		expect(await savedScores()).not.toHaveProperty("advanceTo");
+		expect(mockRouter.replace).toHaveBeenCalledWith("/scorecard");
 	});
 });
