@@ -6,6 +6,8 @@ export function useHoleAnchors(
 	holeRefs: readonly string[],
 	detail: CourseDetail | null,
 	holeIndex: number,
+	/** The hole played after this one, null on the last. */
+	nextIndex: number | null,
 	teeMarker: string | undefined,
 ) {
 	const ref = holeRefs[holeIndex];
@@ -14,7 +16,7 @@ export function useHoleAnchors(
 		() => (geometry ? holeAnchors(geometry, teeMarker) : null),
 		[geometry, teeMarker],
 	);
-	const nextRef = holeRefs[holeIndex + 1];
+	const nextRef = nextIndex === null ? undefined : holeRefs[nextIndex];
 	const nextGeometry =
 		nextRef === undefined
 			? null

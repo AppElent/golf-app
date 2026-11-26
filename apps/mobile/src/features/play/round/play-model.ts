@@ -11,9 +11,11 @@ import {
 	type HoleScore,
 	hasResult,
 	OWNER_INDEX,
+	type RecordedScore,
 	scoreAt,
 } from "@fairway/core/round";
 import type { LiveHole } from "../../live/hole/live-hole";
+import { nextHole } from "../../rounds/scoring/score-model";
 
 /**
  * Golfshot's default: the green when it is in reach of your longest club,
@@ -155,4 +157,18 @@ export function nextTeeAction(
 	return hasResult(scoreAt(scores, holeIndex, OWNER_INDEX))
 		? "advance"
 		: "score";
+}
+
+/**
+ * The hole whose tee is offered on leaving `holeIndex`, null on the last hole
+ * played. The hole being left counts as entered now, scored or not, so a round
+ * started on hole 10 offers hole 1 from hole 18 (APP-928).
+ */
+export function nextTeeHole(
+	holeCount: number,
+	scores: readonly RecordedScore[],
+	holeIndex: number,
+): number | null {
+	const leaving = { holeIndex, playerIndex: OWNER_INDEX, nr: true };
+	return nextHole(holeCount, [...scores, leaving], holeIndex);
 }

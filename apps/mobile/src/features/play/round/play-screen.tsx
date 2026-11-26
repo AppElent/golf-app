@@ -38,7 +38,12 @@ import { PlayDistances } from "./play-distances";
 import { PlayGameCapsule } from "./play-game-capsule";
 import { PlayGpsPill } from "./play-gps-pill";
 import { PlayHoleView } from "./play-hole-view";
-import { gpsNotice, nextTeeAction, playerPosition } from "./play-model";
+import {
+	gpsNotice,
+	nextTeeAction,
+	nextTeeHole,
+	playerPosition,
+} from "./play-model";
 import { PlayNextTeeOffer } from "./play-next-tee-offer";
 import { PlaySimulationBanner } from "./play-simulation-banner";
 import { PlaySimulationControls } from "./play-simulation-controls";
@@ -158,10 +163,16 @@ export function PlayHole({
 	const [{ useHole, useMarking }] = useState(() => (offline ? OFFLINE : LIVE));
 	const { holeIndex, goTo } = useHole(round);
 	const meta = holes[holeIndex];
+	const nextIndex = nextTeeHole(
+		round.holeRefs.length,
+		active.scores,
+		holeIndex,
+	);
 	const { geometry, anchors, nextAnchors, holeKey } = useHoleAnchors(
 		round.holeRefs,
 		detail,
 		holeIndex,
+		nextIndex,
 		active.tee.marker,
 	);
 	const sim = useSimulatedPosition({
@@ -319,17 +330,17 @@ export function PlayHole({
 					bag={bag}
 					onPick={pickClub}
 				/>
-			) : offerNext ? (
+			) : offerNext && nextIndex !== null ? (
 				<PlayNextTeeOffer
 					bottom={hudBottom + hudLayout.trayBottom + simulationHeight}
-					nextRef={round.holeRefs[holeIndex + 1] ?? ""}
+					nextRef={round.holeRefs[nextIndex] ?? ""}
 					unscoredRef={
 						!offline && nextTeeAction(active.scores, holeIndex) === "score"
 							? (round.holeRefs[holeIndex] ?? null)
 							: null
 					}
 					onDismiss={dismissOffer}
-					onGo={() => goTo(holeIndex + 1)}
+					onGo={() => goTo(nextIndex)}
 					onScore={() =>
 						router.push({
 							pathname: "/score",
