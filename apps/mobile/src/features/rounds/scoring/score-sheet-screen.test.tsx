@@ -35,6 +35,7 @@ jest.mock("expo-router", () => {
 	);
 	return {
 		Stack: { Screen: () => null, Toolbar },
+		useIsFocused: () => true,
 		useLocalSearchParams: () => ({ hole: mockHole }),
 		useRouter: () => mockRouter,
 	};
