@@ -74,7 +74,10 @@ export function FlightRow({
 				<View style={styles.text}>
 					<AppText
 						variant="control"
-						numberOfLines={1}
+						// A long guest name wraps; past two lines it truncates, and
+						// VoiceOver still reads all of it.
+						numberOfLines={2}
+						accessibilityLabel={name}
 						maxFontSizeMultiplier={CIRCLE_FONT_SCALE}
 					>
 						{name}

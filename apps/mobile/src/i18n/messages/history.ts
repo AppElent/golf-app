@@ -250,7 +250,7 @@ export const profileNl: typeof profileEn = {
 	reportUnavailable:
 		"Problemen melden kan nog niet in deze versie. Laat het ons weten via de club of per e-mail.",
 	handicapHint:
-		"Je officiële WHS-handicap, gebruikt voor playing handicaps en Stablefordpunten.",
+		"Je officiële WHS-handicap, gebruikt voor speelhandicaps en Stablefordpunten.",
 	handicapPlaceholder: "18,4",
 	account: "Account",
 	signOut: "Uitloggen",

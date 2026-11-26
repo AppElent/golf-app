@@ -78,6 +78,16 @@ export function toggleLoopPick(
 	return picks.length >= 2 ? [index] : [...picks, index];
 }
 
+/** 1 or 2 when two different loops are picked: the order they are played in. */
+export function loopOrder(
+	picks: readonly number[],
+	index: number,
+): 1 | 2 | null {
+	if (picks.length !== 2 || picks[0] === picks[1]) return null;
+	const at = picks.indexOf(index);
+	return at === 0 ? 1 : at === 1 ? 2 : null;
+}
+
 /** The loop played twice, or null when every pick is a different loop. */
 export function doubledLoop(picks: readonly number[]): number | null {
 	return picks.length === 2 && picks[0] === picks[1] ? picks[0] : null;

@@ -1,10 +1,12 @@
 import { StyleSheet, View } from "react-native";
+import { useAnnounceChange } from "../../../feedback/announce";
 import { radius, spacing, type Tokens, useThemedStyles } from "../../../theme";
 import { AppText } from "../../../ui/text";
 import type { GameBox } from "./game-text";
 
 /** Where the game stands; announced when it changes. */
 export function StandingBox({ title, sub }: GameBox) {
+	useAnnounceChange(sub ? `${title}, ${sub}` : title);
 	return <Box title={title} sub={sub} look="standing" />;
 }
 

@@ -184,7 +184,7 @@ export function gameText(round: GameRound, { t, locale, vsPar }: GameCopy) {
 	};
 
 	const matchResult = ({ up, left }: { up: number; left: number }) =>
-		left === 0 ? `${up} UP` : `${up}&${left}`;
+		left === 0 ? fmt(copy.upResult, { n: up }) : `${up}&${left}`;
 	const matchLead = (lead: number) =>
 		lead === 0
 			? copy.allSquare

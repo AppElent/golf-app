@@ -1,4 +1,5 @@
 import { StyleSheet, View } from "react-native";
+import { useAnnounceChange } from "../../../feedback/announce";
 import { metrics, spacing } from "../../../theme";
 import { AppText } from "../../../ui/text";
 import { HudGlass } from "../hud/hud-glass";
@@ -7,6 +8,7 @@ import { hudStyles } from "../hud/hud-styles";
 
 /** Where the game stands, under the top bar; announced when it changes. */
 export function PlayGameCapsule({ top, text }: { top: number; text: string }) {
+	useAnnounceChange(text);
 	return (
 		<View style={[styles.place, { top }]} pointerEvents="none">
 			<HudGlass style={styles.capsule}>

@@ -65,3 +65,26 @@ describe("a selected score says a second tap clears it (APP-915)", () => {
 		expect(hint(4)).toBeUndefined();
 	});
 });
+
+describe("a long guest name (APP-893)", () => {
+	it("wraps to two lines and is read in full", async () => {
+		const name = "Maximiliaan van Oldenbarnevelt-Hoogstraten";
+		writePreference(PREFERENCE_KEYS.locale, "en");
+		await render(
+			<AppearanceProvider>
+				<LocaleProvider>
+					<FlightRow
+						name={name}
+						par={4}
+						draft={empty}
+						detail=""
+						onChange={() => {}}
+					/>
+				</LocaleProvider>
+			</AppearanceProvider>,
+		);
+		const label = screen.getByLabelText(name);
+		expect(label.props.numberOfLines).toBe(2);
+		expect(label.props.children).toBe(name);
+	});
+});

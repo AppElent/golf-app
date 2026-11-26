@@ -48,6 +48,8 @@ export function ScorecardScreen() {
 				active
 					? {
 							label: t.handicapTable.title,
+							// A label this long pushes the title off-centre on small phones.
+							icon: "tablecells",
 							onPress: () => router.push("/handicap-table"),
 						}
 					: undefined

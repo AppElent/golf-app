@@ -10,6 +10,8 @@ export const formatsEn = {
 	team: "Team",
 	teamN: "Team {n}",
 	up: "{name} {n} up",
+	/** A match won on the last hole: "1 up". */
+	upResult: "{n} up",
 	allSquare: "All square",
 	dormie: "Dormie · {standing}",
 	wins: "{name} wins {result}",
@@ -74,6 +76,10 @@ export const formatsEn = {
 		one: "{name} gets {count} stroke",
 		other: "{name} gets {count} strokes",
 	},
+	givesStroke: {
+		one: "{name} gives {count} stroke back",
+		other: "{name} gives {count} strokes back",
+	},
 	perPlayer: "Skins per player",
 	pointsPerPlayer: "Points per player",
 	table: "On the table",
@@ -115,6 +121,7 @@ export const formatsNl: typeof formatsEn = {
 	team: "Team",
 	teamN: "Team {n}",
 	up: "{name} {n} UP",
+	upResult: "{n} UP",
 	allSquare: "All square",
 	dormie: "Dormie · {standing}",
 	wins: "{name} wint {result}",
@@ -176,6 +183,10 @@ export const formatsNl: typeof formatsEn = {
 	getsStroke: {
 		one: "{name} krijgt {count} slag",
 		other: "{name} krijgt {count} slagen",
+	},
+	givesStroke: {
+		one: "{name} geeft {count} slag terug",
+		other: "{name} geeft {count} slagen terug",
 	},
 	perPlayer: "Skins per speler",
 	pointsPerPlayer: "Punten per speler",

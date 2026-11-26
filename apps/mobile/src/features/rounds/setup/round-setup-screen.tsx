@@ -38,6 +38,7 @@ import {
 	defaultTeeId,
 	doubledLoop,
 	FORMAT_TILES,
+	loopOrder,
 	MAX_PLAYERS,
 	playerInitial,
 	playingHandicapText,
@@ -217,6 +218,17 @@ function RoundSetupForm({
 			.join(", ");
 
 	const unfit = unfitFormats(players.length);
+	// A dashed tile says on itself why it can't be chosen.
+	const unfitReason = (value: RoundFormat) => {
+		const group = unfit.find(({ formats }) => formats.includes(value));
+		if (!group) return undefined;
+		const { min, max } = group;
+		return fmt(min === max ? t.setup.tileExactly : t.setup.tileRange, {
+			n: min,
+			min,
+			max,
+		});
+	};
 	const formatFooter =
 		unfit.length === 0
 			? undefined
@@ -369,12 +381,17 @@ function RoundSetupForm({
 				<ChoiceGrid label={t.setup.holes}>
 					{loops.map((loop, i) => {
 						const count = picks.filter((p) => p === i).length;
+						const order = loopOrder(picks, i);
 						return (
 							<ChoiceTile
 								key={loop.label}
 								label={loopName(i)}
 								detail={fmt(
-									count === 2 ? t.setup.loopParTwice : t.setup.loopPar,
+									count === 2
+										? t.setup.loopParTwice
+										: order
+											? t.setup.loopParOrder[order]
+											: t.setup.loopPar,
 									{ par: selectLoops(detail.holes, loops, [i]).par },
 								)}
 								selected={count > 0}
@@ -451,7 +468,7 @@ function RoundSetupForm({
 						<ChoiceTile
 							key={value}
 							label={t.setup.formats[value].title}
-							detail={t.setup.formats[value].detail}
+							detail={unfitReason(value) ?? t.setup.formats[value].detail}
 							selected={value === format}
 							disabled={!formatFits(value, players.length)}
 							onPress={() => {

@@ -8,13 +8,20 @@ import {
 import { useMutation } from "convex/react";
 import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Platform, StyleSheet, View } from "react-native";
+import { Platform, ScrollView, StyleSheet, View } from "react-native";
 import { api } from "../../../convex/api";
 import { useSubmit } from "../../../convex/use-submit";
 import { haptics } from "../../../feedback/haptics";
 import { fmt, plural, useI18n } from "../../../i18n";
 import { showAlert } from "../../../monitoring/native-presentation";
-import { radius, spacing, type Tokens, useThemedStyles } from "../../../theme";
+import {
+	metrics,
+	radius,
+	spacing,
+	type Tokens,
+	useThemedStyles,
+	useTokens,
+} from "../../../theme";
 import { FormScreen } from "../../../ui/form";
 import { NavHeader } from "../../../ui/nav-header";
 import { SkeletonList } from "../../../ui/skeleton";
@@ -74,6 +81,7 @@ function ScoreSheet({
 	const units = useUnits();
 	const router = useRouter();
 	const styles = useThemedStyles(createStyles);
+	const colors = useTokens();
 	const saveHole = useMutation(api.rounds.saveHole);
 	const { round, holes, scores } = active;
 	const hole = holes[holeIndex];
@@ -188,8 +196,13 @@ function ScoreSheet({
 		() => ({
 			gestureEnabled: !saving,
 			headerTitle: () => <HoleTitle title={title} subtitle={subtitle} />,
+			// Opaque, so the sheet's content starts below it and never slides
+			// under the title (iPhone SE).
+			headerTransparent: false,
+			headerShadowVisible: false,
+			headerStyle: { backgroundColor: colors.bg },
 		}),
-		[saving, title, subtitle],
+		[saving, title, subtitle, colors.bg],
 	);
 	const stableford = round.format === "stableford";
 	const received = saved.received.map((strokes) => strokes[holeIndex]);
@@ -211,6 +224,67 @@ function ScoreSheet({
 		});
 	const saveLabel = saving ? t.score.saving : t.score.save;
 	const ios = Platform.OS === "ios";
+
+	const top = (
+		<>
+			{error ? (
+				<AppText selectable accessibilityRole="alert" style={styles.error}>
+					{error}
+				</AppText>
+			) : null}
+			{standing ? <StandingBox {...standing} /> : null}
+			{teams ? null : (
+				<OwnerScoreCard
+					name={round.players[OWNER_INDEX].name}
+					par={hole.par}
+					draft={drafts[OWNER_INDEX]}
+					received={received[OWNER_INDEX]}
+					stableford={stableford}
+					game={
+						saved.standing ? { points: gamePoints(OWNER_INDEX) } : undefined
+					}
+					onChange={(patch) => update(OWNER_INDEX, patch)}
+				/>
+			)}
+		</>
+	);
+	const rest = (
+		<>
+			{rows.length > 0 ? (
+				<>
+					<AppText variant="caption" style={styles.flightLabel}>
+						{(teams ? t.setup.teams : t.score.flight).toUpperCase()}
+					</AppText>
+					<View style={styles.flight}>
+						{rows.map(({ side, index }, row) => (
+							<View key={index} style={row > 0 && styles.flightDivider}>
+								<FlightRow
+									name={side.name}
+									initial={
+										teams && rows.length > 1 ? String(index + 1) : undefined
+									}
+									par={hole.par}
+									draft={drafts[index]}
+									members={side.members ?? undefined}
+									detail={flightDetail({
+										draft: drafts[index],
+										par: hole.par,
+										received: received[index],
+										stableford,
+										gamePoints: gamePoints(index),
+										copy: t.score,
+										strokesLabel: strokesLabel(received[index]),
+									})}
+									onChange={(patch) => update(index, patch)}
+								/>
+							</View>
+						))}
+					</View>
+				</>
+			) : null}
+			{result ? <HoleResultBox {...result} /> : null}
+		</>
+	);
 
 	return (
 		<>
@@ -234,10 +308,26 @@ function ScoreSheet({
 					</Stack.Toolbar>
 				</>
 			) : null}
-			<FormScreen
-				nativeSheet={ios}
-				header={
-					ios ? undefined : (
+			{ios ? (
+				// The owner card stays put; only the flight scrolls (iPhone SE).
+				// A native form sheet sizes its ScrollView itself: it takes
+				// exactly two children, a header that must not be flattened
+				// (`collapsable={false}`) and then the ScrollView.
+				<>
+					<View collapsable={false} style={styles.header}>
+						<View style={[styles.column, styles.fixed]}>{top}</View>
+					</View>
+					<ScrollView
+						style={styles.sheet}
+						contentContainerStyle={[styles.column, styles.scroll]}
+						showsVerticalScrollIndicator={false}
+					>
+						{rest}
+					</ScrollView>
+				</>
+			) : (
+				<FormScreen
+					header={
 						// Save stays in view: the sheet can scroll past a footer button.
 						<ScoreSheetHeader
 							title={title}
@@ -248,64 +338,14 @@ function ScoreSheet({
 							onSave={onSave}
 							saving={saving}
 						/>
-					)
-				}
-			>
-				{error ? (
-					<AppText selectable accessibilityRole="alert" style={styles.error}>
-						{error}
-					</AppText>
-				) : null}
-				<View style={styles.players}>
-					{standing ? <StandingBox {...standing} /> : null}
-					{teams ? null : (
-						<OwnerScoreCard
-							name={round.players[OWNER_INDEX].name}
-							par={hole.par}
-							draft={drafts[OWNER_INDEX]}
-							received={received[OWNER_INDEX]}
-							stableford={stableford}
-							game={
-								saved.standing ? { points: gamePoints(OWNER_INDEX) } : undefined
-							}
-							onChange={(patch) => update(OWNER_INDEX, patch)}
-						/>
-					)}
-					{rows.length > 0 ? (
-						<>
-							<AppText variant="caption" style={styles.flightLabel}>
-								{(teams ? t.setup.teams : t.score.flight).toUpperCase()}
-							</AppText>
-							<View style={styles.flight}>
-								{rows.map(({ side, index }, row) => (
-									<View key={index} style={row > 0 && styles.flightDivider}>
-										<FlightRow
-											name={side.name}
-											initial={
-												teams && rows.length > 1 ? String(index + 1) : undefined
-											}
-											par={hole.par}
-											draft={drafts[index]}
-											members={side.members ?? undefined}
-											detail={flightDetail({
-												draft: drafts[index],
-												par: hole.par,
-												received: received[index],
-												stableford,
-												gamePoints: gamePoints(index),
-												copy: t.score,
-												strokesLabel: strokesLabel(received[index]),
-											})}
-											onChange={(patch) => update(index, patch)}
-										/>
-									</View>
-								))}
-							</View>
-						</>
-					) : null}
-					{result ? <HoleResultBox {...result} /> : null}
-				</View>
-			</FormScreen>
+					}
+				>
+					<View style={styles.players}>
+						{top}
+						{rest}
+					</View>
+				</FormScreen>
+			)}
 		</>
 	);
 }
@@ -315,6 +355,17 @@ const createStyles = (colors: Tokens) =>
 		error: { color: colors.danger },
 		// One child of the form, so its rows sit tighter than form sections.
 		players: { gap: 10 },
+		sheet: { flex: 1, backgroundColor: colors.bg },
+		header: { backgroundColor: colors.bg },
+		column: {
+			alignSelf: "center",
+			width: "100%",
+			maxWidth: 640,
+			paddingHorizontal: metrics.screenGutter,
+			gap: 10,
+		},
+		fixed: { paddingTop: spacing.sm, paddingBottom: 10 },
+		scroll: { paddingBottom: spacing.xl },
 		flightLabel: {
 			paddingHorizontal: spacing.xs,
 			fontWeight: "700",
