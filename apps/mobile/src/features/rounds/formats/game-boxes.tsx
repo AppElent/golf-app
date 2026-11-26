@@ -6,6 +6,7 @@ import type { GameBox } from "./game-text";
 
 /** Where the game stands; announced when it changes. */
 export function StandingBox({ title, sub }: GameBox) {
+	useAnnounceChange(sub ? `${title}, ${sub}` : title);
 	return <Box title={title} sub={sub} look="standing" />;
 }
 
@@ -16,7 +17,6 @@ export function HoleResultBox({ title, sub }: GameBox) {
 
 function Box({ title, sub, look }: GameBox & { look: "standing" | "result" }) {
 	const styles = useThemedStyles(createStyles);
-	useAnnounceChange(sub ? `${title}, ${sub}` : title);
 	return (
 		<View
 			accessible
