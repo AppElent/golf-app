@@ -31,6 +31,7 @@ export const scoreEn = {
 	pickedUp: "Picked up",
 	undoPickedUp: "Not picked up",
 	pickedUpHint: "Long press: picked up, no score on this hole",
+	clearHint: "Tap again to clear the score",
 	save: "Save",
 	saving: "Saving…",
 	saveError: "Score not saved. Check your connection and try again.",
@@ -115,6 +116,7 @@ export const scoreNl: typeof scoreEn = {
 	pickedUp: "Opgeraapt",
 	undoPickedUp: "Niet opgeraapt",
 	pickedUpHint: "Lang indrukken: opgeraapt, geen score op deze hole",
+	clearHint: "Tik nogmaals om de score te wissen",
 	save: "Opslaan",
 	saving: "Opslaan…",
 	saveError:
