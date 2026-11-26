@@ -404,7 +404,12 @@ async function writeScore(
 	// Another device can store the first result after this phone sent its
 	// starting par; par never replaces it (APP-925).
 	if (startingPar && hasResult(existing ?? undefined)) {
-		for (const key of ["strokes", "nr"] as const) {
+		// Putts entered with that par hole it out; a pick-up keeps none of
+		// them. The tee shot stands whatever the result (APP-936).
+		const kept = existing?.nr
+			? (["strokes", "nr", "putts"] as const)
+			: (["strokes", "nr"] as const);
+		for (const key of kept) {
 			delete set[key];
 			delete cleared[key];
 		}
