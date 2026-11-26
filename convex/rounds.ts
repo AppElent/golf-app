@@ -31,7 +31,6 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { mutation, query } from "./_generated/server";
 import { canSee } from "./courses";
 import { getOptionalUserId, getUserId } from "./lib";
-import { upsertSettings } from "./settings";
 import {
 	formatOptions,
 	roundFormat,
@@ -213,8 +212,10 @@ function assertFormat(round: {
  * Start a round. Validates every selected hole has par + stroke index
  * (scoring math needs them) and computes each player's playing handicap
  * server-side from the tee's CR/slope and the selected holes' par total.
- * A `simulated` round replaces the user's previous simulation, leaves their real
- * round alone, and doesn't touch their profile.
+ * Each player's handicap index is stored on the round only: the owner's never
+ * changes the profile handicap, which the profile screen alone edits.
+ * A `simulated` round replaces the user's previous simulation and leaves their
+ * real round alone.
  */
 export const start = mutation({
 	args: {
@@ -281,12 +282,6 @@ export const start = mutation({
 		if (simulated) {
 			const previous = await findSimulation(ctx, userId);
 			if (previous) await deleteRoundData(ctx, previous._id);
-		}
-
-		// The index you tee off with is your current one: keep the profile in step.
-		const ownerIndex = args.players[OWNER_INDEX].handicapIndex;
-		if (ownerIndex !== undefined && !simulated) {
-			await upsertSettings(ctx, userId, { handicapIndex: ownerIndex });
 		}
 
 		return await ctx.db.insert("rounds", {
