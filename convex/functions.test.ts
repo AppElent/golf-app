@@ -7,6 +7,7 @@
  */
 
 import { collectExport, type DataExport } from "@fairway/core/data-export";
+import { aggregateStats } from "@fairway/core/stats";
 import type { FunctionArgs } from "convex/server";
 import { ConvexError } from "convex/values";
 import { convexTest } from "convex-test";
@@ -169,6 +170,27 @@ describe("rounds", () => {
 		expect(history.map((r) => r._id)).toEqual([roundId]);
 		expect(history[0].owner.strokes).toBe(parTotal + 9);
 		expect(history[0].differential).toBeTypeOf("number");
+	});
+
+	it("leaves a picked-up hole's putts out of putts per 18 (APP-946)", async () => {
+		const { alice, course } = await setup();
+		const roundId = await startRound(alice, course);
+		for (let holeIndex = 0; holeIndex < 9; holeIndex++) {
+			await alice.mutation(api.rounds.saveHole, {
+				roundId,
+				holeIndex,
+				scores: [
+					// Hole 1 picked up after four putts the owner still entered.
+					holeIndex === 0
+						? { playerIndex: 0, nr: true, putts: 4 }
+						: { playerIndex: 0, strokes: 5, putts: 2 },
+				],
+			});
+		}
+		await alice.mutation(api.rounds.finish, { roundId });
+		const [row] = await alice.query(api.rounds.history, {});
+		expect(row.owner).toMatchObject({ putts: 16, holesWithPutts: 8 });
+		expect(aggregateStats([row]).puttsPer18).toBe(36);
 	});
 
 	it("remembers the tee of the latest real round on a course", async () => {

@@ -190,8 +190,9 @@ export function derivedGir(
 export interface OwnerRoundStats {
 	strokes: number;
 	vsPar: number;
-	/** Total putts, null if none were recorded. */
+	/** Total putts, null if none were recorded. Picked-up holes are left out. */
 	putts: number | null;
+	/** Holes with recorded putts, not counting picked-up holes. */
 	holesWithPutts: number;
 	firMade: number;
 	/** Holes with a fairway and a recorded fairway result. */
@@ -221,7 +222,9 @@ export function ownerRoundStats(
 	};
 	holes.forEach((hole, holeIndex) => {
 		const s = scoreAt(scores, holeIndex, OWNER_INDEX);
-		if (s?.putts !== undefined) {
+		// A picked-up hole never holed out, so its putts are not a putting
+		// result. Its tee shot still is, so the fairway below still counts.
+		if (s?.putts !== undefined && !s.nr) {
 			stats.putts += s.putts;
 			stats.holesWithPutts += 1;
 		}

@@ -138,6 +138,24 @@ describe("ownerRoundStats", () => {
 		});
 	});
 
+	it("leaves a picked-up hole's putts out, but keeps its fairway", () => {
+		const stats = ownerRoundStats(holes, [
+			{ holeIndex: 0, playerIndex: 0, strokes: 5, putts: 2 },
+			{ holeIndex: 2, playerIndex: 0, nr: true, putts: 3, fir: true },
+		]);
+		expect(stats).toMatchObject({
+			putts: 2,
+			holesWithPutts: 1,
+			firMade: 1,
+			firEligible: 1,
+		});
+		expect(
+			ownerRoundStats(holes, [
+				{ holeIndex: 0, playerIndex: 0, nr: true, putts: 2 },
+			]).putts,
+		).toBeNull();
+	});
+
 	it("has no putts total when none were recorded", () => {
 		expect(ownerRoundStats(holes, []).putts).toBeNull();
 	});
