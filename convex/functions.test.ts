@@ -591,10 +591,14 @@ describe("rounds", () => {
 		await alice.mutation(api.rounds.saveHole, {
 			roundId,
 			holeIndex: 1,
-			scores: [startingPar],
+			scores: [{ ...startingPar, fir: true }],
 		});
-		expect(await scoreOf(1)).toMatchObject({ nr: true });
+		// The putts holed out that par, so the pick-up gets none; the tee shot
+		// stands (APP-936).
+		expect(await scoreOf(1)).toMatchObject({ nr: true, fir: true });
 		expect(await scoreOf(1)).not.toHaveProperty("strokes");
+		expect(await scoreOf(1)).not.toHaveProperty("putts");
+		expect(await scoreOf(1)).not.toHaveProperty("gir");
 
 		// Without a result there, the starting par is the score.
 		await alice.mutation(api.rounds.saveHole, {
