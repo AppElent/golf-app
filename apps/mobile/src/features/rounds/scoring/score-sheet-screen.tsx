@@ -30,6 +30,7 @@ import { OwnerScoreCard } from "./owner-score-card";
 import {
 	flightDetail,
 	initialDrafts,
+	nextHole,
 	type ScoreDraftPatch,
 	type SheetEdits,
 	sheetDrafts,
@@ -94,15 +95,18 @@ function ScoreSheet({
 	const submit = useSubmit();
 	// Saved, but finishing failed: Save only closes the sheet then.
 	const saving = submit.pending && !finish.error;
-	const isLast = holeIndex === holes.length - 1;
+	const next = nextHole(holes.length, entered, holeIndex);
+	const isLast = next === null;
 	// "Next hole" only on the first entry of your own score for the hole being
 	// played; a correction (also after browsing back with the chevrons) stays
 	// put. Guests scored first don't count, like the next-tee offer.
 	const firstEntry = !hasResult(scoreAt(scores, holeIndex, OWNER_INDEX));
 	const entersOwn =
 		drafts[OWNER_INDEX].nr || drafts[OWNER_INDEX].strokes !== null;
-	const advances =
-		!isLast && firstEntry && entersOwn && holeIndex === round.currentHoleIndex;
+	const advanceTo =
+		firstEntry && entersOwn && holeIndex === round.currentHoleIndex
+			? next
+			: null;
 
 	// A scramble sheet opens empty; there is nothing to save yet.
 	const empty =
@@ -151,7 +155,7 @@ function ScoreSheet({
 						par: hole.par,
 						teams,
 					}),
-					...(advances ? { advanceTo: holeIndex + 1 } : {}),
+					...(advanceTo === null ? {} : { advanceTo }),
 				}),
 			{
 				errorFallback: t.score.saveError,
