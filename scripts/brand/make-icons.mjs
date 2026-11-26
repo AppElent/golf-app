@@ -1,19 +1,23 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import sharp from "sharp";
+import { badges, pillWidth, svg } from "./text.mjs";
 
+// Writes into the repo, or into the directory given as the first argument
+// (make-icons.test.mjs compares that output with the committed assets).
 const root = fileURLToPath(new URL("../../", import.meta.url));
+const out = process.argv[2] ? path.resolve(process.argv[2]) : root;
 
 // Masters live in docs/brand/icon/: light.png is the generated artwork; dark,
 // tinted and the transparent mark come from scripts/brand/derive-appearances.py.
 const brand = (name) => readFile(path.join(root, `docs/brand/icon/${name}.png`));
 const field = ["#1cb45d", "#013a27"];
 const mobile = "apps/mobile/assets/images/";
-const svg = (width, height, content) => Buffer.from(
-  `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">${content}</svg>`,
-);
-const save = (name, buffer) => writeFile(path.join(root, name), buffer);
+const save = async (name, buffer) => {
+  await mkdir(path.dirname(path.join(out, name)), { recursive: true });
+  await writeFile(path.join(out, name), buffer);
+};
 const clear = (width, height) => sharp({
   create: { width, height, channels: 4, background: "#00000000" },
 });
@@ -55,20 +59,29 @@ for (const size of [192, 512]) {
   await save(`public/logo${size}.png`, await sharp(icon).resize(size).png().toBuffer());
 }
 
+// Text comes from the committed masks in docs/brand/text/ (make-text-masks.mjs),
+// filled with a colour, so the output never depends on this machine's fonts.
+async function lettering(name, fill) {
+  const mask = await readFile(path.join(root, `docs/brand/text/${name}.png`));
+  const { width, height } = await sharp(mask).metadata();
+  return sharp({ create: { width, height, channels: 3, background: fill } })
+    .joinChannel(mask).png().toBuffer();
+}
+
 // Install-variant badges: a band along the bottom of the iOS icon, a pill
 // inside the safe circle of the Android foreground.
-const badges = { dev: ["DEV", "#ff8a3d"], test: ["TEST", "#c9a7ff"], preview: ["PREVIEW", "#6aa9ff"] };
-const label = (x, y, size, text) =>
-  `<text x="${x}" y="${y}" text-anchor="middle" font-family="Arial, Helvetica, sans-serif" font-weight="700" font-size="${size}" fill="#111111">${text}</text>`;
 for (const [variant, [text, color]] of Object.entries(badges)) {
-  const band = svg(1024, 1024, `<rect y="830" width="1024" height="194" fill="${color}"/>${label(512, 975, 130, text)}`);
-  await save(`${mobile}icon-${variant}.png`,
-    await sharp(icon).composite([{ input: band }]).removeAlpha().png().toBuffer());
-  const pill = 70 + text.length * 30;
-  const badge = svg(1024, 1024,
-    `<rect x="${512 - pill / 2}" y="770" width="${pill}" height="64" rx="32" fill="${color}"/>${label(512, 817, 44, text)}`);
-  await save(`${mobile}android-icon-foreground-${variant}.png`,
-    await sharp(adaptive).composite([{ input: badge }]).png().toBuffer());
+  const band = svg(1024, 1024, `<rect y="830" width="1024" height="194" fill="${color}"/>`);
+  await save(`${mobile}icon-${variant}.png`, await sharp(icon).composite([
+    { input: band },
+    { input: await lettering(`ios-${variant}`, "#111111") },
+  ]).removeAlpha().png().toBuffer());
+  const pill = pillWidth(text);
+  const badge = svg(1024, 1024, `<rect x="${512 - pill / 2}" y="770" width="${pill}" height="64" rx="32" fill="${color}"/>`);
+  await save(`${mobile}android-icon-foreground-${variant}.png`, await sharp(adaptive).composite([
+    { input: badge },
+    { input: await lettering(`android-${variant}`, "#111111") },
+  ]).png().toBuffer());
 }
 
 // ICO directory with PNG-compressed 16/32/48 frames, supported by modern browsers.
@@ -88,16 +101,22 @@ frames.forEach((frame, i) => {
 });
 await save("public/favicon.ico", Buffer.concat([header, ...frames]));
 
-// Avenir Next is shipped on macOS; portable sans-serif fallbacks remain usable.
-// The dark lockup (mint wordmark, `--color-pine-ink` in dark) is the sign-in
-// card's logo in dark mode (src/integrations/clerk/appearance.ts).
-const wordmarkSvg = (fill) => svg(900, 280, `<text x="0" y="195" font-family="Avenir Next, Avenir, Arial, sans-serif" font-weight="600" font-size="188" letter-spacing="-7" fill="${fill}">Fairway</text>`);
+// The Avenir Next wordmark beside the mark. The dark lockup (mint wordmark,
+// `--color-pine-ink` in dark) is the sign-in card's logo in dark mode
+// (src/integrations/clerk/appearance.ts).
 const lockup = async (fill) => clear(1200, 320).composite([
   { input: await mark(280, 252, onSurface), left: 0, top: 20 },
-  { input: wordmarkSvg(fill), left: 300, top: 20 },
+  { input: await lettering("wordmark", fill), left: 300, top: 20 },
 ]).png().toBuffer();
 await save("docs/brand/fairway-logo.png", await lockup("#1c7a4c"));
 await save("public/fairway-logo-dark.png", await lockup("#7fe0a6"));
+
+// The contact sheet below labels its tiles with system fonts; it is a preview
+// for people, not an asset, so a run given an output directory skips it.
+if (process.argv[2]) {
+  console.log(`Wrote Fairway brand assets to ${out}`);
+  process.exit(0);
+}
 
 // Contact sheet: each iOS appearance, small sizes and the Android layers.
 const width = 2220;

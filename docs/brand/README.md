@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Regenerate and identify Fairway's logo and app icon assets.
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Fairway identity
@@ -22,6 +22,12 @@ Colours: icon field `#1cb45d` → `#013a27`, mint fairway, sand bunker, yellow f
 - `android-icon-foreground.png`: transparent 1024 px canvas, mark bounded to 540 px so it fits inside the central 66% adaptive safe circle; `-dev`, `-test`, `-preview` add a label pill. `android-icon-background.png`: opaque field. `android-icon-monochrome.png`: white silhouette with matching alpha. Android is parked; these are regenerated but not verified on a device.
 - `splash-icon.png`: transparent 400 px mark for both app backgrounds.
 - `public/logo192.png`, `public/logo512.png`: opaque PWA icons. `public/favicon.ico`: embedded 16/32/48 px PNG frames.
-- `fairway-logo.png`: transparent 1200 × 320 horizontal lockup; emerald Avenir Next wordmark, with Avenir/Arial fallback when regenerating elsewhere.
+- `fairway-logo.png`: transparent 1200 × 320 horizontal lockup; emerald Avenir Next wordmark. `public/fairway-logo-dark.png`: the same lockup with a mint wordmark, the sign-in card's logo in dark mode.
 
-To change the artwork, replace `docs/brand/icon/light.png`, run `python3 scripts/brand/derive-appearances.py`, then `node scripts/brand/make-icons.mjs` from the repo root with workspace dependencies installed via pnpm. The second script writes every asset above with sharp and a contact sheet to `/tmp/fairway-icon-preview.png`.
+## Text masks (`docs/brand/text/`)
+
+The wordmark and the DEV, TEST and PREVIEW labels are committed as grayscale alpha masks: `wordmark.png`, `ios-<variant>.png` and `android-<variant>.png`. `make-icons.mjs` fills them with a colour and uses no fonts, so it gives the same assets on every machine (APP-531). The masks are the only font-dependent output: `node scripts/brand/make-text-masks.mjs` renders them from `scripts/brand/text.mjs` with the machine's fonts. Run it only when the text changes, on a Mac (Avenir Next ships with macOS; elsewhere the wordmark falls back to another font), then run `make-icons.mjs` and commit both.
+
+## Regenerating
+
+To change the artwork, replace `docs/brand/icon/light.png`, run `python3 scripts/brand/derive-appearances.py`, then `node scripts/brand/make-icons.mjs` from the repo root with workspace dependencies installed via pnpm. The second script writes every asset above with sharp and a contact sheet to `/tmp/fairway-icon-preview.png`. A re-run with unchanged masters leaves `git status` clean; `scripts/brand/make-icons.test.mjs` checks that in `pnpm test`.
