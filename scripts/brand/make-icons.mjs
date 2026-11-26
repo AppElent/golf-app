@@ -112,8 +112,8 @@ await save("docs/brand/fairway-logo.png", await lockup("#1c7a4c"));
 await save("public/fairway-logo-dark.png", await lockup("#7fe0a6"));
 
 // The contact sheet below labels its tiles with system fonts; it is a preview
-// for people, not an asset, so a test run into another directory skips it.
-if (out !== root) {
+// for people, not an asset, so a run given an output directory skips it.
+if (process.argv[2]) {
   console.log(`Wrote Fairway brand assets to ${out}`);
   process.exit(0);
 }
