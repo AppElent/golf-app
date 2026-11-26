@@ -8,6 +8,7 @@ import {
 	legLabel,
 	lockScreenHole,
 	nextTeeAction,
+	nextTeeHole,
 	playerPosition,
 } from "./play-model";
 
@@ -209,5 +210,35 @@ describe("a sparse bag", () => {
 		expect(meters).toBe(230);
 		expect(legLabel(meters, "m", sparse, true)).toBe("230 · Driver");
 		expect(legLabel(145, "m", sparse, true)).toBe("145 · 7 iron");
+	});
+});
+
+describe("nextTeeHole", () => {
+	/** The owner's results on these holes, entered in this order. */
+	const entered = (holes: number[]) =>
+		holes.map((holeIndex, i) => ({
+			holeIndex,
+			playerIndex: 0,
+			strokes: 4,
+			_creationTime: 1000 + i,
+		}));
+	const from10 = [9, 10, 11, 12, 13, 14, 15, 16];
+
+	it("offers hole 1 from hole 18 on a round started on hole 10", () => {
+		// Hole 18 not scored yet: the golfer walks on before entering it.
+		expect(nextTeeHole(18, entered(from10), 17)).toBe(0);
+		expect(nextTeeHole(18, entered([...from10, 17]), 17)).toBe(0);
+		// And no next tee after hole 9, the last hole played.
+		const all = [...from10, 17, 0, 1, 2, 3, 4, 5, 6, 7];
+		expect(nextTeeHole(18, entered(all), 8)).toBeNull();
+	});
+
+	it("goes on in card order, and offers nothing from the last hole", () => {
+		expect(nextTeeHole(18, [], 0)).toBe(1);
+		expect(nextTeeHole(18, entered([0, 1, 2]), 3)).toBe(4);
+		const card = Array.from({ length: 17 }, (_, i) => i);
+		expect(nextTeeHole(18, entered(card), 17)).toBeNull();
+		// A round started on hole 10 still goes 10 → 11 before anything wraps.
+		expect(nextTeeHole(18, [], 9)).toBe(10);
 	});
 });

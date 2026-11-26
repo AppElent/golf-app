@@ -11,6 +11,8 @@ import {
 	type HoleScore,
 	hasResult,
 	OWNER_INDEX,
+	playingOrder,
+	type RecordedScore,
 	scoreAt,
 } from "@fairway/core/round";
 import type { LiveHole } from "../../live/hole/live-hole";
@@ -155,4 +157,19 @@ export function nextTeeAction(
 	return hasResult(scoreAt(scores, holeIndex, OWNER_INDEX))
 		? "advance"
 		: "score";
+}
+
+/**
+ * The hole whose tee is offered on leaving `holeIndex`, null on the last hole
+ * played. The hole being left counts as entered now, scored or not, so a round
+ * started on hole 10 offers hole 1 from hole 18 (APP-928).
+ */
+export function nextTeeHole(
+	holeCount: number,
+	scores: readonly RecordedScore[],
+	holeIndex: number,
+): number | null {
+	const leaving = { holeIndex, playerIndex: OWNER_INDEX, nr: true };
+	const order = playingOrder(holeCount, [...scores, leaving]);
+	return order[order.indexOf(holeIndex) + 1] ?? null;
 }
