@@ -1,4 +1,5 @@
 import { Stack } from "expo-router";
+import type { SFSymbol } from "expo-symbols";
 import { Button, Platform } from "react-native";
 import { useTokens } from "../theme";
 
@@ -6,6 +7,8 @@ interface NavHeaderAction {
 	label: string;
 	onPress: () => void;
 	disabled?: boolean;
+	/** iOS: an SF Symbol drawn instead of the label, which is then only spoken. */
+	icon?: SFSymbol;
 }
 
 /**
@@ -52,6 +55,8 @@ export function NavHeader({
 					<Stack.Toolbar.Button
 						onPress={right.onPress}
 						disabled={right.disabled}
+						icon={right.icon}
+						accessibilityLabel={right.icon ? right.label : undefined}
 					>
 						{right.label}
 					</Stack.Toolbar.Button>

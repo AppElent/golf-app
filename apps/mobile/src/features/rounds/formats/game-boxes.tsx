@@ -1,4 +1,5 @@
 import { StyleSheet, View } from "react-native";
+import { useAnnounceChange } from "../../../feedback/announce";
 import { radius, spacing, type Tokens, useThemedStyles } from "../../../theme";
 import { AppText } from "../../../ui/text";
 import type { GameBox } from "./game-text";
@@ -15,6 +16,7 @@ export function HoleResultBox({ title, sub }: GameBox) {
 
 function Box({ title, sub, look }: GameBox & { look: "standing" | "result" }) {
 	const styles = useThemedStyles(createStyles);
+	useAnnounceChange(sub ? `${title}, ${sub}` : title);
 	return (
 		<View
 			accessible

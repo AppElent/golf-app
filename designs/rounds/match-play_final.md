@@ -36,7 +36,7 @@ Approved by Eric on a decision card, 17 Nov 2026 ("Goedkeuren, telefoon en web")
 - If players change so the chosen format no longer fits, fall back to Stableford and show the disabled reason.
 - Section "Matchplay": segmented "Score: Netto | Bruto"; footer "{name} krijgt {n} slagen: één op elke hole met HCP 1 t/m {n}. Slagen tellen ook gewoon mee voor je score en handicap." (Bruto: "Zonder handicapslagen.")
 - Section "Skins": segmented Netto | Bruto, switch "Doorschuiven bij gelijkspel", footer "Bij gelijkspel gaat de skin naar de volgende hole. Uit: niemand krijgt hem."
-- Matchplay needs handicap indexes for net; missing index: footer "Vul voor beide spelers een handicap in voor netto, of kies Bruto."
+- A player without a handicap index plays gross (Eric, 24 Nov 2026): they get no strokes and count as playing off 0, so in a net match the other player gets their full playing handicap. Net stays selectable; there is no missing-index footer. (Superseded: "Vul voor beide spelers een handicap in voor netto, of kies Bruto.")
 
 ### Score sheet (`MP-Score.dc.html`)
 

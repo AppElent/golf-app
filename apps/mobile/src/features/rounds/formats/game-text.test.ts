@@ -115,6 +115,18 @@ describe("match play", () => {
 		expect(newlyDecided(standing(3), standing(4))).toBeNull();
 	});
 
+	it("writes a match won on the last hole like the standing: 1 up, 1 UP", () => {
+		const r = round("match", [
+			[4, 5],
+			...Array.from({ length: 8 }, () => [4, 4]),
+		]);
+		expect(english(r).result()?.title).toBe("Eric wins 1 up");
+		expect(english(round("match", [[4, 5]])).sheetStanding(1)?.title).toBe(
+			"Eric 1 up",
+		);
+		expect(dutch(r).result()?.title).toBe("Eric wint 1 UP");
+	});
+
 	it("reads a halved match", () => {
 		const r = round(
 			"match",

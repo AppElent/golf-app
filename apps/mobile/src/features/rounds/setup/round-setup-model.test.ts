@@ -1,6 +1,7 @@
 import {
 	defaultTeeId,
 	doubledLoop,
+	loopOrder,
 	nextPartner,
 	playerInitial,
 	playingHandicapText,
@@ -30,6 +31,19 @@ describe("toggleLoopPick", () => {
 	it("starts over when a new loop does not fit", () => {
 		expect(toggleLoopPick([0, 1], 2)).toEqual([2]);
 		expect(toggleLoopPick([0, 0], 1)).toEqual([1]);
+	});
+});
+
+describe("loopOrder", () => {
+	it("numbers two different loops in the order they are played", () => {
+		expect(loopOrder([1, 0], 1)).toBe(1);
+		expect(loopOrder([1, 0], 0)).toBe(2);
+		expect(loopOrder([1, 0], 2)).toBeNull();
+	});
+
+	it("has no order for one loop, or one loop played twice", () => {
+		expect(loopOrder([0], 0)).toBeNull();
+		expect(loopOrder([0, 0], 0)).toBeNull();
 	});
 });
 

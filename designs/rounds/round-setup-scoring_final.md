@@ -26,8 +26,9 @@ Order: Holes, Tee, Spelvorm, Spelers, then the primary button `Afslaan` (simulat
 
 ## 2. Players (APP-809)
 
-- Section `Spelers`: one row per player, owner first. Row: initial avatar (accentDim circle), name with secondary `Jij · HCP 12,4` / `HCP 17,1` / `Geen handicap · telt als 54`, trailing `speelt 19` and a chevron. Last row `Speler toevoegen` (plus icon, accent). Max 4 players as today.
+- Section `Spelers`: one row per player, owner first. Row: initial avatar (accentDim circle), name with secondary `Jij · HCP 12,4` / `HCP 17,1` / `Geen handicap · bruto`, trailing `speelt 19` and a chevron. Last row `Speler toevoegen` (plus icon, accent). Max 4 players as today.
 - Tapping a row (or Add) opens a sheet `Speler` (Annuleren / Klaar): fields Naam and Handicap (decimal keyboard), footer `Speelt 19 van tee Geel. Leeg laten = geen handicap (bruto).`, a destructive `Speler verwijderen` button (guests only). Swipe-to-delete on guest rows as a shortcut.
+- No handicap means gross (Eric, 24 Nov 2026): the player gets no strokes, plays off 0 in every format, and has no `speelt` value. It no longer counts as 54.
 - The owner's row edits only the handicap for this round (name comes from the account).
 - Footer under the section: `Speelhandicap van tee Geel, 18 holes.` plus the link `Slagen per hole ›` (opens §3).
 
@@ -101,7 +102,7 @@ erDiagram
 
 ## Copy (English)
 
-Holes · Tee · Format · Players · Add player · Plays {n} · No handicap (counts as 54) · Remove player · Strokes per hole · Sixes · Texas Scramble · Teams · 1 team · 2 teams · Net · Gross · Tee shot · Left · Fairway · Right · Putts · Bunker · Penalties · Flight · Picked up · "A scramble doesn't count toward your handicap or stats."
+Holes · Tee · Format · Players · Add player · Plays {n} · No handicap · gross · Remove player · Strokes per hole · Sixes · Texas Scramble · Teams · 1 team · 2 teams · Net · Gross · Tee shot · Left · Fairway · Right · Putts · Bunker · Penalties · Flight · Picked up · "A scramble doesn't count toward your handicap or stats."
 
 ## Open runtime questions
 

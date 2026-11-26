@@ -101,6 +101,8 @@ export const setupEn = {
 	loop: "Holes {label}",
 	loopPar: "Par {par}",
 	loopParTwice: "Par {par} · ×2",
+	/** Two different loops: which one is played first. */
+	loopParOrder: { 1: "Par {par} · first", 2: "Par {par} · second" },
 	loopTwice: "{loop} twice · par {par}",
 	holeCount: "{count} holes · par {par}",
 	incomplete:
@@ -118,6 +120,9 @@ export const setupEn = {
 	},
 	needsExactly: "{formats}: only with exactly {n} players.",
 	needsRange: "{formats}: only with {min} to {max} players.",
+	/** On a format tile that can't be chosen. */
+	tileExactly: "Only with {n} players",
+	tileRange: "Only with {min}–{max} players",
 	playersNow: { one: "You have {count} now.", other: "You have {count} now." },
 	scoring: "Score",
 	teams: "Teams",
@@ -192,6 +197,7 @@ export const setupNl: typeof setupEn = {
 	loop: "Holes {label}",
 	loopPar: "Par {par}",
 	loopParTwice: "Par {par} · ×2",
+	loopParOrder: { 1: "Par {par} · eerst", 2: "Par {par} · daarna" },
 	loopTwice: "{loop} twee keer · par {par}",
 	holeCount: "{count} holes · par {par}",
 	incomplete:
@@ -209,6 +215,8 @@ export const setupNl: typeof setupEn = {
 	},
 	needsExactly: "{formats}: alleen met precies {n} spelers.",
 	needsRange: "{formats}: alleen met {min} tot {max} spelers.",
+	tileExactly: "Alleen met {n} spelers",
+	tileRange: "Alleen met {min}–{max} spelers",
 	playersNow: {
 		one: "Je hebt er nu {count}.",
 		other: "Je hebt er nu {count}.",

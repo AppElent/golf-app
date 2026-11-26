@@ -14,6 +14,9 @@ import type { GameCell, GameRow } from "../formats/game-text";
 import type { CardHole, CardPlayerRow } from "./scorecard-model";
 
 const CELL = 28;
+const DOT = 4;
+/** Room above a score box for the stroke dots and a gap. */
+const DOTS_ROOM = DOT + 2;
 
 export function ScorecardGrid({
 	holes,
@@ -44,11 +47,12 @@ export function ScorecardGrid({
 
 	const strokesHint = (p: number, i: number) => {
 		const count = received?.[p]?.[i] ?? 0;
-		return count > 0
-			? fmt(plural(locale, count, t.formats.getsStroke), {
-					name: players[p]?.name ?? "",
-				})
-			: undefined;
+		if (count === 0) return undefined;
+		// A plus handicap gives strokes back on the easiest holes.
+		const copy = count > 0 ? t.formats.getsStroke : t.formats.givesStroke;
+		return fmt(plural(locale, Math.abs(count), copy), {
+			name: players[p]?.name ?? "",
+		});
 	};
 
 	const cellText = ({
@@ -137,7 +141,7 @@ export function ScorecardGrid({
 											onPress={() => onHolePress?.(i)}
 											accessibilityLabel={cellLabel(row, p, i)}
 											accessibilityHint={strokesHint(p, i)}
-											style={styles.cell}
+											style={[styles.cell, styles.scoreCell]}
 										>
 											<StrokeDots count={received?.[p]?.[i] ?? 0} />
 											<Marked
@@ -189,15 +193,22 @@ function NameCell({ text, strong }: { text: string; strong?: boolean }) {
 	);
 }
 
-/** Handicap strokes on a hole: a dot each, in the cell's corner. */
+/**
+ * Handicap strokes on a hole: a dot each above the score, filled for a stroke
+ * received and hollow for one a plus handicap gives back.
+ */
 function StrokeDots({ count }: { count: number }) {
 	const styles = useThemedStyles(createStyles);
-	if (count <= 0) return null;
+	if (count === 0) return null;
 	return (
-		<View style={styles.dots} pointerEvents="none">
-			{Array.from({ length: count }, (_, i) => (
-				// biome-ignore lint/suspicious/noArrayIndexKey: identical dots
-				<View key={i} style={styles.dot} />
+		<View testID="stroke-dots" style={styles.dots} pointerEvents="none">
+			{Array.from({ length: Math.abs(count) }, (_, i) => (
+				<View
+					// biome-ignore lint/suspicious/noArrayIndexKey: identical dots
+					key={i}
+					testID={count > 0 ? "stroke-dot" : "stroke-dot-given"}
+					style={[styles.dot, count < 0 && styles.dotGiven]}
+				/>
 			))}
 		</View>
 	);
@@ -293,18 +304,26 @@ const createStyles = (colors: Tokens) =>
 			borderTopWidth: StyleSheet.hairlineWidth,
 			borderTopColor: colors.separator,
 		},
+		// Above the score box, never on it: the box starts at DOTS_ROOM.
 		dots: {
 			position: "absolute",
-			top: 2,
-			right: 1,
+			top: 1,
+			left: 0,
+			right: 0,
 			flexDirection: "row",
-			gap: 1,
+			justifyContent: "center",
+			gap: 2,
 		},
 		dot: {
-			width: 5,
-			height: 5,
-			borderRadius: 2.5,
+			width: DOT,
+			height: DOT,
+			borderRadius: DOT / 2,
 			backgroundColor: colors.accent,
+		},
+		dotGiven: {
+			backgroundColor: "transparent",
+			borderWidth: 1,
+			borderColor: colors.accent,
 		},
 		chip: {
 			minWidth: CELL - 2,
@@ -337,6 +356,7 @@ const createStyles = (colors: Tokens) =>
 			alignItems: "center",
 			justifyContent: "center",
 		},
+		scoreCell: { justifyContent: "flex-start", paddingTop: DOTS_ROOM },
 		// Fits "Totaal" (nl) on one line at the default text size.
 		sumCell: { width: CELL + 24 },
 		current: { backgroundColor: colors.accentDim, borderRadius: radius.sm },
