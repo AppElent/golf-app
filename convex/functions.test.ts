@@ -524,6 +524,25 @@ describe("rounds", () => {
 			scores: [{ playerIndex: 0, putts: null, gir: false }],
 		});
 		expect(await stored()).not.toHaveProperty("gir");
+
+		// An older build sends strokes and putts with a GIR set by hand: kept.
+		await save({ strokes: par + 2, putts: 2, gir: true });
+		expect(await stored()).toMatchObject({ gir: true });
+		// A save that changes nothing GIR rests on keeps the stored GIR too.
+		await alice.mutation(api.rounds.saveHole, {
+			roundId,
+			holeIndex: 0,
+			scores: [
+				{
+					playerIndex: 0,
+					startingPar: true,
+					strokes: par,
+					nr: false,
+					gir: null,
+				},
+			],
+		});
+		expect(await stored()).toMatchObject({ strokes: par + 2, gir: true });
 	});
 
 	it("keeps a first result another device stored over the starting par (APP-925)", async () => {

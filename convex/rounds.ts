@@ -412,7 +412,8 @@ async function writeScore(
 	// The sheet derives GIR from its own copy of the strokes and putts, and
 	// sends only the ones changed here. Another device can store the other one
 	// meanwhile, so GIR is derived again from what will be stored (APP-934).
-	// A save with both (older builds send every field) keeps its own GIR.
+	// A save with both derived its GIR from them (older builds may have set it
+	// by hand), so it keeps that GIR.
 	const sent = (key: keyof ScoreUpdate) => key in set || key in cleared;
 	if (fields.gir !== undefined && !(sent("strokes") && sent("putts"))) {
 		const value = <K extends "strokes" | "putts">(key: K) =>
