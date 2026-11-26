@@ -180,17 +180,24 @@ function savedFields(patch: ScoreDraftPatch): Set<keyof ScoreUpdate> {
  * What the sheet saves: only the fields it changed, so what another device
  * stored meanwhile stays, in another field of a card touched here as well as on
  * an untouched card (APP-924). A side without a score yet is left out. The
- * owner's starting par counts as entered until the hole has a result.
+ * owner's starting par counts as entered until the hole has a result; left
+ * untouched, it is marked `startingPar`, so a result another device stored
+ * meanwhile stays (APP-925).
  */
 export function sheetUpdates(
 	live: readonly ScoreDraft[],
 	edits: SheetEdits,
 	scores: readonly HoleScore[],
 	{ holeIndex, par, teams }: { holeIndex: number; par: number; teams: boolean },
-): ({ playerIndex: number } & ScoreUpdate)[] {
+): ({ playerIndex: number; startingPar?: true } & ScoreUpdate)[] {
 	const startsAtPar =
 		!teams && !hasResult(scoreAt(scores, holeIndex, OWNER_INDEX));
 	const own = live[OWNER_INDEX];
+	const ownEdits = edits[OWNER_INDEX];
+	const untouchedPar =
+		startsAtPar &&
+		ownEdits?.strokes === undefined &&
+		ownEdits?.nr === undefined;
 	const entered: SheetEdits = startsAtPar
 		? {
 				...edits,
@@ -218,7 +225,10 @@ export function sheetUpdates(
 				fields.has(key as keyof ScoreUpdate),
 			),
 		) as ScoreUpdate;
-		return Object.keys(changed).length ? [{ playerIndex, ...changed }] : [];
+		if (!Object.keys(changed).length) return [];
+		return untouchedPar && playerIndex === OWNER_INDEX
+			? [{ playerIndex, startingPar: true, ...changed }]
+			: [{ playerIndex, ...changed }];
 	});
 }
 

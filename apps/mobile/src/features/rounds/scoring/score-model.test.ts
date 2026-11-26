@@ -278,6 +278,31 @@ describe("another device scoring while the sheet is open (APP-894)", () => {
 		]);
 	});
 
+	it("marks the owner's untouched starting par (APP-925)", () => {
+		const live = initialDrafts([], 0, 2, 4);
+		expect(sheetUpdates(live, { 0: { putts: 2 } }, [], sheet)).toEqual([
+			{
+				playerIndex: 0,
+				startingPar: true,
+				strokes: 4,
+				nr: false,
+				putts: 2,
+				gir: true,
+			},
+		]);
+		// Entered here, par is a score like any other.
+		expect(
+			sheetUpdates(live, { 0: { strokes: 4, nr: false } }, [], sheet),
+		).toEqual([{ playerIndex: 0, strokes: 4, nr: false }]);
+		// A guest is never marked.
+		expect(
+			sheetUpdates(live, { 1: { strokes: 5, nr: false } }, [], sheet),
+		).toEqual([
+			{ playerIndex: 0, startingPar: true, strokes: 4, nr: false },
+			{ playerIndex: 1, strokes: 5, nr: false },
+		]);
+	});
+
 	it("gives a scramble's teams no owner stats", () => {
 		expect(
 			sheetUpdates([], { 0: draft() }, [], { ...sheet, teams: true }),
