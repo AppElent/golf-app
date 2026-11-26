@@ -80,7 +80,7 @@ async function openWhile(before: Stored | undefined, after?: Stored) {
 async function savedScores() {
 	await fireEvent.press(screen.getByRole("button", { name: "Save" }));
 	expect(mockSaveHole).toHaveBeenCalledTimes(1);
-	return mockSaveHole.mock.calls[0][0];
+	return mockSaveHole.mock.calls[0][0] as { scores: unknown[] };
 }
 
 beforeEach(() => {
@@ -114,6 +114,27 @@ describe("another device scoring the owner while the sheet is open (APP-916)", (
 	});
 });
 
+describe("another device changing another field of a card touched here (APP-924)", () => {
+	it("saves the putts tapped here without the strokes stored there", async () => {
+		await openWhile({ strokes: 4 }, { strokes: 6 });
+		await fireEvent.press(
+			screen.getByRole("button", { name: "Increase Putts" }),
+		);
+		const { scores } = await savedScores();
+		expect(scores).toEqual([{ playerIndex: 0, putts: 2, gir: false }]);
+	});
+
+	it("keeps the putts stored there when the strokes change here", async () => {
+		await openWhile({ strokes: 4 }, { strokes: 4, putts: 3 });
+		await fireEvent.press(screen.getByRole("radio", { name: "5" }));
+		const { scores } = await savedScores();
+		// GIR follows the stored putts: 5 strokes, 3 putts on a par 4.
+		expect(scores).toEqual([
+			{ playerIndex: 0, strokes: 5, nr: false, gir: true },
+		]);
+	});
+});
+
 it("saves the starting par of an untouched hole without a result", async () => {
 	await openWhile(undefined);
 	expect(await savedScores()).toMatchObject({
@@ -123,9 +144,11 @@ it("saves the starting par of an untouched hole without a result", async () => {
 
 it("saves the starting par over a row without a result", async () => {
 	await openWhile({ putts: 2, nr: false }, { putts: 2, nr: false });
-	expect(await savedScores()).toMatchObject({
-		scores: [{ playerIndex: 0, strokes: 4, putts: 2 }],
-	});
+	// The putts stored there stay: only the starting par is written.
+	const { scores } = await savedScores();
+	expect(scores).toEqual([
+		{ playerIndex: 0, strokes: 4, nr: false, gir: true },
+	]);
 });
 
 describe("a round started on hole 10 (APP-914)", () => {

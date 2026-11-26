@@ -264,6 +264,20 @@ describe("another device scoring while the sheet is open (APP-894)", () => {
 		]);
 	});
 
+	it("saves only the fields changed here (APP-924)", () => {
+		const opened = [{ holeIndex: 0, playerIndex: 0, strokes: 6, putts: 2 }];
+		const live = initialDrafts(opened, 0, 1, 4);
+		expect(sheetUpdates(live, { 0: { putts: 1 } }, opened, sheet)).toEqual([
+			{ playerIndex: 0, putts: 1, gir: false },
+		]);
+		expect(
+			sheetUpdates(live, { 0: { fir: true, firMiss: null } }, opened, sheet),
+		).toEqual([{ playerIndex: 0, fir: true, firMiss: null }]);
+		expect(sheetUpdates(live, { 0: { bunker: true } }, opened, sheet)).toEqual([
+			{ playerIndex: 0, bunker: true },
+		]);
+	});
+
 	it("gives a scramble's teams no owner stats", () => {
 		expect(
 			sheetUpdates([], { 0: draft() }, [], { ...sheet, teams: true }),
