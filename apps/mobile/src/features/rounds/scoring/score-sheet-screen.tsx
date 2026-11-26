@@ -121,7 +121,7 @@ function ScoreSheet({
 	const update = (playerIndex: number, patch: ScoreDraftPatch) =>
 		setEdits((all) => ({
 			...all,
-			[playerIndex]: { ...(all[playerIndex] ?? live[playerIndex]), ...patch },
+			[playerIndex]: { ...all[playerIndex], ...patch },
 		}));
 
 	// Playing out a decided match is the players' choice.

@@ -451,6 +451,30 @@ describe("rounds", () => {
 		expect(active?.scores).toHaveLength(2);
 	});
 
+	it("keeps the strokes another device stored when putts are saved (APP-924)", async () => {
+		const { alice, course } = await setup();
+		const roundId = await alice.mutation(api.rounds.start, {
+			courseId: course.course._id,
+			teeId: course.tees[0]._id,
+			holeRefs: course.holes.slice(0, 9).flatMap((h) => (h.ref ? [h.ref] : [])),
+			format: "stroke",
+			players: [{ name: "Alice" }],
+		});
+		const save = (score: { strokes?: number; putts?: number; gir?: boolean }) =>
+			alice.mutation(api.rounds.saveHole, {
+				roundId,
+				holeIndex: 0,
+				scores: [{ playerIndex: 0, ...score }],
+			});
+		await save({ strokes: 4 });
+		// The other device corrects the strokes while this sheet is open…
+		await save({ strokes: 6 });
+		// …and this sheet saves what the score sheet test sees it send.
+		await save({ putts: 2, gir: false });
+		const [score] = (await alice.query(api.rounds.active, {}))?.scores ?? [];
+		expect(score).toMatchObject({ strokes: 6, putts: 2, gir: false });
+	});
+
 	it("clears a guest's stored score with null (APP-894)", async () => {
 		const { alice, course } = await setup();
 		const roundId = await alice.mutation(api.rounds.start, {

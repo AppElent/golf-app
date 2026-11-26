@@ -155,21 +155,32 @@ export function draftUpdate(
 	};
 }
 
-/** The sides this sheet changed. */
-export type SheetEdits = Readonly<Record<number, ScoreDraft>>;
+/** The fields this sheet changed, per side. */
+export type SheetEdits = Readonly<Record<number, ScoreDraftPatch>>;
 
 /** Every side's draft: what this sheet changed, over the live scores. */
 export function sheetDrafts(
 	live: readonly ScoreDraft[],
 	edits: SheetEdits,
 ): ScoreDraft[] {
-	return live.map((draft, side) => edits[side] ?? draft);
+	return live.map((draft, side) => ({ ...draft, ...edits[side] }));
+}
+
+/** The saved fields a change of these draft fields writes (APP-924). */
+function savedFields(patch: ScoreDraftPatch): Set<keyof ScoreUpdate> {
+	const fields = new Set(Object.keys(patch) as (keyof ScoreUpdate)[]);
+	if (fields.has("strokes") || fields.has("putts") || fields.has("nr")) {
+		fields.add("gir");
+	}
+	if (fields.has("fir")) fields.add("firMiss");
+	return fields;
 }
 
 /**
- * What the sheet saves. A side it didn't change is left out, so what another
- * device stored meanwhile stays, and so is one without a score yet. The owner's
- * starting par counts as entered until the hole has a result.
+ * What the sheet saves: only the fields it changed, so what another device
+ * stored meanwhile stays, in another field of a card touched here as well as on
+ * an untouched card (APP-924). A side without a score yet is left out. The
+ * owner's starting par counts as entered until the hole has a result.
  */
 export function sheetUpdates(
 	live: readonly ScoreDraft[],
@@ -179,17 +190,35 @@ export function sheetUpdates(
 ): ({ playerIndex: number } & ScoreUpdate)[] {
 	const startsAtPar =
 		!teams && !hasResult(scoreAt(scores, holeIndex, OWNER_INDEX));
-	const entered = startsAtPar
-		? { [OWNER_INDEX]: live[OWNER_INDEX], ...edits }
+	const own = live[OWNER_INDEX];
+	const entered: SheetEdits = startsAtPar
+		? {
+				...edits,
+				[OWNER_INDEX]: {
+					strokes: own.strokes,
+					nr: own.nr,
+					...edits[OWNER_INDEX],
+				},
+			}
 		: edits;
-	return Object.entries(entered).flatMap(([side, draft]) => {
+	return Object.entries(entered).flatMap(([side, patch]) => {
 		const playerIndex = Number(side);
-		const update = draftUpdate(draft, {
-			par,
-			owner: !teams && playerIndex === OWNER_INDEX,
-			stored: scoreAt(scores, holeIndex, playerIndex),
-		});
-		return update ? [{ playerIndex, ...update }] : [];
+		const update = draftUpdate(
+			{ ...live[playerIndex], ...patch },
+			{
+				par,
+				owner: !teams && playerIndex === OWNER_INDEX,
+				stored: scoreAt(scores, holeIndex, playerIndex),
+			},
+		);
+		if (!update) return [];
+		const fields = savedFields(patch);
+		const changed = Object.fromEntries(
+			Object.entries(update).filter(([key]) =>
+				fields.has(key as keyof ScoreUpdate),
+			),
+		) as ScoreUpdate;
+		return Object.keys(changed).length ? [{ playerIndex, ...changed }] : [];
 	});
 }
 
