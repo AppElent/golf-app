@@ -7,6 +7,7 @@ import { checkHoleRefs } from "@fairway/core/loops";
 import {
 	countedStrokes,
 	type FormatOptions,
+	hasResult,
 	OWNER_INDEX,
 	ownerRoundStats,
 	playerStrokes,
@@ -374,6 +375,8 @@ async function writeScore(
 	holeIndex: number,
 	playerIndex: number,
 	fields: ScoreUpdate,
+	/** The result is the sheet's untouched starting par: keep a stored one. */
+	startingPar = false,
 ) {
 	assertHoleOfRound(round, holeIndex);
 	if (playerIndex < 0 || playerIndex >= sideCount(round)) {
@@ -397,6 +400,15 @@ async function writeScore(
 				.eq("playerIndex", playerIndex),
 		)
 		.first();
+	// Another device can store the first result after this phone sent its
+	// starting par; par never replaces it, nor does the GIR derived from par
+	// (APP-925).
+	if (startingPar && hasResult(existing ?? undefined)) {
+		for (const key of ["strokes", "nr", "gir"] as const) {
+			delete set[key];
+			delete cleared[key];
+		}
+	}
 	// A miss side belongs to a missed fairway only. An older app corrects `fir`
 	// without knowing `firMiss`, so it is dropped here rather than rejected.
 	const fir = fields.fir === undefined ? existing?.fir : fields.fir;
@@ -456,7 +468,12 @@ export const saveHole = mutation({
 		roundId: v.id("rounds"),
 		holeIndex: v.number(),
 		scores: v.array(
-			v.object({ playerIndex: v.number(), ...scoreUpdateFields }),
+			v.object({
+				playerIndex: v.number(),
+				// The strokes are the sheet's untouched starting par.
+				startingPar: v.optional(v.boolean()),
+				...scoreUpdateFields,
+			}),
 		),
 		advanceTo: v.optional(v.number()),
 	},
@@ -468,8 +485,8 @@ export const saveHole = mutation({
 			seen.add(playerIndex);
 		}
 		if (advanceTo !== undefined) assertHoleOfRound(round, advanceTo);
-		for (const { playerIndex, ...fields } of scores) {
-			await writeScore(ctx, round, holeIndex, playerIndex, fields);
+		for (const { playerIndex, startingPar, ...fields } of scores) {
+			await writeScore(ctx, round, holeIndex, playerIndex, fields, startingPar);
 		}
 		if (advanceTo !== undefined) {
 			await ctx.db.patch(roundId, { currentHoleIndex: advanceTo });

@@ -137,8 +137,9 @@ describe("another device changing another field of a card touched here (APP-924)
 
 it("saves the starting par of an untouched hole without a result", async () => {
 	await openWhile(undefined);
+	// Marked, so a first score another device stored meanwhile stays (APP-925).
 	expect(await savedScores()).toMatchObject({
-		scores: [{ playerIndex: 0, strokes: 4 }],
+		scores: [{ playerIndex: 0, startingPar: true, strokes: 4 }],
 	});
 });
 
@@ -147,8 +148,16 @@ it("saves the starting par over a row without a result", async () => {
 	// The putts stored there stay: only the starting par is written.
 	const { scores } = await savedScores();
 	expect(scores).toEqual([
-		{ playerIndex: 0, strokes: 4, nr: false, gir: true },
+		{ playerIndex: 0, startingPar: true, strokes: 4, nr: false, gir: true },
 	]);
+});
+
+it("saves a par tapped here as entered, not as the starting par (APP-925)", async () => {
+	await openWhile(undefined);
+	await fireEvent.press(screen.getByRole("radio", { name: "5" }));
+	await fireEvent.press(screen.getByRole("radio", { name: "4" }));
+	const { scores } = await savedScores();
+	expect(scores).toEqual([{ playerIndex: 0, strokes: 4, nr: false }]);
 });
 
 describe("a round started on hole 10 (APP-914)", () => {

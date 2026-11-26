@@ -475,6 +475,74 @@ describe("rounds", () => {
 		expect(score).toMatchObject({ strokes: 6, putts: 2, gir: false });
 	});
 
+	it("keeps a first result another device stored over the starting par (APP-925)", async () => {
+		const { alice, course } = await setup();
+		const roundId = await alice.mutation(api.rounds.start, {
+			courseId: course.course._id,
+			teeId: course.tees[0]._id,
+			holeRefs: course.holes.slice(0, 9).flatMap((h) => (h.ref ? [h.ref] : [])),
+			format: "stroke",
+			players: [{ name: "Alice" }],
+		});
+		const scoreOf = async (holeIndex: number) =>
+			(await alice.query(api.rounds.active, {}))?.scores.find(
+				(s) => s.holeIndex === holeIndex,
+			);
+		// This phone sent its untouched starting par with the putts entered here…
+		const startingPar = {
+			playerIndex: 0,
+			startingPar: true,
+			strokes: 4,
+			nr: false,
+			putts: 2,
+			gir: true,
+		};
+		// …but another device's first score reached Convex first.
+		await alice.mutation(api.rounds.saveHole, {
+			roundId,
+			holeIndex: 0,
+			scores: [{ playerIndex: 0, strokes: 6, nr: false }],
+		});
+		await alice.mutation(api.rounds.saveHole, {
+			roundId,
+			holeIndex: 0,
+			scores: [startingPar],
+		});
+		const kept = await scoreOf(0);
+		expect(kept).toMatchObject({ strokes: 6, nr: false, putts: 2 });
+		expect(kept).not.toHaveProperty("gir");
+
+		// A pick-up stored first stays too.
+		await alice.mutation(api.rounds.saveHole, {
+			roundId,
+			holeIndex: 1,
+			scores: [{ playerIndex: 0, nr: true }],
+		});
+		await alice.mutation(api.rounds.saveHole, {
+			roundId,
+			holeIndex: 1,
+			scores: [startingPar],
+		});
+		expect(await scoreOf(1)).toMatchObject({ nr: true });
+		expect(await scoreOf(1)).not.toHaveProperty("strokes");
+
+		// Without a result there, the starting par is the score.
+		await alice.mutation(api.rounds.saveHole, {
+			roundId,
+			holeIndex: 2,
+			scores: [startingPar],
+		});
+		expect(await scoreOf(2)).toMatchObject({ strokes: 4, putts: 2, gir: true });
+
+		// A par entered on the sheet (no flag) still corrects a stored result.
+		await alice.mutation(api.rounds.saveHole, {
+			roundId,
+			holeIndex: 0,
+			scores: [{ playerIndex: 0, strokes: 4, nr: false }],
+		});
+		expect(await scoreOf(0)).toMatchObject({ strokes: 4 });
+	});
+
 	it("clears a guest's stored score with null (APP-894)", async () => {
 		const { alice, course } = await setup();
 		const roundId = await alice.mutation(api.rounds.start, {
