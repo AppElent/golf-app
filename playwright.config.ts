@@ -1,16 +1,22 @@
 import { defineConfig } from "@playwright/test";
 
 // Browser smoke tests against a running Fairway (a PR preview or `pnpm dev`),
-// signed in as a Clerk development test user. Not part of `pnpm verify` or CI:
-// they need a live backend. See docs/runbooks/development.md.
+// signed in as a Clerk development test user. Not part of `pnpm verify`: they
+// need a live backend. CI runs them against each PR preview (preview.yml).
+// See docs/runbooks/development.md.
 const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 
 export default defineConfig({
 	testDir: "e2e",
 	outputDir: "test-results",
 	timeout: 60_000,
-	reporter: [["list"]],
-	use: { baseURL, browserName: "chromium", trace: "retain-on-failure" },
+	reporter: process.env.CI ? [["list"], ["github"]] : [["list"]],
+	use: {
+		baseURL,
+		browserName: "chromium",
+		trace: "retain-on-failure",
+		screenshot: "only-on-failure",
+	},
 	projects: [
 		{ name: "sign-in", testMatch: /sign-in\.setup\.ts/ },
 		{
