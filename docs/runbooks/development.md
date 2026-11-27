@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when running Fairway locally, running its checks, or adding an environment variable.
-version: 1.1.1
+version: 1.2.0
 ---
 
 # Local development
@@ -42,10 +42,14 @@ also runs `node scripts/check-project.mjs --strict`.
 
 `pnpm test:e2e` (Playwright, `e2e/`) drives a running app in Chromium at 1440 and
 390px wide. It is not part of `pnpm verify` or CI: it needs a live backend and
-signs in as the Clerk development test user. Set `E2E_BASE_URL` (default
-`http://localhost:3000`, or a PR preview URL), `E2E_USER_EMAIL` and
-`E2E_USER_PASSWORD` (the `test-user-*` values), and run
-`pnpm exec playwright install chromium` once. Screenshots land in
+signs in on the Clerk development instance. By default it signs in the
+passwordless test user `fairway-e2e+clerk_test@example.com` with Clerk's fixed
+test code `424242`, so it needs no credentials; the production instance rejects
+that code. Set `E2E_BASE_URL` (default `http://localhost:3000`, or a PR preview
+URL) and run `pnpm exec playwright install chromium` once. To sign in someone
+else, set `E2E_USER_EMAIL` (another `+clerk_test` address, or any address with
+`E2E_USER_PASSWORD`). The default user lives on the shared dev instance; if it
+is gone, recreate it there without a password. Screenshots land in
 `test-results/`. The `sign-out` project (`e2e/sign-out.spec.ts`, 390px) signs
 in and out in a session of its own, so it never revokes the session the
 `desktop` and `phone` projects share; `--project=phone` alone skips it.

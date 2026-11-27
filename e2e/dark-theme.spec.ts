@@ -31,8 +31,11 @@ async function openOwnedCopy(page: Page) {
 	await page.getByRole("button", { name: "Make my copy" }).click();
 	const remove = page.getByRole("button", { name: "Delete my copy" });
 	const cleanUp = async () => {
-		page.once("dialog", (dialog) => dialog.accept());
+		// Confirmed in place, in a panel under the trigger.
 		await remove.click();
+		await page
+			.getByRole("button", { name: "Delete copy", exact: true })
+			.click();
 		await page.waitForURL("**/courses");
 	};
 	try {
