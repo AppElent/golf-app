@@ -6,6 +6,7 @@ import {
 	playerInitial,
 	playingHandicapText,
 	scrambleTeams,
+	startHoleChoices,
 	teeLengthMeters,
 	toggleLoopPick,
 	unfitFormats,
@@ -152,5 +153,21 @@ describe("scramble teams", () => {
 		expect(nextPartner(teams, 1, 3)).toBe(3);
 		expect(nextPartner(teams, 1, 1)).toBe(2);
 		expect(nextPartner(teams, 1, 0)).toBe(1);
+	});
+});
+
+describe("startHoleChoices", () => {
+	it("offers every hole once, a loop played twice on its first pass", () => {
+		expect(startHoleChoices(["10", "11", "1", "2"])).toEqual([
+			{ index: 0, ref: "10" },
+			{ index: 1, ref: "11" },
+			{ index: 2, ref: "1" },
+			{ index: 3, ref: "2" },
+		]);
+		expect(startHoleChoices(["1", "2", "1", "2"])).toEqual([
+			{ index: 0, ref: "1" },
+			{ index: 1, ref: "2" },
+		]);
+		expect(startHoleChoices([])).toEqual([]);
 	});
 });

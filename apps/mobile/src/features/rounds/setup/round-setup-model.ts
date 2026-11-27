@@ -141,3 +141,15 @@ export function teeLengthMeters(
 	}
 	return total;
 }
+
+/**
+ * The holes a round can start on: each hole once, at its first place in the
+ * round. A loop played twice starts on its first pass.
+ */
+export function startHoleChoices(
+	holeRefs: readonly string[],
+): { index: number; ref: string }[] {
+	return holeRefs.flatMap((ref, index) =>
+		holeRefs.indexOf(ref) === index ? [{ index, ref }] : [],
+	);
+}

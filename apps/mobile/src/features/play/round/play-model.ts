@@ -168,7 +168,8 @@ export function nextTeeHole(
 	holeCount: number,
 	scores: readonly RecordedScore[],
 	holeIndex: number,
+	startHoleIndex?: number,
 ): number | null {
 	const leaving = { holeIndex, playerIndex: OWNER_INDEX, nr: true };
-	return nextHole(holeCount, [...scores, leaving], holeIndex);
+	return nextHole(holeCount, [...scores, leaving], holeIndex, startHoleIndex);
 }

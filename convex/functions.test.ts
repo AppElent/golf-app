@@ -443,6 +443,41 @@ describe("rounds", () => {
 		expect(row.putts).toBeUndefined();
 	});
 
+	it("stores a shotgun start hole and opens play on it (APP-913)", async () => {
+		const { alice, course } = await setup();
+		const holeRefs = course.holes
+			.slice(0, 9)
+			.flatMap((h) => (h.ref ? [h.ref] : []));
+		const base = {
+			courseId: course.course._id,
+			teeId: course.tees[0]._id,
+			holeRefs,
+			format: "stroke" as const,
+			players: [{ name: "Alice" }],
+		};
+		for (const startHoleIndex of [-1, 1.5, holeRefs.length]) {
+			await expect(
+				alice.mutation(api.rounds.start, { ...base, startHoleIndex }),
+			).rejects.toThrow("startHoleIndex out of range.");
+		}
+		const roundId = await alice.mutation(api.rounds.start, {
+			...base,
+			startHoleIndex: 4,
+		});
+		const active = await alice.query(api.rounds.active, {});
+		expect(active?.round).toMatchObject({
+			startHoleIndex: 4,
+			currentHoleIndex: 4,
+		});
+		await alice.mutation(api.rounds.abandon, { roundId });
+
+		// The first hole is card order: nothing to store, as for older phones.
+		await alice.mutation(api.rounds.start, { ...base, startHoleIndex: 0 });
+		const first = await alice.query(api.rounds.active, {});
+		expect(first?.round.startHoleIndex).toBeUndefined();
+		expect(first?.round.currentHoleIndex).toBe(0);
+	});
+
 	it("saves every player's score and advances in one call", async () => {
 		const { alice, course } = await setup();
 		const roundId = await alice.mutation(api.rounds.start, {

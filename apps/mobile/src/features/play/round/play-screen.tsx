@@ -167,6 +167,7 @@ export function PlayHole({
 		round.holeRefs.length,
 		active.scores,
 		holeIndex,
+		round.startHoleIndex,
 	);
 	const { geometry, anchors, nextAnchors, holeKey } = useHoleAnchors(
 		round.holeRefs,
