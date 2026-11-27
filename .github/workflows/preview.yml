@@ -105,12 +105,14 @@ jobs:
   # development instance accepts, so it gets no secrets at all.
   e2e:
     needs: deploy
-    # Same group as deploy and cleanup: a new push cancels a running smoke, so
-    # two runs never share the PR's test user (dark-theme creates and deletes
-    # a course copy), and closing the PR cancels it before the Worker goes.
+    # Same group as deploy and cleanup: their cancel-in-progress cancels a
+    # running smoke, so two runs never share the PR's test user (dark-theme
+    # creates and deletes a course copy), and closing the PR cancels it before
+    # the Worker goes. This job itself must never cancel: an older run's smoke
+    # queued just after a newer deploy or cleanup started would cancel that.
     concurrency:
       group: preview-${{ github.event.pull_request.number }}
-      cancel-in-progress: true
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -122,10 +124,11 @@ jobs:
       # Only this PR's preview Worker, never staging or production.
       - name: Check the target is this PR's preview
         run: |
-          case "$E2E_BASE_URL" in
-            "https://$EXPECTED_WORKER."*".workers.dev") echo "Testing $E2E_BASE_URL" ;;
-            *) echo "::error::E2E_BASE_URL '$E2E_BASE_URL' is not this PR's preview Worker."; exit 1 ;;
-          esac
+          if [[ ! "$E2E_BASE_URL" =~ ^https://${EXPECTED_WORKER}\.[a-z0-9-]+\.workers\.dev$ ]]; then
+            echo "::error::E2E_BASE_URL '$E2E_BASE_URL' is not this PR's preview Worker."
+            exit 1
+          fi
+          echo "Testing $E2E_BASE_URL"
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: ./.github/actions/setup
       - run: pnpm exec playwright install --with-deps chromium
