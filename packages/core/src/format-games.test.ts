@@ -371,6 +371,22 @@ describe("a round started on hole 10 (APP-894)", () => {
 		);
 	});
 
+	it("plays from a stored start hole, however the scores were entered (APP-913)", () => {
+		// Entered out of order: the inference would keep card order.
+		const scrambled = entered([0, 9, 10, 11], even);
+		expect(playingOrder(18, scrambled)).toEqual(card18);
+		expect(playingOrder(18, scrambled, 9)).toEqual(from10);
+		expect(playingOrder(18, [], 9)).toEqual(from10);
+		// A start on hole 2, which entry times can't tell.
+		expect(playingOrder(18, entered(card18.slice(1), even), 1)).toEqual([
+			...card18.slice(1),
+			0,
+		]);
+		// The first hole, or one outside the round, keeps card order.
+		expect(playingOrder(18, entered(from10, even), 0)).toEqual(card18);
+		expect(playingOrder(18, entered(from10, even), 18)).toEqual(from10);
+	});
+
 	it("decides a match on the hole it was decided on", () => {
 		// Player 0 wins every hole: 10&8 after ten holes, on hole 1.
 		const scores = entered(from10, () => [4, 5]);
@@ -379,6 +395,19 @@ describe("a round started on hole 10 (APP-894)", () => {
 			players: [{}, {}],
 			holes: card18.map((i) => ({ par: 4, strokeIndex: i + 1 })),
 			scores,
+		});
+		expect(standing).toMatchObject({
+			result: { winner: 0, up: 10, left: 8, holeIndex: 0 },
+		});
+	});
+
+	it("decides a match from the stored start, entered in card order (APP-913)", () => {
+		const standing = formatStanding({
+			format: "match",
+			players: [{}, {}],
+			holes: card18.map((i) => ({ par: 4, strokeIndex: i + 1 })),
+			scores: entered(card18, () => [4, 5]),
+			startHoleIndex: 9,
 		});
 		expect(standing).toMatchObject({
 			result: { winner: 0, up: 10, left: 8, holeIndex: 0 },

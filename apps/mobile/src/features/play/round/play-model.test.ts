@@ -241,4 +241,11 @@ describe("nextTeeHole", () => {
 		// A round started on hole 10 still goes 10 → 11 before anything wraps.
 		expect(nextTeeHole(18, [], 9)).toBe(10);
 	});
+
+	it("follows a stored start hole, whatever was entered first (APP-913)", () => {
+		// Hole 1 scored first by mistake on a round started on hole 3.
+		expect(nextTeeHole(18, entered([0, 2, 3]), 17, 2)).toBe(0);
+		expect(nextTeeHole(18, entered([0, 2, 3]), 1, 2)).toBeNull();
+		expect(nextTeeHole(18, [], 2, 2)).toBe(3);
+	});
 });

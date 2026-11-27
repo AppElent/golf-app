@@ -336,7 +336,8 @@ export function nextHole(
 	holeCount: number,
 	scores: readonly RecordedScore[],
 	holeIndex: number,
+	startHoleIndex?: number,
 ): number | null {
-	const order = playingOrder(holeCount, scores);
+	const order = playingOrder(holeCount, scores, startHoleIndex);
 	return order[order.indexOf(holeIndex) + 1] ?? null;
 }

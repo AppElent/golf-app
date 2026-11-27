@@ -86,6 +86,8 @@ export interface FormatRound {
 	formatOptions?: FormatOptions;
 	teams?: readonly RoundTeam[];
 	players: ReadonlyArray<{ playingHandicap?: number }>;
+	/** The hole the round began on; absent, the order is inferred. */
+	startHoleIndex?: number;
 }
 
 /** How many scores a hole takes: one per player, one per team in a scramble. */
@@ -156,7 +158,11 @@ export type FormatStanding =
  */
 export function formatStanding(
 	round: ScoredFormatRound,
-	order: readonly number[] = playingOrder(round.holes.length, round.scores),
+	order: readonly number[] = playingOrder(
+		round.holes.length,
+		round.scores,
+		round.startHoleIndex,
+	),
 ): FormatStanding | null {
 	const { format, holes, scores } = round;
 	if (!formatFits(format, round.players.length)) return null;

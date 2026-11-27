@@ -103,7 +103,7 @@ function ScoreSheet({
 	const submit = useSubmit();
 	// Saved, but finishing failed: Save only closes the sheet then.
 	const saving = submit.pending && !finish.error;
-	const next = nextHole(holes.length, entered, holeIndex);
+	const next = nextHole(holes.length, entered, holeIndex, round.startHoleIndex);
 	const isLast = next === null;
 	// "Next hole" only on the first entry of your own score for the hole being
 	// played; a correction (also after browsing back with the chevrons) stays

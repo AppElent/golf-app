@@ -150,7 +150,7 @@ export function gameText(round: GameRound, { t, locale, vsPar }: GameCopy) {
 	const received = sideStrokes(round, holes);
 	const sides = gameSides(round, copy);
 	const names = sides.map((side) => side.name);
-	const order = playingOrder(holes.length, scores);
+	const order = playingOrder(holes.length, scores, round.startHoleIndex);
 	const standing = formatStanding(round, order);
 	const playedAfter = (i: number, other: number) =>
 		order.indexOf(i) > order.indexOf(other);

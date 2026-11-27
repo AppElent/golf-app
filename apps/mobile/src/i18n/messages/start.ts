@@ -107,6 +107,10 @@ export const setupEn = {
 	holeCount: "{count} holes · par {par}",
 	incomplete:
 		"Holes {holes} are missing par or stroke index. Complete them on the web first.",
+	startHole: "Start on hole",
+	startHoleChoice: "Hole {hole}",
+	startHoleFooter:
+		"Teeing off further on, as in a shotgun start? Play opens on that hole and ends on the one before it.",
 	tee: "Tee",
 	teeDetail: "CR {cr} · slope {slope}",
 	format: "Format",
@@ -202,6 +206,10 @@ export const setupNl: typeof setupEn = {
 	holeCount: "{count} holes · par {par}",
 	incomplete:
 		"Bij holes {holes} ontbreekt par of strokeindex. Vul ze eerst aan op het web.",
+	startHole: "Begin op hole",
+	startHoleChoice: "Hole {hole}",
+	startHoleFooter:
+		"Begin je verderop, zoals bij een shotgunstart? Je begint op die hole en eindigt op de hole ervoor.",
 	tee: "Tee",
 	teeDetail: "CR {cr} · slope {slope}",
 	format: "Spelvorm",

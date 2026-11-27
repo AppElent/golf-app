@@ -1,5 +1,5 @@
 import { useUser } from "@clerk/expo";
-import { distanceValue } from "@fairway/core/format";
+import { distanceValue, holeLabel } from "@fairway/core/format";
 import {
 	parseHandicapIndex,
 	playingHandicapPreview,
@@ -42,6 +42,7 @@ import {
 	MAX_PLAYERS,
 	playerInitial,
 	playingHandicapText,
+	startHoleChoices,
 	teeLengthMeters,
 	toggleLoopPick,
 	unfitFormats,
@@ -135,6 +136,8 @@ function RoundSetupForm({
 	const { setEdit } = usePlayerEditor();
 	// A later visit to the sheet must not edit players of a closed setup.
 	useEffect(() => () => setEdit(null), [setEdit]);
+	// Chosen for these holes; another loop pick starts on its first hole again.
+	const [startPick, setStartPick] = useState({ refs: "", index: 0 });
 	const teeScroll = useRef<ScrollViewInstance>(null);
 	const teeScrolled = useRef(false);
 
@@ -157,6 +160,8 @@ function RoundSetupForm({
 		loops,
 		picks,
 	);
+	const startHoleIndex =
+		startPick.refs === holeRefs.join(" ") ? startPick.index : 0;
 	const ownerName = user?.firstName || user?.username || t.setup.you;
 	const players = [
 		{ name: ownerName, index: ownerIndex ?? "" },
@@ -186,6 +191,7 @@ function RoundSetupForm({
 						handicapIndex: parseHandicapIndex(p.index).value ?? undefined,
 					})),
 					simulated: simulate || undefined,
+					startHoleIndex,
 				}),
 			{
 				errorFallback: t.setup.startError,
@@ -405,6 +411,37 @@ function RoundSetupForm({
 				</ChoiceGrid>
 			</SetupSection>
 
+			{holeRefs.length > 1 ? (
+				<SetupSection
+					title={t.setup.startHole}
+					footer={t.setup.startHoleFooter}
+				>
+					<ScrollView
+						horizontal
+						showsHorizontalScrollIndicator={false}
+						accessibilityRole="radiogroup"
+						accessibilityLabel={t.setup.startHole}
+						style={styles.chipRow}
+						contentContainerStyle={styles.chipRowContent}
+					>
+						{startHoleChoices(holeRefs).map(({ index, ref }) => (
+							<ChoiceChip
+								key={index}
+								label={holeLabel(ref)}
+								accessibilityLabel={fmt(t.setup.startHoleChoice, {
+									hole: holeLabel(ref),
+								})}
+								selected={index === startHoleIndex}
+								onPress={() => {
+									haptics.selectionChanged();
+									setStartPick({ refs: holeRefs.join(" "), index });
+								}}
+							/>
+						))}
+					</ScrollView>
+				</SetupSection>
+			) : null}
+
 			<SetupSection title={t.setup.tee}>
 				{detail.tees.length === 0 ? (
 					<AppText variant="footnote">{t.setup.noTees}</AppText>
@@ -416,8 +453,8 @@ function RoundSetupForm({
 						accessibilityRole="radiogroup"
 						accessibilityLabel={t.setup.tee}
 						// Full bleed, so a chip cut off at the edge says there are more.
-						style={styles.teeRow}
-						contentContainerStyle={styles.teeRowContent}
+						style={styles.chipRow}
+						contentContainerStyle={styles.chipRowContent}
 					>
 						{detail.tees.map((x) => (
 							<View
@@ -587,8 +624,8 @@ const styles = StyleSheet.create({
 		borderRadius: 7,
 		borderWidth: StyleSheet.hairlineWidth * 2,
 	},
-	teeRow: { marginHorizontal: -metrics.screenGutter, flexGrow: 0 },
-	teeRowContent: {
+	chipRow: { marginHorizontal: -metrics.screenGutter, flexGrow: 0 },
+	chipRowContent: {
 		gap: spacing.sm,
 		paddingHorizontal: metrics.screenGutter,
 	},

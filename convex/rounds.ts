@@ -215,7 +215,7 @@ function assertFormat(round: {
  * Each player's handicap index is stored on the round only: the owner's never
  * changes the profile handicap, which the profile screen alone edits.
  * A `simulated` round replaces the user's previous simulation and leaves their
- * real round alone.
+ * real round alone. A `startHoleIndex` is stored, and play opens on it.
  */
 export const start = mutation({
 	args: {
@@ -228,8 +228,9 @@ export const start = mutation({
 		teams: v.optional(v.array(roundTeam)),
 		players: v.array(playerInput),
 		simulated: v.optional(v.boolean()),
+		startHoleIndex: v.optional(v.number()),
 	},
-	handler: async (ctx, { simulated, ...args }) => {
+	handler: async (ctx, { simulated, startHoleIndex, ...args }) => {
 		const userId = await getUserId(ctx);
 
 		const existing = await findActiveRound(ctx, userId);
@@ -244,6 +245,16 @@ export const start = mutation({
 		assertFormat(args);
 		if (args.holeRefs.length === 0) {
 			throw new Error("A round needs at least one hole.");
+		}
+		if (
+			startHoleIndex !== undefined &&
+			!(
+				Number.isInteger(startHoleIndex) &&
+				startHoleIndex >= 0 &&
+				startHoleIndex < args.holeRefs.length
+			)
+		) {
+			throw new Error("startHoleIndex out of range.");
 		}
 
 		const course = await ctx.db.get(args.courseId);
@@ -296,7 +307,8 @@ export const start = mutation({
 			teams: args.teams,
 			status: "active",
 			players,
-			currentHoleIndex: 0,
+			currentHoleIndex: startHoleIndex ?? 0,
+			...(startHoleIndex !== undefined ? { startHoleIndex } : {}),
 			...(simulated ? { simulated: true } : {}),
 		});
 	},

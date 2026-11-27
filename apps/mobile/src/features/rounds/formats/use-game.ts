@@ -2,7 +2,10 @@ import { formatVsPar } from "@fairway/core/scoring";
 import { useI18n } from "../../../i18n";
 import { type GameRound, gameText } from "./game-text";
 
-type Round = Pick<GameRound, "format" | "formatOptions" | "teams" | "players">;
+type Round = Pick<
+	GameRound,
+	"format" | "formatOptions" | "teams" | "players" | "startHoleIndex"
+>;
 
 /** The game of a round in the reader's language. */
 export function useGame() {
