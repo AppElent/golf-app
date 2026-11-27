@@ -145,6 +145,22 @@ describe("auth", () => {
 });
 
 describe("rounds", () => {
+	it("keeps a round's handicap on the round, not the profile", async () => {
+		const { alice, course } = await setup();
+		await alice.mutation(api.settings.update, { handicapIndex: 12.4 });
+		await startRound(alice, course);
+
+		const active = await alice.query(api.rounds.active, {});
+		expect(active?.round.players[0].handicapIndex).toBe(18);
+		expect((await alice.query(api.settings.get, {})).handicapIndex).toBe(12.4);
+	});
+
+	it("leaves an empty profile handicap empty on a round start", async () => {
+		const { alice, course } = await setup();
+		await startRound(alice, course);
+		expect((await alice.query(api.settings.get, {})).handicapIndex).toBeNull();
+	});
+
 	it("plays a round from start to history", async () => {
 		const { alice, course } = await setup();
 		const roundId = await startRound(alice, course);
@@ -1170,7 +1186,9 @@ describe("account", () => {
 			holeIndex: 0,
 			position: { lat: 51.6, lng: 4.87 },
 		});
+		await alice.mutation(api.settings.update, { handicapIndex: 18 });
 		await startRound(bob, course);
+		await bob.mutation(api.settings.update, { handicapIndex: 18 });
 
 		await alice.mutation(api.account.deleteMyData, {});
 
