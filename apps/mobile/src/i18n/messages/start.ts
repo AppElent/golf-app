@@ -122,8 +122,6 @@ export const setupEn = {
 		sixes: { title: "Sixes", detail: "Exactly 3 players" },
 		scramble: { title: "Texas Scramble", detail: "Teams · 2–4 players" },
 	},
-	needsExactly: "{formats}: only with exactly {n} players.",
-	needsRange: "{formats}: only with {min} to {max} players.",
 	/** On a format tile that can't be chosen. */
 	tileExactly: "Only with {n} players",
 	tileRange: "Only with {min}–{max} players",
@@ -221,8 +219,6 @@ export const setupNl: typeof setupEn = {
 		sixes: { title: "Zessen", detail: "Precies 3 spelers" },
 		scramble: { title: "Texas Scramble", detail: "Teams · 2–4 spelers" },
 	},
-	needsExactly: "{formats}: alleen met precies {n} spelers.",
-	needsRange: "{formats}: alleen met {min} tot {max} spelers.",
 	tileExactly: "Alleen met {n} spelers",
 	tileRange: "Alleen met {min}–{max} spelers",
 	playersNow: {
