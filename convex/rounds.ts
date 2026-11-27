@@ -215,8 +215,7 @@ function assertFormat(round: {
  * Each player's handicap index is stored on the round only: the owner's never
  * changes the profile handicap, which the profile screen alone edits.
  * A `simulated` round replaces the user's previous simulation and leaves their
- * real round alone. A `startHoleIndex` past the first hole (a shotgun start)
- * is stored, and play opens on it.
+ * real round alone. A `startHoleIndex` is stored, and play opens on it.
  */
 export const start = mutation({
 	args: {
@@ -309,8 +308,7 @@ export const start = mutation({
 			status: "active",
 			players,
 			currentHoleIndex: startHoleIndex ?? 0,
-			// The first hole is card order, which the inference already gives.
-			...(startHoleIndex ? { startHoleIndex } : {}),
+			...(startHoleIndex !== undefined ? { startHoleIndex } : {}),
 			...(simulated ? { simulated: true } : {}),
 		});
 	},

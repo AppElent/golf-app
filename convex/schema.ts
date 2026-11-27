@@ -115,8 +115,8 @@ export default defineSchema({
 		),
 		currentHoleIndex: v.optional(v.number()),
 		// The hole play began on, chosen at setup; the order wraps from it.
-		// Absent (older rounds, phones, or a start on the first hole): the
-		// order is inferred from when scores were entered.
+		// Absent (rounds from older phones): the order is inferred from when
+		// scores were entered.
 		startHoleIndex: v.optional(v.number()),
 		// Rounds finished earlier still hold this; nothing writes or reads it.
 		totals: v.optional(

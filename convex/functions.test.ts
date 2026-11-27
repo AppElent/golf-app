@@ -471,11 +471,20 @@ describe("rounds", () => {
 		});
 		await alice.mutation(api.rounds.abandon, { roundId });
 
-		// The first hole is card order: nothing to store, as for older phones.
-		await alice.mutation(api.rounds.start, { ...base, startHoleIndex: 0 });
+		// The first hole is stored too; only older phones send none.
+		const firstId = await alice.mutation(api.rounds.start, {
+			...base,
+			startHoleIndex: 0,
+		});
 		const first = await alice.query(api.rounds.active, {});
-		expect(first?.round.startHoleIndex).toBeUndefined();
-		expect(first?.round.currentHoleIndex).toBe(0);
+		expect(first?.round).toMatchObject({
+			startHoleIndex: 0,
+			currentHoleIndex: 0,
+		});
+		await alice.mutation(api.rounds.abandon, { roundId: firstId });
+		await alice.mutation(api.rounds.start, base);
+		const older = await alice.query(api.rounds.active, {});
+		expect(older?.round.startHoleIndex).toBeUndefined();
 	});
 
 	it("saves every player's score and advances in one call", async () => {

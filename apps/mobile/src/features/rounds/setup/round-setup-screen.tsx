@@ -191,7 +191,7 @@ function RoundSetupForm({
 						handicapIndex: parseHandicapIndex(p.index).value ?? undefined,
 					})),
 					simulated: simulate || undefined,
-					startHoleIndex: startHoleIndex || undefined,
+					startHoleIndex,
 				}),
 			{
 				errorFallback: t.setup.startError,
