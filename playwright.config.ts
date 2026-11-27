@@ -1,8 +1,8 @@
 import { defineConfig } from "@playwright/test";
 
 // Browser smoke tests against a running Fairway (a PR preview or `pnpm dev`),
-// signed in as the Clerk development test user. Not part of `pnpm verify` or CI:
-// they need a live backend and that user's credentials. See docs/runbooks/development.md.
+// signed in as a Clerk development test user. Not part of `pnpm verify` or CI:
+// they need a live backend. See docs/runbooks/development.md.
 const baseURL = process.env.E2E_BASE_URL ?? "http://localhost:3000";
 
 export default defineConfig({
