@@ -1,7 +1,7 @@
 ---
 type: runbook
 description: Read when using or changing Fairway's pull-request previews or mobile PR builds.
-version: 1.1.0
+version: 1.2.0
 ---
 
 # Pull-request previews
@@ -16,6 +16,26 @@ Project facts for the shared [previews standard](../standards/previews.md).
 - Web previews use the Clerk development instance ([deploy runbook](deploy.md#auth)).
 - Values come from repository-scope `PREVIEW_<name>` variables, written by
   `pnpm env:apply preview --only github`.
+
+## Signed-in smoke
+
+After each successful deploy, the `e2e` job runs `pnpm test:e2e` with
+`E2E_BASE_URL` set to the preview Worker URL.
+
+- **Advisory.** `e2e` is not a required check; only `check` is. A red `e2e`
+  does not block a merge, but read it before you merge.
+- **No secrets.** It signs in the passwordless dev user
+  `fairway-e2e+clerk_test@example.com` with Clerk's test code. The job fails
+  before testing unless the URL is this PR's `golf-app-pr-<N>` Worker, so it
+  never targets staging or production.
+- **One run per PR.** It shares the deploy's concurrency group, so a new push
+  cancels a running smoke and closing the PR cancels it before cleanup.
+- **On failure** it uploads `test-results/` (traces and screenshots) as the
+  artifact `playwright-results-pr-<N>`. Open a trace with
+  `pnpm exec playwright show-trace <trace.zip>`.
+- **Sign-in timeouts** usually mean Clerk changed its sign-in screen
+  (`e2e/sign-in.ts`) or the dev test user was deleted; recreate it on the
+  development instance without a password.
 
 ## Cleanup
 

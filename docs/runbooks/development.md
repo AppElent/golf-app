@@ -41,8 +41,9 @@ One test file: `pnpm exec vitest run path/to/file.test.ts`. CI's `check` job
 also runs `node scripts/check-project.mjs --strict`.
 
 `pnpm test:e2e` (Playwright, `e2e/`) drives a running app in Chromium at 1440 and
-390px wide. It is not part of `pnpm verify` or CI: it needs a live backend and
-signs in on the Clerk development instance. By default it signs in the
+390px wide. It is not part of `pnpm verify`: it needs a live backend and
+signs in on the Clerk development instance. CI runs it against each PR preview
+([previews runbook](previews.md#signed-in-smoke)). By default it signs in the
 passwordless test user `fairway-e2e+clerk_test@example.com` with Clerk's fixed
 test code `424242`, so it needs no credentials; the production instance rejects
 that code. Set `E2E_BASE_URL` (default `http://localhost:3000`, or a PR preview

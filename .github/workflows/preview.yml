@@ -27,6 +27,8 @@ jobs:
     permissions:
       pull-requests: write
       contents: read
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
     # Values come from repository scope as PREVIEW_<name>, written by
     # `pnpm env:apply preview --only github` (env.manifest.ts).
     env:
@@ -96,6 +98,50 @@ jobs:
             } else {
               await github.rest.issues.createComment({ owner: context.repo.owner, repo: context.repo.repo, issue_number: context.issue.number, body });
             }
+
+  # The signed-in Playwright smoke against this PR's preview. Advisory: `e2e`
+  # is not a required check (the ruleset requires only `check`). It signs in
+  # the passwordless `+clerk_test` user with Clerk's test code, which only the
+  # development instance accepts, so it gets no secrets at all.
+  e2e:
+    needs: deploy
+    # Same group as deploy and cleanup: their cancel-in-progress cancels a
+    # running smoke, so two runs never share the PR's test user (dark-theme
+    # creates and deletes a course copy), and closing the PR cancels it before
+    # the Worker goes. This job itself must never cancel: an older run's smoke
+    # queued just after a newer deploy or cleanup started would cancel that.
+    concurrency:
+      group: preview-${{ github.event.pull_request.number }}
+      cancel-in-progress: false
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    env:
+      E2E_BASE_URL: ${{ needs.deploy.outputs.url }}
+      EXPECTED_WORKER: golf-app-pr-${{ github.event.pull_request.number }}
+    steps:
+      # Only this PR's preview Worker, never staging or production.
+      - name: Check the target is this PR's preview
+        run: |
+          if [[ ! "$E2E_BASE_URL" =~ ^https://${EXPECTED_WORKER}\.[a-z0-9-]+\.workers\.dev$ ]]; then
+            echo "::error::E2E_BASE_URL '$E2E_BASE_URL' is not this PR's preview Worker."
+            exit 1
+          fi
+          echo "Testing $E2E_BASE_URL"
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: ./.github/actions/setup
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+      # Traces (retain-on-failure) and screenshots land in test-results/.
+      - name: Upload Playwright results
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: playwright-results-pr-${{ github.event.pull_request.number }}
+          path: test-results/
+          retention-days: 14
+          if-no-files-found: ignore
 
   cleanup:
     if: >-
