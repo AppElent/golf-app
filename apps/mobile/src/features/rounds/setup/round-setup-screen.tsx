@@ -235,22 +235,11 @@ function RoundSetupForm({
 			max,
 		});
 	};
+	// The tiles carry each rule; the footer only adds the count they're read against.
 	const formatFooter =
 		unfit.length === 0
 			? undefined
-			: [
-					...unfit.map(({ formats, min, max }) =>
-						fmt(min === max ? t.setup.needsExactly : t.setup.needsRange, {
-							formats: formats
-								.map((x) => t.setup.formats[x].title)
-								.join(` ${t.formats.and} `),
-							n: min,
-							min,
-							max,
-						}),
-					),
-					plural(locale, players.length, t.setup.playersNow),
-				].join(" ");
+			: plural(locale, players.length, t.setup.playersNow);
 
 	const loopName = (i: number) =>
 		fmt(t.setup.loop, { label: loops[i]?.label ?? "" });
