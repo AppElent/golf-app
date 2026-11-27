@@ -6,23 +6,17 @@
 // --path, which would run another folder's manifest, ...) goes back to a
 // normal permission prompt. `env:exec` is never covered by an allow rule.
 import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 const ENV_SCRIPT = /^\s*pnpm\s+(?:run\s+)?env:(apply|plan|check|generate)(?=\s|$)/;
 const ENVIRONMENTS = new Set(["local", "dev", "preview", "staging", "production"]);
 const KINDS = new Set(["infisical", "file", "convex", "worker", "github", "eas"]);
-
-function ask(reason) {
-  process.stdout.write(
-    JSON.stringify({
-      hookSpecificOutput: {
-        hookEventName: "PreToolUse",
-        permissionDecision: "ask",
-        permissionDecisionReason: `env-guard: ${reason}`,
-      },
-    }),
-  );
-  process.exit(0);
-}
+// The read-only `env:check` may keep the wrappers agents put around it: one
+// leading `cd <plain path>;` (or `&&`), then a trailing `2>&1` and one
+// `| tail`/`| head` with at most a line count. Nothing else is peeled off.
+const CD_PREFIX = /^\s*cd\s+([A-Za-z0-9_./@+][A-Za-z0-9_./@+-]*)\s*(?:;|&&)\s*/;
+const READ_SUFFIX = /\s+(?:2>&1\s*)?(?:\|\s*(?:tail|head)(?:\s+(?:-n\s*[1-9][0-9]*|-[1-9][0-9]*))?\s*)?$/;
 
 // apply and plan need an environment; check takes an optional one; generate
 // takes only --dry-run/--json.
@@ -42,22 +36,57 @@ function allowedShape(script, words) {
   return true;
 }
 
-let input;
-try {
-  input = JSON.parse(readFileSync(0, "utf8"));
-} catch {
-  ask("could not read the tool input."); // fail closed
+// Returns the `env:check` command inside the allowed wrappers, or the command
+// unchanged when it has no wrappers or the inner command is not env:check.
+function unwrapCheck(command) {
+  let inner = command;
+  const cd = CD_PREFIX.exec(inner);
+  if (cd) inner = inner.slice(cd[0].length);
+  const suffix = READ_SUFFIX.exec(inner);
+  if (suffix && suffix[0].trim()) inner = inner.slice(0, suffix.index);
+  if (inner === command) return command;
+  return ENV_SCRIPT.exec(inner)?.[1] === "check" ? inner : command;
 }
-const command = input?.tool_input?.command;
-if (typeof command !== "string") process.exit(0);
-const match = ENV_SCRIPT.exec(command);
-// The allow rules also match subcommands of a compound command (`a && b`) or a
-// wrapper (`timeout 5 ...`), so any other mention of these scripts needs a prompt.
-if (!match) {
-  if (/env:(?:apply|plan|check|generate)/.test(command)) ask("env commands are auto-allowed only as a standalone command.");
+
+// Returns the reason to ask for a prompt, or null to leave the decision to the
+// allow rules.
+export function evaluate(rawCommand) {
+  if (typeof rawCommand !== "string") return null;
+  const command = unwrapCheck(rawCommand);
+  const match = ENV_SCRIPT.exec(command);
+  // The allow rules also match subcommands of a compound command (`a && b`) or a
+  // wrapper (`timeout 5 ...`), so any other mention of these scripts needs a prompt.
+  if (!match) {
+    if (/env:(?:apply|plan|check|generate)/.test(command)) return "env commands are auto-allowed only as a standalone command.";
+    return null;
+  }
+  if (/[;&|`<>'"\\$(){}*?[\]~!#\n]/.test(command)) return "only plain, unquoted env commands are auto-allowed.";
+  const words = command.slice(match[0].length).trim().split(/\s+/).filter(Boolean);
+  if (!allowedShape(match[1], words)) return `this env:${match[1]} shape is not auto-allowed; --prune, --yes, --path and apply --ci need a prompt.`;
+  return null;
+}
+
+function ask(reason) {
+  process.stdout.write(
+    JSON.stringify({
+      hookSpecificOutput: {
+        hookEventName: "PreToolUse",
+        permissionDecision: "ask",
+        permissionDecisionReason: `env-guard: ${reason}`,
+      },
+    }),
+  );
   process.exit(0);
 }
-if (/[;&|`<>'"\\$(){}*?[\]~!#\n]/.test(command)) ask("only plain, unquoted env commands are auto-allowed.");
-const words = command.slice(match[0].length).trim().split(/\s+/).filter(Boolean);
-if (!allowedShape(match[1], words)) ask(`this env:${match[1]} shape is not auto-allowed; --prune, --yes, --path and apply --ci need a prompt.`);
-process.exit(0);
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  let input;
+  try {
+    input = JSON.parse(readFileSync(0, "utf8"));
+  } catch {
+    ask("could not read the tool input."); // fail closed
+  }
+  const reason = evaluate(input?.tool_input?.command);
+  if (reason) ask(reason);
+  process.exit(0);
+}
