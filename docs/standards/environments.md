@@ -2,7 +2,7 @@
 type: standard
 kind: platform
 description: Read when adding, routing, or checking environment variables and secrets.
-version: 4.1.0
+version: 4.1.1
 applies_to: [all]
 ---
 
@@ -123,7 +123,9 @@ lands each value in the same destination, from one data-only manifest.
   `apply --ci`, `--`, quoting, chaining, unreadable input) goes back to a normal
   permission prompt, and so does an `env:` script anywhere but at the start of the
   command (a compound command or a wrapper such as `timeout`, whose subcommands the
-  allow rules also match). The allow rules are only safe together with this hook; add both or
+  allow rules also match). The one exception is the read-only `env:check`: it may keep
+  one leading `cd <plain path>;` (or `&&`), a trailing `2>&1`, and one `| tail` or
+  `| head` with at most a line count, the shape agents use from a worktree. The allow rules are only safe together with this hook; add both or
   neither.
 - `env:exec` is never allowed: it runs an arbitrary command with the secrets in its
   environment.
