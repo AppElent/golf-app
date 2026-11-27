@@ -147,8 +147,9 @@ export const cardOrder = (holeCount: number): number[] =>
  * The hole indexes in the order played. A round that stores its start hole
  * plays from it and wraps around (a shotgun start on hole 10 ends on 9).
  *
- * A round without one (started on a phone from before APP-913) infers it: its first entered hole is the start, once the last hole was
- * entered before any hole in front of that start. Any other order stays in
+ * A round without one (started on a phone from before APP-913) infers it:
+ * its first entered hole is the start, once the last hole was entered
+ * before any hole in front of that start. Any other order stays in
  * card order, as does a start on hole 2: entry times can't tell it from a
  * hole 1 that was forgotten and entered last.
  */
