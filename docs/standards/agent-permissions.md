@@ -2,7 +2,7 @@
 type: standard
 kind: capability
 description: Read when changing a project's `.claude/settings.json` or hooks, adding an allow rule, when an agent command is blocked by the deny list, or before driving a simulator or emulator.
-version: 1.8.0
+version: 1.9.0
 applies_to: [web, mobile, backend]
 ---
 
@@ -70,6 +70,10 @@ Eric approved (25 Nov 2026, APP-865) that an agent runs a store build after his 
 - developer-home's `.claude/settings.json` lists every allowed command in full, one rule per app (workouts, golf-app, gather, games) and profile (production, preview, preview-internal), with and without `--submit` and `caffeinate -i`. A `*` in a Bash rule also matches spaces and flags, so the rules use no wildcard: `--allow-convex-drift`, `--from` and passthrough arguments after `--` (which reach `eas build` inside the tool, where the guard hook cannot see them) still prompt.
 - The `allow` entry in `auto-mode.json` names the same command for sessions that start elsewhere, and the store-submission `hard_deny` entry makes the builds tool its only exception. `auto-mode.json` lists reworded entries under `retired`, and `pnpm auto-mode apply` removes those from Eric's settings.
 - Start a Remote Control session for a store build in `~/Developer/developer-home`, so the project allow rules load.
+
+### TestFlight Beta App Review
+
+Eric approved (27 Nov 2026, APP-488) that an agent submits a build that is already on TestFlight for Beta App Review with `asc testflight review submit`, so external testers can install it. The `allow` entry in `auto-mode.json` covers that one command; App Store submissions, pricing and availability stay blocked, and the store-submission `hard_deny` entry says Beta App Review is not App Review.
 
 ## Implementation
 

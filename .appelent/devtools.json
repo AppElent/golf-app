@@ -3,8 +3,8 @@
   "repository": "AppElent/developer-home",
   "scope": "project",
   "ref": "main",
-  "commit": "77b31587dbf5d04b5f8bcc2713bf7a016bafd79e",
-  "manifestHash": "9dd8e2974fd9cd4fab65ef23a68a52ef7c46d563d9ea84d111a11e39f6d20871",
+  "commit": "520f8f652a47c0adec57121209cf6770a6a9a585",
+  "manifestHash": "c74974bbfb2d55cdd88d43b688d1e828c4196e50472bb0d7083f4d687f909130",
   "files": {
     "docs/adr/.template.md": {
       "sha256": "f28b286102fb1a00512455a06896e5da3c47d67a14b0ee6c08fa84258af24adf",
@@ -477,7 +477,7 @@
       "sha256": "3b63fdb9cdc037a4e08f781cc6517d94281aec6cf017dbe5e5a9bb080d3d8c3f"
     },
     "docs/standards/environments/env-guard.mjs": {
-      "sha256": "22a3d614b321bcf8bdc21c0897c22a935e223ced5fc33c1e0a8e94688a35583b"
+      "sha256": "d9e2b65160218239669390cc22750ee47b34af109a38b679d0f6be7810880df4"
     },
     "docs/standards/platform-parity.md": {
       "sha256": "b369ad5740b8e4e644e6a2661f517aa937cf3184f7ac8dc3c35e3497cc784131",
@@ -494,8 +494,8 @@
       "version": "1.2.0"
     },
     "docs/standards/agent-permissions.md": {
-      "sha256": "1d65d7b59dadb09163d1e6b761c9dd9b4191a077e9e0b36e3453a1e0db53f5e2",
-      "version": "1.8.0"
+      "sha256": "2a7d987a9bb62fa3ee02b856b398e2a5ad80d4c5687b6284921dc9f43bd8cb54",
+      "version": "1.9.0"
     },
     "docs/standards/agent-permissions/irreversible-guard.mjs": {
       "sha256": "0ad8cc83504ec4bf6dc8c6a9582ee367c200bd0e76cc20bc27c10503f7dcfbb7"
@@ -537,7 +537,7 @@
       "version": "1.1.0"
     },
     "docs/standards/agent-permissions/auto-mode.json": {
-      "sha256": "bdaefe026cbe948b08d3eb0319180ab2226a08e6f9808fa2c384928c9653e99e"
+      "sha256": "b98519d69b24998c5024aaf9a919aeca4e3bb8412292d1300d5877e20a38a34e"
     },
     "docs/standards/dependency-updates/templates/dependabot-blast-radius.yml": {
       "sha256": "26ba338fbd512bf303bcfb7fc6b2b5894e72fe47f006ebd6ed70eaa3d7c7b511"
