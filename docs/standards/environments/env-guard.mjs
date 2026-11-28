@@ -10,6 +10,10 @@ import { resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ENV_SCRIPT = /^\s*pnpm\s+(?:run\s+)?env:(apply|plan|check|generate)(?=\s|$)/;
+// A package manager running an env script anywhere in a command: after the
+// start, a separator, a wrapper or a subshell. Quotes in between (`pnpm
+// "env:apply"`) still count.
+const RUNS_ENV_SCRIPT = /\b(?:pnpm|npm|yarn|bun|corepack|npx)\b[^;&|\n]*?\benv:(?:apply|plan|check|generate)\b/;
 const ENVIRONMENTS = new Set(["local", "dev", "preview", "staging", "production"]);
 const KINDS = new Set(["infisical", "file", "convex", "worker", "github", "eas"]);
 // The read-only `env:check` may keep the wrappers agents put around it: one
@@ -57,7 +61,11 @@ export function evaluate(rawCommand) {
   // The allow rules also match subcommands of a compound command (`a && b`) or a
   // wrapper (`timeout 5 ...`), so any other mention of these scripts needs a prompt.
   if (!match) {
-    if (/env:(?:apply|plan|check|generate)/.test(command)) return "env commands are auto-allowed only as a standalone command.";
+    // Only a run of the scripts counts: a package manager word followed by an
+    // env script. A read that merely names one (`grep "env:generate"
+    // package.json`, `cat env.manifest.ts`) is left to the other checks
+    // (28 Nov 2026: such reads stopped T3 threads on a prompt).
+    if (RUNS_ENV_SCRIPT.test(command)) return "env commands are auto-allowed only as a standalone command.";
     return null;
   }
   if (/[;&|`<>'"\\$(){}*?[\]~!#\n]/.test(command)) return "only plain, unquoted env commands are auto-allowed.";

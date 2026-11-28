@@ -54,4 +54,4 @@ Review the PR in this same thread as the runbook's [Review by risk tier](https:/
 
 UI changes follow [general design](docs/standards/general-design.md): screenshots in the PR, and new screens or flows wait for Eric's approval before merge.
 
-Coding agents never merge; the manager merges per the runbook. Never read or change production secrets, and never approve production deployments.
+A coding agent merges only its own PR: on a `full send` brief's green path, or after Eric answered "Mergen" to its own merge question; it then runs the post-merge steps and settles its thread. Every other merge is the manager's, per the runbook. Never read or change production secrets, and never approve production deployments.
